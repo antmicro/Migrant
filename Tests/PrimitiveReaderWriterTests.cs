@@ -1,8 +1,7 @@
-using System;
 using NUnit.Framework;
 using System.IO;
 
-namespace AntMicro.AntSerializer.Tests
+namespace AntMicro.Migrant.Tests
 {
 	[TestFixture]
 	public class PrimitiveReaderWriterTests
@@ -163,7 +162,7 @@ namespace AntMicro.AntSerializer.Tests
 
 		[Test]
 		public void ShouldSerializeDateTime(
-			[Values(1, 10, 100, 10000, 1000*1000)]
+			[Values(1, 10, 100, 10000)]
 			int numberOfEntries)
 		{
 			var randomDateTimes = Helpers.GetRandomDateTimes(numberOfEntries);
@@ -191,7 +190,7 @@ namespace AntMicro.AntSerializer.Tests
 
 			[Test]
 		public void ShouldSerializeTimeSpan(
-			[Values(1, 10, 100, 10000, 1000*1000)]
+			[Values(1, 10, 100, 10000)]
 			int numberOfEntries)
 		{
 			var randomDateTimes = Helpers.GetRandomDateTimes(numberOfEntries);

@@ -1,4 +1,4 @@
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     public static class Consts
     {

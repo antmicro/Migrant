@@ -20,12 +20,8 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
-using System.IO;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Linq.Expressions;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {    
     internal static class Misc
     {

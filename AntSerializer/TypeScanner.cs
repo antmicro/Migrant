@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Collections;
 using System.Text;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     public class TypeScanner
     {
@@ -80,22 +80,23 @@ namespace AntMicro.AntSerializer
             }
         }
 
-        private static void BreakOnIllegalType(Type typeToScan, Stack<Type> stack)
+        private static void BreakOnIllegalType(Type typeToScan, IEnumerable<Type> stack)
         {
-            if(IllegalTypes.Contains(typeToScan) || typeToScan.IsPointer)
+            if (!IllegalTypes.Contains(typeToScan) && !typeToScan.IsPointer)
             {
-                var revStack = stack.Reverse();
-                var path = new StringBuilder(revStack.First().Name);
-                foreach(var elem in revStack.Skip(1))
-                {
-                    path.Append(" -> ").Append(elem.Name);
-                }
-                throw new ArgumentException(String.Format(
-                    "Type {0} is not serializable. Consider adding transient attribute.\nThe path to this type is:\n{1}",
-                    typeToScan, path.ToString()
-                )
-                );
+                return;
             }
+            var revStack = stack.Reverse();
+            var path = new StringBuilder(revStack.First().Name);
+            foreach (var elem in revStack.Skip(1))
+            {
+                path.Append(" -> ").Append(elem.Name);
+            }
+            throw new ArgumentException(String.Format(
+                "Type {0} is not serializable. Consider adding transient attribute.\nThe path to this type is:\n{1}",
+                typeToScan, path
+                                            )
+                );
         }
 
         private static bool IsPrimitive(Type type)
@@ -110,15 +111,10 @@ namespace AntMicro.AntSerializer
 
         private static bool ShouldFieldsBeScanned(Type type)
         {
-            if(IsPrimitive(type) 
-                || type.GetInterfaces().Any(x =>
-                                        (x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>)) 
-                || x == typeof(ICollection)
-            ))
-            {
-                return false;
-            }
-            return true;
+            return !IsPrimitive(type) && !type.GetInterfaces().Any(x =>
+                                                                   (x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>)) 
+                                                                   || x == typeof(ICollection)
+                                              );
         }
 
         private static IEnumerable<Type> GetElementTypes(Type type)
@@ -135,7 +131,7 @@ namespace AntMicro.AntSerializer
             // TODO: for collections, dictionaries and so on
         }
 
-        private static HashSet<Type> IllegalTypes = new HashSet<Type>
+        private static readonly HashSet<Type> IllegalTypes = new HashSet<Type>
         {
             typeof(IntPtr)
         };

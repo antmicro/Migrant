@@ -1,8 +1,8 @@
+using AntMicro.Migrant.Hooks;
 using NUnit.Framework;
 using System.IO;
-using AntMicro.AntSerializer.Hooks;
 
-namespace AntMicro.AntSerializer.Tests
+namespace AntMicro.Migrant.Tests
 {
 	[TestFixture]
 	public class HooksTests

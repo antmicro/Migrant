@@ -1,6 +1,6 @@
 using System;
 
-namespace AntMicro.AntSerializer.Hooks
+namespace AntMicro.Migrant.Hooks
 {
     public class PostDeserializationAttribute : Attribute
     {

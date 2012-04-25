@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     public class PrimitiveReader : IDisposable
     {
@@ -89,7 +89,7 @@ namespace AntMicro.AntSerializer
 
         public ulong ReadUInt64()
         {
-            return (ulong)InnerReadInteger();
+            return InnerReadInteger();
         }
 
         public string ReadString()
@@ -121,16 +121,17 @@ namespace AntMicro.AntSerializer
             destination.Write(buffer, currentBufferPosition, toRead);
             currentBufferPosition += toRead;
             howMuch -= toRead;
-            if(howMuch > 0)
+            if(howMuch <= 0)
             {
-                // we can reuse the regular buffer since it is invalidated at this point anyway
-                int read;
-                while((read = stream.Read(buffer, 0, (int)Math.Min(buffer.Length, howMuch))) > 0)
-                {
-                    howMuch -= read;
-                    destination.Write(buffer, 0, read);
-                    currentPosition += read;
-                }
+                return;
+            }
+            // we can reuse the regular buffer since it is invalidated at this point anyway
+            int read;
+            while((read = stream.Read(buffer, 0, (int)Math.Min(buffer.Length, howMuch))) > 0)
+            {
+                howMuch -= read;
+                destination.Write(buffer, 0, read);
+                currentPosition += read;
             }
         }
 

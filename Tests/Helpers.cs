@@ -2,7 +2,7 @@ using System;
 using System.Text;
 using System.Linq;
 
-namespace AntMicro.AntSerializer.Tests
+namespace AntMicro.Migrant.Tests
 {
 	public static class Helpers
 	{
@@ -64,12 +64,12 @@ namespace AntMicro.AntSerializer.Tests
 
 		public static TimeSpan[] GetRandomTimeSpans(int numberOfTimeSpans)
 		{
-			return GetRandomLongs(numberOfTimeSpans, TimeSpan.MaxValue.Ticks).Select(x=>TimeSpan.FromTicks(x)).ToArray();
+			return GetRandomLongs(numberOfTimeSpans, TimeSpan.MaxValue.Ticks).Select(x => TimeSpan.FromTicks(x)).ToArray();
 		}
 
 		public static DateTime[] GetRandomDateTimes(int numberOfDateTimes)
 		{
-			return GetRandomLongs(numberOfDateTimes, DateTime.MaxValue.Ticks).Select(x=>new DateTime(x)).ToArray();
+			return GetRandomLongs(numberOfDateTimes, DateTime.MaxValue.Ticks).Select(x => new DateTime(x)).ToArray();
 		}
 
 		public static Random Random { get; private set; }

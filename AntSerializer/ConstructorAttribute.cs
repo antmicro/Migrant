@@ -1,24 +1,16 @@
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
-    // TODO: usage should be clarified
-    // TODO: should not be in core
     public class ConstructorAttribute : TransientAttribute
     {
         public ConstructorAttribute(params object[] parameters)
         {
-            this.parameters = parameters;
+            Parameters = parameters;
         }
 
-        public object[] Parameters
-        {
-            get
-            {
-                return parameters;
-            }
-        }
+        public object[] Parameters { get; private set; }
 
-        private object[] parameters;
+        
     }
 }
 

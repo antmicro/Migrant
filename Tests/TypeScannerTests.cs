@@ -4,14 +4,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace AntMicro.AntSerializer.Tests
+namespace AntMicro.Migrant.Tests
 {
 	[TestFixture]
 	public class TypeScannerTests
 	{
-		public TypeScannerTests ()
-		{
-		}
+
 		#region simple tests
 		[Test]
 		public void SimpleObjectTest ()

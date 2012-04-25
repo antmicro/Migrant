@@ -5,11 +5,11 @@ using System.Reflection;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
+using AntMicro.Migrant.Hooks;
+using AntMicro.Migrant.Utilities;
 using ImpromptuInterface;
-using AntMicro.AntSerializer.Utilities;
-using AntMicro.AntSerializer.Hooks;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     public class ObjectReader
     {
@@ -190,17 +190,13 @@ namespace AntMicro.AntSerializer
             } 
             if(formalType.IsEnum)
             {
-                return Impromptu.InvokeConvert(reader.ReadInt64(), formalType, true);
+                return Enum.ToObject(formalType, reader.ReadInt64());
             }
             var nullableActualType = Nullable.GetUnderlyingType(formalType);
             if(nullableActualType != null)
             {
                 var isNotNull = reader.ReadBool();
-                if(isNotNull)
-                {
-                    return ReadField(nullableActualType);
-                }
-                return null;
+                return isNotNull ? ReadField(nullableActualType) : null;
             }
             if(formalType == typeof(Int64))
             {
@@ -275,7 +271,7 @@ namespace AntMicro.AntSerializer
         {
             var collectionType = obj.GetType();
             var count = reader.ReadInt32();
-            var addMethod = collectionType.GetMethod("Add", new Type[] { elementFormalType });
+            var addMethod = collectionType.GetMethod("Add", new [] { elementFormalType });
             if(addMethod == null)
             {
                 throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage,
@@ -303,11 +299,8 @@ namespace AntMicro.AntSerializer
             var dictionaryType = obj.GetType();
             var count = reader.ReadInt32();
             var addMethodArgumentTypes = new [] { formalKeyType, formalValueType };
-            var addMethod = dictionaryType.GetMethod("Add", addMethodArgumentTypes);
-            if(addMethod == null)
-            {
-                addMethod = dictionaryType.GetMethod("TryAdd", addMethodArgumentTypes);
-            }
+            var addMethod = dictionaryType.GetMethod("Add", addMethodArgumentTypes) ??
+                            dictionaryType.GetMethod("TryAdd", addMethodArgumentTypes);
             if(addMethod == null)
             {
                 throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage,
@@ -332,7 +325,7 @@ namespace AntMicro.AntSerializer
             }
         }
 
-        private Array ReadArray(Type elementFormalType, int objectId)
+        private void ReadArray(Type elementFormalType, int objectId)
         {
             var rank = reader.ReadInt32();
             var lengths = new int[rank];
@@ -346,7 +339,6 @@ namespace AntMicro.AntSerializer
             deserializedObjects[objectId] = array;
             var position = new int[rank];
             FillArrayRowRecursive(array, 0, position, elementFormalType);
-            return array;
         }
 
         private void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)

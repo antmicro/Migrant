@@ -1,7 +1,6 @@
-using System;
 using System.IO;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     public class FileToSerializableWrapper : ISpeciallySerializable
     {

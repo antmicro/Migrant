@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Collections;
+using AntMicro.Migrant.Hooks;
 using ImpromptuInterface;
 using ImpromptuInterface.Dynamic;
-using AntMicro.AntSerializer.Hooks;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     public class ObjectWriter
     {
@@ -323,17 +323,18 @@ namespace AntMicro.AntSerializer
 
         private void TouchType(Type type)
         {
-            if(!typeIndices.ContainsKey(type))
+            if(typeIndices.ContainsKey(type))
             {
-                if(!strictTypes)
-                {
-                    missingTypeCallback(type);
-                }
-                else
-                {
-                    throw new InvalidOperationException(string.Format(
-                        "Unexpected type encountered in the strict type mode: {0}.", type.Name));
-                }
+                return;
+            }
+            if(!strictTypes)
+            {
+                missingTypeCallback(type);
+            }
+            else
+            {
+                throw new InvalidOperationException(string.Format(
+                    "Unexpected type encountered in the strict type mode: {0}.", type.Name));
             }
         }
 

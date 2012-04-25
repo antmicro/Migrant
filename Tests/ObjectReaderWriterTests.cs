@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System.IO;
 using System.Collections.Generic;
 
-namespace AntMicro.AntSerializer.Tests
+namespace AntMicro.Migrant.Tests
 {
 	[TestFixture]
 	public class ObjectReaderWriterTests

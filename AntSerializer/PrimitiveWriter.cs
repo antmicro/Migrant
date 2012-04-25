@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     public class PrimitiveWriter : IDisposable
     {
@@ -53,7 +53,7 @@ namespace AntMicro.AntSerializer
 
         public void Write(short value)
         {
-            InnerWriteInteger((ulong)(ushort)value, sizeof(int));
+            InnerWriteInteger((ushort)value, sizeof(int));
         }
 
         public void Write(ushort value)
@@ -63,7 +63,7 @@ namespace AntMicro.AntSerializer
 
         public void Write(int value)
         {
-            InnerWriteInteger((ulong)(uint)value, sizeof(int));
+            InnerWriteInteger((uint)value, sizeof(int));
         }
 
         public void Write(uint value)

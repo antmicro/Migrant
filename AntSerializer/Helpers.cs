@@ -6,7 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     internal static class Helpers
     {
@@ -88,8 +88,9 @@ namespace AntMicro.AntSerializer
 
 		private static int GetBoundary(long currentPosition)
 		{
-			var index = -1;
+		    var index = -1;
             while(currentPosition > PaddingBoundaries[++index]);
+		    
             var boundary = PaddingBoundaries[index];
             if(boundary == int.MaxValue)
             {
@@ -160,7 +161,7 @@ namespace AntMicro.AntSerializer
 
         public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
-        private static int[] PaddingBoundaries = new [] { 128, 1024, 4096, int.MaxValue };
+        private static readonly int[] PaddingBoundaries = new [] { 128, 1024, 4096, int.MaxValue };
     }
 }
 

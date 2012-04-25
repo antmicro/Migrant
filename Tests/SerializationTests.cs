@@ -7,7 +7,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
 
-namespace AntMicro.AntSerializer.Tests
+namespace AntMicro.Migrant.Tests
 {
 	[TestFixture]
 	public class SerializationTests
@@ -89,9 +89,8 @@ namespace AntMicro.AntSerializer.Tests
 		[Test]
 		public void ShouldNotSerializeIntPtr()
 		{
-			var intPtrClass = new ClassWithIntPtr();
-			intPtrClass.Ptr = new IntPtr(0x666);
-			try
+			var intPtrClass = new ClassWithIntPtr{Ptr = new IntPtr(0x666)};
+		    try
 			{
 				Serializer.DeepClone(intPtrClass);
 				Assert.Fail("Class with IntPtr was serialized without exception.");
@@ -333,7 +332,7 @@ namespace AntMicro.AntSerializer.Tests
 		[Test]
 		public void ShouldSerializeDictionaryWithStrings()
 		{
-			var dictionary = new Dictionary<string, string>()
+			var dictionary = new Dictionary<string, string>
 			{
 				{ "Ball", "Piłka" },
 				{ "Cat", "Kot" },

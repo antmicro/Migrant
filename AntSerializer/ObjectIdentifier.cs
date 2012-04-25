@@ -2,7 +2,7 @@ using System;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 
-namespace AntMicro.AntSerializer
+namespace AntMicro.Migrant
 {
     public class ObjectIdentifier
     {
