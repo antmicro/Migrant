@@ -29,6 +29,7 @@ namespace AntMicro.AntSerializer.Tests
 			var reader = new ObjectReader(stream, types);
 			Assert.AreEqual(strings[0], reader.ReadObject<string>());
 			Assert.AreEqual(strings[1], reader.ReadObject<string>());
+			Assert.AreEqual(position, stream.Position);
 		}
 	}
 }

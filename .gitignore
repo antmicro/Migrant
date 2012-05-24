@@ -12,4 +12,5 @@ Lib
 #ide
 *.pidb
 *.userprefs
+Packages
 
