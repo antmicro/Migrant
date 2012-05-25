@@ -40,9 +40,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="ConstructorAttribute.cs" />
     <Compile Include="Consts.cs" />
-    <Compile Include="FileToSerializableWrapper.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="HookType.cs" />
     <Compile Include="ISpeciallySerializable.cs" />
     <Compile Include="ObjectIdentifier.cs" />
     <Compile Include="ObjectReader.cs" />
@@ -56,7 +54,6 @@
     <Compile Include="Hooks\PostDeserializationAttribute.cs" />
     <Compile Include="Hooks\PostSerializationAttribute.cs" />
     <Compile Include="Hooks\PreSerializationAttribute.cs" />
-    <Compile Include="Misc.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

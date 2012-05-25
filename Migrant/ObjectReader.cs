@@ -11,8 +11,25 @@ using ImpromptuInterface;
 
 namespace AntMicro.Migrant
 {
+	/// <summary>
+	/// Reads the object previously written by <see cref="AntMicro.Migrant.ObjectWriter" />.
+	/// </summary>
     public class ObjectReader
     {
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AntMicro.Migrant.ObjectReader" /> class.
+		/// </summary>
+		/// <param name='stream'>
+		/// Stream from which objects will be read.
+		/// </param>
+		/// <param name='typeArray'>
+		/// Array which is used to resolve type using type ID. Must be consisent with the type ID
+		/// dictionary used by the <see cref="AntMicro.Migrant.ObjectWriter" />  which wrote the data.
+		/// </param>
+		/// <param name='postDeserializationCallback'>
+		/// Callback which will be called after deserialization of every unique object. Deserialized
+		/// object is given in the callback's only parameter.
+		/// </param>
         public ObjectReader(Stream stream, Type[] typeArray, Action<object> postDeserializationCallback = null)
         {
             reader = new PrimitiveReader(stream);
@@ -22,6 +39,21 @@ namespace AntMicro.Migrant
             PrepareForTheRead();
         }
 
+		/// <summary>
+		/// Reads the object with the expected formal type <typeparam name='T'>.
+		/// </summary>
+		/// <returns>
+		/// The object, previously written by the <see cref="AntMicro.Migrant.ObjectWriter" />.
+		/// </returns>
+		/// <typeparam name='T'>
+		/// The expected formal type of object, that is the type of the reference returned
+		/// by the method after serialization. The previously serialized object must be
+		/// convertible to this type.
+		/// </typeparam>
+		/// <remarks>
+		/// Note that this method will read the object from the stream along with other objects
+		/// referenced by it.
+		/// </remarks>
         public T ReadObject<T>()
         {
             var typeIndex = reader.ReadInt32();

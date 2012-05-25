@@ -7,6 +7,9 @@ using System.Text;
 
 namespace AntMicro.Migrant
 {
+	/// <summary>
+	/// Gives unique, consecutive IDs to types by setting them in array.
+	/// </summary>
     public class TypeScanner
     {
         public TypeScanner()
@@ -14,6 +17,14 @@ namespace AntMicro.Migrant
             types = new Type[0];
         }
 
+		/// <summary>
+		/// Scans the given type and gives ID to this type, its base type, type of
+		/// its fields recursively. Also throws if a non-serializable type is
+		/// encountered.
+		/// </summary>
+		/// <param name='typeToScan'>
+		/// Type to scan.
+		/// </param>
         public void Scan(Type typeToScan)
         {
             var typeSet = new HashSet<Type>();
@@ -22,19 +33,14 @@ namespace AntMicro.Migrant
             types = types.Union(typeSet).Distinct().ToArray();
         }
 
+		/// <returns>
+		/// Returns the array, containing all already known types. Every type appear in
+		/// this array exactly once, so the index can be used as a unique ID of this type.
+		/// </returns>
         public Type[] GetTypeArray()
         {
             return (Type[])types.Clone();
         }
-
-        // TODO: what is that?
-        //IsNull?
-        //Throw on illegal
-        //GenericParameters (not optimal before IsSerialized, it's here because of generic interfaces)
-        //IsSerializable?
-        //IsSerialized?
-        //IsPrimitive || ValueType?
-        //ShouldFieldsBeScanned?
 
         private static void ScanRecursiveWithStack(HashSet<Type> typeSet, Type typeToScan, Stack<Type> typeStack)
         {

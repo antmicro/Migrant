@@ -12,6 +12,32 @@ namespace AntMicro.Migrant
 {
     public class ObjectWriter
     {
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AntMicro.Migrant.ObjectWriter" /> class.
+		/// </summary>
+		/// <param name='stream'>
+		/// Stream to which data will be written.
+		/// </param>
+		/// <param name='typeIndices'>
+		/// Dictionary which is used to map given type to (unique) ID. If the <see cref="strictTypes" /> is <c>true</c>,
+		/// then this dictionary must contain all the types of the serialized objects.
+		/// </param>
+		/// <param name='strictTypes'>
+		/// If this value is true, the <see cref="typeIndices" /> must contain all the types of the serialized objects,
+		/// otherwise exception is thrown. When false and given type is not present in dictionary, the <see cref="missingTypeCallback" />
+		/// is invoked.
+		/// </param>
+		/// <param name='missingTypeCallback'>
+		/// Callback which is called when <see cref="strictTypes"/>  is true and type of the object to serialize cannot be found
+		/// in the <see cref="typeIndices"/> dictionary. The missing type is given in its only parameter. The callback should
+		/// supplement the dictionary with the missing type. Can be null if <see cref="strictTypes" /> is true.
+		/// </param>
+		/// <param name='preSerializationCallback'>
+		/// Callback which is called once on every unique object before its serialization. Contains this object in its only parameter.
+		/// </param>
+		/// <param name='postSerializationCallback'>
+		/// Callback which is called once on every unique object after its serialization. Contains this object in its only parameter.
+		/// </param>
         public ObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, bool strictTypes, Action<Type> missingTypeCallback = null,
                             Action<object> preSerializationCallback = null, Action<object> postSerializationCallback = null)
         {
@@ -28,6 +54,12 @@ namespace AntMicro.Migrant
             PrepareForNextWrite();
         }
 
+		/// <summary>
+		/// Writes the given object along with ones referenced by it.
+		/// </summary>
+		/// <param name='o'>
+		/// The object to write.
+		/// </param>
         public void WriteObject(object o)
         {
             objectsWritten = 0;

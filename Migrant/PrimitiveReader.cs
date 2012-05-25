@@ -4,8 +4,25 @@ using System.Text;
 
 namespace AntMicro.Migrant
 {
-    public class PrimitiveReader : IDisposable
+	/// <summary>
+	/// Provides the mechanism for reading primitive values from a stream.
+	/// </summary>
+	/// <remarks>
+	/// Can be used as a replacement for the <see cref="System.IO.BinaryReader" /> . Provides
+	/// more compact output and reads no more data from the stream than requested. Although
+	/// the underlying format is not specified at this point, it is guaranteed to be consistent with
+	/// <see cref="AntMicro.Migrant.PrimitiveWriter" />. Reader has to be disposed after used,
+	/// otherwise stream position corruption can occur. Reader does not possess the stream
+	/// and does not close it after dispose.
+	/// </remarks>
+    public sealed class PrimitiveReader : IDisposable
     {
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AntMicro.Migrant.PrimitiveReader" /> class.
+		/// </summary>
+		/// <param name='stream'>
+		/// The underlying stream which will be used to read data. Has to be readable.
+		/// </param>
         public PrimitiveReader(Stream stream)
         {
             this.stream = stream;
@@ -13,6 +30,13 @@ namespace AntMicro.Migrant
             buffer = new byte[Helpers.MaximalPadding];
         }
 
+		/// <summary>
+		/// Gets the current position.
+		/// </summary>
+		/// <value>
+		/// The position, which is the number of bytes read after the object was
+		/// constructed.
+		/// </value>
         public long Position
         {
             get
@@ -21,77 +45,122 @@ namespace AntMicro.Migrant
             }
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.Double" />.
+		/// </summary>
         public double ReadDouble()
         {
             return BitConverter.Int64BitsToDouble(ReadInt64());
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.Single" />.
+		/// </summary>
         public float ReadSingle()
         {
             return (float)BitConverter.Int64BitsToDouble(ReadInt64());
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.DateTime" />.
+		/// </summary>
         public DateTime ReadDateTime()
         {
             return Helpers.DateTimeEpoch.AddTicks(ReadInt64());
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.TimeSpan" />.
+		/// </summary>
         public TimeSpan ReadTimeSpan()
         {
             return TimeSpan.FromTicks(ReadInt64());
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.Byte" />.
+		/// </summary>
         public byte ReadByte()
         {
             CheckBuffer();
             return buffer[currentBufferPosition++];
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.SByte" />.
+		/// </summary>
         public sbyte ReadSByte()
         {
             return (sbyte)ReadByte();
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.Int16" />.
+		/// </summary>
         public short ReadInt16()
         {
             return (short)InnerReadInteger();
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.UInt16" />.
+		/// </summary>
         public ushort ReadUInt16()
         {
             return (ushort)InnerReadInteger();
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.Int32" />.
+		/// </summary>
         public int ReadInt32()
         {
             return (int)InnerReadInteger();
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.UInt32" />.
+		/// </summary>
         public uint ReadUInt32()
         {
             return (uint)InnerReadInteger();
         }
 
-        public char ReadChar()
-        {
-            return (char)ReadUInt16();
-        }
-
-        public bool ReadBool()
-        {
-            return ReadByte() == 1;
-        }
-
-        public long ReadInt64()
+		/// <summary>
+		/// Reads and returns <see cref="System.Int64" />.
+		/// </summary>
+		public long ReadInt64()
         {
             return (long)InnerReadInteger();
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.UInt64" />.
+		/// </summary>
         public ulong ReadUInt64()
         {
             return InnerReadInteger();
         }
 
+		/// <summary>
+		/// Reads and returns <see cref="System.Char" />.
+		/// </summary>
+        public char ReadChar()
+        {
+            return (char)ReadUInt16();
+        }
+
+		/// <summary>
+		/// Reads and returns <see cref="System.Boolean" />.
+		/// </summary>
+        public bool ReadBool()
+        {
+            return ReadByte() == 1;
+        }
+
+		/// <summary>
+		/// Reads and returns string.
+		/// </summary>
         public string ReadString()
         {
             bool fake;
@@ -100,6 +169,15 @@ namespace AntMicro.Migrant
             return Encoding.UTF8.GetString(chunk.Array, chunk.Offset, chunk.Count);
         }
 
+		/// <summary>
+		/// Reads the given number of bytes.
+		/// </summary>
+		/// <returns>
+		/// The array holding read bytes.
+		/// </returns>
+		/// <param name='count'>
+		/// Number of bytes to read.
+		/// </param>
         public byte[] ReadBytes(int count)
         {
             bool bufferCreated;
@@ -113,6 +191,15 @@ namespace AntMicro.Migrant
             return result;
         }
 
+		/// <summary>
+		/// Copies given number of bytes to a given stream.
+		/// </summary>
+		/// <param name='destination'>
+		/// Writeable stream to which data will be copied.
+		/// </param>
+		/// <param name='howMuch'>
+		/// The number of bytes which will be copied to the destination stream.
+		/// </param>
         public void CopyTo(Stream destination, long howMuch)
         {
             // first we need to flush the inner buffer into a stream
@@ -135,6 +222,17 @@ namespace AntMicro.Migrant
             }
         }
 
+		/// <summary>
+		/// After this call stream's position is updated to match the padding used by <see cref="AntMicro.Migrant.PrimitiveWriter"/>.
+		/// It is needed to be called if one expects consecutive reads (of data written previously by consecutive writes).
+		/// </summary>
+		/// <remarks>
+		/// Call <see cref="Dispose"/> when you are finished using the <see cref="AntMicro.Migrant.PrimitiveReader"/>. The
+		/// <see cref="Dispose"/> method leaves the <see cref="AntMicro.Migrant.PrimitiveReader"/> in an unusable state. After
+		/// calling <see cref="Dispose"/>, you must release all references to the
+		/// <see cref="AntMicro.Migrant.PrimitiveReader"/> so the garbage collector can reclaim the memory that the
+		/// <see cref="AntMicro.Migrant.PrimitiveReader"/> was occupying.
+		/// </remarks>
         public void Dispose()
         {
             // we have to leave stream in aligned position

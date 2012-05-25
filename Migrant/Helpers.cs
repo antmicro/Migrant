@@ -159,9 +159,25 @@ namespace AntMicro.Migrant
             }
         }
 
+		public static IEnumerable<FieldInfo> GetAllFields(this Type t, bool recursive = true)
+        {            
+            if(t == null)
+            {
+                return Enumerable.Empty<FieldInfo>();
+            }
+            if(recursive)
+            {
+                return t.GetFields(DefaultBindingFlags).Union(GetAllFields(t.BaseType));
+            }
+            return t.GetFields(DefaultBindingFlags);
+        }
+
         public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
         private static readonly int[] PaddingBoundaries = new [] { 128, 1024, 4096, int.MaxValue };
+
+		private const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | 
+                BindingFlags.Instance | BindingFlags.DeclaredOnly;
     }
 }
 

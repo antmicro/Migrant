@@ -4,8 +4,18 @@ using System.IO;
 
 namespace AntMicro.Migrant
 {
+	/// <summary>
+	/// Provides the mechanism for binary serialization and deserialization of objects.
+	/// </summary>
+	/// <remarks>
+	/// Please consult the general serializer documentation to find the limitations
+	/// and constraints which serialized objects must fullfill.
+	/// </remarks>
     public class Serializer
     {
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Serializer"/> class.
+		/// </summary>
         public Serializer()
         {
             scanner = new TypeScanner();
@@ -13,6 +23,17 @@ namespace AntMicro.Migrant
             typeIndices = new Dictionary<Type, int>();
         }
 
+		/// <summary>
+		/// Initializes the given type (and its base and field types recursively). It does the
+		/// initial check whether it is serializable and prepares serializer.
+		/// </summary>
+		/// <param name='typeToScan'>
+		/// Type to scan.
+		/// </param>
+		/// <remarks>
+		/// When used in a strict type mode, it has to be called before serialization with
+		/// types that can be encountered during subsequent serialization.
+		/// </remarks>
         public void Initialize(Type typeToScan)
         {
             scanner.Scan(typeToScan);
@@ -20,6 +41,21 @@ namespace AntMicro.Migrant
             UpdateTypeIndices();
         }
 
+		/// <summary>
+		/// Serializes the specified object to a given stream.
+		/// </summary>
+		/// <param name='obj'>
+		/// Object to serialize along with another that are referenced by it.
+		/// </param>
+		/// <param name='stream'>
+		/// Stream to which object should be serialized. Has to be writeable.
+		/// </param>
+		/// <param name='strictTypes'>
+		/// When true, all types encountered during serialization must be known to
+		/// the serializer (i.e. obtained with the <see cref="Initialize" /> method
+		/// or the exception will be thrown. When false, types are initialized online
+		/// when needed.
+		/// </param>
         public void Serialize(object obj, Stream stream, bool strictTypes = false)
         {
             if(strictTypes)
@@ -37,6 +73,16 @@ namespace AntMicro.Migrant
             }
         }
 
+		/// <summary>
+		/// Deserializes object from the specified stream.
+		/// </summary>
+		/// <param name='stream'>
+		/// The stream to read data from. Must be readable.
+		/// </param>
+		/// <typeparam name='T'>
+		/// The expected type of the deserialized object. The deserialized object must be
+		/// convertible to this type.
+		/// </typeparam>
         public T Deserialize<T>(Stream stream)
         {
             using(var reader = new PrimitiveReader(stream))
@@ -65,10 +111,38 @@ namespace AntMicro.Migrant
             return result;
         }
 
+		/// <summary>
+		/// Is invoked before serialization, once for every unique, serialized object. Provides this
+		/// object in its single parameter.
+		/// </summary>
         public event Action<object> OnPreSerialization;
+
+		/// <summary>
+		/// Is invoked after serialization, once for every unique, serialized object. Provides this
+		/// object in its single parameter.
+		/// </summary>
         public event Action<object> OnPostSerialization;
+
+		/// <summary>
+		/// Is invoked before deserialization, once for every unique, serialized object. Provides this
+		/// object in its single parameter.
+		/// </summary>
         public event Action<object> OnPostDeserialization;
 
+		/// <summary>
+		/// Makes a deep copy of a given object using serializator.
+		/// </summary>
+		/// <returns>
+		/// The deep copy of a given object.
+		/// </returns>
+		/// <param name='toClone'>
+		/// The object to make a deep copy of.
+		/// </param>
+		/// <param name='scanSourceOnly'>
+		/// When set to true, the serializer is preinitialized with the type
+		/// of the object to clone and serialization is done in the strict
+		/// type mode (see <see cref="Serialize"/>).
+		/// </param>
         public static T DeepClone<T>(T toClone, bool scanSourceOnly = false)
         {
             var serializer = new Serializer();
