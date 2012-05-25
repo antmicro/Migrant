@@ -4,7 +4,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.21022</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
+    <SchemaVersion>2.0</SchemaVersion>A
     <ProjectGuid>{6109E322-4AC0-496C-89A2-012232A047E3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Tests</RootNamespace>
@@ -46,9 +46,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\AntSerializer\AntSerializer.csproj">
+    <ProjectReference Include="..\Migrant\Migrant.csproj">
       <Project>{5F87C357-09FB-4F53-BE37-41FE5BD88957}</Project>
-      <Name>AntSerializer</Name>
+      <Name>Migrant</Name>
     </ProjectReference>
   </ItemGroup>
   <UsingTask TaskName="PepitaGet.RestorePackagesTask" AssemblyFile="$(SolutionDir)Lib\PepitaGet.dll" />
