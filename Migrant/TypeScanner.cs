@@ -12,6 +12,9 @@ namespace AntMicro.Migrant
 	/// </summary>
     public class TypeScanner
     {
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AntMicro.Migrant.TypeScanner"/> class.
+		/// </summary>
         public TypeScanner()
         {
             types = new Type[0];

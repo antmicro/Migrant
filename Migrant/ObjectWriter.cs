@@ -10,6 +10,9 @@ using ImpromptuInterface.Dynamic;
 
 namespace AntMicro.Migrant
 {
+	/// <summary>
+	/// Writes the object in a format that can be later read by <see cref="AntMicro.Migrant.ObjectReader"/>.
+	/// </summary>
     public class ObjectWriter
     {
 		/// <summary>

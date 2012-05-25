@@ -51,14 +51,14 @@ namespace AntMicro.Migrant
         }
 
 		/// <summary>
-		/// For an ID which was previously returned by the <see cref="GetId" /> method,
+		/// For an ID which was previously returned by the <see cref="AntMicro.Migrant.ObjectIdentifier.GetId(object)" /> method,
 		/// returns an object for which this ID was generated.
 		/// </summary>
 		/// <returns>
 		/// The object for which given ID was returned.
 		/// </returns>
 		/// <param name='id'>
-		/// The unique ID, previously returned by the <see cref="GetID" /> method.
+		/// The unique ID, previously returned by the <see cref="AntMicro.Migrant.ObjectIdentifier.GetId(object)" /> method.
 		/// </param>
         public object GetObject(int id)
         {

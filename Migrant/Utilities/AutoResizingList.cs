@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace AntMicro.Migrant.Utilities
 {
-    public sealed class AutoResizingList<T> : IList<T>
+    internal sealed class AutoResizingList<T> : IList<T>
     {
         public AutoResizingList(int initialCapacity = 4)
         {
