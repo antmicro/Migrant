@@ -114,7 +114,7 @@ namespace AntMicro.Migrant
         private void WriteObjectsFields(object o, Type type)
         {
             // fields in the alphabetical order
-            var fields = type.GetAllFields().Where(Helpers.IsTransient).OrderBy(x => x.Name);
+            var fields = type.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name);
             foreach(var field in fields)
             {
                 var fieldType = field.FieldType;

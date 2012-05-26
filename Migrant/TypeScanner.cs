@@ -79,7 +79,7 @@ namespace AntMicro.Migrant
             {
                 return;
             }
-            var fields = typeToScan.GetAllFields(false).Where(Helpers.IsTransient);
+            var fields = typeToScan.GetAllFields(false).Where(Helpers.IsNotTransient);
             var typesToAdd = fields.Select(x => x.FieldType).Where(x => !x.IsInterface)
                 .Distinct();
             foreach(var type in typesToAdd)

@@ -144,9 +144,9 @@ namespace AntMicro.Migrant
             }
         }
 
-        public static bool IsTransient(this FieldInfo fieldInfo)
+        public static bool IsNotTransient(this FieldInfo fieldInfo)
         {
-            return fieldInfo.Attributes.HasFlag(FieldAttributes.Literal) || fieldInfo.IsDefined(typeof(TransientAttribute), false);
+            return !fieldInfo.Attributes.HasFlag(FieldAttributes.Literal) && !fieldInfo.IsDefined(typeof(TransientAttribute), false);
         }
 
         public static int MaximalPadding
