@@ -9,126 +9,112 @@ namespace AntMicro.Migrant.Tests
 	[TestFixture]
 	public class TypeScannerTests
 	{
-
-		#region simple tests
 		[Test]
-		public void SimpleObjectTest ()
+		public void SimpleObjectTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(SimpleA));
-			CollectionAssert.Contains (scan.GetTypeArray (), typeof(SimpleA));
-			Assert.AreEqual (scan.GetTypeArray ().Length, 2);
+			var scan = new TypeScanner();
+			scan.Scan(typeof(SimpleA));
+			CollectionAssert.Contains(scan.GetTypeArray(), typeof(SimpleA));
+			Assert.AreEqual(scan.GetTypeArray().Length, 2);
 		}
 
 		[Test]
-		public void TwoSimpleObjectsTest ()
+		public void TwoSimpleObjectsTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(SimpleA));
-			scan.Scan (typeof(SimpleB));
-			CollectionAssert.AreEquivalent (
-				scan.GetTypeArray (),
-				new[]{typeof(SimpleA), typeof(SimpleB), typeof(object)}
-			);
+			var scan = new TypeScanner();
+			scan.Scan(typeof(SimpleA));
+			scan.Scan(typeof(SimpleB));
+			CollectionAssert.AreEquivalent(scan.GetTypeArray(), new[] { typeof(SimpleA), typeof(SimpleB), typeof(object) });
 		}
 
 		[Test]
-		public void SimpleObjectsWithDuplicatesTest ()
+		public void SimpleObjectsWithDuplicatesTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(SimpleA));
-			scan.Scan (typeof(SimpleB));
-			scan.Scan (typeof(SimpleA));
-			scan.Scan (typeof(SimpleB));
-			scan.Scan (typeof(SimpleB));
-			CollectionAssert.AllItemsAreUnique (scan.GetTypeArray ());
+			var scan = new TypeScanner();
+			scan.Scan(typeof(SimpleA));
+			scan.Scan(typeof(SimpleB));
+			scan.Scan(typeof(SimpleA));
+			scan.Scan(typeof(SimpleB));
+			scan.Scan(typeof(SimpleB));
+			CollectionAssert.AllItemsAreUnique(scan.GetTypeArray());
 		}
 
 		[Test]
-		public void SimpleInheritanceTest ()
+		public void SimpleInheritanceTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(CFromA));
-			CollectionAssert.AreEquivalent (
-				scan.GetTypeArray (),
-				new[]{typeof(SimpleA), typeof(CFromA), typeof(object)}
-			);
+			var scan = new TypeScanner();
+			scan.Scan(typeof(CFromA));
+			CollectionAssert.AreEquivalent(scan.GetTypeArray(), new[] { typeof(SimpleA), typeof(CFromA), typeof(object) });
 		}
 
 		[Test]
-		public void DoubleInheritanceTest ()
+		public void DoubleInheritanceTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(DFromC));
-			CollectionAssert.AreEquivalent (
-				scan.GetTypeArray (),
-				new[]{typeof(SimpleA), typeof(CFromA), typeof(DFromC), typeof(object)}
-			);
+			var scan = new TypeScanner();
+			scan.Scan(typeof(DFromC));
+			CollectionAssert.AreEquivalent(scan.GetTypeArray(),	new[] { typeof(SimpleA), typeof(CFromA), typeof(DFromC), typeof(object) });
 		}
 
 		[Test]
-		public void SimpleInclusionTest ()
+		public void SimpleInclusionTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(EWithA));
-			CollectionAssert.AreEquivalent (
-				scan.GetTypeArray (),
-				new[]{typeof(SimpleA), typeof(EWithA), typeof(object)}
-			);
+			var scan = new TypeScanner();
+			scan.Scan(typeof(EWithA));
+			CollectionAssert.AreEquivalent(scan.GetTypeArray(), new[] { typeof(SimpleA), typeof(EWithA), typeof(object) });
 		}
 
 		[Test]
-		public void InheritanceAndInclusionTest ()
+		public void InheritanceAndInclusionTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(FFromB));
-			CollectionAssert.AreEquivalent (
-				scan.GetTypeArray (),
-				new[] {
-				typeof(SimpleA),
-				typeof(DFromC),
-				typeof(CFromA),
-				typeof(FFromB),
-				typeof(SimpleB),
-				typeof(object)
+			var scan = new TypeScanner();
+			scan.Scan(typeof(FFromB));
+			CollectionAssert.AreEquivalent(scan.GetTypeArray(),
+				new[] { typeof(SimpleA), typeof(DFromC),	typeof(CFromA),	typeof(FFromB),	typeof(SimpleB), typeof(object)	});
+		}
+
+		[Test]
+		public void SimpleBreakOnIllegalTest()
+		{
+			try
+			{
+				var scan = new TypeScanner();
+				scan.Scan(typeof(IllegalG));
+				Assert.Fail();
+			} 
+			catch(ArgumentException)
+			{
+
 			}
-			);
 		}
 
 		[Test]
-		public void SimpleBreakOnIllegalTest ()
+		public void SimpleBreakOnInheritedIllegalTest()
 		{
-			try {
-				var scan = new TypeScanner ();
-				scan.Scan (typeof(IllegalG));
-			} catch (ArgumentException) {
-				Assert.Pass ();
+			try
+			{
+				var scan = new TypeScanner();
+				scan.Scan(typeof(HFromG));
+				Assert.Fail();
+			} 
+			catch(ArgumentException)
+			{
+
 			}
-			Assert.Fail ();
 		}
 
 		[Test]
-		public void SimpleBreakOnInheritedIllegalTest ()
+		public void BreakOnPointer()
 		{
-			try {
-				var scan = new TypeScanner ();
-				scan.Scan (typeof(HFromG));
-			} catch (ArgumentException) {
-				Assert.Pass ();
+			try
+			{
+				var scan = new TypeScanner();
+				scan.Scan(typeof(void*));
+				Assert.Fail();
 			}
-			Assert.Fail ();
-		}
+			catch(ArgumentException)
+			{
 
-		[Test]
-		public void BreakOnPointer ()
-		{
-			try {
-				var scan = new TypeScanner ();
-				scan.Scan (typeof(void*));
-			} catch (ArgumentException) {
-				Assert.Pass ();
 			}
-			Assert.Fail ();
 		}
 
 		private class SimpleA
@@ -172,55 +158,40 @@ namespace AntMicro.Migrant.Tests
 		{
 		}
 
-		#endregion
-
-		#region collections
-
 		[Test]
-		public void SimpleArrayListTest ()
+		public void SimpleArrayListTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(ArrayList));
-			CollectionAssert.Contains (scan.GetTypeArray (), typeof(ArrayList));
-			Assert.AreEqual (scan.GetTypeArray ().Length, 2);
+			var scan = new TypeScanner();
+			scan.Scan(typeof(ArrayList));
+			CollectionAssert.Contains(scan.GetTypeArray(), typeof(ArrayList));
+			Assert.AreEqual(scan.GetTypeArray().Length, 2);
 		}
 
 		[Test]
-		public void SimpleHashtableTest ()
+		public void SimpleHashtableTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(Hashtable));
-			CollectionAssert.Contains (scan.GetTypeArray (), typeof(Hashtable));
-			Assert.AreEqual (scan.GetTypeArray ().Length, 2);
-		}
-
-		#endregion
-
-		#region generics
-		[Test]
-		public void SimpleListTest ()
-		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(List<CFromA>));
-			CollectionAssert.AreEquivalent (
-				scan.GetTypeArray (),
-				new[] {
-				typeof(SimpleA),
-				typeof(CFromA),
-				typeof(object),
-				typeof(List<CFromA>)
-			}
-			);
+			var scan = new TypeScanner();
+			scan.Scan(typeof(Hashtable));
+			CollectionAssert.Contains(scan.GetTypeArray(), typeof(Hashtable));
+			Assert.AreEqual(scan.GetTypeArray().Length, 2);
 		}
 
 		[Test]
-		public void SimpleDictionaryTest ()
+		public void SimpleListTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(Dictionary<CFromA, EWithA>));
-			CollectionAssert.AreEquivalent (
-				scan.GetTypeArray (),
-				new[] {
+			var scan = new TypeScanner();
+			scan.Scan(typeof(List<CFromA>));
+			CollectionAssert.AreEquivalent(scan.GetTypeArray(),
+			                               new[] {	typeof(SimpleA), typeof(CFromA), typeof(object), typeof(List<CFromA>) });
+		}
+
+		[Test]
+		public void SimpleDictionaryTest()
+		{
+			var scan = new TypeScanner();
+			scan.Scan(typeof(Dictionary<CFromA, EWithA>));
+			CollectionAssert.AreEquivalent(scan.GetTypeArray(),
+			                               new[] {
 				typeof(SimpleA),
 				typeof(CFromA),
 				typeof(EWithA),
@@ -232,57 +203,58 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void SimpleIDictionaryTest ()
+		public void SimpleIDictionaryTest()
 		{
-			var scan = new TypeScanner ();
-			scan.Scan (typeof(IDictionary<CFromA, EWithA>));
-			CollectionAssert.AreEquivalent (
-				scan.GetTypeArray (),
-				new[]{typeof(SimpleA), typeof(CFromA), typeof(EWithA), typeof(object)}
-			);
+			var scan = new TypeScanner();
+			scan.Scan(typeof(IDictionary<CFromA, EWithA>));
+			CollectionAssert.AreEquivalent(scan.GetTypeArray(),
+			                               new[] { typeof(SimpleA), typeof(CFromA), typeof(EWithA), typeof(object) });
 		}
 
 		[Test]
-		public void IllegalDictionaryTest ()
+		public void IllegalDictionaryTest()
 		{
-			try {
-				var scan = new TypeScanner ();
-				scan.Scan (typeof(Dictionary<String,HFromG>));
-			} catch (ArgumentException) {
-				Assert.Pass ();
+			try
+			{
+				var scan = new TypeScanner();
+				scan.Scan(typeof(Dictionary<String,HFromG>));
+				Assert.Fail();
+			} 
+			catch(ArgumentException)
+			{
+
 			}
-			Assert.Fail ();
-		}
-
-		#endregion
-
-		#region other cases
-
-		[Test]
-		public void DelegateDest ()
-		{
-			try {
-				var scan = new TypeScanner ();
-				scan.Scan (typeof(Delegate));
-			} catch (ArgumentException) {
-				Assert.Pass ();
-			}
-			Assert.Fail ();
 		}
 
 		[Test]
-		public void ThreadDest ()
+		public void DelegateDest()
 		{
-			try {
-				var scan = new TypeScanner ();
-				scan.Scan (typeof(Thread));
-			} catch (ArgumentException) {
-				Assert.Pass ();
+			try
+			{
+				var scan = new TypeScanner();
+				scan.Scan(typeof(Delegate));
+				Assert.Fail();
+			} 
+			catch(ArgumentException)
+			{
+
 			}
-			Assert.Fail ();
 		}
 
-		#endregion
+		[Test]
+		public void ThreadDest()
+		{
+			try
+			{
+				var scan = new TypeScanner();
+				scan.Scan(typeof(Thread));
+				Assert.Fail();
+			} 
+			catch(ArgumentException)
+			{
+
+			}
+		}
 	}
 }
 
