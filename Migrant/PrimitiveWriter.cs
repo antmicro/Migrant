@@ -246,7 +246,6 @@ namespace AntMicro.Migrant
             }
         }
 
-        // TODO: inline maybe?
         private void CheckBuffer(int maxBytesToWrite)
         {
             if(buffer.Length - currentBufferPosition >= maxBytesToWrite)

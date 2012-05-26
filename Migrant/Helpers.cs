@@ -25,7 +25,6 @@ namespace AntMicro.Migrant
         {
             if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType))
             {
-                // TODO ?
                 count = (int)Impromptu.InvokeGet(o, "Count");
                 return true;
             }
@@ -40,7 +39,6 @@ namespace AntMicro.Migrant
             var result = false;
             foreach(var iface in ifaces)
             {
-                // TODO: unify with analogues in ObjectReader
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>))
                 {
                     formalElementType = iface.GetGenericArguments()[0];
@@ -146,9 +144,9 @@ namespace AntMicro.Migrant
             }
         }
 
-        public static bool IsTransient(this MemberInfo memberInfo)
+        public static bool IsTransient(this FieldInfo fieldInfo)
         {
-            return memberInfo.IsDefined(typeof(TransientAttribute), false);
+            return fieldInfo.Attributes.HasFlag(FieldAttributes.Literal) || fieldInfo.IsDefined(typeof(TransientAttribute), false);
         }
 
         public static int MaximalPadding

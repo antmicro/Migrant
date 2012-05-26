@@ -79,8 +79,7 @@ namespace AntMicro.Migrant
             {
                 return;
             }
-            //TODO: unified check
-            var fields = typeToScan.GetAllFields(false).Where(x => !x.Attributes.HasFlag(FieldAttributes.Literal) && !x.IsTransient());
+            var fields = typeToScan.GetAllFields(false).Where(Helpers.IsTransient);
             var typesToAdd = fields.Select(x => x.FieldType).Where(x => !x.IsInterface)
                 .Distinct();
             foreach(var type in typesToAdd)
