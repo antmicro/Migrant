@@ -44,7 +44,7 @@ namespace AntMicro.Migrant
         public ObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, bool strictTypes, Action<Type> missingTypeCallback = null,
                             Action<object> preSerializationCallback = null, Action<object> postSerializationCallback = null)
         {
-            this.typeIndices = typeIndices;
+            this.TypeIndices = typeIndices;
             this.stream = stream;
             this.strictTypes = strictTypes;
             if(!strictTypes && missingTypeCallback == null)
@@ -71,7 +71,7 @@ namespace AntMicro.Migrant
             {
                 if(!inlineWritten.Contains(objectsWritten))
                 {
-                    WriteObjectInner(identifier.GetObject(objectsWritten)); // TODO: indexer maybe?
+                    InvokeCallbacksAndWriteObject(identifier.GetObject(objectsWritten)); // TODO: indexer maybe?
                 }
                 objectsWritten++;
             }
@@ -89,27 +89,32 @@ namespace AntMicro.Migrant
             inlineWritten = new HashSet<int>();
         }
 
-        private void WriteObjectInner(object o)
+        protected void InvokeCallbacksAndWriteObject(object o)
         {
             if(preSerializationCallback != null)
             {
                 preSerializationCallback(o);
             }
-            Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
-            var type = o.GetType();
-            // the actual type
-            TouchType(type);
-            writer.Write(typeIndices[type]);
-            if(!WriteSpecialObject(o))
-            {
-                WriteObjectsFields(o, type);
-            }
-            Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
+			WriteObjectInner(o);
             if(postSerializationCallback != null)
             {
                 postSerializationCallback(o);
             }
         }
+
+		protected virtual void WriteObjectInner(object o)
+		{
+			Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
+            var type = o.GetType();
+            // the actual type
+            TouchType(type);
+            writer.Write(TypeIndices[type]);
+            if(!WriteSpecialObject(o))
+            {
+                WriteObjectsFields(o, type);
+            }
+            Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
+		}
 
         private void WriteObjectsFields(object o, Type type)
         {
@@ -249,7 +254,7 @@ namespace AntMicro.Migrant
             }
             var actualType = value.GetType();
             TouchType(actualType);
-            writer.Write(typeIndices[actualType]);
+            writer.Write(TypeIndices[actualType]);
             if(actualType.IsDefined(typeof(TransientAttribute), false))
             {
                 return;
@@ -261,7 +266,7 @@ namespace AntMicro.Migrant
             if(Helpers.CanBeCreatedWithDataOnly(actualType) && refId > objectsWritten && !inlineWritten.Contains(refId))
             {
                 inlineWritten.Add(refId);
-                WriteObjectInner(value);
+                InvokeCallbacksAndWriteObject(value);
             }
         }
 
@@ -356,9 +361,9 @@ namespace AntMicro.Migrant
             WriteObjectsFields(value, formalType);
         }
 
-        private void TouchType(Type type)
+        protected internal void TouchType(Type type)
         {
-            if(typeIndices.ContainsKey(type))
+            if(TypeIndices.ContainsKey(type))
             {
                 return;
             }
@@ -382,7 +387,7 @@ namespace AntMicro.Migrant
         private readonly Action<Type> missingTypeCallback;
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
-        private readonly IDictionary<Type, int> typeIndices;
+        protected readonly IDictionary<Type, int> TypeIndices;
     }
 }
 

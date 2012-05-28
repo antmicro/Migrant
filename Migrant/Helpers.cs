@@ -5,6 +5,7 @@ using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Linq.Expressions;
 
 namespace AntMicro.Migrant
 {
@@ -169,6 +170,12 @@ namespace AntMicro.Migrant
             }
             return t.GetFields(DefaultBindingFlags);
         }
+
+		public static MethodInfo GetMethodInfo(Expression<Action> expression)
+		{
+			var methodCall = (MethodCallExpression)expression.Body;
+			return methodCall.Method;
+		}
 
         public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
