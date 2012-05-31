@@ -11,6 +11,7 @@ Table of Contents
 #. Features
 #. Compilation
 #. Usage
+#. Referenced libraries
 #. More information
 #. Licence
 
@@ -39,9 +40,9 @@ There are two solution files - Migrant.sln, that contains the core library, and 
 Features
 --------
 
-Migrant is easy to use. For most cases, the scenario consists of calling one method to serialize, and another to deserialize the whole set of interconnected objects. It's not needed to provide any information about serialized types, only the root object to save. All of the other objects referenced by the given one are serialized automaticaly. It works out of the box for value and reference types, complex collections etc. While serialization of certain objects (e.g. pointers) is meaningless and may lead to hard-to-trace problems, Migrant will gracefully fail to serialize such objects, providing the programmer with full information on what caused the problem and where is it located.
+Migrant is easy to use. For most cases, the scenario consists of calling one method to serialize, and another to deserialize the whole set of interconnected objects. It's not needed to provide any information about serialized types, only the root object to save. All of the other objects referenced by the given one are serialized automatically. It works out of the box for value and reference types, complex collections etc. While serialization of certain objects (e.g. pointers) is meaningless and may lead to hard-to-trace problems, Migrant will gracefully fail to serialize such objects, providing the programmer with full information on what caused the problem and where is it located.
 
-The output of serialization process is a stream of bytes, intended to reflect the memory organization of the actual system. This data format is compact, thus easy to transfer via network. It's endianess-independent, making it possible to migrate the application's state between different platforms.
+The output of serialization process is a stream of bytes, intended to reflect the memory organization of the actual system. This data format is compact, thus easy to transfer via network. It's endianness-independent, making it possible to migrate the application's state between different platforms.
 
 Many of the available serialization frameworks do not consider complex graph relations between objects. It's a common situation, that serializing and deserializing two objects A and B referencing the same object C leaves you with two identical copies of C, one referenced by A and one referenced by B. Migrant takes such scenarios into account, preserving the identity of references, without further code decoration. Thanks to this, a programmer is relieved of implementing complex consistency mechanisms for the system and the resulting binary form is even smaller.
 
@@ -49,9 +50,9 @@ Migrant's ease of use does not prohibit the programmer to control the serializat
 
 Apart from the main serialization framework, we provide a mechanism to translate primitive .NET types (and some other) to their binary representation and push them to a stream. Such a form is very compact - the number of bytes used by a serialized object is not based on it's type, but on the object's value, using the `Varint encoding <https://developers.google.com/protocol-buffers/docs/encoding#varints>`_ and, optionally, `ZigZag encoding <https://developers.google.com/protocol-buffers/docs/encoding#varints>`_. For example, serializing an Int64 variable with value 1 gives a smaller representation than Int32 with value 1000. Although CLS offers the BitConverter class, it is known to be quite clumsy and not very elegant to use. 
 
-Another extra feature, unavailable in convienient form in CLI, is an ability to deep clone given objects. With just one method invokation, Migrant will return an object copy, using the same mechanisms as the rest of the serialization framework.
+Another extra feature, unavailable in convenient form in CLI, is an ability to deep clone given objects. With just one method invocation, Migrant will return an object copy, using the same mechanisms as the rest of the serialization framework.
 
-The first release of Migrant uses reflection mechanisms to handle the serialization. In the next step we will default to automaticaly generated custom code, that will handle serialization and deserialization even faster.
+The first release of Migrant uses reflection mechanisms to handle the serialization. In the next step we will default to automatically generated custom code, that will handle serialization and deserialization even faster.
 
 Compilation
 -----------
@@ -124,6 +125,11 @@ Simple types to bytes
         myOtherArray[i] = reader.ReadInt64();
      }
   }
+
+Referenced libraries
+--------------------
+
+   ImpromptuInterface >= 5.6.7
 
 More information
 ----------------
