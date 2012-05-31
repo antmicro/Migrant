@@ -52,14 +52,14 @@ namespace AntMicro.Migrant
 		/// then this dictionary must contain all the types of the serialized objects.
 		/// </param>
 		/// <param name='strictTypes'>
-		/// If this value is true, the <see cref="typeIndices" /> must contain all the types of the serialized objects,
-		/// otherwise exception is thrown. When false and given type is not present in dictionary, the <see cref="missingTypeCallback" />
+		/// If this value is <c>true</c>, the <see cref="typeIndices" /> must contain all the types of the serialized objects,
+		/// otherwise exception is thrown. When <c>false</c> and given type is not present in dictionary, the <see cref="missingTypeCallback" />
 		/// is invoked.
 		/// </param>
 		/// <param name='missingTypeCallback'>
-		/// Callback which is called when <see cref="strictTypes"/>  is true and type of the object to serialize cannot be found
+		/// Callback which is called when <see cref="strictTypes"/>  is <c>false</c> and type of the object to serialize cannot be found
 		/// in the <see cref="typeIndices"/> dictionary. The missing type is given in its only parameter. The callback should
-		/// supplement the dictionary with the missing type. Can be null if <see cref="strictTypes" /> is true.
+		/// supplement the dictionary with the missing type. Can be null if <see cref="strictTypes" /> is <c>true</c>.
 		/// </param>
 		/// <param name='preSerializationCallback'>
 		/// Callback which is called once on every unique object before its serialization. Contains this object in its only parameter.
@@ -84,7 +84,7 @@ namespace AntMicro.Migrant
         }
 
 		/// <summary>
-		/// Writes the given object along with ones referenced by it.
+		/// Writes the given object along with the ones referenced by it.
 		/// </summary>
 		/// <param name='o'>
 		/// The object to write.
@@ -281,7 +281,7 @@ namespace AntMicro.Migrant
                 return;
             }
             var refId = identifier.GetId(value);
-            // if this is future reference, just after the reference id,
+            // if this is a future reference, just after the reference id,
             // we should write inline data
             writer.Write(refId);
             if(Helpers.CanBeCreatedWithDataOnly(actualType) && refId > objectsWritten && !inlineWritten.Contains(refId))

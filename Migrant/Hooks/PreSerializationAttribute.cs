@@ -29,7 +29,7 @@ using System;
 namespace AntMicro.Migrant.Hooks
 {
 	/// <summary>
-	/// Method decorated with this attribute will be invoked after serialization.
+	/// Method decorated with this attribute will be invoked before serialization.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
     public class PreSerializationAttribute : Attribute

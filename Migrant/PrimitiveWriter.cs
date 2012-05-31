@@ -59,7 +59,7 @@ namespace AntMicro.Migrant
 		/// Gets the current position.
 		/// </summary>
 		/// <value>
-		/// The position, which is the number of bytes written after the object was
+		/// The position, which is the number of bytes written after this object was
 		/// constructed.
 		/// </value>
         public long Position
@@ -194,7 +194,7 @@ namespace AntMicro.Migrant
         }
 
 		/// <summary>
-		/// Writes the specified bytes.
+		/// Writes the specified bytes array.
 		/// </summary>
 		/// <param name='bytes'>
 		/// The array which content will be written.
@@ -208,7 +208,7 @@ namespace AntMicro.Migrant
 		/// Copies given number of bytes from the source stream to the underlying stream.
 		/// </summary>
 		/// <param name='source'>
-		/// Readeble stream, from which data will be copied.
+		/// Readable stream, from which data will be copied.
 		/// </param>
 		/// <param name='howMuch'>
 		/// The amount of a data to copy in bytes.
