@@ -143,3 +143,8 @@ If you have any questions, suggestions or requests regarding the Migrant library
 .. _github: https://www.github.com/antmicro
 
 .. _twitter: http://twitter.com/antmicro
+
+Licence
+-------
+
+Migrant licence can be found in LICENCE file in this directory.
