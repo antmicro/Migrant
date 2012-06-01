@@ -203,6 +203,19 @@ namespace AntMicro.Migrant
 			return methodCall.Method;
 		}
 
+		public static SerializationType GetSerializationType(Type type)
+		{
+			if(type.IsDefined(typeof(TransientAttribute), false))
+            {
+                return SerializationType.Transient;
+            }
+			if(type.IsValueType)
+            {
+				return SerializationType.Value;
+            }
+			return SerializationType.Reference;
+		}
+
         public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
         private static readonly int[] PaddingBoundaries = new [] { 128, 1024, 4096, int.MaxValue };

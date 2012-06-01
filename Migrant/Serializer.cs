@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using AntMicro.Migrant.Emitter;
 
 namespace AntMicro.Migrant
 {
@@ -89,7 +90,9 @@ namespace AntMicro.Migrant
                 WriteTypes(stream);
             }
             var localStream = strictTypes ? stream : new MemoryStream();
-            var writer = new ObjectWriter(localStream, typeIndices, strictTypes, Initialize, OnPreSerialization, OnPostSerialization);
+            //var writer = new ObjectWriter(localStream, typeIndices, strictTypes, Initialize, OnPreSerialization, OnPostSerialization);
+			// TODO:
+			var writer = new GeneratingObjectWriter(localStream, typeIndices, strictTypes, Initialize, OnPreSerialization, OnPostSerialization);
             writer.WriteObject(obj);
             if(!strictTypes)
             {

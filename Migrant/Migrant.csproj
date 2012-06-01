@@ -55,7 +55,8 @@
     <Compile Include="Hooks\PostDeserializationAttribute.cs" />
     <Compile Include="Hooks\PostSerializationAttribute.cs" />
     <Compile Include="Hooks\PreSerializationAttribute.cs" />
-    <Compile Include="Emitter\ObjectReaderWriterBuilder.cs" />
+    <Compile Include="SerializationType.cs" />
+    <Compile Include="Emitter\GeneratingObjectWriter.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

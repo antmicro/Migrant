@@ -25,13 +25,13 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
-using System.Linq;
+using System.Threading;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.IO;
-using System.Threading;
 
 namespace AntMicro.Migrant.Tests
 {
@@ -688,7 +688,7 @@ namespace AntMicro.Migrant.Tests
 			public object Element { get; set; }
 		}
 
-		public class GenericBox<T>
+		public sealed class GenericBox<T>
 		{
 			public T Element { get; set; }
 		}
