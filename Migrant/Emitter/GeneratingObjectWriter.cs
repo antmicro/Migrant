@@ -134,19 +134,27 @@ namespace AntMicro.Migrant.Emitter
 			var generator = method.GetILGenerator();
 			if(!GenerateSpecialWrite(generator, actualType))
 			{
-				var fields = actualType.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name); // TODO: unify
-				foreach(var field in fields)
-				{
-					GenerateWriteType(generator, gen => 
-					                  {
-						gen.Emit(OpCodes.Ldarg_2); // object to serialize
-						gen.Emit(OpCodes.Ldfld, field); // TODO: consider making local variable
-					}, field.FieldType);
-				}
+				GenerateWriteFields(generator, gen =>
+				                    {
+					gen.Emit(OpCodes.Ldarg_2);
+				}, actualType);
 			}
 			generator.Emit(OpCodes.Ret);
 			var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
 			return result;
+		}
+
+		private void GenerateWriteFields(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type actualType)
+		{
+			var fields = actualType.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name); // TODO: unify
+			foreach(var field in fields)
+			{
+				GenerateWriteType(generator, gen => 
+				                  {
+					putValueToWriteOnTop(gen);
+					gen.Emit(OpCodes.Ldfld, field); // TODO: consider putting that in some local variable
+				}, field.FieldType);
+			}
 		}
 
 		private Action<PrimitiveWriter, object> LinkSpecialWrite(Type actualType)
@@ -310,10 +318,16 @@ namespace AntMicro.Migrant.Emitter
 
 		private void GenerateWriteValue(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
-			// TODO: structs
-			generator.Emit(OpCodes.Ldarg_1); // primitive writer waits there
-			putValueToWriteOnTop(generator);
-			generator.Emit(OpCodes.Call, typeof(PrimitiveWriter).GetMethod("Write", new [] { formalType }));
+			var writeMethod = typeof(PrimitiveWriter).GetMethod("Write", new [] { formalType });
+			// if this method is null, then it is a non-primitive (i.e. custom) struct
+			if(writeMethod != null)
+			{
+				generator.Emit(OpCodes.Ldarg_1); // primitive writer waits there
+				putValueToWriteOnTop(generator);
+				generator.Emit(OpCodes.Call, writeMethod);
+				return;
+			}
+			GenerateWriteFields(generator, putValueToWriteOnTop, formalType);
 		}
 
 		private void GenerateWriteReference(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
