@@ -430,6 +430,14 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
+		public void ShouldSerializeSimplerStruct()
+		{
+			var str = new SimplerStruct { A = 1234567, B = 543 };
+			var copy = Serializer.DeepClone(str);
+			Assert.AreEqual(str, copy);
+		}
+
+		[Test]
 		public void ShouldSerializeSimpleStruct()
 		{
 			var str = new SimpleStruct
@@ -437,9 +445,8 @@ namespace AntMicro.Migrant.Tests
 				A = 5,
 				B = "allman"
 			};
-			var newStr = Serializer.DeepClone(str);
-
-			Assert.AreEqual(str, newStr);
+			var copy = Serializer.DeepClone(str);
+			Assert.AreEqual(str, copy);
 		}
 
 		[Test]
@@ -735,6 +742,17 @@ namespace AntMicro.Migrant.Tests
 			First = 1,
 			Second = 2,
 			Third = 4
+		}
+
+		private struct SimplerStruct
+		{
+			public int A;
+			public long B;
+
+			public override string ToString()
+			{
+				return string.Format("[SimplerStruct: A={0}, B={1}]", A, B);
+			}
 		}
 
 		private struct SimpleStruct
