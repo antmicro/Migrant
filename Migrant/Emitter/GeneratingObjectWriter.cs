@@ -174,11 +174,11 @@ namespace AntMicro.Migrant.Emitter
 				GenerateWriteArray(generator, actualType);
 				return true;
 			}
-			bool isGeneric;
+			bool isGeneric, isGenericallyIterable;
 			Type elementType;
-			if(Helpers.IsCollection(actualType, out elementType, out isGeneric))
+			if(Helpers.IsCollection(actualType, out elementType, out isGeneric, out isGenericallyIterable))
 			{
-				GenerateWriteCollection(generator, elementType, isGeneric);
+				GenerateWriteCollection(generator, elementType, isGeneric, isGenericallyIterable);
 				return true;
 			}
 			return false;
@@ -238,14 +238,14 @@ namespace AntMicro.Migrant.Emitter
 			generator.Emit(OpCodes.Blt, loopBegin);
 		}
 
-		private void GenerateWriteCollection(ILGenerator generator, Type formalElementType, bool isGeneric)
+		private void GenerateWriteCollection(ILGenerator generator, Type formalElementType, bool isGeneric, bool isGenericallyIterable)
 		{
 			PrimitiveWriter primitiveWriter = null; // TODO
 
 			var genericTypes = new [] { formalElementType };
 			var ifaceType = isGeneric ? typeof(ICollection<>).MakeGenericType(genericTypes) : typeof(ICollection);
-			var enumerableType = isGeneric ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
-			var enumeratorType = isGeneric ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
+			var enumerableType = isGenericallyIterable ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
+			var enumeratorType = isGenericallyIterable ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
 
 			generator.DeclareLocal(enumeratorType); // iterator
 			generator.DeclareLocal(formalElementType); // current element
