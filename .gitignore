@@ -7,10 +7,8 @@ bin
 lib
 build
 obj
-Lib
 
 #ide
 *.pidb
 *.userprefs
-Packages
 

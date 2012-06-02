@@ -34,7 +34,7 @@
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="ImpromptuInterface">
-      <HintPath>..\Packages\ImpromptuInterface.5.6.7\lib\net40\ImpromptuInterface.dll</HintPath>
+      <HintPath>..\Lib\ImpromptuInterface.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -61,8 +61,4 @@
     <Folder Include="Utilities\" />
     <Folder Include="Hooks\" />
   </ItemGroup>
-  <UsingTask TaskName="PepitaGet.RestorePackagesTask" AssemblyFile="$(SolutionDir)Lib\PepitaGet.dll" />
-  <Target Name="BeforeBuild">
-    <PepitaGet.RestorePackagesTask />
-  </Target>
 </Project>
