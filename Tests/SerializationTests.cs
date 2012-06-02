@@ -221,9 +221,17 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void ShouldSerializeListWithStrings()
+		public void ShouldSerializeArrayListWithStrings()
 		{
 			var list = new ArrayList { "Word 1", "Word 2", new SimpleClass { Value = 6, Str = "Word 4" }, "Word 3" };
+			var copy = Serializer.DeepClone(list);
+			CollectionAssert.AreEqual(list, copy);
+		}
+
+		[Test]
+		public void ShouldSerializeArrayListWithPrimitives()
+		{
+			var list = new ArrayList { 1, 2, 3 };
 			var copy = Serializer.DeepClone(list);
 			CollectionAssert.AreEqual(list, copy);
 		}
@@ -278,6 +286,8 @@ namespace AntMicro.Migrant.Tests
 			var copy = Serializer.DeepClone(list);
 			CollectionAssert.AreEqual(list, copy);
 		}
+
+		//public void ShouldSerialize
 
 		[Test]
 		public void ShouldSerializeCollectionWithNull()
