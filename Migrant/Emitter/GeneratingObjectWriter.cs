@@ -31,6 +31,7 @@ using System;
 using System.Reflection.Emit;
 using System.Reflection;
 using System.Linq;
+using System.Collections;
 
 namespace AntMicro.Migrant.Emitter
 {
@@ -41,7 +42,7 @@ namespace AntMicro.Migrant.Emitter
 			: base(stream, typeIndices, strictTypes, missingTypeCallback, preSerializationCallback, postSerializationCallback)
 		{
 			transientTypes = new Dictionary<Type, bool>();
-			writeMethods = new Action<object, PrimitiveWriter, GeneratingObjectWriter>[0];
+			writeMethods = new Action<PrimitiveWriter, object>[0];
 			RegenerateWriteMethods();
 		}
 
@@ -88,7 +89,7 @@ namespace AntMicro.Migrant.Emitter
             TouchType(type);
 			var typeId = TypeIndices[type];
 			Writer.Write(typeId);
-			writeMethods[typeId](o, Writer, this);
+			writeMethods[typeId](Writer, o);
 		}
 
 		protected override void AddMissingType(Type type)
@@ -99,7 +100,7 @@ namespace AntMicro.Migrant.Emitter
 
 		private void RegenerateWriteMethods()
 		{
-			var newWriteMethods = new Action<object, PrimitiveWriter, GeneratingObjectWriter>[TypeIndices.Count];
+			var newWriteMethods = new Action<PrimitiveWriter, object>[TypeIndices.Count];
 			foreach(var entry in TypeIndices)
 			{
 				if(writeMethods.Length > entry.Value)
@@ -118,7 +119,7 @@ namespace AntMicro.Migrant.Emitter
 			writeMethods = newWriteMethods;
 		}
 
-		private Action<object, PrimitiveWriter, GeneratingObjectWriter> GenerateWriteMethod(Type actualType)
+		private Action<PrimitiveWriter, object> GenerateWriteMethod(Type actualType)
 		{
 			var specialWrite = LinkSpecialWrite(actualType);
 			if(specialWrite != null)
@@ -129,7 +130,7 @@ namespace AntMicro.Migrant.Emitter
 			// TODO: callbacks!!
 			// TODO: parameter types: move and unify
 			var method = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
-			                               typeof(void), new [] { typeof(object), typeof(PrimitiveWriter), typeof(GeneratingObjectWriter) }, actualType, true);
+			                               typeof(void), new [] { typeof(GeneratingObjectWriter), typeof(PrimitiveWriter), typeof(object) }, actualType, true);
 			var generator = method.GetILGenerator();
 			if(!GenerateSpecialWrite(generator, actualType))
 			{
@@ -138,27 +139,27 @@ namespace AntMicro.Migrant.Emitter
 				{
 					GenerateWriteType(generator, gen => 
 					                  {
-						gen.Emit(OpCodes.Ldarg_0); // object to serialize
+						gen.Emit(OpCodes.Ldarg_2); // object to serialize
 						gen.Emit(OpCodes.Ldfld, field); // TODO: consider making local variable
 					}, field.FieldType);
 				}
 			}
 			generator.Emit(OpCodes.Ret);
-			var result = (Action<object, PrimitiveWriter, GeneratingObjectWriter>)method.CreateDelegate(typeof(Action<object, PrimitiveWriter, GeneratingObjectWriter>));
+			var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
 			return result;
 		}
 
-		private Action<object, PrimitiveWriter, GeneratingObjectWriter> LinkSpecialWrite(Type actualType)
+		private Action<PrimitiveWriter, object> LinkSpecialWrite(Type actualType)
 		{
 			if(actualType == typeof(string))
 			{
-				return (x, y, @this) => y.Write((string)x);
+				return (y, obj) => y.Write((string)obj);
 			}
 			if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
 			{
-				return (x, writer, @this) => {
+				return (writer, obj) => {
 					var startingPosition = writer.Position;
-	                ((ISpeciallySerializable)x).Save(writer);
+	                ((ISpeciallySerializable)obj).Save(writer);
 	                writer.Write(writer.Position - startingPosition);
 				};
 			}
@@ -171,6 +172,13 @@ namespace AntMicro.Migrant.Emitter
 			if(actualType.IsArray)
 			{
 				GenerateWriteArray(generator, actualType);
+				return true;
+			}
+			bool isGeneric;
+			Type elementType;
+			if(Helpers.IsCollection(actualType, out elementType, out isGeneric))
+			{
+				GenerateWriteCollection(generator, elementType, isGeneric);
 				return true;
 			}
 			return false;
@@ -199,7 +207,7 @@ namespace AntMicro.Migrant.Emitter
 
 			// writing length
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-			generator.Emit(OpCodes.Ldarg_0); // array to serialize
+			generator.Emit(OpCodes.Ldarg_2); // array to serialize
 			generator.Emit(OpCodes.Ldlen);
 			generator.Emit(OpCodes.Dup);
 			generator.Emit(OpCodes.Stloc_2);
@@ -210,7 +218,7 @@ namespace AntMicro.Migrant.Emitter
 			generator.Emit(OpCodes.Stloc_0);
 			var loopBegin = generator.DefineLabel();
 			generator.MarkLabel(loopBegin);
-			generator.Emit(OpCodes.Ldarg_0); // array to serialize
+			generator.Emit(OpCodes.Ldarg_2); // array to serialize
 			generator.Emit(OpCodes.Ldloc_0); // index
 			generator.Emit(OpCodes.Ldelem, elementType);
 			generator.Emit(OpCodes.Stloc_1); // we put current element to local variable
@@ -228,6 +236,50 @@ namespace AntMicro.Migrant.Emitter
 			generator.Emit(OpCodes.Ldloc_0);
 			generator.Emit(OpCodes.Ldloc_2); // length of the array
 			generator.Emit(OpCodes.Blt, loopBegin);
+		}
+
+		private void GenerateWriteCollection(ILGenerator generator, Type formalElementType, bool isGeneric)
+		{
+			PrimitiveWriter primitiveWriter = null; // TODO
+
+			var genericTypes = new [] { formalElementType };
+			var ifaceType = isGeneric ? typeof(ICollection<>).MakeGenericType(genericTypes) : typeof(ICollection);
+			var enumerableType = isGeneric ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
+			var enumeratorType = isGeneric ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
+
+			generator.DeclareLocal(enumeratorType); // iterator
+			generator.DeclareLocal(formalElementType); // current element
+
+			// length of the collection
+			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+			generator.Emit(OpCodes.Ldarg_2); // collection to serialize
+			var countMethod = ifaceType.GetProperty("Count").GetGetMethod();
+			generator.Emit(OpCodes.Call, countMethod);
+			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(0)));
+
+			// elements
+			var getEnumeratorMethod = enumerableType.GetMethod("GetEnumerator");
+			generator.Emit(OpCodes.Ldarg_2); // collection to serialize
+			generator.Emit(OpCodes.Call, getEnumeratorMethod);
+			generator.Emit(OpCodes.Stloc_0);
+			var loopBegin = generator.DefineLabel();
+			generator.MarkLabel(loopBegin);
+			generator.Emit(OpCodes.Ldloc_0);
+			var finish = generator.DefineLabel();
+			generator.Emit(OpCodes.Call, typeof(IEnumerator).GetMethod("MoveNext", BindingFlags.Instance | BindingFlags.Public));
+			generator.Emit(OpCodes.Brfalse, finish);
+			generator.Emit(OpCodes.Ldloc_0);
+			generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Current").GetGetMethod());
+			generator.Emit(OpCodes.Stloc_1);
+
+			// operation on current element
+			GenerateWriteType(generator, gen =>
+			                  {
+				gen.Emit(OpCodes.Ldloc_1);
+			}, formalElementType);
+
+			generator.Emit(OpCodes.Br, loopBegin);
+			generator.MarkLabel(finish);
 		}
 
 		private void GenerateWriteType(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
@@ -283,7 +335,7 @@ namespace AntMicro.Migrant.Emitter
 			{
 				// we have to get the actual type at runtime
 				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-				generator.Emit(OpCodes.Ldarg_2); // objectWriter
+				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator);
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => baseWriter.ObjectToTypeId(null))); // TODO: better do type to type id
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(0))); // TODO: get it once
@@ -307,8 +359,8 @@ namespace AntMicro.Migrant.Emitter
 
 			if(!skipTransientCheck)
 			{
-				generator.Emit(OpCodes.Ldarg_2); // objectWriter
-				putValueToWriteOnTop(generator);
+				generator.Emit(OpCodes.Ldarg_0); // objectWriter
+				putValueToWriteOnTop(generator); // value to serialize
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => CheckTransient(nullObject)));
 				generator.Emit(OpCodes.Brtrue_S, finish);
 			}
@@ -317,7 +369,7 @@ namespace AntMicro.Migrant.Emitter
 			{
 				// if the formal type is NOT object, then string or array will not be the content of the field
 				var mayBeInlined = formalType == typeof(object) || Helpers.CanBeCreatedWithDataOnly(formalType);
-				generator.Emit(OpCodes.Ldarg_2); // objectWriter
+				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator);
 				if(mayBeInlined)
 				{
@@ -331,8 +383,9 @@ namespace AntMicro.Migrant.Emitter
 			generator.MarkLabel(finish);
 		}
 
+		// TODO: actually, this field can be considered static
 		private readonly Dictionary<Type, bool> transientTypes;
-		private Action<object, PrimitiveWriter, GeneratingObjectWriter>[] writeMethods;
+		private Action<PrimitiveWriter, object>[] writeMethods;
 	}
 }
 
