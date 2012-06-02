@@ -60,7 +60,7 @@ namespace AntMicro.Migrant
 		/// Gets the current position.
 		/// </summary>
 		/// <value>
-		/// The position, which is the number of bytes read after the object was
+		/// The position, which is the number of bytes read after this object was
 		/// constructed.
 		/// </value>
         public long Position
@@ -261,7 +261,7 @@ namespace AntMicro.Migrant
 		/// </remarks>
         public void Dispose()
         {
-            // we have to leave stream in aligned position
+            // we have to leave the stream in aligned position
             var toRead = Helpers.GetCurrentPaddingValue(currentPosition);
             stream.ReadOrThrow(buffer, 0, toRead);
         }

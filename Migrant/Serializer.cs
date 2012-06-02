@@ -51,7 +51,7 @@ namespace AntMicro.Migrant
 
 		/// <summary>
 		/// Initializes the given type (and its base and field types recursively). It does the
-		/// initial check whether it is serializable and prepares serializer.
+		/// initial check whether it is serializable and prepares the serializer.
 		/// </summary>
 		/// <param name='typeToScan'>
 		/// Type to scan.
@@ -71,10 +71,10 @@ namespace AntMicro.Migrant
 		/// Serializes the specified object to a given stream.
 		/// </summary>
 		/// <param name='obj'>
-		/// Object to serialize along with another that are referenced by it.
+		/// Object to serialize along with its references.
 		/// </param>
 		/// <param name='stream'>
-		/// Stream to which object should be serialized. Has to be writeable.
+		/// Stream to which the given object should be serialized. Has to be writeable.
 		/// </param>
 		/// <param name='strictTypes'>
 		/// When true, all types encountered during serialization must be known to
@@ -156,7 +156,7 @@ namespace AntMicro.Migrant
         public event Action<object> OnPostDeserialization;
 
 		/// <summary>
-		/// Makes a deep copy of a given object using serializator.
+		/// Makes a deep copy of a given object using the serializer.
 		/// </summary>
 		/// <returns>
 		/// The deep copy of a given object.

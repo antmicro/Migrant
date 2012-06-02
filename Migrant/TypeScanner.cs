@@ -63,7 +63,7 @@ namespace AntMicro.Migrant
         }
 
 		/// <returns>
-		/// Returns the array, containing all already known types. Every type appear in
+		/// Returns the array, containing all already known types. Every type appears in
 		/// this array exactly once, so the index can be used as a unique ID of this type.
 		/// </returns>
         public Type[] GetTypeArray()

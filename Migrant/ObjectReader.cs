@@ -393,7 +393,7 @@ namespace AntMicro.Migrant
             }
             var array = Array.CreateInstance(elementFormalType, lengths);
             // we should update the array object as soon as we can
-            // why? because can have the reference to itself (what a corner case)
+            // why? because it can have the reference to itself (what a corner case!)
             deserializedObjects[objectId] = array;
             var position = new int[rank];
             FillArrayRowRecursive(array, 0, position, elementFormalType);

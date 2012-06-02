@@ -30,8 +30,9 @@ using System.Collections.Generic;
 
 namespace AntMicro.Migrant
 {
+	//TODO: Update documentation when the first returned value changes to 1!
 	/// <summary>
-	/// Gives consecutive, unique identificator for presented objects during its lifetime.
+	/// Gives consecutive, unique identifiers for presented objects during its lifetime.
 	/// Can also be used to retrive an object by its ID.
 	/// </summary>
 	/// <remarks>
