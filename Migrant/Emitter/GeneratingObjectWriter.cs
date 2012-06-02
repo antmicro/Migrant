@@ -168,7 +168,17 @@ namespace AntMicro.Migrant.Emitter
 
 		private bool GenerateSpecialWrite(ILGenerator generator, Type actualType)
 		{
-			// TODO: value type
+			if(actualType.IsValueType)
+			{
+				// value type encountered here means it is in fact boxed value type
+				// according to protocol it is written as it would be written inlined
+				GenerateWriteValue(generator, gen =>
+				                   {
+					gen.Emit(OpCodes.Ldarg_2); // value to serialize
+					gen.Emit(OpCodes.Unbox_Any, actualType);
+				}, actualType);
+				return true;
+			}
 			if(actualType.IsArray)
 			{
 				GenerateWriteArray(generator, actualType);
