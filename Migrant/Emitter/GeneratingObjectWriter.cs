@@ -318,6 +318,10 @@ namespace AntMicro.Migrant.Emitter
 
 		private void GenerateWriteValue(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
+			if(formalType.IsEnum)
+			{
+				formalType = Enum.GetUnderlyingType(formalType);
+			}
 			var writeMethod = typeof(PrimitiveWriter).GetMethod("Write", new [] { formalType });
 			// if this method is null, then it is a non-primitive (i.e. custom) struct
 			if(writeMethod != null)
