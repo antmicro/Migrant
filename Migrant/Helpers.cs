@@ -81,6 +81,7 @@ namespace AntMicro.Migrant
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
                     formalElementType = iface.GetGenericArguments()[0];
+					isGeneric = true;
                 }
             }
             return result;
