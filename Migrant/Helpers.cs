@@ -39,8 +39,8 @@ namespace AntMicro.Migrant
     {
         internal static bool TryGetCollectionCountAndElementType(object o, out int count, out Type formalElementType)
         {
-			bool fake;
-            if(IsCollection(o.GetType(), out formalElementType, out fake))
+			bool fake, fake2;
+            if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2))
             {
                 count = (int)Impromptu.InvokeGet(o, "Count");
                 return true;
@@ -60,18 +60,20 @@ namespace AntMicro.Migrant
             return false;
         }
 
-		public static bool IsCollection(Type actualType, out Type formalElementType, out bool isGeneric)
+		public static bool IsCollection(Type actualType, out Type formalElementType, out bool isGeneric, out bool isGenericallyIterable)
         {
             formalElementType = typeof(object);
             var ifaces = actualType.GetInterfaces();
             var result = false;
 			isGeneric = false;
+			isGenericallyIterable = false;
             foreach(var iface in ifaces)
             {
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>))
                 {
                     formalElementType = iface.GetGenericArguments()[0];
 					isGeneric = true;
+					isGenericallyIterable = true;
                     return true;
                 }
                 if(iface == typeof(ICollection))
@@ -81,7 +83,7 @@ namespace AntMicro.Migrant
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
                     formalElementType = iface.GetGenericArguments()[0];
-					isGeneric = true;
+					isGenericallyIterable = true;
                 }
             }
             return result;
