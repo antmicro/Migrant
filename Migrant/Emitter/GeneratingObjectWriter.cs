@@ -345,15 +345,19 @@ namespace AntMicro.Migrant.Emitter
 			}
 			if(isDictionaryElement)
 			{
-				generator.DeclareLocal(formalType);
+				var localIndex = generator.DeclareLocal(formalType).LocalIndex;
 				GenerateWriteType(generator, gen =>
 				                  {
 					putValueToWriteOnTop(gen);
 					// TODO: is there a better method of getting address?
 					// don't think so, looking at
 					// http://stackoverflow.com/questions/76274/
-					gen.Emit(OpCodes.Stloc_2);
-					gen.Emit(OpCodes.Ldloca_S, 2);
+					// we *may* do a little optimization if this value write takes
+					// place when dictionary is serialized (current KVP is stored in
+					// local 1 in such situation); the KVP may be, however, written
+					// independently
+					gen.Emit(OpCodes.Stloc_S, localIndex);
+					gen.Emit(OpCodes.Ldloca_S, localIndex);
 					gen.Emit(OpCodes.Call, formalType.GetProperty("Key").GetGetMethod());
 				}, keyValueTypes[0]);
 				GenerateWriteType(generator, gen =>
@@ -361,7 +365,7 @@ namespace AntMicro.Migrant.Emitter
 					// we assume here that the key write was invoked earlier (it should be
 					// if we're conforming to the protocol), so KeyValuePair is already
 					// stored as local
-					gen.Emit (OpCodes.Ldloca_S, 2);
+					gen.Emit(OpCodes.Ldloca_S, localIndex);
 					gen.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
 				}, keyValueTypes[1]);
 				return;
