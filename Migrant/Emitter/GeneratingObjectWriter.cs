@@ -192,11 +192,11 @@ namespace AntMicro.Migrant.Emitter
 				GenerateWriteArray(generator, actualType);
 				return true;
 			}
-			bool isGeneric, isGenericallyIterable;
+			bool isGeneric, isGenericallyIterable, isDictionary;
 			Type elementType;
-			if(Helpers.IsCollection(actualType, out elementType, out isGeneric, out isGenericallyIterable))
+			if(Helpers.IsCollection(actualType, out elementType, out isGeneric, out isGenericallyIterable, out isDictionary))
 			{
-				GenerateWriteCollection(generator, elementType, isGeneric, isGenericallyIterable);
+				GenerateWriteCollection(generator, elementType, isGeneric, isGenericallyIterable, isDictionary);
 				return true;
 			}
 			return false;
@@ -256,14 +256,31 @@ namespace AntMicro.Migrant.Emitter
 			generator.Emit(OpCodes.Blt, loopBegin);
 		}
 
-		private void GenerateWriteCollection(ILGenerator generator, Type formalElementType, bool isGeneric, bool isGenericallyIterable)
+		private void GenerateWriteCollection(ILGenerator generator, Type formalElementType, bool isGeneric, bool isGenericallyIterable, bool isIDictionary)
 		{
 			PrimitiveWriter primitiveWriter = null; // TODO
 
 			var genericTypes = new [] { formalElementType };
 			var ifaceType = isGeneric ? typeof(ICollection<>).MakeGenericType(genericTypes) : typeof(ICollection);
-			var enumerableType = isGenericallyIterable ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
-			var enumeratorType = isGenericallyIterable ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
+			Type enumerableType;
+			if(isIDictionary)
+			{
+				formalElementType = typeof(object); // convenient in our case
+				enumerableType = typeof(IDictionary);
+			}
+			else
+			{
+				enumerableType = isGenericallyIterable ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
+			}
+			Type enumeratorType;
+			if(isIDictionary)
+			{
+				enumeratorType = typeof(IDictionaryEnumerator);
+			}
+			else
+			{
+				enumeratorType = isGenericallyIterable ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
+			}
 
 			generator.DeclareLocal(enumeratorType); // iterator
 			generator.DeclareLocal(formalElementType); // current element
@@ -284,20 +301,42 @@ namespace AntMicro.Migrant.Emitter
 			generator.MarkLabel(loopBegin);
 			generator.Emit(OpCodes.Ldloc_0);
 			var finish = generator.DefineLabel();
+			// TODO: Helpers.GetMethod?
 			generator.Emit(OpCodes.Call, typeof(IEnumerator).GetMethod("MoveNext", BindingFlags.Instance | BindingFlags.Public));
 			generator.Emit(OpCodes.Brfalse, finish);
 			generator.Emit(OpCodes.Ldloc_0);
-			generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Current").GetGetMethod());
-			generator.Emit(OpCodes.Stloc_1);
+			if(isIDictionary)
+			{
+				// key
+				generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Key").GetGetMethod());
+				generator.Emit(OpCodes.Stloc_1);
+				GenerateWriteTypeLocal1(generator, formalElementType);
 
-			// operation on current element
+				// value
+				generator.Emit(OpCodes.Ldloc_0);
+				generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Value").GetGetMethod());
+				generator.Emit(OpCodes.Stloc_1);
+				GenerateWriteTypeLocal1(generator, formalElementType);
+			}
+			else
+			{
+				generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Current").GetGetMethod());
+				generator.Emit(OpCodes.Stloc_1);
+	
+				// operation on current element
+				GenerateWriteTypeLocal1(generator, formalElementType);
+			}
+
+			generator.Emit(OpCodes.Br, loopBegin);
+			generator.MarkLabel(finish);
+		}
+
+		private void GenerateWriteTypeLocal1(ILGenerator generator, Type formalElementType)
+		{
 			GenerateWriteType(generator, gen =>
 			                  {
 				gen.Emit(OpCodes.Ldloc_1);
 			}, formalElementType);
-
-			generator.Emit(OpCodes.Br, loopBegin);
-			generator.MarkLabel(finish);
 		}
 
 		private void GenerateWriteType(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
@@ -331,20 +370,9 @@ namespace AntMicro.Migrant.Emitter
 				generator.Emit(OpCodes.Call, writeMethod);
 				return;
 			}
-			var isDictionaryElement = false;
-			Type[] keyValueTypes = null;
-			if(formalType == typeof(DictionaryEntry))
-			{
-				keyValueTypes = new [] { typeof(object), typeof(object) };
-				isDictionaryElement = true;
-			}
 			if(formalType.IsGenericType && formalType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
 			{
-				keyValueTypes = formalType.GetGenericArguments();
-				isDictionaryElement = true;
-			}
-			if(isDictionaryElement)
-			{
+				var keyValueTypes = formalType.GetGenericArguments();
 				var localIndex = generator.DeclareLocal(formalType).LocalIndex;
 				GenerateWriteType(generator, gen =>
 				                  {

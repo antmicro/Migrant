@@ -39,8 +39,8 @@ namespace AntMicro.Migrant
     {
         internal static bool TryGetCollectionCountAndElementType(object o, out int count, out Type formalElementType)
         {
-			bool fake, fake2;
-            if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2))
+			bool fake, fake2, fake3;
+            if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2, out fake3))
             {
                 count = (int)Impromptu.InvokeGet(o, "Count");
                 return true;
@@ -60,13 +60,17 @@ namespace AntMicro.Migrant
             return false;
         }
 
-		public static bool IsCollection(Type actualType, out Type formalElementType, out bool isGeneric, out bool isGenericallyIterable)
+		// TODO: refactor with enum as a result instead of isGeneric etc
+		// and join with IsDictionary
+		public static bool IsCollection(Type actualType, out Type formalElementType, out bool isGeneric, out bool isGenericallyIterable, out bool isDictionary)
         {
             formalElementType = typeof(object);
             var ifaces = actualType.GetInterfaces();
             var result = false;
 			isGeneric = false;
 			isGenericallyIterable = false;
+			isDictionary = false;
+			var isGenericDictionary = false;
             foreach(var iface in ifaces)
             {
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>))
@@ -74,18 +78,31 @@ namespace AntMicro.Migrant
                     formalElementType = iface.GetGenericArguments()[0];
 					isGeneric = true;
 					isGenericallyIterable = true;
-                    return true;
+                    result = true;
                 }
+				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+				{
+					isGenericDictionary = true;
+				}
                 if(iface == typeof(ICollection))
                 {
                     result = true;
                 }
+				if(iface == typeof(IDictionary))
+				{
+					isDictionary = true;
+				}
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
                     formalElementType = iface.GetGenericArguments()[0];
 					isGenericallyIterable = true;
                 }
             }
+			if(isGenericDictionary)
+			{
+				// we favour treating as a generic dictionary if the collection implements both
+				isDictionary = false;
+			}
             return result;
         }
 
