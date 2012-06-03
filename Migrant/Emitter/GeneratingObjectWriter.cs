@@ -331,6 +331,41 @@ namespace AntMicro.Migrant.Emitter
 				generator.Emit(OpCodes.Call, writeMethod);
 				return;
 			}
+			var isDictionaryElement = false;
+			Type[] keyValueTypes = null;
+			if(formalType == typeof(DictionaryEntry))
+			{
+				keyValueTypes = new [] { typeof(object), typeof(object) };
+				isDictionaryElement = true;
+			}
+			if(formalType.IsGenericType && formalType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+			{
+				keyValueTypes = formalType.GetGenericArguments();
+				isDictionaryElement = true;
+			}
+			if(isDictionaryElement)
+			{
+				generator.DeclareLocal(formalType);
+				GenerateWriteType(generator, gen =>
+				                  {
+					putValueToWriteOnTop(gen);
+					// TODO: is there a better method of getting address?
+					// don't think so, looking at
+					// http://stackoverflow.com/questions/76274/
+					gen.Emit(OpCodes.Stloc_2);
+					gen.Emit(OpCodes.Ldloca_S, 2);
+					gen.Emit(OpCodes.Call, formalType.GetProperty("Key").GetGetMethod());
+				}, keyValueTypes[0]);
+				GenerateWriteType(generator, gen =>
+				                  {
+					// we assume here that the key write was invoked earlier (it should be
+					// if we're conforming to the protocol), so KeyValuePair is already
+					// stored as local
+					gen.Emit (OpCodes.Ldloca_S, 2);
+					gen.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
+				}, keyValueTypes[1]);
+				return;
+			}
 			GenerateWriteFields(generator, putValueToWriteOnTop, formalType);
 		}
 
