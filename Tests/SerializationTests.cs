@@ -366,6 +366,18 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
+		public void ShouldSerializeHashtable()
+		{
+			var hashtable = new Hashtable();
+			for(var i = 0; i < 100; i++)
+			{
+				hashtable.Add(i, i + 1);
+			}
+			var copy = Serializer.DeepClone(hashtable);
+			CollectionAssert.AreEquivalent(hashtable, copy);
+		}
+
+		[Test]
 		public void ShouldSerializeDictionaryWithStrings()
 		{
 			var dictionary = new Dictionary<string, string>
