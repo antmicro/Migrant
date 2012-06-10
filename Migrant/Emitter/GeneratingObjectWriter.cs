@@ -216,13 +216,13 @@ namespace AntMicro.Migrant.Emitter
 		{
 			PrimitiveWriter primitiveWriter = null; // TODO
 
+			var elementType = actualType.GetElementType();
 			var rank = actualType.GetArrayRank();
 			if(rank != 1)
 			{
-				throw new NotImplementedException();
+				GenerateWriteMultidimensionalArray(generator, actualType, elementType);
+				return;
 			}
-
-			var elementType = actualType.GetElementType();
 
 			generator.DeclareLocal(typeof(int)); // this is for counter
 			generator.DeclareLocal(elementType); // this is for the current element
@@ -230,7 +230,7 @@ namespace AntMicro.Migrant.Emitter
 
 			// writing rank
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-			generator.Emit(OpCodes.Ldc_I4, rank);
+			generator.Emit(OpCodes.Ldc_I4_1);
 			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(0)));
 
 			// writing length
@@ -263,6 +263,81 @@ namespace AntMicro.Migrant.Emitter
 			generator.Emit(OpCodes.Stloc_0);
 			generator.Emit(OpCodes.Ldloc_0);
 			generator.Emit(OpCodes.Ldloc_2); // length of the array
+			generator.Emit(OpCodes.Blt, loopBegin);
+		}
+
+		private void GenerateWriteMultidimensionalArray(ILGenerator generator, Type actualType, Type elementType)
+		{
+			Array array = null; // TODO
+			PrimitiveWriter primitiveWriter = null; // TODO
+
+			var rank = actualType.GetArrayRank();
+			// local for current element
+			generator.DeclareLocal(elementType);
+			// locals for indices
+			var indexLocals = new int[rank];
+			for(var i = 0; i < rank; i++)
+			{
+				indexLocals[i] = generator.DeclareLocal(typeof(int)).LocalIndex;
+			}
+			// locals for lengths
+			var lengthLocals = new int[rank];
+			for(var i = 0; i < rank; i++)
+			{
+				lengthLocals[i] = generator.DeclareLocal(typeof(int)).LocalIndex;
+			}
+
+			// writing rank
+			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+			generator.Emit(OpCodes.Ldc_I4, rank);
+			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(0)));
+
+			// writing lengths
+			for(var i = 0; i < rank; i++)
+			{
+				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+				generator.Emit(OpCodes.Ldarg_2); // array to serialize
+				generator.Emit(OpCodes.Ldc_I4, i);
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => array.GetLength(0)));
+				generator.Emit(OpCodes.Dup);
+				generator.Emit(OpCodes.Stloc, lengthLocals[i]);
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(0)));
+			}
+
+			// writing elements
+			GenerateLoop(generator, 0, rank, indexLocals, lengthLocals, actualType, elementType);
+		}
+
+		private void GenerateLoop(ILGenerator generator, int currentDimension, int rank, int[] indexLocals, int[] lengthLocals, Type arrayType, Type elementType)
+		{
+			// initalization
+			generator.Emit(OpCodes.Ldc_I4_0);
+			generator.Emit(OpCodes.Stloc, indexLocals[currentDimension]);
+			var loopBegin = generator.DefineLabel();
+			generator.MarkLabel(loopBegin);
+			if(currentDimension == rank - 1)
+			{
+				// writing the element
+				generator.Emit(OpCodes.Ldarg_2); // array to serialize
+				for(var i = 0; i < rank; i++)
+				{
+					generator.Emit(OpCodes.Ldloc, indexLocals[i]);
+				}
+				generator.Emit(OpCodes.Call, arrayType.GetMethod("Get"));
+				generator.Emit(OpCodes.Stloc_0);
+				GenerateWriteType(generator, gen => gen.Emit(OpCodes.Ldloc_0), elementType);
+			}
+			else
+			{
+				GenerateLoop(generator, currentDimension + 1, rank, indexLocals, lengthLocals, arrayType, elementType);
+			}
+			// incremeting index and loop exit condition check
+			generator.Emit(OpCodes.Ldloc, indexLocals[currentDimension]);
+			generator.Emit(OpCodes.Ldc_I4_1);
+			generator.Emit(OpCodes.Add);
+			generator.Emit(OpCodes.Dup);
+			generator.Emit(OpCodes.Stloc, indexLocals[currentDimension]);
+			generator.Emit(OpCodes.Ldloc, lengthLocals[currentDimension]);
 			generator.Emit(OpCodes.Blt, loopBegin);
 		}
 
