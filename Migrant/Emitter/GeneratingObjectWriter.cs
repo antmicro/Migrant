@@ -32,6 +32,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 using System.Linq;
 using System.Collections;
+using System.Threading;
 
 namespace AntMicro.Migrant.Emitter
 {
@@ -129,8 +130,18 @@ namespace AntMicro.Migrant.Emitter
 
 			// TODO: callbacks!!
 			// TODO: parameter types: move and unify
-			var method = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
-			                               typeof(void), new [] { typeof(GeneratingObjectWriter), typeof(PrimitiveWriter), typeof(object) }, actualType, true);
+			DynamicMethod method;
+			var parameterTypes = new [] { typeof(GeneratingObjectWriter), typeof(PrimitiveWriter), typeof(object) };
+			if(!actualType.IsArray)
+			{
+				method = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
+			                               typeof(void), parameterTypes, actualType, true);
+			}
+			else
+			{
+				var methodNo = Interlocked.Increment(ref WriteArrayMethodCounter);
+				method = new DynamicMethod(string.Format("WriteArray{0}", methodNo), null, parameterTypes, true);
+			}
 			var generator = method.GetILGenerator();
 			if(!GenerateSpecialWrite(generator, actualType))
 			{
@@ -481,6 +492,8 @@ namespace AntMicro.Migrant.Emitter
 		// TODO: actually, this field can be considered static
 		private readonly Dictionary<Type, bool> transientTypes;
 		private Action<PrimitiveWriter, object>[] writeMethods;
+
+		private static int WriteArrayMethodCounter;
 	}
 }
 
