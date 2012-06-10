@@ -131,16 +131,15 @@ namespace AntMicro.Migrant.Emitter
 			// TODO: callbacks!!
 			// TODO: parameter types: move and unify
 			DynamicMethod method;
-			var parameterTypes = new [] { typeof(GeneratingObjectWriter), typeof(PrimitiveWriter), typeof(object) };
 			if(!actualType.IsArray)
 			{
 				method = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
-			                               typeof(void), parameterTypes, actualType, true);
+			                               typeof(void), ParameterTypes, actualType, true);
 			}
 			else
 			{
 				var methodNo = Interlocked.Increment(ref WriteArrayMethodCounter);
-				method = new DynamicMethod(string.Format("WriteArray{0}", methodNo), null, parameterTypes, true);
+				method = new DynamicMethod(string.Format("WriteArray{0}", methodNo), null, ParameterTypes, true);
 			}
 			var generator = method.GetILGenerator();
 			if(!GenerateSpecialWrite(generator, actualType))
@@ -474,6 +473,7 @@ namespace AntMicro.Migrant.Emitter
 			if(!skipGetId)
 			{
 				// if the formal type is NOT object, then string or array will not be the content of the field
+				// TODO: what with the abstract Array type?
 				var mayBeInlined = formalType == typeof(object) || Helpers.CanBeCreatedWithDataOnly(formalType);
 				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator);
@@ -494,6 +494,7 @@ namespace AntMicro.Migrant.Emitter
 		private Action<PrimitiveWriter, object>[] writeMethods;
 
 		private static int WriteArrayMethodCounter;
+		private static readonly Type[] ParameterTypes = new [] { typeof(GeneratingObjectWriter), typeof(PrimitiveWriter), typeof(object) };
 	}
 }
 
