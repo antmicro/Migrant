@@ -329,7 +329,8 @@ namespace AntMicro.Migrant
         {
             var collectionType = obj.GetType();
             var count = reader.ReadInt32();
-            var addMethod = collectionType.GetMethod("Add", new [] { elementFormalType });
+            var addMethod = collectionType.GetMethod("Add", new [] { elementFormalType }) ??
+				collectionType.GetMethod("Enqueue", new [] { elementFormalType });
             if(addMethod == null)
             {
                 throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage,
