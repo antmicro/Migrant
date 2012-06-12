@@ -601,6 +601,17 @@ namespace AntMicro.Migrant.Tests
 			Serializer.DeepClone(new Box { Element = new TransientClass() });
 		}
 
+		[Test]
+		public void ShouldSerializeQueue()
+		{
+			var queue = new Queue<int>();
+			queue.Enqueue(1);
+			queue.Enqueue(3);
+			queue.Enqueue(5);
+			var copy = Serializer.DeepClone(queue);
+			CollectionAssert.AreEqual(queue, copy);
+		}
+
 		public class SimpleClass
 		{
 			public int Value { get; set; }
