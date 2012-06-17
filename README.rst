@@ -65,8 +65,6 @@ or, under Mono:
 
   xbuild Migrant.sln
 
-As for now, it is required to have an Internet connection, while the build system downloads the referenced libraries as NuGet packages. This may change in future.
-
 Usage
 -----
 
