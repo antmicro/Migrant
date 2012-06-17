@@ -236,6 +236,7 @@ namespace AntMicro.Migrant.Emitter
 			// writing length
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 			generator.Emit(OpCodes.Ldarg_2); // array to serialize
+			generator.Emit(OpCodes.Castclass, actualType);
 			generator.Emit(OpCodes.Ldlen);
 			generator.Emit(OpCodes.Dup);
 			generator.Emit(OpCodes.Stloc_2);
@@ -247,6 +248,7 @@ namespace AntMicro.Migrant.Emitter
 			var loopBegin = generator.DefineLabel();
 			generator.MarkLabel(loopBegin);
 			generator.Emit(OpCodes.Ldarg_2); // array to serialize
+			generator.Emit(OpCodes.Castclass, actualType);
 			generator.Emit(OpCodes.Ldloc_0); // index
 			generator.Emit(OpCodes.Ldelem, elementType);
 			generator.Emit(OpCodes.Stloc_1); // we put current element to local variable
@@ -297,6 +299,7 @@ namespace AntMicro.Migrant.Emitter
 			{
 				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 				generator.Emit(OpCodes.Ldarg_2); // array to serialize
+				generator.Emit(OpCodes.Castclass, actualType);
 				generator.Emit(OpCodes.Ldc_I4, i);
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => array.GetLength(0)));
 				generator.Emit(OpCodes.Dup);
@@ -319,6 +322,7 @@ namespace AntMicro.Migrant.Emitter
 			{
 				// writing the element
 				generator.Emit(OpCodes.Ldarg_2); // array to serialize
+				generator.Emit(OpCodes.Castclass, arrayType);
 				for(var i = 0; i < rank; i++)
 				{
 					generator.Emit(OpCodes.Ldloc, indexLocals[i]);
