@@ -172,9 +172,12 @@ namespace AntMicro.Migrant
 		/// <param name='toClone'>
 		/// The object to make a deep copy of.
 		/// </param>
-        public static T DeepClone<T>(T toClone)
+		/// <param name='settings'>
+		/// Settings used for serializer which does deep clone.
+		/// </param>
+        public static T DeepClone<T>(T toClone, Settings settings = null)
         {
-            var serializer = new Serializer();
+            var serializer = new Serializer(settings);
             var stream = new MemoryStream();
             serializer.Serialize(toClone, stream);
             var position = stream.Position;
