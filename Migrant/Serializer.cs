@@ -27,6 +27,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using AntMicro.Migrant.Emitter;
+using AntMicro.Migrant.Customization;
 
 namespace AntMicro.Migrant
 {
@@ -42,8 +44,17 @@ namespace AntMicro.Migrant
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Serializer"/> class.
 		/// </summary>
-        public Serializer()
+		/// <param name='settings'>
+		/// Serializer's settings, can be null or not given, in that case default settings are
+		/// used.
+		/// </param>
+        public Serializer(Settings settings = null)
         {
+			if(settings == null)
+			{
+				settings = new Settings(); // default settings
+			}
+			this.settings = settings;
             scanner = new TypeScanner();
             typeArray = new Type[0];
             typeIndices = new Dictionary<Type, int>();
@@ -56,10 +67,6 @@ namespace AntMicro.Migrant
 		/// <param name='typeToScan'>
 		/// Type to scan.
 		/// </param>
-		/// <remarks>
-		/// When used in a strict type mode, it has to be called before serialization with
-		/// types that can be encountered during subsequent serialization.
-		/// </remarks>
         public void Initialize(Type typeToScan)
         {
             scanner.Scan(typeToScan);
@@ -76,27 +83,24 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// Stream to which the given object should be serialized. Has to be writeable.
 		/// </param>
-		/// <param name='strictTypes'>
-		/// When true, all types encountered during serialization must be known to
-		/// the serializer (i.e. obtained with the <see cref="Initialize" /> method
-		/// or the exception will be thrown. When false, types are initialized online
-		/// when needed.
 		/// </param>
-        public void Serialize(object obj, Stream stream, bool strictTypes = false)
+        public void Serialize(object obj, Stream stream)
         {
-            if(strictTypes)
-            {
-                WriteTypes(stream);
-            }
-            var localStream = strictTypes ? stream : new MemoryStream();
-            var writer = new ObjectWriter(localStream, typeIndices, strictTypes, Initialize, OnPreSerialization, OnPostSerialization);
+			// TODO: change memoryStream to lazy type information
+            var localStream = new MemoryStream();
+			ObjectWriter writer;
+			if(settings.SerializationMethod == Method.Generated)
+			{
+				writer = new GeneratingObjectWriter(localStream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization);
+			}
+			else
+			{
+				writer = new ObjectWriter(localStream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization);
+			}
             writer.WriteObject(obj);
-            if(!strictTypes)
-            {
-                WriteTypes(stream);
-                localStream.Seek(0, SeekOrigin.Begin);
-                localStream.CopyTo(stream);
-            }
+            WriteTypes(stream);
+            localStream.Seek(0, SeekOrigin.Begin);
+            localStream.CopyTo(stream);
         }
 
 		/// <summary>
@@ -111,6 +115,10 @@ namespace AntMicro.Migrant
 		/// </typeparam>
         public T Deserialize<T>(Stream stream)
         {
+			if(settings.DeserializationMethod == Method.Generated)
+			{
+				throw new NotImplementedException("Generated deserialization is not yet implemented.");
+			}
             using(var reader = new PrimitiveReader(stream))
             {
                 var magic = reader.ReadUInt32();
@@ -164,20 +172,14 @@ namespace AntMicro.Migrant
 		/// <param name='toClone'>
 		/// The object to make a deep copy of.
 		/// </param>
-		/// <param name='scanSourceOnly'>
-		/// When set to true, the serializer is preinitialized with the type
-		/// of the object to clone and serialization is done in the strict
-		/// type mode (see <see cref="Serialize"/>).
+		/// <param name='settings'>
+		/// Settings used for serializer which does deep clone.
 		/// </param>
-        public static T DeepClone<T>(T toClone, bool scanSourceOnly = false)
+        public static T DeepClone<T>(T toClone, Settings settings = null)
         {
-            var serializer = new Serializer();
+            var serializer = new Serializer(settings);
             var stream = new MemoryStream();
-            if(scanSourceOnly)
-            {
-                serializer.Initialize(toClone.GetType());
-            }
-            serializer.Serialize(toClone, stream, scanSourceOnly);
+            serializer.Serialize(toClone, stream);
             var position = stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
             var result = serializer.Deserialize<T>(stream);
@@ -220,6 +222,7 @@ namespace AntMicro.Migrant
         private readonly TypeScanner scanner;
         private Type[] typeArray;
         private readonly Dictionary<Type, int> typeIndices;
+		private readonly Settings settings;
 
         private const ushort VersionNumber = 1;
         private const uint Magic = 0xA5132;

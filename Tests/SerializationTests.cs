@@ -25,24 +25,32 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
-using System.Linq;
+using System.Threading;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.IO;
-using System.Threading;
 
 namespace AntMicro.Migrant.Tests
 {
-	[TestFixture]
+	[TestFixture(false, false)]
+	[TestFixture(true, false)]
 	public class SerializationTests
 	{
+
+		public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+		{
+			this.useGeneratedDeserializer = useGeneratedDeserializer;
+			this.useGeneratedSerializer = useGeneratedSerializer;
+		}
+
 		[Test]
 		public void ShouldSerializeObject()
 		{
 			var obj = new object();
-			var copy = Serializer.DeepClone(obj);
+			var copy = SerializerClone(obj);
 			Assert.AreEqual(copy.GetType(), typeof(object));
 		}
 
@@ -50,7 +58,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeSimpleClass()
 		{
 			var simpleClass = new SimpleClass { Value = 0x69, Str = "Magic" };
-			var copy = Serializer.DeepClone(simpleClass);
+			var copy = SerializerClone(simpleClass);
 			Assert.AreEqual(simpleClass, copy);
 		}
 
@@ -60,7 +68,7 @@ namespace AntMicro.Migrant.Tests
 			var one = new CyclicRef();
 			var another = new CyclicRef { Another = one, Val = 1 };
 			one.Another = another;
-			var oneCopy = Serializer.DeepClone(one);
+			var oneCopy = SerializerClone(one);
 			Assert.AreEqual(oneCopy, oneCopy.Another.Another, "Cyclic reference was not properly serialized.");
 		}
 
@@ -69,7 +77,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			var one = new CyclicRef();
 			one.Another = one;
-			var copy = Serializer.DeepClone(one);
+			var copy = SerializerClone(one);
 			Assert.AreSame(copy, copy.Another);
 		}
 
@@ -79,7 +87,7 @@ namespace AntMicro.Migrant.Tests
 			var array = new object[2];
 			array[0] = array;
 			array[1] = array;
-			var copy = Serializer.DeepClone(array);
+			var copy = SerializerClone(array);
 			Assert.AreSame(copy, copy[0]);
 			Assert.AreSame(copy[0], copy[1]);
 		}
@@ -88,7 +96,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeNullReference()
 		{
 			var simpleClass = new SimpleClass();
-			var copy = Serializer.DeepClone(simpleClass);
+			var copy = SerializerClone(simpleClass);
 			Assert.AreEqual(simpleClass, copy);
 		}
 
@@ -99,7 +107,7 @@ namespace AntMicro.Migrant.Tests
 			var simple1 = new SimpleClass { Str = str };
 			var simple2 = new SimpleClass { Str = str };
 			var container = new SimpleContainer { First = simple1, Second = simple2 };
-			var copy = Serializer.DeepClone(container);
+			var copy = SerializerClone(container);
 			Assert.AreSame(copy.First.Str, copy.Second.Str);
 		}
 
@@ -108,7 +116,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			const int testValue = 0xABCD;
 			var readonlyClass = new ClassWithReadonly(testValue);
-			var copy = Serializer.DeepClone(readonlyClass);
+			var copy = SerializerClone(readonlyClass);
 			Assert.AreEqual(readonlyClass.ReadonlyValue, copy.ReadonlyValue);
 		}
 
@@ -118,7 +126,7 @@ namespace AntMicro.Migrant.Tests
 			var intPtrClass = new ClassWithIntPtr{Ptr = new IntPtr(0x666)};
 		    try
 			{
-				Serializer.DeepClone(intPtrClass);
+				SerializerClone(intPtrClass);
 				Assert.Fail("Class with IntPtr was serialized without exception.");
 			}
 			catch(ArgumentException)
@@ -135,24 +143,9 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeWithInheritance()
 		{
 			SimpleBaseClass derived = new SimpleDerivedClass { BaseField = 1, DerivedField = 2 };
-			var copy = (SimpleDerivedClass)Serializer.DeepClone(derived);
+			var copy = (SimpleDerivedClass)SerializerClone(derived);
 			Assert.AreEqual(copy.DerivedField, 2);
 			Assert.AreEqual(copy.BaseField, 1);
-		}
-
-		[Test]
-		public void ShouldFailAtUnknownTypeWithSourceOnlyScan()
-		{
-			var str = "Something";
-			var box = new Box { Element = str };
-			try
-			{
-				Serializer.DeepClone(box, true);
-				Assert.Fail("Box with string serialized with sourceOnlyScan without exception.");
-			}
-			catch(InvalidOperationException)
-			{
-			}
 		}
 
 		[Test]
@@ -160,7 +153,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			var str = "Something";
 			var box = new Box { Element = str };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(str, copy.Element);
 		}
 
@@ -169,7 +162,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			var box = new Box();
 			var anotherBox = new Box { Element = box };
-			var copy = Serializer.DeepClone(anotherBox);
+			var copy = SerializerClone(anotherBox);
 			Assert.AreEqual(typeof(Box), copy.Element.GetType());
 		}
 
@@ -177,7 +170,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeListOfPrimitives()
 		{
 			var list = new List<int> { 1, 2, 3 };
-			var copy = Serializer.DeepClone(list);
+			var copy = SerializerClone(list);
 			CollectionAssert.AreEqual(list, copy);
 		}
 
@@ -189,7 +182,7 @@ namespace AntMicro.Migrant.Tests
 			{
 				list.Add(i);
 			}
-			var copy = Serializer.DeepClone(list);
+			var copy = SerializerClone(list);
 			CollectionAssert.AreEqual(list, copy);
 		}
 
@@ -199,7 +192,7 @@ namespace AntMicro.Migrant.Tests
 			var first = new List<int> { 1, 2, 3 };
 			var second = new List<int> { 97, 98, 99 };
 			var list = new List<List<int>> { first, second };
-			var copy = Serializer.DeepClone(list);
+			var copy = SerializerClone(list);
 			for(var i = 0; i < 2; i++)
 			{
 				CollectionAssert.AreEqual(list[0], copy[0]);
@@ -215,16 +208,24 @@ namespace AntMicro.Migrant.Tests
 			list.Add(box1);
 			list.Add(box2);
 
-			var copy = Serializer.DeepClone(list);
+			var copy = SerializerClone(list);
 			Assert.AreSame(copy, copy[0].Element);
 			Assert.AreSame(copy[0].Element, copy[1].Element);
 		}
 
 		[Test]
-		public void ShouldSerializeListWithStrings()
+		public void ShouldSerializeArrayListWithStrings()
 		{
 			var list = new ArrayList { "Word 1", "Word 2", new SimpleClass { Value = 6, Str = "Word 4" }, "Word 3" };
-			var copy = Serializer.DeepClone(list);
+			var copy = SerializerClone(list);
+			CollectionAssert.AreEqual(list, copy);
+		}
+
+		[Test]
+		public void ShouldSerializeArrayListWithPrimitives()
+		{
+			var list = new ArrayList { 1, 2, 3 };
+			var copy = SerializerClone(list);
 			CollectionAssert.AreEqual(list, copy);
 		}
 
@@ -232,7 +233,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeHashSetWithPrimitives()
 		{
 			var collection = new HashSet<int> { 1, 2, 3 };
-			var copy = Serializer.DeepClone(collection);
+			var copy = SerializerClone(collection);
 			CollectionAssert.AreEquivalent(collection, copy);
 		}
 
@@ -240,7 +241,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeBlockingCollectionWithPrimitives()
 		{
 			var collection = new BlockingCollection<int> { 1, 2, 3 };
-			var copy = Serializer.DeepClone(collection);
+			var copy = SerializerClone(collection);
 			CollectionAssert.AreEquivalent(collection, copy);
 		}
 
@@ -248,7 +249,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeBoxedPrimitve()
 		{
 			var box = new Box { Element = 3 };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(3, copy.Element);
 		}
 
@@ -259,7 +260,7 @@ namespace AntMicro.Migrant.Tests
 			var box1 = new Box { Element = primitive };
 			var box2 = new Box { Element = primitive };
 			var list = new List<Box> { box1, box2 };
-			var copy = Serializer.DeepClone(list);
+			var copy = SerializerClone(list);
 			Assert.AreSame(copy[0].Element, copy[1].Element);
 		}
 
@@ -267,7 +268,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeCollectionWithStrings()
 		{
 			var collection = new BlockingCollection<string> { "One", "Two", "Three" };
-			var copy = Serializer.DeepClone(collection);
+			var copy = SerializerClone(collection);
 			CollectionAssert.AreEquivalent(collection, copy);
 		}
 
@@ -275,15 +276,17 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeListWithNull()
 		{
 			var list = new List<object> { "One", null, "Two" };
-			var copy = Serializer.DeepClone(list);
+			var copy = SerializerClone(list);
 			CollectionAssert.AreEqual(list, copy);
 		}
+
+		//public void ShouldSerialize
 
 		[Test]
 		public void ShouldSerializeCollectionWithNull()
 		{
 			var collection = new BlockingCollection<object> { 1, null, 3 };
-			var copy = Serializer.DeepClone(collection);
+			var copy = SerializerClone(collection);
 			CollectionAssert.AreEquivalent(collection, copy);
 		}
 
@@ -291,7 +294,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeArrayWithPrimitives()
 		{
 			var array = new [] { 1, 2, 3, 4, 5, 6 };
-			var copy = Serializer.DeepClone(array);
+			var copy = SerializerClone(array);
 			CollectionAssert.AreEqual(array, copy);
 		}
 
@@ -299,7 +302,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeTwodimensionalArrayWithPrimitives()
 		{
 			var array = new [,] { { 1, 2 }, { 3, 4 }, { 5, 6 } };
-			var copy = Serializer.DeepClone(array);
+			var copy = SerializerClone(array);
 			CollectionAssert.AreEqual(array, copy);
 		}
 
@@ -307,7 +310,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeArrayWithStrings()
 		{
 			var array = new [] { "One", "Two", "Three" };
-			var copy = Serializer.DeepClone(array);
+			var copy = SerializerClone(array);
 			CollectionAssert.AreEqual(array, copy);
 		}
 
@@ -315,7 +318,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeTwodimensionalArrayWithStrings()
 		{
 			var array = new [,] { { "One", "Two" }, { "Three", "Four" } };
-			var copy = Serializer.DeepClone(array);
+			var copy = SerializerClone(array);
 			CollectionAssert.AreEqual(array, copy);
 		}
 
@@ -328,7 +331,7 @@ namespace AntMicro.Migrant.Tests
 			array[0,1,0,1] = 3;
 			array[0,1,2,2] = 4;
 			array[1,0,2,3] = 5;
-			var copy = Serializer.DeepClone(array);
+			var copy = SerializerClone(array);
 			Assert.AreEqual(array, copy);
 		}
 
@@ -337,7 +340,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			var obj = new object();
 			var array = new [] { "One", obj, "Two", obj, new object() };
-			var copy = Serializer.DeepClone(array);
+			var copy = SerializerClone(array);
 			CollectionAssert.AreEqual(array.Where(x => x is String), copy.Where(x => x is String));
 			Assert.AreSame(copy[1], copy[3]);
 			Assert.AreNotSame(copy[3], copy[4]);
@@ -351,8 +354,20 @@ namespace AntMicro.Migrant.Tests
 			{
 				dictionary.Add(i, i + 1);
 			}
-			var copy = Serializer.DeepClone(dictionary);
+			var copy = SerializerClone(dictionary);
 			CollectionAssert.AreEquivalent(dictionary, copy);
+		}
+
+		[Test]
+		public void ShouldSerializeHashtable()
+		{
+			var hashtable = new Hashtable();
+			for(var i = 0; i < 100; i++)
+			{
+				hashtable.Add(i, i + 1);
+			}
+			var copy = SerializerClone(hashtable);
+			CollectionAssert.AreEquivalent(hashtable, copy);
 		}
 
 		[Test]
@@ -364,7 +379,7 @@ namespace AntMicro.Migrant.Tests
 				{ "Cat", "Kot" },
 				{ "Line", "Linia" }
 			};
-			var copy = Serializer.DeepClone(dictionary);
+			var copy = SerializerClone(dictionary);
 			CollectionAssert.AreEquivalent(dictionary, copy);
 		}
 
@@ -378,7 +393,7 @@ namespace AntMicro.Migrant.Tests
 				{ 20, "One" },
 				{ 30, str }
 			};
-			var copy = Serializer.DeepClone(dictionary);
+			var copy = SerializerClone(dictionary);
 			CollectionAssert.AreEquivalent(dictionary, copy);
 			Assert.AreSame(copy[10], copy[30]);
 			Assert.AreNotSame(copy[10], copy[20]);
@@ -388,7 +403,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeSimpleEnum()
 		{
 			var e = SimpleEnum.Two;
-			var copy = Serializer.DeepClone(e);
+			var copy = SerializerClone(e);
 			Assert.AreEqual(e, copy);
 		}
 
@@ -407,16 +422,24 @@ namespace AntMicro.Migrant.Tests
 
 			foreach (var item in enumLongValues) 
 			{
-				Assert.AreEqual(item, Serializer.DeepClone(item));
+				Assert.AreEqual(item, SerializerClone(item));
 			}
 			foreach (var item in enumShortValues) 
 			{
-				Assert.AreEqual(item, Serializer.DeepClone(item));
+				Assert.AreEqual(item, SerializerClone(item));
 			}
 			foreach (var item in enumFlagsValues) 
 			{
-				Assert.AreEqual(item, Serializer.DeepClone(item));
+				Assert.AreEqual(item, SerializerClone(item));
 			}
+		}
+
+		[Test]
+		public void ShouldSerializeSimplerStruct()
+		{
+			var str = new SimplerStruct { A = 1234567, B = 543 };
+			var copy = SerializerClone(str);
+			Assert.AreEqual(str, copy);
 		}
 
 		[Test]
@@ -427,9 +450,8 @@ namespace AntMicro.Migrant.Tests
 				A = 5,
 				B = "allman"
 			};
-			var newStr = Serializer.DeepClone(str);
-
-			Assert.AreEqual(str, newStr);
+			var copy = SerializerClone(str);
+			Assert.AreEqual(str, copy);
 		}
 
 		[Test]
@@ -446,7 +468,7 @@ namespace AntMicro.Migrant.Tests
 				A = 6,
 				B = str
 			};
-			var newStr = Serializer.DeepClone(compstr);
+			var newStr = SerializerClone(compstr);
 
 			Assert.AreEqual(compstr, newStr);
 		}
@@ -456,7 +478,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			var str = new SimpleStruct { A = 1, B = "allman" };
 			var box = new GenericBox<SimpleStruct> { Element = str };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(str, copy.Element);
 		}
 
@@ -465,7 +487,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			var special = new SpeciallySerializable();
 			special.Fill(100);
-			var copy = Serializer.DeepClone(special);
+			var copy = SerializerClone(special);
 			CollectionAssert.AreEqual(special.Data, copy.Data);
 		}
 
@@ -479,7 +501,7 @@ namespace AntMicro.Migrant.Tests
 			var anotherSpecial = new SpeciallySerializable();
 			anotherSpecial.Fill(100);
 			var array = new object[] { special, str, box, anotherSpecial };
-			var copy = Serializer.DeepClone(array);
+			var copy = SerializerClone(array);
 			Assert.AreSame(copy[0], ((Box)copy[2]).Element);
 			Assert.AreNotSame(copy[0], copy[3]);
 			CollectionAssert.AreEqual(((SpeciallySerializable)copy[0]).Data, special.Data);
@@ -490,7 +512,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeBoxWithLong()
 		{
 			var box = new GenericBox<long> { Element = 1234 };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(box.Element, copy.Element);
 		}
 
@@ -500,7 +522,7 @@ namespace AntMicro.Migrant.Tests
 			var special = new SpeciallySerializable();
 			special.Fill(100);
 			var box = new StructGenericBox<SpeciallySerializable> { Element = special };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(box.Element.Data, copy.Element.Data);
 		}
 
@@ -508,7 +530,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeNonNullNullable()
 		{
 			var box = new GenericBox<int?> { Element = 3 };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(box.Element, copy.Element);
 		}
 
@@ -516,7 +538,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeNullNullable()
 		{
 			var box = new GenericBox<int?> { Element = null };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(box.Element, copy.Element);
 		}
 
@@ -525,7 +547,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			int? value = 66;
 			var box = new Box { Element = value };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(box.Element, copy.Element);
 		}
 
@@ -534,7 +556,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			int? value = null;
 			var box = new Box { Element = value };
-			var copy = Serializer.DeepClone(box);
+			var copy = SerializerClone(box);
 			Assert.AreEqual(box.Element, copy.Element);
 		}
 
@@ -546,7 +568,7 @@ namespace AntMicro.Migrant.Tests
 			{
 				dictionary.TryAdd(i, 2*i);
 			}
-			var copy = Serializer.DeepClone(dictionary);
+			var copy = SerializerClone(dictionary);
 			CollectionAssert.AreEquivalent(dictionary, copy);
 		}
 
@@ -571,7 +593,7 @@ namespace AntMicro.Migrant.Tests
 			var errorneousObject = new BadlySerializable();
 			try
 			{
-				Serializer.DeepClone(errorneousObject);
+				SerializerClone(errorneousObject);
 				Assert.Fail("Exception was not thrown despite stream corruption.");
 			}
 			catch(InvalidOperationException)
@@ -583,7 +605,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldSerializeTuple()
 		{
 			var tuple = Tuple.Create("One", "Two", "Three");
-			var copy = Serializer.DeepClone(tuple);
+			var copy = SerializerClone(tuple);
 			Assert.AreEqual(tuple, copy);
 		}
 
@@ -591,14 +613,14 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokeConstructorForField()
 		{
 			var withCtor = new WithConstructorAttribute();
-			var copy = Serializer.DeepClone(withCtor);
+			var copy = SerializerClone(withCtor);
 			Assert.IsTrue(copy.IsFieldConstructed, "[Constructor] marked field was not initialized.");
 		}
 
 		[Test]
 		public void ShouldOmitTransientClass()
 		{
-			Serializer.DeepClone(new Box { Element = new TransientClass() });
+			SerializerClone(new Box { Element = new TransientClass() });
 		}
 
 		[Test]
@@ -608,9 +630,22 @@ namespace AntMicro.Migrant.Tests
 			queue.Enqueue(1);
 			queue.Enqueue(3);
 			queue.Enqueue(5);
-			var copy = Serializer.DeepClone(queue);
+			var copy = SerializerClone(queue);
 			CollectionAssert.AreEqual(queue, copy);
 		}
+
+		private T SerializerClone<T>(T toClone)
+		{
+			var settings = new Customization.Settings()
+			{
+				SerializationMethod = useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
+				DeserializationMethod = useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
+			};
+			return Serializer.DeepClone(toClone, settings);
+		}
+
+		private bool useGeneratedSerializer;
+		private bool useGeneratedDeserializer;
 
 		public class SimpleClass
 		{
@@ -699,7 +734,7 @@ namespace AntMicro.Migrant.Tests
 			public object Element { get; set; }
 		}
 
-		public class GenericBox<T>
+		public sealed class GenericBox<T>
 		{
 			public T Element { get; set; }
 		}
@@ -736,6 +771,17 @@ namespace AntMicro.Migrant.Tests
 			First = 1,
 			Second = 2,
 			Third = 4
+		}
+
+		private struct SimplerStruct
+		{
+			public int A;
+			public long B;
+
+			public override string ToString()
+			{
+				return string.Format("[SimplerStruct: A={0}, B={1}]", A, B);
+			}
 		}
 
 		private struct SimpleStruct

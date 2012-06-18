@@ -33,6 +33,8 @@ namespace AntMicro.Migrant.Tests
 	[TestFixture]
 	public class HooksTests
 	{
+		// TODO: do this tests for generated/reflection serializer
+
 		[Test]
 		public void ShouldInvokePreSerialization()
 		{
@@ -49,6 +51,14 @@ namespace AntMicro.Migrant.Tests
 			var copy = Serializer.DeepClone(mock);
 			Assert.IsTrue(mock.Invoked);
 			Assert.IsFalse(copy.Invoked);
+		}
+
+		[Test]
+		public void ShouldInvokeStaticPostSerialization()
+		{
+			var mock = new StaticPostSerializationMock();
+			Serializer.DeepClone(mock);
+			Assert.IsTrue(StaticPostSerializationMock.Invoked);
 		}
 
 		[Test]
@@ -103,6 +113,17 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		public bool Invoked { get; private set; }
+	}
+
+	public class StaticPostSerializationMock
+	{
+		[PostSerialization]
+		private static void PostSerialization()
+		{
+			Invoked = true;
+		}
+
+		public static bool Invoked { get; private set; }
 	}
 
 	public class PostDeserializationMock

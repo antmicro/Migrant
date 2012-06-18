@@ -31,6 +31,8 @@ using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Linq.Expressions;
+using System.Reflection.Emit;
 
 namespace AntMicro.Migrant
 {
@@ -38,7 +40,8 @@ namespace AntMicro.Migrant
     {
         internal static bool TryGetCollectionCountAndElementType(object o, out int count, out Type formalElementType)
         {
-            if(IsCollection(o.GetType(), out formalElementType))
+			bool fake, fake2, fake3;
+            if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2, out fake3))
             {
                 count = (int)Impromptu.InvokeGet(o, "Count");
                 return true;
@@ -58,27 +61,49 @@ namespace AntMicro.Migrant
             return false;
         }
 
-        public static bool IsCollection(Type actualType, out Type formalElementType)
+		// TODO: refactor with enum as a result instead of isGeneric etc
+		// and join with IsDictionary
+		public static bool IsCollection(Type actualType, out Type formalElementType, out bool isGeneric, out bool isGenericallyIterable, out bool isDictionary)
         {
             formalElementType = typeof(object);
             var ifaces = actualType.GetInterfaces();
             var result = false;
+			isGeneric = false;
+			isGenericallyIterable = false;
+			isDictionary = false;
+			var isGenericDictionary = false;
             foreach(var iface in ifaces)
             {
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>))
                 {
                     formalElementType = iface.GetGenericArguments()[0];
-                    return true;
+					isGeneric = true;
+					isGenericallyIterable = true;
+                    result = true;
                 }
+				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+				{
+					isGenericDictionary = true;
+				}
                 if(iface == typeof(ICollection))
                 {
                     result = true;
                 }
+				if(iface == typeof(IDictionary))
+				{
+					isDictionary = true;
+				}
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
                     formalElementType = iface.GetGenericArguments()[0];
+					isGenericallyIterable = true;
                 }
             }
+			if(isGenericDictionary)
+			{
+				// we favour treating as a generic dictionary if the collection implements both
+				isDictionary = false;
+			}
             return result;
         }
 
@@ -160,10 +185,15 @@ namespace AntMicro.Migrant
             return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
 
+		public static IEnumerable<MethodInfo> GetMethodsWithAttribute(Type attributeType, Type objectType)
+		{
+			return objectType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(x => x.IsDefined(attributeType, false));
+		}
+
         public static void InvokeAttribute(Type attributeType, object o)
         {
-            var methodsToInvoke = o.GetType().GetMethods(BindingFlags.Public | BindingFlags.NonPublic | 
-                BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(x => x.IsDefined(attributeType, false));
+			var methodsToInvoke = GetMethodsWithAttribute(attributeType, o.GetType());
             foreach(var method in methodsToInvoke)
             {
                 method.Invoke(o, new object[0]);
@@ -195,6 +225,25 @@ namespace AntMicro.Migrant
             }
             return t.GetFields(DefaultBindingFlags);
         }
+
+		public static MethodInfo GetMethodInfo(Expression<Action> expression)
+		{
+			var methodCall = (MethodCallExpression)expression.Body;
+			return methodCall.Method;
+		}
+
+		public static SerializationType GetSerializationType(Type type)
+		{
+			if(type.IsDefined(typeof(TransientAttribute), false))
+            {
+                return SerializationType.Transient;
+            }
+			if(type.IsValueType)
+            {
+				return SerializationType.Value;
+            }
+			return SerializationType.Reference;
+		}
 
         public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
