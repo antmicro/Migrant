@@ -93,10 +93,20 @@ namespace AntMicro.Migrant
             {
                 ScanRecursiveWithStack(typeSet, type, typeStack);
             }
-            if(!IsImplementation(typeToScan) || !typeSet.Add(typeToScan))
-            {
-                return;
-            }
+			if(typeToScan.IsInterface)
+			{
+				return;
+			}
+			if(!typeToScan.IsAbstract)
+			{
+				if(!typeSet.Add(typeToScan))
+				{
+					return;
+				}
+			}
+			// although we do not add abstract type to serialized types (it can't be encountered as the actual type),
+			// we should scan its fields, cause they are used in any implementation; we should of course scan the
+			// base type as well
             if(!IsPrimitive(typeToScan) && !typeToScan.IsValueType)
             { //cannot add IsValueType to IsPrimitive, because it's used by ShouldFieldsBeScanned
                 ScanRecursiveWithStack(typeSet, typeToScan.BaseType, typeStack);
@@ -105,7 +115,7 @@ namespace AntMicro.Migrant
             {
                 return;
             }
-            var fields = typeToScan.GetAllFields(false).Where(Helpers.IsNotTransient);
+			var fields = typeToScan.GetAllFields(false).Where(Helpers.IsNotTransient);
             var typesToAdd = fields.Select(x => x.FieldType).Where(x => IsImplementation(x))
                 .Distinct();
             foreach(var type in typesToAdd)
@@ -140,7 +150,7 @@ namespace AntMicro.Migrant
 
         private static bool IsImplementation(Type type)
         {
-            return !type.IsInterface && !type.IsAbstract;
+			return !type.IsInterface;// && !type.IsAbstract;
         }
 
         private static bool ShouldFieldsBeScanned(Type type)
