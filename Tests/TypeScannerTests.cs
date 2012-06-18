@@ -253,12 +253,12 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void DelegateDest()
+		public void DelegateTest()
 		{
 			try
 			{
 				var scan = new TypeScanner();
-				scan.Scan(typeof(Delegate));
+				scan.Scan(typeof(Action));
 				Assert.Fail();
 			} 
 			catch(ArgumentException)
