@@ -636,11 +636,11 @@ namespace AntMicro.Migrant.Tests
 
 		private T SerializerClone<T>(T toClone)
 		{
-			var settings = new Customization.Settings()
-			{
-				SerializationMethod = useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
-				DeserializationMethod = useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
-			};
+			var settings = new Customization.Settings
+			(
+				useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
+				useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
+			);
 			return Serializer.DeepClone(toClone, settings);
 		}
 
