@@ -187,7 +187,7 @@ namespace AntMicro.Migrant
 
 		public static IEnumerable<MethodInfo> GetMethodsWithAttribute(Type attributeType, Type objectType)
 		{
-			return objectType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | 
+			return objectType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
                 BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(x => x.IsDefined(attributeType, false));
 		}
 
