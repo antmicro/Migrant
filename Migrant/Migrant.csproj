@@ -57,12 +57,15 @@
     <Compile Include="Hooks\PreSerializationAttribute.cs" />
     <Compile Include="SerializationType.cs" />
     <Compile Include="Emitter\GeneratingObjectWriter.cs" />
+    <Compile Include="Customization\Settings.cs" />
+    <Compile Include="Customization\Method.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Folder Include="Utilities\" />
     <Folder Include="Hooks\" />
     <Folder Include="Emitter\" />
+    <Folder Include="Customization\" />
   </ItemGroup>
   <UsingTask TaskName="PepitaGet.RestorePackagesTask" AssemblyFile="$(SolutionDir)Lib\PepitaGet.dll" />
   <Target Name="BeforeBuild">
