@@ -185,10 +185,15 @@ namespace AntMicro.Migrant
             return type.IsValueType ? Activator.CreateInstance(type) : null;
         }
 
+		public static IEnumerable<MethodInfo> GetMethodsWithAttribute(Type attributeType, Type objectType)
+		{
+			return objectType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | 
+                BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(x => x.IsDefined(attributeType, false));
+		}
+
         public static void InvokeAttribute(Type attributeType, object o)
         {
-            var methodsToInvoke = o.GetType().GetMethods(BindingFlags.Public | BindingFlags.NonPublic | 
-                BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(x => x.IsDefined(attributeType, false));
+			var methodsToInvoke = GetMethodsWithAttribute(attributeType, o.GetType());
             foreach(var method in methodsToInvoke)
             {
                 method.Invoke(o, new object[0]);

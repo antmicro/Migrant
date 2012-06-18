@@ -33,6 +33,7 @@ using System.Reflection;
 using System.Linq;
 using System.Collections;
 using System.Threading;
+using AntMicro.Migrant.Hooks;
 
 namespace AntMicro.Migrant.Emitter
 {
@@ -99,6 +100,18 @@ namespace AntMicro.Migrant.Emitter
 			RegenerateWriteMethods();
 		}
 
+		private static void GenerateInvokeCallbacks(Type actualType, ILGenerator generator, Type attributeType)
+		{
+			var preSerializationMethods = Helpers.GetMethodsWithAttribute(attributeType, actualType);
+			foreach(var method in preSerializationMethods)
+			{
+				if(!method.IsStatic)
+				{
+					generator.Emit(OpCodes.Ldarg_2); // object to serialize
+				}
+				generator.Emit(OpCodes.Call, method);
+			}
+		}
 		private void RegenerateWriteMethods()
 		{
 			var newWriteMethods = new Action<PrimitiveWriter, object>[TypeIndices.Count];
@@ -128,20 +141,23 @@ namespace AntMicro.Migrant.Emitter
 				return specialWrite;
 			}
 
-			// TODO: callbacks!!
 			// TODO: parameter types: move and unify
-			DynamicMethod method;
+			DynamicMethod dynamicMethod;
 			if(!actualType.IsArray)
 			{
-				method = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
+				dynamicMethod = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
 			                               typeof(void), ParameterTypes, actualType, true);
 			}
 			else
 			{
 				var methodNo = Interlocked.Increment(ref WriteArrayMethodCounter);
-				method = new DynamicMethod(string.Format("WriteArray{0}", methodNo), null, ParameterTypes, true);
+				dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}", methodNo), null, ParameterTypes, true);
 			}
-			var generator = method.GetILGenerator();
+			var generator = dynamicMethod.GetILGenerator();
+
+			// preserialization callbacks
+			GenerateInvokeCallbacks(actualType, generator, typeof(PreSerializationAttribute));
+
 			if(!GenerateSpecialWrite(generator, actualType))
 			{
 				GenerateWriteFields(generator, gen =>
@@ -149,8 +165,12 @@ namespace AntMicro.Migrant.Emitter
 					gen.Emit(OpCodes.Ldarg_2);
 				}, actualType);
 			}
+
+			// postserialization callbacks
+			GenerateInvokeCallbacks(actualType, generator, typeof(PostSerializationAttribute));
+
 			generator.Emit(OpCodes.Ret);
-			var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
+			var result = (Action<PrimitiveWriter, object>)dynamicMethod.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
 			return result;
 		}
 
