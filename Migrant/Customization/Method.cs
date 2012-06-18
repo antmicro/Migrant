@@ -1,6 +1,6 @@
 using System;
 
-namespace Migrant
+namespace Migrant.Customization
 {
 	public enum Method
 	{

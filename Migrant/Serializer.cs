@@ -44,8 +44,17 @@ namespace AntMicro.Migrant
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Serializer"/> class.
 		/// </summary>
-        public Serializer()
+		/// <param name='settings'>
+		/// Serializer's settings, can be null or not given, in that case default settings are
+		/// used.
+		/// </param>
+        public Serializer(Settings settings = null)
         {
+			if(settings == null)
+			{
+				settings = new Settings(); // default settings
+			}
+			this.settings = settings;
             scanner = new TypeScanner();
             typeArray = new Type[0];
             typeIndices = new Dictionary<Type, int>();
@@ -79,9 +88,15 @@ namespace AntMicro.Migrant
         {
 			// TODO: change memoryStream to lazy type information
             var localStream = new MemoryStream();
-            //var writer = new ObjectWriter(localStream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization);
-			// TODO:
-			var writer = new GeneratingObjectWriter(localStream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization);
+			ObjectWriter writer;
+			if(settings.SerializationMethod == Method.Generated)
+			{
+				writer = new GeneratingObjectWriter(localStream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization);
+			}
+			else
+			{
+				writer = new ObjectWriter(localStream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization);
+			}
             writer.WriteObject(obj);
             WriteTypes(stream);
             localStream.Seek(0, SeekOrigin.Begin);
@@ -100,6 +115,10 @@ namespace AntMicro.Migrant
 		/// </typeparam>
         public T Deserialize<T>(Stream stream)
         {
+			if(settings.DeserializationMethod == Method.Generated)
+			{
+				throw new NotImplementedException("Generated deserialization is not yet implemented.");
+			}
             using(var reader = new PrimitiveReader(stream))
             {
                 var magic = reader.ReadUInt32();
@@ -200,6 +219,7 @@ namespace AntMicro.Migrant
         private readonly TypeScanner scanner;
         private Type[] typeArray;
         private readonly Dictionary<Type, int> typeIndices;
+		private readonly Settings settings;
 
         private const ushort VersionNumber = 1;
         private const uint Magic = 0xA5132;
