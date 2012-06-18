@@ -577,7 +577,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			var someObjects = new object[] { "One", 2, null, "Four" };
 			var stream = new MemoryStream();
-			var serializer = new Serializer();
+			var serializer = new Serializer(SettingsFromFields);
 			serializer.Serialize(someObjects, stream);
 			serializer.Serialize(someObjects, stream);
 			stream.Seek(0, SeekOrigin.Begin);
@@ -636,12 +636,21 @@ namespace AntMicro.Migrant.Tests
 
 		private T SerializerClone<T>(T toClone)
 		{
-			var settings = new Customization.Settings
-			(
-				useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
-				useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
-			);
+			var settings = SettingsFromFields;
 			return Serializer.DeepClone(toClone, settings);
+		}
+
+		private Customization.Settings SettingsFromFields
+		{
+			get
+			{
+				var settings = new Customization.Settings
+				(
+					useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
+					useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
+				);
+				return settings;
+			}
 		}
 
 		private bool useGeneratedSerializer;
