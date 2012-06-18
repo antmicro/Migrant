@@ -1,5 +1,5 @@
-Migrant
-=======
+Migrant 0.1.1
+=============
 
 This is the Migrant project, fast and flexible serialization framework usable for undecorated classes, written in C#.
 
@@ -52,7 +52,9 @@ Apart from the main serialization framework, we provide a mechanism to translate
 
 Another extra feature, unavailable in convenient form in CLI, is an ability to deep clone given objects. With just one method invocation, Migrant will return an object copy, using the same mechanisms as the rest of the serialization framework.
 
-The first release of Migrant uses reflection mechanisms to handle the serialization. In the next step we will default to automatically generated custom code, that will handle serialization and deserialization even faster.
+The current release of Migrant uses reflection mechanisms to handle the deserialization, however the serialization is done using on-line generated methods for performance (user can also use the reflection here too if he wishes). In the next release we plan to offer deserialization using generated methods as well.
+
+The performance assessments with compares to other popular serialization framework are yet to be done.
 
 Compilation
 -----------
