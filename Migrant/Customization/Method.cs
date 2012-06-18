@@ -1,6 +1,6 @@
 using System;
 
-namespace Migrant.Customization
+namespace AntMicro.Migrant.Customization
 {
 	public enum Method
 	{

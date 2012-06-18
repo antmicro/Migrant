@@ -28,7 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using AntMicro.Migrant.Emitter;
-using Migrant.Customization;
+using AntMicro.Migrant.Customization;
 
 namespace AntMicro.Migrant
 {
