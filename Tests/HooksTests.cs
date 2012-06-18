@@ -52,6 +52,14 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
+		public void ShouldInvokeStaticPostSerialization()
+		{
+			var mock = new StaticPostSerializationMock();
+			Serializer.DeepClone(mock);
+			Assert.IsTrue(StaticPostSerializationMock.Invoked);
+		}
+
+		[Test]
 		public void ShouldInvokePostDeserialization()
 		{
 			var mock = new PostDeserializationMock();
@@ -103,6 +111,17 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		public bool Invoked { get; private set; }
+	}
+
+	public class StaticPostSerializationMock
+	{
+		[PostSerialization]
+		private static void PostSerialization()
+		{
+			Invoked = true;
+		}
+
+		public static bool Invoked { get; private set; }
 	}
 
 	public class PostDeserializationMock
