@@ -45,7 +45,7 @@ namespace AntMicro.Migrant.Tests
 				{typeof(string), 0}
 			};
 			var stream = new MemoryStream();
-			var writer = new ObjectWriter(stream, typeIndices, true);
+			var writer = new ObjectWriter(stream, typeIndices);
 			writer.WriteObject(strings[0]);
 			writer.WriteObject(strings[1]);
 			var position = stream.Position;

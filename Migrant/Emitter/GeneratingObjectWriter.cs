@@ -39,9 +39,9 @@ namespace AntMicro.Migrant.Emitter
 {
 	public class GeneratingObjectWriter : ObjectWriter
 	{
-		public GeneratingObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, bool strictTypes, Action<Type> missingTypeCallback = null, 
+		public GeneratingObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, Action<Type> missingTypeCallback = null, 
 		                              Action<object> preSerializationCallback = null, Action<object> postSerializationCallback = null)
-			: base(stream, typeIndices, strictTypes, missingTypeCallback, preSerializationCallback, postSerializationCallback)
+			: base(stream, typeIndices, missingTypeCallback, preSerializationCallback, postSerializationCallback)
 		{
 			transientTypes = new Dictionary<Type, bool>();
 			writeMethods = new Action<PrimitiveWriter, object>[0];

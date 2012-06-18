@@ -48,18 +48,12 @@ namespace AntMicro.Migrant
 		/// Stream to which data will be written.
 		/// </param>
 		/// <param name='typeIndices'>
-		/// Dictionary which is used to map given type to (unique) ID. If the <see cref="strictTypes" /> is <c>true</c>,
-		/// then this dictionary must contain all the types of the serialized objects.
-		/// </param>
-		/// <param name='strictTypes'>
-		/// If this value is true, the <see cref="typeIndices" /> must contain all the types of the serialized objects,
-		/// otherwise exception is thrown. When false and given type is not present in dictionary, the <see cref="missingTypeCallback" />
-		/// is invoked.
+		/// Dictionary which is used to map given type to (unique) ID.
 		/// </param>
 		/// <param name='missingTypeCallback'>
-		/// Callback which is called when <see cref="strictTypes"/>  is true and type of the object to serialize cannot be found
-		/// in the <see cref="typeIndices"/> dictionary. The missing type is given in its only parameter. The callback should
-		/// supplement the dictionary with the missing type. Can be null if <see cref="strictTypes" /> is true.
+		/// Callback which is called when the type of the object to serialize cannot be found in the <see cref="typeIndices"/> 
+		/// dictionary. The missing type is given in its only parameter. The callback should supplement the dictionary with 
+		/// the missing type. Can be null, if user do not expects it to be called (for example, when all types are preinitialized).
 		/// </param>
 		/// <param name='preSerializationCallback'>
 		/// Callback which is called once on every unique object before its serialization. Contains this object in its only parameter.
@@ -67,16 +61,11 @@ namespace AntMicro.Migrant
 		/// <param name='postSerializationCallback'>
 		/// Callback which is called once on every unique object after its serialization. Contains this object in its only parameter.
 		/// </param>
-        public ObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, bool strictTypes, Action<Type> missingTypeCallback = null,
+        public ObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, Action<Type> missingTypeCallback = null,
                             Action<object> preSerializationCallback = null, Action<object> postSerializationCallback = null)
         {
             TypeIndices = typeIndices;
             this.stream = stream;
-            this.strictTypes = strictTypes;
-            if(!strictTypes && missingTypeCallback == null)
-            {
-                throw new ArgumentNullException("The parameter missingTypeCallback cannot be null when strict types is not enabled.");
-            }
             this.missingTypeCallback = missingTypeCallback;
             this.preSerializationCallback = preSerializationCallback;
             this.postSerializationCallback = postSerializationCallback;
@@ -406,15 +395,7 @@ namespace AntMicro.Migrant
             {
                 return;
             }
-            if(!strictTypes)
-            {
-				AddMissingType(type);
-            }
-            else
-            {
-                throw new InvalidOperationException(string.Format(
-                    "Unexpected type encountered in the strict type mode: {0}.", type.Name));
-            }
+			AddMissingType(type);
         }
 
 		protected virtual void AddMissingType(Type type)
@@ -427,7 +408,6 @@ namespace AntMicro.Migrant
         protected PrimitiveWriter Writer;
         protected HashSet<int> InlineWritten;
         private readonly Stream stream;
-        private readonly bool strictTypes;
         private readonly Action<Type> missingTypeCallback;
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;

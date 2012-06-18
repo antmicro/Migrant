@@ -141,21 +141,6 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void ShouldFailAtUnknownTypeWithSourceOnlyScan()
-		{
-			var str = "Something";
-			var box = new Box { Element = str };
-			try
-			{
-				Serializer.DeepClone(box, true);
-				Assert.Fail("Box with string serialized with sourceOnlyScan without exception.");
-			}
-			catch(InvalidOperationException)
-			{
-			}
-		}
-
-		[Test]
 		public void ShouldSerializeBoxWithLazyScan()
 		{
 			var str = "Something";
