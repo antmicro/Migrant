@@ -33,6 +33,8 @@ namespace AntMicro.Migrant.Tests
 	[TestFixture]
 	public class HooksTests
 	{
+		// TODO: do this tests for generated/reflection serializer
+
 		[Test]
 		public void ShouldInvokePreSerialization()
 		{
