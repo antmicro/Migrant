@@ -446,6 +446,8 @@ namespace AntMicro.Migrant.Emitter
 
 		private void GenerateWriteValue(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
+			PrimitiveWriter primitiveWriter = null; // TODO
+
 			if(formalType.IsEnum)
 			{
 				formalType = Enum.GetUnderlyingType(formalType);
@@ -457,6 +459,32 @@ namespace AntMicro.Migrant.Emitter
 				generator.Emit(OpCodes.Ldarg_1); // primitive writer waits there
 				putValueToWriteOnTop(generator);
 				generator.Emit(OpCodes.Call, writeMethod);
+				return;
+			}
+			var nullableUnderlyingType = Nullable.GetUnderlyingType(formalType);
+			if(nullableUnderlyingType != null)
+			{
+				var hasValue = generator.DefineLabel();
+				var finish = generator.DefineLabel();
+				var localIndex = generator.DeclareLocal(formalType).LocalIndex;
+				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+				putValueToWriteOnTop(generator);
+				generator.Emit(OpCodes.Stloc_S, localIndex);
+				generator.Emit(OpCodes.Ldloca_S, localIndex);
+				generator.Emit(OpCodes.Call, formalType.GetProperty("HasValue").GetGetMethod());
+				generator.Emit(OpCodes.Brtrue_S, hasValue);
+				generator.Emit(OpCodes.Ldc_I4_0);
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(false)));
+				generator.Emit(OpCodes.Br, finish);
+				generator.MarkLabel(hasValue);
+				generator.Emit(OpCodes.Ldc_I4_1);
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(false)));
+				GenerateWriteValue(generator, gen =>
+				                   {
+					generator.Emit(OpCodes.Ldloca_S, localIndex);
+					generator.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
+				}, nullableUnderlyingType);
+				generator.MarkLabel(finish);
 				return;
 			}
 			if(formalType.IsGenericType && formalType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
