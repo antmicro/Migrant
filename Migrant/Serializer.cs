@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.IO;
 using AntMicro.Migrant.Emitter;
 using AntMicro.Migrant.Customization;
+using System.Reflection;
 
 namespace AntMicro.Migrant
 {
@@ -55,6 +56,7 @@ namespace AntMicro.Migrant
 				settings = new Settings(); // default settings
 			}
 			this.settings = settings;
+			writeMethodCache = new Dictionary<Type, MethodInfo>();
             scanner = new TypeScanner();
             typeArray = new Type[0];
             typeIndices = new Dictionary<Type, int>();
@@ -91,7 +93,7 @@ namespace AntMicro.Migrant
 			ObjectWriter writer;
 			if(settings.SerializationMethod == Method.Generated)
 			{
-				writer = new GeneratingObjectWriter(localStream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization);
+				writer = new GeneratingObjectWriter(localStream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization, writeMethodCache);
 			}
 			else
 			{
@@ -223,6 +225,7 @@ namespace AntMicro.Migrant
         private Type[] typeArray;
         private readonly Dictionary<Type, int> typeIndices;
 		private readonly Settings settings;
+		private readonly Dictionary<Type, MethodInfo> writeMethodCache;
 
         private const ushort VersionNumber = 1;
         private const uint Magic = 0xA5132;

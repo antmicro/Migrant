@@ -37,14 +37,16 @@ using AntMicro.Migrant.Hooks;
 
 namespace AntMicro.Migrant.Emitter
 {
-	public class GeneratingObjectWriter : ObjectWriter
+	internal class GeneratingObjectWriter : ObjectWriter
 	{
 		public GeneratingObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, Action<Type> missingTypeCallback = null, 
-		                              Action<object> preSerializationCallback = null, Action<object> postSerializationCallback = null)
+		                              Action<object> preSerializationCallback = null, Action<object> postSerializationCallback = null,
+		                              IDictionary<Type, MethodInfo> writeMethodCache = null)
 			: base(stream, typeIndices, missingTypeCallback, preSerializationCallback, postSerializationCallback)
 		{
 			transientTypes = new Dictionary<Type, bool>();
 			writeMethods = new Action<PrimitiveWriter, object>[0];
+			this.writeMethodCache = writeMethodCache;
 			RegenerateWriteMethods();
 		}
 
@@ -125,7 +127,15 @@ namespace AntMicro.Migrant.Emitter
 				{
 					if(!CheckTransient(entry.Key))
 					{
-						newWriteMethods[entry.Value] = GenerateWriteMethod(entry.Key);
+						if(writeMethodCache != null && writeMethodCache.ContainsKey(entry.Key))
+						{
+							newWriteMethods[entry.Value] = (Action<PrimitiveWriter, object>)
+								Delegate.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this, writeMethodCache[entry.Key]);
+						}
+						else
+						{
+							newWriteMethods[entry.Value] = GenerateWriteMethod(entry.Key);
+						}
 					}
 					// for transient class the delegate will never be called
 				}
@@ -138,6 +148,7 @@ namespace AntMicro.Migrant.Emitter
 			var specialWrite = LinkSpecialWrite(actualType);
 			if(specialWrite != null)
 			{
+				// linked methods are not added to writeMethodCache, there's no point
 				return specialWrite;
 			}
 
@@ -171,6 +182,10 @@ namespace AntMicro.Migrant.Emitter
 
 			generator.Emit(OpCodes.Ret);
 			var result = (Action<PrimitiveWriter, object>)dynamicMethod.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
+			if(writeMethodCache != null)
+			{
+				writeMethodCache.Add(actualType, result.Method);
+			}
 			return result;
 		}
 
@@ -196,6 +211,7 @@ namespace AntMicro.Migrant.Emitter
 			if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
 			{
 				return (writer, obj) => {
+					Console.WriteLine (this);
 					var startingPosition = writer.Position;
 	                ((ISpeciallySerializable)obj).Save(writer);
 	                writer.Write(writer.Position - startingPosition);
@@ -618,6 +634,7 @@ namespace AntMicro.Migrant.Emitter
 
 		// TODO: actually, this field can be considered static
 		private readonly Dictionary<Type, bool> transientTypes;
+		private readonly IDictionary<Type, MethodInfo> writeMethodCache;
 		private Action<PrimitiveWriter, object>[] writeMethods;
 
 		private static int WriteArrayMethodCounter;
