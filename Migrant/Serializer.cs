@@ -28,7 +28,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using AntMicro.Migrant.Customization;
-using System.Reflection;
 using System.Collections;
 using System.Linq;
 using System.Reflection.Emit;
