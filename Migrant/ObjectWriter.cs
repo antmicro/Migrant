@@ -122,8 +122,7 @@ namespace AntMicro.Migrant
 			Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
             var type = o.GetType();
             // the actual type
-            TouchType(type);
-            Writer.Write(TypeIndices[type]);
+            TouchAndWriteTypeId(type);
             if(!WriteSpecialObject(o))
             {
                 WriteObjectsFields(o, type);
@@ -269,7 +268,7 @@ namespace AntMicro.Migrant
                 Writer.Write(Consts.NullObjectId);
                 return;
             }
-            Writer.Write(ObjectToTypeId(value));
+            TouchAndWriteTypeId(value);
 			var actualType = value.GetType(); // TODO: optimize?
             if(actualType.IsDefined(typeof(TransientAttribute), false))
             {
@@ -285,14 +284,6 @@ namespace AntMicro.Migrant
                 InvokeCallbacksAndWriteObject(value);
             }
 		}
-
-		protected internal int ObjectToTypeId(object o)
-		{
-			var actualType = o.GetType();
-			TouchType(actualType);
-			return TypeIndices[actualType];
-		}
-
 		protected internal bool ShouldBeInlined(Type type, int referenceId)
 		{
 			return Helpers.CanBeCreatedWithDataOnly(type) && referenceId > objectsWritten && !InlineWritten.Contains(referenceId);
@@ -389,14 +380,26 @@ namespace AntMicro.Migrant
             WriteObjectsFields(value, formalType);
         }
 
-        protected internal void TouchType(Type type)
+        protected internal int TouchAndWriteTypeId(Type type)
         {
+			int typeId;
             if(TypeIndices.ContainsKey(type))
             {
-                return;
+				typeId = TypeIndices[type];
+				Writer.Write(typeId);
+                return typeId;
             }
 			AddMissingType(type);
+			typeId = TypeIndices[type];
+			Writer.Write(typeId);
+			Writer.Write(type.AssemblyQualifiedName);
+			return typeId;
         }
+
+		protected internal void TouchAndWriteTypeId(Object o)
+		{
+			TouchAndWriteTypeId(o.GetType());
+		}
 
 		protected virtual void AddMissingType(Type type)
 		{

@@ -59,7 +59,11 @@ namespace AntMicro.Migrant
         public ObjectReader(Stream stream, Type[] typeArray, Action<object> postDeserializationCallback = null)
         {
             reader = new PrimitiveReader(stream);
-            this.typeArray = typeArray;
+			typeDictionary = new Dictionary<int, Type>();
+			for(var i = 0; i < typeArray.Length; i++)
+			{
+				typeDictionary.Add(i, typeArray[i]);
+			}
             this.stream = stream;
             this.postDeserializationCallback = postDeserializationCallback;
             PrepareForTheRead();
@@ -82,8 +86,8 @@ namespace AntMicro.Migrant
 		/// </remarks>
         public T ReadObject<T>()
         {
-            var typeIndex = reader.ReadInt32();
-            ReadObjectInner(typeIndex, 0);
+			var type = ReadType();
+            ReadObjectInner(type, 0);
             nextObjectToRead++;
             var obj = deserializedObjects[0];
             if(!(obj is T))
@@ -94,8 +98,7 @@ namespace AntMicro.Migrant
             {
                 if(!inlineRead.Contains(nextObjectToRead))
                 {
-                    typeIndex = reader.ReadInt32();
-                    ReadObjectInner(typeIndex, nextObjectToRead);
+                    ReadObjectInner(ReadType(), nextObjectToRead);
                 }
                 nextObjectToRead++;
             }
@@ -116,10 +119,9 @@ namespace AntMicro.Migrant
             reader = new PrimitiveReader(stream);
         }
 
-        private void ReadObjectInner(int typeIndex, int objectId)
+        private void ReadObjectInner(Type actualType, int objectId)
         {
-            TouchObject(typeIndex, objectId);
-            var actualType = typeArray[typeIndex];
+            TouchObject(actualType, objectId);
             switch(GetCreationWay(actualType))
             {
             case CreationWay.Null:
@@ -225,12 +227,11 @@ namespace AntMicro.Migrant
             }
             if(!formalType.IsValueType)
             {
-                var typeId = reader.ReadInt32();
-                if(typeId == Consts.NullObjectId)
+				var actualType = ReadType();
+                if(actualType == null)
                 {
                     return null;
                 }
-                var actualType = typeArray[typeId];
                 if(actualType.IsDefined(typeof(TransientAttribute), false))
                 {
                     return Helpers.GetDefaultValue(formalType);
@@ -241,11 +242,10 @@ namespace AntMicro.Migrant
                 {
                     // future reference, data inlined
                     inlineRead.Add(refId);
-                    var typeIndex = reader.ReadInt32();
-                    ReadObjectInner(typeIndex, refId);
+                    ReadObjectInner(ReadType(), refId);
                     return deserializedObjects[refId];
                 }
-                return TouchObject(typeId, refId);
+                return TouchObject(actualType, refId);
             } 
             if(formalType.IsEnum)
             {
@@ -423,18 +423,28 @@ namespace AntMicro.Migrant
             }
         }
 
-        private object TouchObject(int typeId, int refId)
+		private Type ReadType()
+		{
+			var typeId = reader.ReadInt32();
+			if(typeId == Consts.NullObjectId)
+			{
+				return null;
+			}
+			if(!typeDictionary.ContainsKey(typeId))
+			{
+				var typeName = reader.ReadString();
+				typeDictionary.Add(typeId, Type.GetType(typeName));
+			}
+			return typeDictionary[typeId];
+		}
+
+        private object TouchObject(Type actualType, int refId)
         {
-            if(typeId > typeArray.Length)
-            {
-                throw new ArgumentException("Argument typeId out of range");
-            }
             if(deserializedObjects[refId] != null)
             {
                 return deserializedObjects[refId];
             }
             UpdateMaximumReferenceId(refId);
-            var actualType = typeArray[typeId];
             object created = null;
             switch(GetCreationWay(actualType))
             {
@@ -487,7 +497,7 @@ namespace AntMicro.Migrant
         private AutoResizingList<object> deserializedObjects;
         private PrimitiveReader reader;
         private HashSet<int> inlineRead;
-        private readonly Type[] typeArray;
+        private readonly IDictionary<int, Type> typeDictionary;
         private readonly Stream stream;
         private readonly Action<object> postDeserializationCallback;
         private const int InitialCapacity = 128;

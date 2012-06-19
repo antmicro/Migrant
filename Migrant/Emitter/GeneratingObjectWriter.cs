@@ -89,10 +89,7 @@ namespace AntMicro.Migrant.Emitter
 		protected internal override void WriteObjectInner(object o)
 		{
 			var type = o.GetType();
-            // TODO: touch should refresh array
-            TouchType(type);
-			var typeId = TypeIndices[type];
-			Writer.Write(typeId);
+            var typeId = TouchAndWriteTypeId(type);
 			writeMethods[typeId](Writer, o);
 		}
 
@@ -572,7 +569,8 @@ namespace AntMicro.Migrant.Emitter
 			generator.MarkLabel(isNotNull);
 
 			var formalTypeIsActualType = formalType.Attributes.HasFlag(TypeAttributes.Sealed); // TODO: more optimizations?
-			if(formalTypeIsActualType)
+			// maybe we know the type id yet?
+			if(formalTypeIsActualType && TypeIndices.ContainsKey(formalType))
 			{
 				var typeId = TypeIndices[formalType];
 				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
@@ -582,11 +580,9 @@ namespace AntMicro.Migrant.Emitter
 			else
 			{
 				// we have to get the actual type at runtime
-				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator);
-				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => baseWriter.ObjectToTypeId(null))); // TODO: better do type to type id
-				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(0))); // TODO: get it once
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => baseWriter.TouchAndWriteTypeId(nullObject))); // TODO: better do type to type id
 			}
 
 			// TODO: other opts here?
