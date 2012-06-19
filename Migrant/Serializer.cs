@@ -31,6 +31,7 @@ using AntMicro.Migrant.Customization;
 using System.Reflection;
 using System.Collections;
 using System.Linq;
+using System.Reflection.Emit;
 
 namespace AntMicro.Migrant
 {
@@ -57,7 +58,7 @@ namespace AntMicro.Migrant
 				settings = new Settings(); // default settings
 			}
 			this.settings = settings;
-			writeMethodCache = new Dictionary<Type, MethodInfo>();
+			writeMethodCache = new Dictionary<Type, DynamicMethod>();
 			upfrontKnownTypes = new HashSet<Type>();
         }
 
@@ -240,7 +241,7 @@ namespace AntMicro.Migrant
 		}
 
 		private readonly Settings settings;
-		private readonly Dictionary<Type, MethodInfo> writeMethodCache;
+		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
 		private readonly HashSet<Type> upfrontKnownTypes;
         private const ushort VersionNumber = 2;
         private const uint Magic = 0xA5132;

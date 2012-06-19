@@ -34,6 +34,7 @@ using AntMicro.Migrant.Hooks;
 using ImpromptuInterface;
 using ImpromptuInterface.Dynamic;
 using AntMicro.Migrant.Generators;
+using System.Reflection.Emit;
 
 namespace AntMicro.Migrant
 {
@@ -48,10 +49,9 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// Stream to which data will be written.
 		/// </param>
-		/// <param name='typeIndices'>
-		/// Dictionary which is used to map given type to (unique) ID. Types in this dictionary are considered to be known upfront,
-		/// i.e. their type information is not written to the serialization stream. The <see cref="AntMicro.Migrant.ObjectReader" />
-		/// that will read such stream must receive consistent type set.
+		/// <param name='upfrontKnownTypes'>
+		/// List of types that are considered to be known upfront, i.e. their type information is not written to the serialization stream.
+		/// The <see cref="AntMicro.Migrant.ObjectReader" /> that will read such stream must receive consistent list.
 		/// </param>
 		/// <param name='preSerializationCallback'>
 		/// Callback which is called once on every unique object before its serialization. Contains this object in its only parameter.
@@ -59,8 +59,15 @@ namespace AntMicro.Migrant
 		/// <param name='postSerializationCallback'>
 		/// Callback which is called once on every unique object after its serialization. Contains this object in its only parameter.
 		/// </param>
+		/// <param name='writeMethodCache'>
+		/// Cache in which generated write methods are stored and reused between instances of <see cref="AntMicro.Migrant.ObjectWriter" />.
+		/// Can be null if one does not want to use the cache.
+		/// </param>
+		/// <param name='isGenerating'>
+		/// True if write methods are to be generated, false if one wants to use reflection.
+		/// </param>
         public ObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
-		                    Action<object> postSerializationCallback = null, IDictionary<Type, MethodInfo> writeMethodCache = null,
+		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
 		                    bool isGenerating = true)
         {
 			transientTypes = new Dictionary<Type, bool>();
@@ -513,7 +520,7 @@ namespace AntMicro.Migrant
 			var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
 			if(writeMethodCache != null)
 			{
-				writeMethodCache.Add(actualType, result.Method);
+				writeMethodCache.Add(actualType, method);
 			}
 			return result;
 		}
@@ -550,7 +557,7 @@ namespace AntMicro.Migrant
 
 		// TODO: actually, this field can be considered static
 		private readonly Dictionary<Type, bool> transientTypes;
-		private readonly IDictionary<Type, MethodInfo> writeMethodCache;
+		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
 		private Action<PrimitiveWriter, object>[] writeMethods;
     }
 }

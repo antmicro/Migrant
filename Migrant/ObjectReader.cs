@@ -48,9 +48,9 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// Stream from which objects will be read.
 		/// </param>
-		/// <param name='typeArray'>
-		/// Array which is used to resolve type using type ID. Must be consisent with the type ID
-		/// dictionary used by the <see cref="AntMicro.Migrant.ObjectWriter" />  which wrote the data.
+		/// <param name='upfrontKnownTypes'>
+		/// List of types that are considered to be known upfront, i.e. their type information is not written to the serialization stream.
+		/// It has to be consistent with <see cref="AntMicro.Migrant.ObjectWriter" /> that wrote the stream.
 		/// </param>
 		/// <param name='postDeserializationCallback'>
 		/// Callback which will be called after deserialization of every unique object. Deserialized
