@@ -32,7 +32,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Linq.Expressions;
-using System.Reflection.Emit;
 
 namespace AntMicro.Migrant
 {
@@ -227,6 +226,18 @@ namespace AntMicro.Migrant
         }
 
 		public static MethodInfo GetMethodInfo(Expression<Action> expression)
+		{
+			var methodCall = (MethodCallExpression)expression.Body;
+			return methodCall.Method;
+		}
+
+		public static MethodInfo GetMethodInfo<T>(Expression<Action<T>> expression)
+		{
+			var methodCall = (MethodCallExpression)expression.Body;
+			return methodCall.Method;
+		}
+
+		public static MethodInfo GetMethodInfo<T, TParam1>(Expression<Action<T, TParam1>> expression)
 		{
 			var methodCall = (MethodCallExpression)expression.Body;
 			return methodCall.Method;

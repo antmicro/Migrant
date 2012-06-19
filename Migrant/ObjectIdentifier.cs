@@ -97,6 +97,21 @@ namespace AntMicro.Migrant
         }
 
 		/// <summary>
+		/// For an ID which was previously returned by the <see cref="AntMicro.Migrant.ObjectIdentifier.GetId(object)" /> method,
+		/// returns an object for which this ID was generated.
+		/// </summary>
+		/// <param name='id'>
+		/// The unique ID, previously returned by the <see cref="AntMicro.Migrant.ObjectIdentifier.GetId(object)" /> method.
+		/// </param>
+		public object this[int id]
+		{
+			get
+			{
+				return GetObject(id);
+			}
+		}
+
+		/// <summary>
 		/// Gets the count of the unique objects presented to class. It is also
 		/// the first unoccupied ID which will be returned for the new object.
 		/// </summary>

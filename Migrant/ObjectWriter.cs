@@ -70,7 +70,7 @@ namespace AntMicro.Migrant
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
 		                    bool isGenerating = true)
         {
-			transientTypes = new Dictionary<Type, bool>();
+			transientTypeCache = new Dictionary<Type, bool>();
 			writeMethods = new List<Action<PrimitiveWriter, object>>();
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
@@ -99,7 +99,7 @@ namespace AntMicro.Migrant
             {
                 if(!inlineWritten.Contains(objectsWritten))
                 {
-                    InvokeCallbacksAndWriteObject(identifier.GetObject(objectsWritten)); // TODO: indexer maybe?
+                    InvokeCallbacksAndWriteObject(identifier[objectsWritten]);
                 }
                 objectsWritten++;
             }
@@ -132,12 +132,12 @@ namespace AntMicro.Migrant
 		internal bool CheckTransient(Type type)
 		{
 			bool result;
-			if(transientTypes.TryGetValue(type, out result))
+			if(transientTypeCache.TryGetValue(type, out result))
 			{
 				return result;
 			}
 			var isTransient = type.IsDefined(typeof(TransientAttribute), false);
-			transientTypes.Add(type, isTransient);
+			transientTypeCache.Add(type, isTransient);
 			return isTransient;
 		}
 
@@ -168,6 +168,11 @@ namespace AntMicro.Migrant
 		internal void TouchAndWriteTypeId(Object o)
 		{
 			TouchAndWriteTypeId(o.GetType());
+		}
+
+		internal static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type)
+		{
+			return type.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name);
 		}
 
         private void PrepareForNextWrite()
@@ -217,7 +222,7 @@ namespace AntMicro.Migrant
         private void WriteObjectsFields(object o, Type type)
         {
             // fields in the alphabetical order
-            var fields = type.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name);
+			var fields = GetFieldsInSerializationOrder(type);
             foreach(var field in fields)
             {
                 var fieldType = field.FieldType;
@@ -353,7 +358,7 @@ namespace AntMicro.Migrant
                 return;
             }
             TouchAndWriteTypeId(value);
-			var actualType = value.GetType(); // TODO: optimize?
+			var actualType = value.GetType();
             if(actualType.IsDefined(typeof(TransientAttribute), false))
             {
                 return;
@@ -538,10 +543,9 @@ namespace AntMicro.Migrant
         private readonly Action<object> postSerializationCallback;
         private readonly Dictionary<Type, int> typeIndices;
 
-		// TODO: actually, this field can be considered static
-		private readonly Dictionary<Type, bool> transientTypes;
+		private readonly Dictionary<Type, bool> transientTypeCache;
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
-		private List<Action<PrimitiveWriter, object>> writeMethods;
+		private readonly List<Action<PrimitiveWriter, object>> writeMethods;
     }
 }
 
