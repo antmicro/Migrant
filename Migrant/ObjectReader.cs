@@ -59,10 +59,10 @@ namespace AntMicro.Migrant
         public ObjectReader(Stream stream, Type[] typeArray, Action<object> postDeserializationCallback = null)
         {
             reader = new PrimitiveReader(stream);
-			typeDictionary = new Dictionary<int, Type>();
+			typeList = new List<Type>();
 			for(var i = 0; i < typeArray.Length; i++)
 			{
-				typeDictionary.Add(i, typeArray[i]);
+				typeList.Add(typeArray[i]);
 			}
             this.stream = stream;
             this.postDeserializationCallback = postDeserializationCallback;
@@ -430,12 +430,12 @@ namespace AntMicro.Migrant
 			{
 				return null;
 			}
-			if(!typeDictionary.ContainsKey(typeId))
+			if(typeList.Count <= typeId)
 			{
 				var typeName = reader.ReadString();
-				typeDictionary.Add(typeId, Type.GetType(typeName));
+				typeList.Add(Type.GetType(typeName));
 			}
-			return typeDictionary[typeId];
+			return typeList[typeId];
 		}
 
         private object TouchObject(Type actualType, int refId)
@@ -497,7 +497,7 @@ namespace AntMicro.Migrant
         private AutoResizingList<object> deserializedObjects;
         private PrimitiveReader reader;
         private HashSet<int> inlineRead;
-        private readonly IDictionary<int, Type> typeDictionary;
+        private readonly List<Type> typeList;
         private readonly Stream stream;
         private readonly Action<object> postDeserializationCallback;
         private const int InitialCapacity = 128;
