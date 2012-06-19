@@ -462,7 +462,7 @@ namespace AntMicro.Migrant.Generators
 				// we have to get the actual type at runtime
 				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator);
-				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, object>((writer, obj) => writer.TouchAndWriteTypeId(obj))); // TODO: better do type to type id
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, object>((writer, obj) => writer.TouchAndWriteTypeId(obj)));
 			}
 
 			// TODO: other opts here?

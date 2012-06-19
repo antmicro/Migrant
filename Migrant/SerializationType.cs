@@ -28,7 +28,7 @@ using System;
 
 namespace AntMicro.Migrant
 {
-	public enum SerializationType
+	internal enum SerializationType
 	{
 		Transient,
 		Value,

@@ -243,7 +243,7 @@ namespace AntMicro.Migrant
 			return methodCall.Method;
 		}
 
-		public static SerializationType GetSerializationType(Type type)
+		internal static SerializationType GetSerializationType(Type type)
 		{
 			if(type.IsDefined(typeof(TransientAttribute), false))
             {

@@ -26,17 +26,39 @@
 */
 namespace AntMicro.Migrant.Customization
 {
+	/// <summary>
+	/// Contains serialization settings.
+	/// </summary>
 	public sealed class Settings
 	{
+		/// <summary>
+		/// Gets the method used for serialization.
+		/// </summary>
 		public Method SerializationMethod { get; private set; }
+
+		/// <summary>
+		/// Gets the method used for deserialization.
+		/// </summary>
 		public Method DeserializationMethod { get; private set; }
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Customization.Settings"/> class with default settings.
+		/// </summary>
 		public Settings()
 		{
 			SerializationMethod = Method.Generated;
 			DeserializationMethod = Method.Reflection; // TODO: change to generated when it's done
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Customization.Settings"/> class.
+		/// </summary>
+		/// <param name='serializationMethod'>
+		/// Method used for serialization.
+		/// </param>
+		/// <param name='deserializationMethod'>
+		/// Method used for deserialization.
+		/// </param>
 		public Settings(Method serializationMethod, Method deserializationMethod)
 		{
 			SerializationMethod = serializationMethod;

@@ -83,7 +83,6 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// Stream to which the given object should be serialized. Has to be writeable.
 		/// </param>
-		/// </param>
         public void Serialize(object obj, Stream stream)
         {
 			var typeList = upfrontKnownTypes.ToList();
