@@ -67,7 +67,7 @@ namespace AntMicro.Migrant
 			writeMethods = new Action<PrimitiveWriter, object>[0];
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
-			TypeIndices = new Dictionary<Type, int>();
+			typeIndices = new Dictionary<Type, int>();
 			RegenerateWriteMethods();
 			foreach(var type in upfrontKnownTypes)
 			{
@@ -88,12 +88,12 @@ namespace AntMicro.Migrant
         public void WriteObject(object o)
         {
             objectsWritten = 0;
-            Identifier.GetId(o);
-            while(Identifier.Count > objectsWritten)
+            identifier.GetId(o);
+            while(identifier.Count > objectsWritten)
             {
-                if(!InlineWritten.Contains(objectsWritten))
+                if(!inlineWritten.Contains(objectsWritten))
                 {
-                    InvokeCallbacksAndWriteObject(Identifier.GetObject(objectsWritten)); // TODO: indexer maybe?
+                    InvokeCallbacksAndWriteObject(identifier.GetObject(objectsWritten)); // TODO: indexer maybe?
                 }
                 objectsWritten++;
             }
@@ -103,17 +103,17 @@ namespace AntMicro.Migrant
 		internal void WriteObjectId(object o)
 		{
 			// this function is called when object to serialize cannot be data-inlined object such as string
-			Writer.Write(Identifier.GetId(o));
+			writer.Write(identifier.GetId(o));
 		}
 
 		internal void WriteObjectIdPossiblyInline(object o)
 		{
-			var refId = Identifier.GetId(o);
+			var refId = identifier.GetId(o);
 			var type = o.GetType();
-			Writer.Write(refId);
+			writer.Write(refId);
 			if(ShouldBeInlined(type, refId))
 			{
-				InlineWritten.Add(refId);
+				inlineWritten.Add(refId);
                 InvokeCallbacksAndWriteObject(o);
 			}
 		}
@@ -135,15 +135,44 @@ namespace AntMicro.Migrant
 			return isTransient;
 		}
 
+		internal static void CheckLegality(Type type)
+		{
+			if(type.IsPointer || type == typeof(IntPtr))
+			{
+				throw new ArgumentException(); // TODO
+			}
+		}
+
+		internal int TouchAndWriteTypeId(Type type)
+        {
+			int typeId;
+            if(typeIndices.ContainsKey(type))
+            {
+				typeId = typeIndices[type];
+				writer.Write(typeId);
+                return typeId;
+            }
+			AddMissingType(type);
+			typeId = typeIndices[type];
+			writer.Write(typeId);
+			writer.Write(type.AssemblyQualifiedName);
+			return typeId;
+        }
+
+		internal void TouchAndWriteTypeId(Object o)
+		{
+			TouchAndWriteTypeId(o.GetType());
+		}
+
         private void PrepareForNextWrite()
         {
-            if(Writer != null)
+            if(writer != null)
             {
-                Writer.Dispose();
+                writer.Dispose();
             }
-            Identifier = new ObjectIdentifier();
-            Writer = new PrimitiveWriter(stream);
-            InlineWritten = new HashSet<int>();
+            identifier = new ObjectIdentifier();
+            writer = new PrimitiveWriter(stream);
+            inlineWritten = new HashSet<int>();
         }
 
         private void InvokeCallbacksAndWriteObject(object o)
@@ -159,11 +188,11 @@ namespace AntMicro.Migrant
             }
         }
 
-		protected internal void WriteObjectInner(object o)
+		private void WriteObjectInner(object o)
 		{
 			var type = o.GetType();
             var typeId = TouchAndWriteTypeId(type);
-			writeMethods[typeId](Writer, o);
+			writeMethods[typeId](writer, o);
 		}
 
 		private void WriteObjectUsingReflection(PrimitiveWriter primitiveWriter, object o)
@@ -205,9 +234,9 @@ namespace AntMicro.Migrant
             var speciallySerializable = o as ISpeciallySerializable;
             if(speciallySerializable != null)
             {
-                var startingPosition = Writer.Position;
-                speciallySerializable.Save(Writer);
-                Writer.Write(Writer.Position - startingPosition);
+                var startingPosition = writer.Position;
+                speciallySerializable.Save(writer);
+                writer.Write(writer.Position - startingPosition);
                 return true;
             }
             if(type.IsArray)
@@ -215,14 +244,14 @@ namespace AntMicro.Migrant
                 var elementType = type.GetElementType();
                 var array = o as Array;
                 var rank = array.Rank;
-                Writer.Write(rank);
+                writer.Write(rank);
                 WriteArray(elementType, array);
                 return true;
             }
             var str = o as string;
             if(str != null)
             {
-                Writer.Write(str);
+                writer.Write(str);
                 return true;
             }
             int count;
@@ -245,7 +274,7 @@ namespace AntMicro.Migrant
 
         private void WriteEnumerable(Type elementFormalType, int count, IEnumerable collection)
         {
-            Writer.Write(count);
+            writer.Write(count);
             foreach(var element in collection)
             {
                 WriteField(elementFormalType, element);
@@ -254,7 +283,7 @@ namespace AntMicro.Migrant
 
         private void WriteDictionary(Type formalKeyType, Type formalValueType, int count, IEnumerable dictionary)
         {
-            Writer.Write(count);
+            writer.Write(count);
             var keyInvocation = new CacheableInvocation(InvocationKind.Get, "Key");
             var valueInvocation = new CacheableInvocation(InvocationKind.Get, "Value");
             foreach(var element in dictionary)
@@ -269,7 +298,7 @@ namespace AntMicro.Migrant
             var rank = array.Rank;
             for(var i = 0; i < rank; i++)
             {
-                Writer.Write(array.GetLength(i));
+                writer.Write(array.GetLength(i));
             }
             var position = new int[rank];
             WriteArrayRowRecursive(array, 0, elementFormalType, position);
@@ -314,7 +343,7 @@ namespace AntMicro.Migrant
             // a null reference maybe?
             if(value == null)
             {
-                Writer.Write(Consts.NullObjectId);
+                writer.Write(Consts.NullObjectId);
                 return;
             }
             TouchAndWriteTypeId(value);
@@ -323,27 +352,20 @@ namespace AntMicro.Migrant
             {
                 return;
             }
-            var refId = Identifier.GetId(value);
+            var refId = identifier.GetId(value);
             // if this is a future reference, just after the reference id,
             // we should write inline data
-            Writer.Write(refId);
+            writer.Write(refId);
             if(ShouldBeInlined(actualType, refId))
             {
-                InlineWritten.Add(refId);
+                inlineWritten.Add(refId);
                 InvokeCallbacksAndWriteObject(value);
             }
 		}
-		protected internal bool ShouldBeInlined(Type type, int referenceId)
-		{
-			return Helpers.CanBeCreatedWithDataOnly(type) && referenceId > objectsWritten && !InlineWritten.Contains(referenceId);
-		}
 
-		protected internal static void CheckLegality(Type type)
+		private bool ShouldBeInlined(Type type, int referenceId)
 		{
-			if(type.IsPointer || type == typeof(IntPtr))
-			{
-				throw new ArgumentException(); // TODO
-			}
+			return Helpers.CanBeCreatedWithDataOnly(type) && referenceId > objectsWritten && !inlineWritten.Contains(referenceId);
 		}
 
         private void WriteValueType(Type formalType, object value)
@@ -352,7 +374,7 @@ namespace AntMicro.Migrant
             // value type -> actual type is the formal type
             if(formalType.IsEnum)
             {
-                Writer.Write(Impromptu.InvokeConvert(value, typeof(long), true));
+                writer.Write(Impromptu.InvokeConvert(value, typeof(long), true));
                 return;
             }
             var nullableActualType = Nullable.GetUnderlyingType(formalType);
@@ -360,115 +382,94 @@ namespace AntMicro.Migrant
             {
                 if(value != null)
                 {
-                    Writer.Write(true);
+                    writer.Write(true);
                     WriteValueType(nullableActualType, value);
                 }
                 else
                 {
-                    Writer.Write(false);
+                    writer.Write(false);
                 }
                 return;
             }
             if(formalType == typeof(Int64))
             {
-                Writer.Write((Int64)value);
+                writer.Write((Int64)value);
                 return;
             }
             if(formalType == typeof(UInt64))
             {
-                Writer.Write((UInt64)value);
+                writer.Write((UInt64)value);
                 return;
             }
             if(formalType == typeof(Int32))
             {
-                Writer.Write((Int32)value);
+                writer.Write((Int32)value);
                 return;
             }
             if(formalType == typeof(UInt32))
             {
-                Writer.Write((UInt32)value);
+                writer.Write((UInt32)value);
                 return;
             }
             if(formalType == typeof(Int16))
             {
-                Writer.Write((Int16)value);
+                writer.Write((Int16)value);
                 return;
             }
             if(formalType == typeof(UInt16))
             {
-                Writer.Write((UInt16)value);
+                writer.Write((UInt16)value);
                 return;
             }
             if(formalType == typeof(char))
             {
-                Writer.Write((char)value);
+                writer.Write((char)value);
                 return;
             }
             if(formalType == typeof(byte))
             {
-                Writer.Write((byte)value);
+                writer.Write((byte)value);
                 return;
             }
             if(formalType == typeof(bool))
             {
-                Writer.Write((bool)value);
+                writer.Write((bool)value);
                 return;
             }
             if(formalType == typeof(DateTime))
             {
-                Writer.Write((DateTime)value);
+                writer.Write((DateTime)value);
                 return;
             }
             if(formalType == typeof(TimeSpan))
             {
-                Writer.Write((TimeSpan)value);
+                writer.Write((TimeSpan)value);
                 return;
             }
             if(formalType == typeof(float))
             {
-                Writer.Write((float)value);
+                writer.Write((float)value);
                 return;
             }
             if(formalType == typeof(double))
             {
-                Writer.Write((double)value);
+                writer.Write((double)value);
                 return;
             }
             // so we guess it is struct
             WriteObjectsFields(value, formalType);
         }
 
-        protected internal int TouchAndWriteTypeId(Type type)
-        {
-			int typeId;
-            if(TypeIndices.ContainsKey(type))
-            {
-				typeId = TypeIndices[type];
-				Writer.Write(typeId);
-                return typeId;
-            }
-			AddMissingType(type);
-			typeId = TypeIndices[type];
-			Writer.Write(typeId);
-			Writer.Write(type.AssemblyQualifiedName);
-			return typeId;
-        }
-
-		protected internal void TouchAndWriteTypeId(Object o)
+		private void AddMissingType(Type type)
 		{
-			TouchAndWriteTypeId(o.GetType());
-		}
-
-		protected virtual void AddMissingType(Type type)
-		{
-			TypeIndices.Add(type, nextTypeId++);
+			typeIndices.Add(type, nextTypeId++);
 			RegenerateWriteMethods();
 		}
 
 		private void RegenerateWriteMethods()
 		{
-			var newWriteMethods = new Action<PrimitiveWriter, object>[TypeIndices.Count];
-			foreach(var entry in TypeIndices)
+			var newWriteMethods = new Action<PrimitiveWriter, object>[typeIndices.Count];
+			foreach(var entry in typeIndices)
 			{
 				if(writeMethods.Length > entry.Value)
 				{
@@ -508,7 +509,7 @@ namespace AntMicro.Migrant
 				return WriteObjectUsingReflection;
 			}
 
-			var method = new WriteMethodGenerator(actualType, TypeIndices).Method;
+			var method = new WriteMethodGenerator(actualType, typeIndices).Method;
 			var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
 			if(writeMethodCache != null)
 			{
@@ -535,22 +536,22 @@ namespace AntMicro.Migrant
 			return null;
 		}
 
-		private readonly bool isGenerating;
+		private ObjectIdentifier identifier;
+		private int objectsWritten;
+		private int nextTypeId;
+		private PrimitiveWriter writer;
+		private HashSet<int> inlineWritten;
+
+		private readonly bool isGenerating;        
+        private readonly Stream stream;
+        private readonly Action<object> preSerializationCallback;
+        private readonly Action<object> postSerializationCallback;
+        private readonly Dictionary<Type, int> typeIndices;
 
 		// TODO: actually, this field can be considered static
 		private readonly Dictionary<Type, bool> transientTypes;
 		private readonly IDictionary<Type, MethodInfo> writeMethodCache;
 		private Action<PrimitiveWriter, object>[] writeMethods;
-
-        private int objectsWritten;
-		private int nextTypeId;
-        protected internal ObjectIdentifier Identifier;
-        protected PrimitiveWriter Writer;
-        protected HashSet<int> InlineWritten;
-        private readonly Stream stream;
-        private readonly Action<object> preSerializationCallback;
-        private readonly Action<object> postSerializationCallback;
-        protected readonly Dictionary<Type, int> TypeIndices;
     }
 }
 
