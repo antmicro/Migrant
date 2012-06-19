@@ -57,7 +57,6 @@
     <Compile Include="SerializationType.cs" />
     <Compile Include="Customization\Settings.cs" />
     <Compile Include="Customization\Method.cs" />
-    <Compile Include="Generators\GeneratingObjectWriter.cs" />
     <Compile Include="Generators\WriteMethodGenerator.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

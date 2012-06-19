@@ -4,7 +4,6 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using AntMicro.Migrant.Emitter;
 using System.Threading;
 using AntMicro.Migrant.Hooks;
 
@@ -417,7 +416,6 @@ namespace AntMicro.Migrant.Generators
 		private void GenerateWriteReference(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
 			ObjectWriter baseWriter = null; // TODO: fake, maybe promote to field
-			GeneratingObjectWriter objectWriter = null; // TODO
 			PrimitiveWriter primitiveWriter = null; // TODO: as above
 			object nullObject = null; // TODO: as above
 
@@ -469,7 +467,7 @@ namespace AntMicro.Migrant.Generators
 			{
 				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator); // value to serialize
-				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => objectWriter.CheckTransient(nullObject)));
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => baseWriter.CheckTransient(nullObject)));
 				generator.Emit(OpCodes.Brtrue_S, finish);
 			}
 
@@ -482,11 +480,11 @@ namespace AntMicro.Migrant.Generators
 				putValueToWriteOnTop(generator);
 				if(mayBeInlined)
 				{
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => objectWriter.WriteObjectIdPossiblyInline(null)));
+					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => baseWriter.WriteObjectIdPossiblyInline(null)));
 				}
 				else
 				{
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => objectWriter.WriteObjectId(null)));
+					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => baseWriter.WriteObjectId(null)));
 				}
 			}
 			generator.MarkLabel(finish);
@@ -497,7 +495,7 @@ namespace AntMicro.Migrant.Generators
 		private readonly DynamicMethod dynamicMethod;
 
 		private static int WriteArrayMethodCounter;
-		private static readonly Type[] ParameterTypes = new [] { typeof(GeneratingObjectWriter), typeof(PrimitiveWriter), typeof(object) };
+		private static readonly Type[] ParameterTypes = new [] { typeof(ObjectWriter), typeof(PrimitiveWriter), typeof(object) };
 	}
 }
 

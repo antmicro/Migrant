@@ -33,6 +33,7 @@ using System.Collections;
 using AntMicro.Migrant.Hooks;
 using ImpromptuInterface;
 using ImpromptuInterface.Dynamic;
+using AntMicro.Migrant.Generators;
 
 namespace AntMicro.Migrant
 {
@@ -59,9 +60,15 @@ namespace AntMicro.Migrant
 		/// Callback which is called once on every unique object after its serialization. Contains this object in its only parameter.
 		/// </param>
         public ObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
-		                    Action<object> postSerializationCallback = null)
+		                    Action<object> postSerializationCallback = null, IDictionary<Type, MethodInfo> writeMethodCache = null,
+		                    bool isGenerating = true)
         {
+			transientTypes = new Dictionary<Type, bool>();
+			writeMethods = new Action<PrimitiveWriter, object>[0];
+			this.writeMethodCache = writeMethodCache;
+			this.isGenerating = isGenerating;
 			TypeIndices = new Dictionary<Type, int>();
+			RegenerateWriteMethods();
 			foreach(var type in upfrontKnownTypes)
 			{
 				AddMissingType(type);
@@ -93,6 +100,41 @@ namespace AntMicro.Migrant
             PrepareForNextWrite();
         }
 
+		internal void WriteObjectId(object o)
+		{
+			// this function is called when object to serialize cannot be data-inlined object such as string
+			Writer.Write(Identifier.GetId(o));
+		}
+
+		internal void WriteObjectIdPossiblyInline(object o)
+		{
+			var refId = Identifier.GetId(o);
+			var type = o.GetType();
+			Writer.Write(refId);
+			if(ShouldBeInlined(type, refId))
+			{
+				InlineWritten.Add(refId);
+                InvokeCallbacksAndWriteObject(o);
+			}
+		}
+
+		internal bool CheckTransient(object o)
+		{
+			return CheckTransient(o.GetType());
+		}
+
+		internal bool CheckTransient(Type type)
+		{
+			bool result;
+			if(transientTypes.TryGetValue(type, out result))
+			{
+				return result;
+			}
+			var isTransient = type.IsDefined(typeof(TransientAttribute), false);
+			transientTypes.Add(type, isTransient);
+			return isTransient;
+		}
+
         private void PrepareForNextWrite()
         {
             if(Writer != null)
@@ -104,7 +146,7 @@ namespace AntMicro.Migrant
             InlineWritten = new HashSet<int>();
         }
 
-        protected void InvokeCallbacksAndWriteObject(object o)
+        private void InvokeCallbacksAndWriteObject(object o)
         {
             if(preSerializationCallback != null)
             {
@@ -117,12 +159,19 @@ namespace AntMicro.Migrant
             }
         }
 
-		protected internal virtual void WriteObjectInner(object o)
+		protected internal void WriteObjectInner(object o)
 		{
+			var type = o.GetType();
+            var typeId = TouchAndWriteTypeId(type);
+			writeMethods[typeId](Writer, o);
+		}
+
+		private void WriteObjectUsingReflection(PrimitiveWriter primitiveWriter, object o)
+		{
+			// the primitiveWriter parameter is not used here in fact, it is only to have
+			// signature compatible with the generated method
 			Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
             var type = o.GetType();
-            // the actual type
-            TouchAndWriteTypeId(type);
             if(!WriteSpecialObject(o))
             {
                 WriteObjectsFields(o, type);
@@ -413,7 +462,85 @@ namespace AntMicro.Migrant
 		protected virtual void AddMissingType(Type type)
 		{
 			TypeIndices.Add(type, nextTypeId++);
+			RegenerateWriteMethods();
 		}
+
+		private void RegenerateWriteMethods()
+		{
+			var newWriteMethods = new Action<PrimitiveWriter, object>[TypeIndices.Count];
+			foreach(var entry in TypeIndices)
+			{
+				if(writeMethods.Length > entry.Value)
+				{
+					newWriteMethods[entry.Value] = writeMethods[entry.Value];
+				}
+				else
+				{
+					if(!CheckTransient(entry.Key))
+					{
+						if(writeMethodCache != null && writeMethodCache.ContainsKey(entry.Key))
+						{
+							newWriteMethods[entry.Value] = (Action<PrimitiveWriter, object>)
+								Delegate.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this, writeMethodCache[entry.Key]);
+						}
+						else
+						{
+							newWriteMethods[entry.Value] = PrepareWriteMethod(entry.Key);
+						}
+					}
+					// for transient class the delegate will never be called
+				}
+			}
+			writeMethods = newWriteMethods;
+		}
+
+		private Action<PrimitiveWriter, object> PrepareWriteMethod(Type actualType)
+		{
+			var specialWrite = LinkSpecialWrite(actualType);
+			if(specialWrite != null)
+			{
+				// linked methods are not added to writeMethodCache, there's no point
+				return specialWrite;
+			}
+
+			if(!isGenerating)
+			{
+				return WriteObjectUsingReflection;
+			}
+
+			var method = new WriteMethodGenerator(actualType, TypeIndices).Method;
+			var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
+			if(writeMethodCache != null)
+			{
+				writeMethodCache.Add(actualType, result.Method);
+			}
+			return result;
+		}
+
+		private Action<PrimitiveWriter, object> LinkSpecialWrite(Type actualType)
+		{
+			if(actualType == typeof(string))
+			{
+				return (y, obj) => y.Write((string)obj);
+			}
+			if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
+			{
+				return (writer, obj) => {
+					Console.WriteLine (this);
+					var startingPosition = writer.Position;
+	                ((ISpeciallySerializable)obj).Save(writer);
+	                writer.Write(writer.Position - startingPosition);
+				};
+			}
+			return null;
+		}
+
+		private readonly bool isGenerating;
+
+		// TODO: actually, this field can be considered static
+		private readonly Dictionary<Type, bool> transientTypes;
+		private readonly IDictionary<Type, MethodInfo> writeMethodCache;
+		private Action<PrimitiveWriter, object>[] writeMethods;
 
         private int objectsWritten;
 		private int nextTypeId;

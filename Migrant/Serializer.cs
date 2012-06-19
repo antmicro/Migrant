@@ -27,7 +27,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using AntMicro.Migrant.Emitter;
 using AntMicro.Migrant.Customization;
 using System.Reflection;
 using System.Collections;
@@ -89,15 +88,7 @@ namespace AntMicro.Migrant
         {
 			var typeList = upfrontKnownTypes.ToList();
 			WriteHeader(stream, typeList);
-			ObjectWriter writer;
-			if(settings.SerializationMethod == Method.Generated)
-			{
-				writer = new GeneratingObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache);
-			}
-			else
-			{
-				writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization);
-			}
+			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, settings.SerializationMethod == Method.Generated);
             writer.WriteObject(obj);
         }
 
