@@ -71,11 +71,10 @@ namespace AntMicro.Migrant
 		                    bool isGenerating = true)
         {
 			transientTypes = new Dictionary<Type, bool>();
-			writeMethods = new Action<PrimitiveWriter, object>[0];
+			writeMethods = new List<Action<PrimitiveWriter, object>>();
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
 			typeIndices = new Dictionary<Type, int>();
-			RegenerateWriteMethods();
 			foreach(var type in upfrontKnownTypes)
 			{
 				AddMissingType(type);
@@ -470,36 +469,20 @@ namespace AntMicro.Migrant
 		private void AddMissingType(Type type)
 		{
 			typeIndices.Add(type, nextTypeId++);
-			RegenerateWriteMethods();
-		}
-
-		private void RegenerateWriteMethods()
-		{
-			var newWriteMethods = new Action<PrimitiveWriter, object>[typeIndices.Count];
-			foreach(var entry in typeIndices)
+			Action<PrimitiveWriter, object> writeMethod = null; // for transient class the delegate will never be called
+			if(!CheckTransient(type))
 			{
-				if(writeMethods.Length > entry.Value)
+				if(writeMethodCache != null && writeMethodCache.ContainsKey(type))
 				{
-					newWriteMethods[entry.Value] = writeMethods[entry.Value];
+					writeMethod = (Action<PrimitiveWriter, object>)
+						Delegate.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this, writeMethodCache[type]);
 				}
 				else
 				{
-					if(!CheckTransient(entry.Key))
-					{
-						if(writeMethodCache != null && writeMethodCache.ContainsKey(entry.Key))
-						{
-							newWriteMethods[entry.Value] = (Action<PrimitiveWriter, object>)
-								Delegate.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this, writeMethodCache[entry.Key]);
-						}
-						else
-						{
-							newWriteMethods[entry.Value] = PrepareWriteMethod(entry.Key);
-						}
-					}
-					// for transient class the delegate will never be called
+					writeMethod = PrepareWriteMethod(type);
 				}
 			}
-			writeMethods = newWriteMethods;
+			writeMethods.Add(writeMethod);
 		}
 
 		private Action<PrimitiveWriter, object> PrepareWriteMethod(Type actualType)
@@ -558,7 +541,7 @@ namespace AntMicro.Migrant
 		// TODO: actually, this field can be considered static
 		private readonly Dictionary<Type, bool> transientTypes;
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
-		private Action<PrimitiveWriter, object>[] writeMethods;
+		private List<Action<PrimitiveWriter, object>> writeMethods;
     }
 }
 
