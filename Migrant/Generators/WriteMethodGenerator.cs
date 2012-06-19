@@ -1,104 +1,58 @@
-/*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
-
-  Authors:
-   * Konrad Kruczynski (kkruczynski@antmicro.com)
-   * Piotr Zierhoffer (pzierhoffer@antmicro.com)
-
-  Permission is hereby granted, free of charge, to any person obtaining
-  a copy of this software and associated documentation files (the
-  "Software"), to deal in the Software without restriction, including
-  without limitation the rights to use, copy, modify, merge, publish,
-  distribute, sublicense, and/or sell copies of the Software, and to
-  permit persons to whom the Software is furnished to do so, subject to
-  the following conditions:
-
-  The above copyright notice and this permission notice shall be
-  included in all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-using AntMicro.Migrant;
-using System.IO;
-using System.Collections.Generic;
 using System;
 using System.Reflection.Emit;
-using System.Reflection;
 using System.Linq;
 using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using AntMicro.Migrant.Emitter;
 using System.Threading;
 using AntMicro.Migrant.Hooks;
 
-namespace AntMicro.Migrant.Emitter
+namespace AntMicro.Migrant.Generators
 {
-	internal class GeneratingObjectWriter : ObjectWriter
+	internal class WriteMethodGenerator
 	{
-		public GeneratingObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
-		                              Action<object> postSerializationCallback = null, IDictionary<Type, MethodInfo> writeMethodCache = null)
-			: base(stream, upfrontKnownTypes, preSerializationCallback, postSerializationCallback)
+		internal WriteMethodGenerator(Type typeToGenerate, IDictionary<Type, int> typeIndices)
 		{
-			transientTypes = new Dictionary<Type, bool>();
-			writeMethods = new Action<PrimitiveWriter, object>[0];
-			this.writeMethodCache = writeMethodCache;
-			RegenerateWriteMethods();
-		}
-
-		internal void WriteObjectId(object o)
-		{
-			// this function is called when object to serialize cannot be data-inlined object such as string
-			Writer.Write(Identifier.GetId(o));
-		}
-
-		internal void WriteObjectIdPossiblyInline(object o)
-		{
-			var refId = Identifier.GetId(o);
-			var type = o.GetType();
-			Writer.Write(refId);
-			if(ShouldBeInlined(type, refId))
+			this.typeIndices = typeIndices;
+			if(!typeToGenerate.IsArray)
 			{
-				InlineWritten.Add(refId);
-                InvokeCallbacksAndWriteObject(o);
+				dynamicMethod = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
+			                               typeof(void), ParameterTypes, typeToGenerate, true);
+			}
+			else
+			{
+				var methodNo = Interlocked.Increment(ref WriteArrayMethodCounter);
+				dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}", methodNo), null, ParameterTypes, true);
+			}
+			generator = dynamicMethod.GetILGenerator();
+
+			// preserialization callbacks
+			GenerateInvokeCallbacks(typeToGenerate, typeof(PreSerializationAttribute));
+
+			if(!GenerateSpecialWrite(typeToGenerate))
+			{
+				GenerateWriteFields(gen =>
+				                    {
+					gen.Emit(OpCodes.Ldarg_2);
+				}, typeToGenerate);
+			}
+
+			// postserialization callbacks
+			GenerateInvokeCallbacks(typeToGenerate, typeof(PostSerializationAttribute));
+
+			generator.Emit(OpCodes.Ret);
+		}
+
+		internal DynamicMethod Method
+		{
+			get
+			{
+				return dynamicMethod;
 			}
 		}
 
-		// TODO: inline?
-		internal bool CheckTransient(object o)
-		{
-			return CheckTransient(o.GetType());
-		}
-
-		internal bool CheckTransient(Type type)
-		{
-			bool result;
-			if(transientTypes.TryGetValue(type, out result))
-			{
-				return result;
-			}
-			var isTransient = type.IsDefined(typeof(TransientAttribute), false);
-			transientTypes.Add(type, isTransient);
-			return isTransient;
-		}
-
-		protected internal override void WriteObjectInner(object o)
-		{
-			var type = o.GetType();
-            var typeId = TouchAndWriteTypeId(type);
-			writeMethods[typeId](Writer, o);
-		}
-
-		protected override void AddMissingType(Type type)
-		{
-			base.AddMissingType(type);
-			RegenerateWriteMethods();
-		}
-
-		private static void GenerateInvokeCallbacks(Type actualType, ILGenerator generator, Type attributeType)
+		private void GenerateInvokeCallbacks(Type actualType, Type attributeType)
 		{
 			var preSerializationMethods = Helpers.GetMethodsWithAttribute(attributeType, actualType);
 			foreach(var method in preSerializationMethods)
@@ -110,87 +64,13 @@ namespace AntMicro.Migrant.Emitter
 				generator.Emit(OpCodes.Call, method);
 			}
 		}
-		private void RegenerateWriteMethods()
-		{
-			var newWriteMethods = new Action<PrimitiveWriter, object>[TypeIndices.Count];
-			foreach(var entry in TypeIndices)
-			{
-				if(writeMethods.Length > entry.Value)
-				{
-					newWriteMethods[entry.Value] = writeMethods[entry.Value];
-				}
-				else
-				{
-					if(!CheckTransient(entry.Key))
-					{
-						if(writeMethodCache != null && writeMethodCache.ContainsKey(entry.Key))
-						{
-							newWriteMethods[entry.Value] = (Action<PrimitiveWriter, object>)
-								Delegate.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this, writeMethodCache[entry.Key]);
-						}
-						else
-						{
-							newWriteMethods[entry.Value] = GenerateWriteMethod(entry.Key);
-						}
-					}
-					// for transient class the delegate will never be called
-				}
-			}
-			writeMethods = newWriteMethods;
-		}
 
-		private Action<PrimitiveWriter, object> GenerateWriteMethod(Type actualType)
-		{
-			var specialWrite = LinkSpecialWrite(actualType);
-			if(specialWrite != null)
-			{
-				// linked methods are not added to writeMethodCache, there's no point
-				return specialWrite;
-			}
-
-			// TODO: parameter types: move and unify
-			DynamicMethod dynamicMethod;
-			if(!actualType.IsArray)
-			{
-				dynamicMethod = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
-			                               typeof(void), ParameterTypes, actualType, true);
-			}
-			else
-			{
-				var methodNo = Interlocked.Increment(ref WriteArrayMethodCounter);
-				dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}", methodNo), null, ParameterTypes, true);
-			}
-			var generator = dynamicMethod.GetILGenerator();
-
-			// preserialization callbacks
-			GenerateInvokeCallbacks(actualType, generator, typeof(PreSerializationAttribute));
-
-			if(!GenerateSpecialWrite(generator, actualType))
-			{
-				GenerateWriteFields(generator, gen =>
-				                    {
-					gen.Emit(OpCodes.Ldarg_2);
-				}, actualType);
-			}
-
-			// postserialization callbacks
-			GenerateInvokeCallbacks(actualType, generator, typeof(PostSerializationAttribute));
-
-			generator.Emit(OpCodes.Ret);
-			var result = (Action<PrimitiveWriter, object>)dynamicMethod.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
-			if(writeMethodCache != null)
-			{
-				writeMethodCache.Add(actualType, result.Method);
-			}
-			return result;
-		}
-
-		private void GenerateWriteFields(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type actualType)
+		private void GenerateWriteFields(Action<ILGenerator> putValueToWriteOnTop, Type actualType)
 		{
 			var fields = actualType.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name); // TODO: unify
 			foreach(var field in fields)
 			{
-				GenerateWriteType(generator, gen => 
+				GenerateWriteType(gen => 
 				                  {
 					putValueToWriteOnTop(gen);
 					gen.Emit(OpCodes.Ldfld, field); // TODO: consider putting that in some local variable
@@ -198,31 +78,13 @@ namespace AntMicro.Migrant.Emitter
 			}
 		}
 
-		private Action<PrimitiveWriter, object> LinkSpecialWrite(Type actualType)
-		{
-			if(actualType == typeof(string))
-			{
-				return (y, obj) => y.Write((string)obj);
-			}
-			if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
-			{
-				return (writer, obj) => {
-					Console.WriteLine (this);
-					var startingPosition = writer.Position;
-	                ((ISpeciallySerializable)obj).Save(writer);
-	                writer.Write(writer.Position - startingPosition);
-				};
-			}
-			return null;
-		}
-
-		private bool GenerateSpecialWrite(ILGenerator generator, Type actualType)
+		private bool GenerateSpecialWrite(Type actualType)
 		{
 			if(actualType.IsValueType)
 			{
 				// value type encountered here means it is in fact boxed value type
 				// according to protocol it is written as it would be written inlined
-				GenerateWriteValue(generator, gen =>
+				GenerateWriteValue(gen =>
 				                   {
 					gen.Emit(OpCodes.Ldarg_2); // value to serialize
 					gen.Emit(OpCodes.Unbox_Any, actualType);
@@ -231,20 +93,20 @@ namespace AntMicro.Migrant.Emitter
 			}
 			if(actualType.IsArray)
 			{
-				GenerateWriteArray(generator, actualType);
+				GenerateWriteArray(actualType);
 				return true;
 			}
 			bool isGeneric, isGenericallyIterable, isDictionary;
 			Type elementType;
 			if(Helpers.IsCollection(actualType, out elementType, out isGeneric, out isGenericallyIterable, out isDictionary))
 			{
-				GenerateWriteCollection(generator, elementType, isGeneric, isGenericallyIterable, isDictionary);
+				GenerateWriteCollection(elementType, isGeneric, isGenericallyIterable, isDictionary);
 				return true;
 			}
 			return false;
 		}
 
-		private void GenerateWriteArray(ILGenerator generator, Type actualType)
+		private void GenerateWriteArray(Type actualType)
 		{
 			PrimitiveWriter primitiveWriter = null; // TODO
 
@@ -252,7 +114,7 @@ namespace AntMicro.Migrant.Emitter
 			var rank = actualType.GetArrayRank();
 			if(rank != 1)
 			{
-				GenerateWriteMultidimensionalArray(generator, actualType, elementType);
+				GenerateWriteMultidimensionalArray(actualType, elementType);
 				return;
 			}
 
@@ -285,7 +147,7 @@ namespace AntMicro.Migrant.Emitter
 			generator.Emit(OpCodes.Ldelem, elementType);
 			generator.Emit(OpCodes.Stloc_1); // we put current element to local variable
 
-			GenerateWriteType(generator, gen =>
+			GenerateWriteType(gen =>
 			                  {
 				gen.Emit(OpCodes.Ldloc_1); // current element
 			}, elementType);
@@ -300,7 +162,7 @@ namespace AntMicro.Migrant.Emitter
 			generator.Emit(OpCodes.Blt, loopBegin);
 		}
 
-		private void GenerateWriteMultidimensionalArray(ILGenerator generator, Type actualType, Type elementType)
+		private void GenerateWriteMultidimensionalArray(Type actualType, Type elementType)
 		{
 			Array array = null; // TODO
 			PrimitiveWriter primitiveWriter = null; // TODO
@@ -340,10 +202,11 @@ namespace AntMicro.Migrant.Emitter
 			}
 
 			// writing elements
-			GenerateLoop(generator, 0, rank, indexLocals, lengthLocals, actualType, elementType);
+			GenerateLoop(0, rank, indexLocals, lengthLocals, actualType, elementType);
 		}
 
-		private void GenerateLoop(ILGenerator generator, int currentDimension, int rank, int[] indexLocals, int[] lengthLocals, Type arrayType, Type elementType)
+		// TODO: rename
+		private void GenerateLoop(int currentDimension, int rank, int[] indexLocals, int[] lengthLocals, Type arrayType, Type elementType)
 		{
 			// initalization
 			generator.Emit(OpCodes.Ldc_I4_0);
@@ -361,11 +224,11 @@ namespace AntMicro.Migrant.Emitter
 				}
 				generator.Emit(OpCodes.Call, arrayType.GetMethod("Get"));
 				generator.Emit(OpCodes.Stloc_0);
-				GenerateWriteType(generator, gen => gen.Emit(OpCodes.Ldloc_0), elementType);
+				GenerateWriteType(gen => gen.Emit(OpCodes.Ldloc_0), elementType);
 			}
 			else
 			{
-				GenerateLoop(generator, currentDimension + 1, rank, indexLocals, lengthLocals, arrayType, elementType);
+				GenerateLoop(currentDimension + 1, rank, indexLocals, lengthLocals, arrayType, elementType);
 			}
 			// incremeting index and loop exit condition check
 			generator.Emit(OpCodes.Ldloc, indexLocals[currentDimension]);
@@ -377,7 +240,7 @@ namespace AntMicro.Migrant.Emitter
 			generator.Emit(OpCodes.Blt, loopBegin);
 		}
 
-		private void GenerateWriteCollection(ILGenerator generator, Type formalElementType, bool isGeneric, bool isGenericallyIterable, bool isIDictionary)
+		private void GenerateWriteCollection(Type formalElementType, bool isGeneric, bool isGenericallyIterable, bool isIDictionary)
 		{
 			PrimitiveWriter primitiveWriter = null; // TODO
 
@@ -454,13 +317,13 @@ namespace AntMicro.Migrant.Emitter
 
 		private void GenerateWriteTypeLocal1(ILGenerator generator, Type formalElementType)
 		{
-			GenerateWriteType(generator, gen =>
+			GenerateWriteType(gen =>
 			                  {
 				gen.Emit(OpCodes.Ldloc_1);
 			}, formalElementType);
 		}
 
-		private void GenerateWriteType(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+		private void GenerateWriteType(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
 			switch(Helpers.GetSerializationType(formalType))
 			{
@@ -468,17 +331,17 @@ namespace AntMicro.Migrant.Emitter
 				// just omit it
 				return;
 			case SerializationType.Value:
-				GenerateWriteValue(generator, putValueToWriteOnTop, formalType);
+				GenerateWriteValue(putValueToWriteOnTop, formalType);
 				break;
 			case SerializationType.Reference:
-				GenerateWriteReference(generator, putValueToWriteOnTop, formalType);
+				GenerateWriteReference(putValueToWriteOnTop, formalType);
 				break;
 			}
 		}
 
-		private void GenerateWriteValue(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+		private void GenerateWriteValue(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
-			CheckLegality(formalType);
+			ObjectWriter.CheckLegality(formalType);
 			PrimitiveWriter primitiveWriter = null; // TODO
 
 			if(formalType.IsEnum)
@@ -512,7 +375,7 @@ namespace AntMicro.Migrant.Emitter
 				generator.MarkLabel(hasValue);
 				generator.Emit(OpCodes.Ldc_I4_1);
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(false)));
-				GenerateWriteValue(generator, gen =>
+				GenerateWriteValue(gen =>
 				                   {
 					generator.Emit(OpCodes.Ldloca_S, localIndex);
 					generator.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
@@ -524,7 +387,7 @@ namespace AntMicro.Migrant.Emitter
 			{
 				var keyValueTypes = formalType.GetGenericArguments();
 				var localIndex = generator.DeclareLocal(formalType).LocalIndex;
-				GenerateWriteType(generator, gen =>
+				GenerateWriteType(gen =>
 				                  {
 					putValueToWriteOnTop(gen);
 					// TODO: is there a better method of getting address?
@@ -538,7 +401,7 @@ namespace AntMicro.Migrant.Emitter
 					gen.Emit(OpCodes.Ldloca_S, localIndex);
 					gen.Emit(OpCodes.Call, formalType.GetProperty("Key").GetGetMethod());
 				}, keyValueTypes[0]);
-				GenerateWriteType(generator, gen =>
+				GenerateWriteType(gen =>
 				                  {
 					// we assume here that the key write was invoked earlier (it should be
 					// if we're conforming to the protocol), so KeyValuePair is already
@@ -548,12 +411,13 @@ namespace AntMicro.Migrant.Emitter
 				}, keyValueTypes[1]);
 				return;
 			}
-			GenerateWriteFields(generator, putValueToWriteOnTop, formalType);
+			GenerateWriteFields(putValueToWriteOnTop, formalType);
 		}
 
-		private void GenerateWriteReference(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+		private void GenerateWriteReference(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
 			ObjectWriter baseWriter = null; // TODO: fake, maybe promote to field
+			GeneratingObjectWriter objectWriter = null; // TODO
 			PrimitiveWriter primitiveWriter = null; // TODO: as above
 			object nullObject = null; // TODO: as above
 
@@ -570,9 +434,9 @@ namespace AntMicro.Migrant.Emitter
 
 			var formalTypeIsActualType = formalType.Attributes.HasFlag(TypeAttributes.Sealed); // TODO: more optimizations?
 			// maybe we know the type id yet?
-			if(formalTypeIsActualType && TypeIndices.ContainsKey(formalType))
+			if(formalTypeIsActualType && typeIndices.ContainsKey(formalType))
 			{
-				var typeId = TypeIndices[formalType];
+				var typeId = typeIndices[formalType];
 				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 				generator.Emit(OpCodes.Ldc_I4, typeId);
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => primitiveWriter.Write(0))); // TODO: get it once
@@ -605,7 +469,7 @@ namespace AntMicro.Migrant.Emitter
 			{
 				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator); // value to serialize
-				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => CheckTransient(nullObject)));
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => objectWriter.CheckTransient(nullObject)));
 				generator.Emit(OpCodes.Brtrue_S, finish);
 			}
 
@@ -618,20 +482,19 @@ namespace AntMicro.Migrant.Emitter
 				putValueToWriteOnTop(generator);
 				if(mayBeInlined)
 				{
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => WriteObjectIdPossiblyInline(null)));
+					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => objectWriter.WriteObjectIdPossiblyInline(null)));
 				}
 				else
 				{
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => WriteObjectId(null)));
+					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => objectWriter.WriteObjectId(null)));
 				}
 			}
 			generator.MarkLabel(finish);
 		}
 
-		// TODO: actually, this field can be considered static
-		private readonly Dictionary<Type, bool> transientTypes;
-		private readonly IDictionary<Type, MethodInfo> writeMethodCache;
-		private Action<PrimitiveWriter, object>[] writeMethods;
+		private readonly IDictionary<Type, int> typeIndices;
+		private readonly ILGenerator generator;
+		private readonly DynamicMethod dynamicMethod;
 
 		private static int WriteArrayMethodCounter;
 		private static readonly Type[] ParameterTypes = new [] { typeof(GeneratingObjectWriter), typeof(PrimitiveWriter), typeof(object) };

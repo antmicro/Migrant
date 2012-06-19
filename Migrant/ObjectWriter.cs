@@ -289,7 +289,7 @@ namespace AntMicro.Migrant
 			return Helpers.CanBeCreatedWithDataOnly(type) && referenceId > objectsWritten && !InlineWritten.Contains(referenceId);
 		}
 
-		protected static void CheckLegality(Type type)
+		protected internal static void CheckLegality(Type type)
 		{
 			if(type.IsPointer || type == typeof(IntPtr))
 			{
