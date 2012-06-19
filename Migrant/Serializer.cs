@@ -31,6 +31,8 @@ using AntMicro.Migrant.Customization;
 using System.Collections;
 using System.Linq;
 using System.Reflection.Emit;
+using AntMicro.Migrant.Utilities;
+using AntMicro.Migrant.Generators;
 
 namespace AntMicro.Migrant
 {
@@ -58,7 +60,7 @@ namespace AntMicro.Migrant
 			}
 			this.settings = settings;
 			writeMethodCache = new Dictionary<Type, DynamicMethod>();
-			upfrontKnownTypes = new HashSet<Type>();
+			upfrontKnownTypes = new ListWithHash<Type>();
         }
 
 		/// <summary>
@@ -71,7 +73,25 @@ namespace AntMicro.Migrant
         public void Initialize(Type typeToScan)
         {
 			Scan(typeToScan);
-			// TODO: if we're using generated serializer, generate the methods now
+			if(settings.SerializationMethod != Method.Generated)
+			{
+				return;
+			}
+			var typeIndices = new Dictionary<Type, int>(upfrontKnownTypes.Count);
+			var i = 0;
+			foreach(var type in upfrontKnownTypes)
+			{
+				typeIndices.Add(type, i++);
+			}
+			foreach(var type in upfrontKnownTypes)
+			{
+				if(writeMethodCache.ContainsKey(type) || ObjectWriter.HasSpecialWriteMethod(type))
+				{
+					continue;
+				}
+				var generator = new WriteMethodGenerator(type, typeIndices);
+				writeMethodCache.Add(type, generator.Method);
+			}
         }
 
 		/// <summary>
@@ -85,7 +105,7 @@ namespace AntMicro.Migrant
 		/// </param>
         public void Serialize(object obj, Stream stream)
         {
-			var typeList = upfrontKnownTypes.ToList();
+			var typeList = upfrontKnownTypes.ToList(); // TODO: see TOOO in ListWithHash
 			WriteHeader(stream, typeList);
 			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, settings.SerializationMethod == Method.Generated);
             writer.WriteObject(obj);
@@ -240,7 +260,7 @@ namespace AntMicro.Migrant
 
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
-		private readonly HashSet<Type> upfrontKnownTypes;
+		private readonly ListWithHash<Type> upfrontKnownTypes;
         private const ushort VersionNumber = 2;
         private const uint Magic = 0xA5132;
     }

@@ -175,6 +175,11 @@ namespace AntMicro.Migrant
 			return type.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name);
 		}
 
+		internal static bool HasSpecialWriteMethod(Type type)
+		{
+			return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || type.IsDefined(typeof(TransientAttribute), false);
+		}
+
         private void PrepareForNextWrite()
         {
             if(writer != null)
@@ -479,8 +484,7 @@ namespace AntMicro.Migrant
 			{
 				if(writeMethodCache != null && writeMethodCache.ContainsKey(type))
 				{
-					writeMethod = (Action<PrimitiveWriter, object>)
-						Delegate.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this, writeMethodCache[type]);
+					writeMethod = (Action<PrimitiveWriter, object>) writeMethodCache[type].CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
 				}
 				else
 				{

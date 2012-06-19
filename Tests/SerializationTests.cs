@@ -634,6 +634,20 @@ namespace AntMicro.Migrant.Tests
 			CollectionAssert.AreEqual(queue, copy);
 		}
 
+		[Test]
+		public void ShouldSerializeWithInitialization()
+		{
+			var objs = new object[] { null, 1,"Napis", new GenericBox<int> { Element = 6 } };
+			var serializer = new Serializer(SettingsFromFields);
+			serializer.Initialize(typeof(GenericBox<int>));
+			serializer.Initialize(typeof(string));
+			var stream = new MemoryStream();
+			serializer.Serialize(objs, stream);
+			stream.Seek(0, SeekOrigin.Begin);
+			var copy = serializer.Deserialize<object[]>(stream);
+			CollectionAssert.AreEqual(objs, copy);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -746,6 +760,36 @@ namespace AntMicro.Migrant.Tests
 		public sealed class GenericBox<T>
 		{
 			public T Element { get; set; }
+
+			public override bool Equals(object obj)
+			{
+				if(obj == null)
+				{
+					return false;
+				}
+				if(ReferenceEquals(this, obj))
+				{
+					return true;
+				}
+				if(obj.GetType() != typeof(GenericBox<T>))
+				{
+					return false;
+				}
+				var other = (GenericBox<T>)obj;
+				if(Element != null)
+				{
+					return Element.Equals(other.Element);
+				}
+				return other.Element == null;
+			}
+
+			public override int GetHashCode()
+			{
+				unchecked
+				{
+					return (Element != null ? Element.GetHashCode() : 0);
+				}
+			}
 		}
 
 		public struct StructGenericBox<T>

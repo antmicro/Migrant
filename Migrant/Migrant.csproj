@@ -58,6 +58,7 @@
     <Compile Include="Customization\Settings.cs" />
     <Compile Include="Customization\Method.cs" />
     <Compile Include="Generators\WriteMethodGenerator.cs" />
+    <Compile Include="Utilities\ListWithHash.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
