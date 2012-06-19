@@ -40,9 +40,9 @@ namespace AntMicro.Migrant.Tests
 		{
 			var strings = new [] { "One", "Two" };
 
-			var typeIndices = new Dictionary<Type, int>
+			var typeIndices = new List<Type>
 			{
-				{typeof(string), 0}
+				typeof(string)
 			};
 			var stream = new MemoryStream();
 			var writer = new ObjectWriter(stream, typeIndices);
@@ -51,7 +51,7 @@ namespace AntMicro.Migrant.Tests
 			var position = stream.Position;
 
 			stream.Seek(0, SeekOrigin.Begin);
-			var types = typeIndices.OrderBy(x => x.Value).Select(x => x.Key).ToArray();
+			var types = typeIndices.ToArray();
 			var reader = new ObjectReader(stream, types);
 			Assert.AreEqual(strings[0], reader.ReadObject<string>());
 			Assert.AreEqual(strings[1], reader.ReadObject<string>());

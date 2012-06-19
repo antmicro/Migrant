@@ -56,13 +56,13 @@ namespace AntMicro.Migrant
 		/// Callback which will be called after deserialization of every unique object. Deserialized
 		/// object is given in the callback's only parameter.
 		/// </param>
-        public ObjectReader(Stream stream, Type[] typeArray, Action<object> postDeserializationCallback = null)
+        public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, Action<object> postDeserializationCallback = null)
         {
             reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
-			for(var i = 0; i < typeArray.Length; i++)
+			for(var i = 0; i < upfrontKnownTypes.Count; i++)
 			{
-				typeList.Add(typeArray[i]);
+				typeList.Add(upfrontKnownTypes[i]);
 			}
             this.stream = stream;
             this.postDeserializationCallback = postDeserializationCallback;

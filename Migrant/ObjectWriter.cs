@@ -48,12 +48,9 @@ namespace AntMicro.Migrant
 		/// Stream to which data will be written.
 		/// </param>
 		/// <param name='typeIndices'>
-		/// Dictionary which is used to map given type to (unique) ID.
-		/// </param>
-		/// <param name='missingTypeCallback'>
-		/// Callback which is called when the type of the object to serialize cannot be found in the <see cref="typeIndices"/> 
-		/// dictionary. The missing type is given in its only parameter. The callback should supplement the dictionary with 
-		/// the missing type. Can be null, if user do not expects it to be called (for example, when all types are preinitialized).
+		/// Dictionary which is used to map given type to (unique) ID. Types in this dictionary are considered to be known upfront,
+		/// i.e. their type information is not written to the serialization stream. The <see cref="AntMicro.Migrant.ObjectReader" />
+		/// that will read such stream must receive consistent type set.
 		/// </param>
 		/// <param name='preSerializationCallback'>
 		/// Callback which is called once on every unique object before its serialization. Contains this object in its only parameter.
@@ -61,12 +58,15 @@ namespace AntMicro.Migrant
 		/// <param name='postSerializationCallback'>
 		/// Callback which is called once on every unique object after its serialization. Contains this object in its only parameter.
 		/// </param>
-        public ObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, Action<Type> missingTypeCallback = null,
-                            Action<object> preSerializationCallback = null, Action<object> postSerializationCallback = null)
+        public ObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
+		                    Action<object> postSerializationCallback = null)
         {
-            TypeIndices = typeIndices;
+			TypeIndices = new Dictionary<Type, int>();
+			foreach(var type in upfrontKnownTypes)
+			{
+				AddMissingType(type);
+			}
             this.stream = stream;
-            this.missingTypeCallback = missingTypeCallback;
             this.preSerializationCallback = preSerializationCallback;
             this.postSerializationCallback = postSerializationCallback;
             PrepareForNextWrite();
@@ -289,8 +289,17 @@ namespace AntMicro.Migrant
 			return Helpers.CanBeCreatedWithDataOnly(type) && referenceId > objectsWritten && !InlineWritten.Contains(referenceId);
 		}
 
+		protected static void CheckLegality(Type type)
+		{
+			if(type.IsPointer || type == typeof(IntPtr))
+			{
+				throw new ArgumentException(); // TODO
+			}
+		}
+
         private void WriteValueType(Type formalType, object value)
         {
+			CheckLegality(formalType);
             // value type -> actual type is the formal type
             if(formalType.IsEnum)
             {
@@ -403,18 +412,18 @@ namespace AntMicro.Migrant
 
 		protected virtual void AddMissingType(Type type)
 		{
-			missingTypeCallback(type);
+			TypeIndices.Add(type, nextTypeId++);
 		}
 
         private int objectsWritten;
+		private int nextTypeId;
         protected internal ObjectIdentifier Identifier;
         protected PrimitiveWriter Writer;
         protected HashSet<int> InlineWritten;
         private readonly Stream stream;
-        private readonly Action<Type> missingTypeCallback;
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
-        protected readonly IDictionary<Type, int> TypeIndices;
+        protected readonly Dictionary<Type, int> TypeIndices;
     }
 }
 

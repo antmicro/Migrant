@@ -39,10 +39,9 @@ namespace AntMicro.Migrant.Emitter
 {
 	internal class GeneratingObjectWriter : ObjectWriter
 	{
-		public GeneratingObjectWriter(Stream stream, IDictionary<Type, int> typeIndices, Action<Type> missingTypeCallback = null, 
-		                              Action<object> preSerializationCallback = null, Action<object> postSerializationCallback = null,
-		                              IDictionary<Type, MethodInfo> writeMethodCache = null)
-			: base(stream, typeIndices, missingTypeCallback, preSerializationCallback, postSerializationCallback)
+		public GeneratingObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
+		                              Action<object> postSerializationCallback = null, IDictionary<Type, MethodInfo> writeMethodCache = null)
+			: base(stream, upfrontKnownTypes, preSerializationCallback, postSerializationCallback)
 		{
 			transientTypes = new Dictionary<Type, bool>();
 			writeMethods = new Action<PrimitiveWriter, object>[0];
@@ -479,6 +478,7 @@ namespace AntMicro.Migrant.Emitter
 
 		private void GenerateWriteValue(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
+			CheckLegality(formalType);
 			PrimitiveWriter primitiveWriter = null; // TODO
 
 			if(formalType.IsEnum)

@@ -30,6 +30,7 @@ using System.IO;
 using AntMicro.Migrant.Emitter;
 using AntMicro.Migrant.Customization;
 using System.Reflection;
+using System.Collections;
 using System.Linq;
 
 namespace AntMicro.Migrant
@@ -58,9 +59,7 @@ namespace AntMicro.Migrant
 			}
 			this.settings = settings;
 			writeMethodCache = new Dictionary<Type, MethodInfo>();
-            scanner = new TypeScanner();
-            typeArray = new Type[0];
-            typeIndices = new Dictionary<Type, int>();
+			upfrontKnownTypes = new HashSet<Type>();
         }
 
 		/// <summary>
@@ -72,9 +71,8 @@ namespace AntMicro.Migrant
 		/// </param>
         public void Initialize(Type typeToScan)
         {
-			scanner.Scan(typeToScan); // just for exception
-			typeArray = typeArray.Union(new [] { typeToScan }).ToArray();
-            UpdateTypeIndices();
+			Scan(typeToScan);
+			// TODO: if we're using generated serializer, generate the methods now
         }
 
 		/// <summary>
@@ -89,15 +87,16 @@ namespace AntMicro.Migrant
 		/// </param>
         public void Serialize(object obj, Stream stream)
         {
-			WriteHeader(stream);
+			var typeList = upfrontKnownTypes.ToList();
+			WriteHeader(stream, typeList);
 			ObjectWriter writer;
 			if(settings.SerializationMethod == Method.Generated)
 			{
-				writer = new GeneratingObjectWriter(stream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization, writeMethodCache);
+				writer = new GeneratingObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache);
 			}
 			else
 			{
-				writer = new ObjectWriter(stream, typeIndices, Initialize, OnPreSerialization, OnPostSerialization);
+				writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization);
 			}
             writer.WriteObject(obj);
         }
@@ -118,6 +117,7 @@ namespace AntMicro.Migrant
 			{
 				throw new NotImplementedException("Generated deserialization is not yet implemented.");
 			}
+			List<Type> upfrontKnownTypes;
             using(var reader = new PrimitiveReader(stream))
             {
                 var magic = reader.ReadUInt32();
@@ -133,13 +133,13 @@ namespace AntMicro.Migrant
                         "Could not deserialize data serialized with another version of serializer, namely {0}.", version));
                 }
                 var numberOfTypes = reader.ReadInt32();
-                typeArray = new Type[numberOfTypes];
+				upfrontKnownTypes = new List<Type>(numberOfTypes);
                 for(var i = 0; i < numberOfTypes; i++)
                 {
-                    typeArray[i] = Type.GetType(reader.ReadString());
+					upfrontKnownTypes.Add(Type.GetType(reader.ReadString()));
                 }
             }
-            var objectReader = new ObjectReader(stream, typeArray, OnPostDeserialization);
+            var objectReader = new ObjectReader(stream, upfrontKnownTypes, OnPostDeserialization);
             var result = objectReader.ReadObject<T>();
             return result;
         }
@@ -191,39 +191,66 @@ namespace AntMicro.Migrant
             return result;
         }
 
-        private void WriteHeader(Stream stream)
+        private void WriteHeader(Stream stream, IList<Type> typeList)
         {
             using(var writer = new PrimitiveWriter(stream))
             {
                 writer.Write(Magic);
                 writer.Write(VersionNumber);
-                writer.Write(typeArray.Length);
-                for(var i = 0; i < typeArray.Length; i++)
+                writer.Write(typeList.Count);
+                foreach(var type in typeList)
                 {
-                    writer.Write(typeArray[i].AssemblyQualifiedName);
+                    writer.Write(type.AssemblyQualifiedName);
                 }
             }
         }
 
-        private void UpdateTypeIndices()
-        {
-            for(var i = 0; i < typeArray.Length; i++)
+		private void Scan(Type typeToScan)
+		{
+			if(typeToScan == null)
             {
-                var element = typeArray[i];
-                if(typeIndices.ContainsKey(element))
-                {
-                    continue;
-                }
-                typeIndices.Add(element, i);
+                return;
             }
-        }
+			if(typeToScan.IsInterface || typeToScan.IsValueType)
+			{
+				// we do not add value types, cause they are inline written unless boxed
+				return;
+			}
+            if(typeof(ISpeciallySerializable).IsAssignableFrom(typeToScan) || typeToScan.IsDefined(typeof(TransientAttribute), false))
+            {
+				return;
+            }
+			if(typeof(IEnumerable).IsAssignableFrom(typeToScan))
+			{
+				// this is probably collection with special rules; and this is only hint system, so we can simply omit it
+				upfrontKnownTypes.Add(typeToScan);
+			}
+			if(typeToScan.HasElementType)
+			{
+                Scan(typeToScan.GetElementType());
+			}
+			if(!typeToScan.IsAbstract)
+			{
+				if(!upfrontKnownTypes.Add(typeToScan))
+				{
+					return;
+				}
+			}
+			// although we do not add abstract type to serialized types (it can't be encountered as the actual type),
+			// we should scan its fields, cause they are used in any implementation; we should of course scan the
+			// base type as well
+			Scan(typeToScan.BaseType);
+			var fields = typeToScan.GetAllFields(false).Where(Helpers.IsNotTransient);
+            var typesToAdd = fields.Select(x => x.FieldType);
+            foreach(var type in typesToAdd)
+            {
+				Scan(type);
+            }
+		}
 
-        private readonly TypeScanner scanner;
-        private Type[] typeArray;
-        private readonly Dictionary<Type, int> typeIndices;
 		private readonly Settings settings;
 		private readonly Dictionary<Type, MethodInfo> writeMethodCache;
-
+		private readonly HashSet<Type> upfrontKnownTypes;
         private const ushort VersionNumber = 2;
         private const uint Magic = 0xA5132;
     }

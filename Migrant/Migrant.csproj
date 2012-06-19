@@ -50,7 +50,6 @@
     <Compile Include="PrimitiveWriter.cs" />
     <Compile Include="Serializer.cs" />
     <Compile Include="TransientAttribute.cs" />
-    <Compile Include="TypeScanner.cs" />
     <Compile Include="Utilities\AutoResizingList.cs" />
     <Compile Include="Hooks\PostDeserializationAttribute.cs" />
     <Compile Include="Hooks\PostSerializationAttribute.cs" />
