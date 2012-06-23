@@ -535,7 +535,7 @@ namespace AntMicro.Migrant
 			{
 				return (writer, objToWrite) => 
 				{
-					writer.Write(1);
+					writer.Write(1); // rank of the array
 					var array = (byte[])objToWrite;
 					writer.Write(array.Length);
 					writer.Write(array);
