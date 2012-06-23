@@ -648,6 +648,14 @@ namespace AntMicro.Migrant.Tests
 			CollectionAssert.AreEqual(objs, copy);
 		}
 
+		[Test]
+		public void ShouldSerializeByteArray()
+		{
+			var array = new byte[] { 2, 4, 6, 8, 10 };
+			var copy = SerializerClone(array);
+			CollectionAssert.AreEqual(array, copy);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
