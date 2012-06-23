@@ -526,10 +526,19 @@ namespace AntMicro.Migrant
 			if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
 			{
 				return (writer, obj) => {
-					Console.WriteLine (this);
 					var startingPosition = writer.Position;
 	                ((ISpeciallySerializable)obj).Save(writer);
 	                writer.Write(writer.Position - startingPosition);
+				};
+			}
+			if(actualType == typeof(byte[]))
+			{
+				return (writer, objToWrite) => 
+				{
+					writer.Write(1);
+					var array = (byte[])objToWrite;
+					writer.Write(array.Length);
+					writer.Write(array);
 				};
 			}
 			return null;
