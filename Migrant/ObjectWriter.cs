@@ -264,6 +264,20 @@ namespace AntMicro.Migrant
                 WriteArray(elementType, array);
                 return true;
             }
+			var mDelegate = o as MulticastDelegate;
+			if(mDelegate != null)
+			{
+				// is it really multicast?
+				var invocationList = mDelegate.GetInvocationList();
+				writer.Write(invocationList.Length);
+				if(invocationList.Length != 1)
+				{
+					throw new NotImplementedException();
+				}
+				WriteField(typeof(object), mDelegate.Target);
+				writer.Write(mDelegate.Method.MetadataToken);
+				return true;
+			}
             var str = o as string;
             if(str != null)
             {

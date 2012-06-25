@@ -131,7 +131,7 @@ namespace AntMicro.Migrant
 
         public static bool CanBeCreatedWithDataOnly(Type actualType)
         {
-            return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray;
+            return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType);
         }
 
 		private static int GetBoundary(long currentPosition)

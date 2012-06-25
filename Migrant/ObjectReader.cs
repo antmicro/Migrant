@@ -175,6 +175,10 @@ namespace AntMicro.Migrant
             {
                 ReadArray(type.GetElementType(), objectId);
             }
+			else if(typeof(MulticastDelegate).IsAssignableFrom(type))
+			{
+				ReadDelegate(type, objectId);
+			}
             else
             {
                 throw new InvalidOperationException(InternalErrorMessage);
@@ -225,6 +229,7 @@ namespace AntMicro.Migrant
             {
                 return Helpers.GetDefaultValue(formalType);
             }
+
             if(!formalType.IsValueType)
             {
 				var actualType = ReadType();
@@ -400,6 +405,19 @@ namespace AntMicro.Migrant
             var position = new int[rank];
             FillArrayRowRecursive(array, 0, position, elementFormalType);
         }
+
+		private void ReadDelegate(Type type, int objectId)
+		{
+			var invocationListLength = reader.ReadInt32();
+			if(invocationListLength != 1)
+			{
+				throw new NotImplementedException();
+			}
+			var target = ReadField(typeof(object));
+			// constructor cannot be bound to delegate, so we can just cast to methodInfo
+			var method = (MethodInfo)target.GetType().Module.ResolveMethod(reader.ReadInt32());
+			deserializedObjects[objectId] = Delegate.CreateDelegate(type, target, method);
+		}
 
         private void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
         {
