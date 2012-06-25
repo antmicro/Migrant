@@ -145,7 +145,7 @@ namespace AntMicro.Migrant
 		{
 			if(type.IsPointer || type == typeof(IntPtr))
 			{
-				throw new ArgumentException(); // TODO
+				throw new ArgumentException("Pointer encountered during serialization."); // TODO
 			}
 		}
 
