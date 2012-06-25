@@ -75,6 +75,7 @@ namespace AntMicro.Migrant
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
 			typeIndices = new Dictionary<Type, int>();
+			moduleIndices = new Dictionary<Module, int>();
 			foreach(var type in upfrontKnownTypes)
 			{
 				AddMissingType(type);
@@ -162,8 +163,24 @@ namespace AntMicro.Migrant
 			typeId = typeIndices[type];
 			writer.Write(typeId);
 			writer.Write(type.AssemblyQualifiedName);
+			WriteModuleId(type.Module);
 			return typeId;
         }
+
+		internal void WriteModuleId(Module module)
+		{
+			int moduleId;
+			if(moduleIndices.ContainsKey(module))
+			{
+				moduleId = moduleIndices[module];
+				writer.Write(moduleId);
+				return;
+			}
+			moduleId = nextModuleId++;
+			writer.Write(moduleId);
+			writer.Write(module.ModuleVersionId);
+			moduleIndices.Add(module, moduleId);
+		}
 
 		internal void TouchAndWriteTypeId(Object o)
 		{
@@ -551,6 +568,7 @@ namespace AntMicro.Migrant
 		private ObjectIdentifier identifier;
 		private int objectsWritten;
 		private int nextTypeId;
+		private int nextModuleId;
 		private PrimitiveWriter writer;
 		private HashSet<int> inlineWritten;
 
@@ -559,6 +577,7 @@ namespace AntMicro.Migrant
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
         private readonly Dictionary<Type, int> typeIndices;
+		private readonly Dictionary<Module, int> moduleIndices;
 
 		private readonly Dictionary<Type, bool> transientTypeCache;
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;

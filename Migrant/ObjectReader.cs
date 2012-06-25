@@ -60,6 +60,7 @@ namespace AntMicro.Migrant
         {
             reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
+			agreedModuleIds = new HashSet<int>();
 			for(var i = 0; i < upfrontKnownTypes.Count; i++)
 			{
 				typeList.Add(upfrontKnownTypes[i]);
@@ -453,6 +454,25 @@ namespace AntMicro.Migrant
 				var typeName = reader.ReadString();
 				typeList.Add(Type.GetType(typeName));
 			}
+			else
+			{
+				return typeList[typeId];
+			}
+			var moduleId = reader.ReadInt32();
+			if(!agreedModuleIds.Contains(moduleId))
+			{
+				var type = typeList[typeId];
+				var oldMvid = reader.ReadGuid();
+				var module = type.Module;
+				var newMvid = module.ModuleVersionId;
+				if(oldMvid != newMvid)
+				{
+					throw new InvalidOperationException(
+						string.Format("Cannot deserialize data. The type '{0}' in module {1} was serialized with mvid {2}, but you are trying to deserialize it using mvid {3}.",
+					              type, module, oldMvid, newMvid));
+				}
+				agreedModuleIds.Add(moduleId);
+			}
 			return typeList[typeId];
 		}
 
@@ -516,6 +536,7 @@ namespace AntMicro.Migrant
         private PrimitiveReader reader;
         private HashSet<int> inlineRead;
         private readonly List<Type> typeList;
+		private readonly HashSet<int> agreedModuleIds;
         private readonly Stream stream;
         private readonly Action<object> postDeserializationCallback;
         private const int InitialCapacity = 128;

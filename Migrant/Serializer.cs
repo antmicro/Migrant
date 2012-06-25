@@ -261,7 +261,7 @@ namespace AntMicro.Migrant
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
 		private readonly ListWithHash<Type> upfrontKnownTypes;
-        private const ushort VersionNumber = 2;
+        private const ushort VersionNumber = 3;
         private const uint Magic = 0xA5132;
     }
 }
