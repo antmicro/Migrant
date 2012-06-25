@@ -81,10 +81,6 @@ namespace AntMicro.Migrant.Generators
 		{
 			primitiveWriterWriteInteger = Helpers.GetMethodInfo<PrimitiveWriter>(writer => writer.Write(0));
 			primitiveWriterWriteBoolean = Helpers.GetMethodInfo<PrimitiveWriter>(writer => writer.Write(false));
-			delegateGetMethodInfo = typeof(MulticastDelegate).GetProperty("Method").GetGetMethod();
-			delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
-			delegateGetInvocationList = Helpers.GetMethodInfo<MulticastDelegate>(md => md.GetInvocationList());
-			memberInfoGetMetadataToken = typeof(MemberInfo).GetProperty("MetadataToken").GetGetMethod();
 		}
 
 		private void GenerateInvokeCallbacks(Type actualType, Type attributeType)
@@ -375,6 +371,11 @@ namespace AntMicro.Migrant.Generators
 
 		private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
+			var delegateGetMethodInfo = typeof(MulticastDelegate).GetProperty("Method").GetGetMethod();
+			var delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
+			var delegateGetInvocationList = Helpers.GetMethodInfo<MulticastDelegate>(md => md.GetInvocationList());
+			var memberInfoGetMetadataToken = typeof(MemberInfo).GetProperty("MetadataToken").GetGetMethod();
+
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 			putValueToWriteOnTop(generator);
 			generator.Emit(OpCodes.Call, delegateGetInvocationList);
@@ -551,10 +552,6 @@ namespace AntMicro.Migrant.Generators
 
 		private MethodInfo primitiveWriterWriteInteger;
 		private MethodInfo primitiveWriterWriteBoolean;
-		private MethodInfo delegateGetMethodInfo;
-		private MethodInfo delegateGetTarget;
-		private MethodInfo delegateGetInvocationList;
-		private MethodInfo memberInfoGetMetadataToken;
 
 		private readonly IDictionary<Type, int> typeIndices;
 		private readonly ILGenerator generator;
