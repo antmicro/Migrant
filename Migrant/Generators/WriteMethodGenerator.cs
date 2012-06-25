@@ -81,6 +81,10 @@ namespace AntMicro.Migrant.Generators
 		{
 			primitiveWriterWriteInteger = Helpers.GetMethodInfo<PrimitiveWriter>(writer => writer.Write(0));
 			primitiveWriterWriteBoolean = Helpers.GetMethodInfo<PrimitiveWriter>(writer => writer.Write(false));
+			delegateGetMethodInfo = typeof(MulticastDelegate).GetProperty("Method").GetGetMethod();
+			delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
+			delegateGetInvocationList = Helpers.GetMethodInfo<MulticastDelegate>(md => md.GetInvocationList());
+			memberInfoGetMetadataToken = typeof(MemberInfo).GetProperty("MetadataToken").GetGetMethod();
 		}
 
 		private void GenerateInvokeCallbacks(Type actualType, Type attributeType)
@@ -125,6 +129,14 @@ namespace AntMicro.Migrant.Generators
 			if(actualType.IsArray)
 			{
 				GenerateWriteArray(actualType);
+				return true;
+			}
+			if(typeof(MulticastDelegate).IsAssignableFrom(actualType))
+			{
+				GenerateWriteDelegate(gen =>
+				                      {
+					gen.Emit(OpCodes.Ldarg_2); // value to serialize
+				}, actualType);
 				return true;
 			}
 			bool isGeneric, isGenericallyIterable, isDictionary;
@@ -361,6 +373,35 @@ namespace AntMicro.Migrant.Generators
 			}
 		}
 
+		private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+		{
+			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+			putValueToWriteOnTop(generator);
+			generator.Emit(OpCodes.Call, delegateGetInvocationList);
+			generator.Emit(OpCodes.Castclass, typeof(Delegate[]));
+			generator.Emit(OpCodes.Ldlen);
+			generator.Emit(OpCodes.Dup);
+			var unicast = generator.DefineLabel();
+			generator.Emit(OpCodes.Ldc_I4_1);
+			generator.Emit(OpCodes.Beq_S, unicast);
+			generator.Emit(OpCodes.Newobj, typeof(NotImplementedException).GetConstructor(Type.EmptyTypes));
+			generator.Emit(OpCodes.Throw);
+			generator.MarkLabel(unicast);
+			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+
+			GenerateWriteReference(gen =>
+			                       {
+				putValueToWriteOnTop(gen);
+				gen.Emit(OpCodes.Call, delegateGetTarget);
+			}, typeof(object));
+
+			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+			putValueToWriteOnTop(generator);
+			generator.Emit(OpCodes.Call, delegateGetMethodInfo);
+			generator.Emit(OpCodes.Call, memberInfoGetMetadataToken);
+			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+		}
+
 		private void GenerateWriteValue(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
 			ObjectWriter.CheckLegality(formalType);
@@ -510,6 +551,10 @@ namespace AntMicro.Migrant.Generators
 
 		private MethodInfo primitiveWriterWriteInteger;
 		private MethodInfo primitiveWriterWriteBoolean;
+		private MethodInfo delegateGetMethodInfo;
+		private MethodInfo delegateGetTarget;
+		private MethodInfo delegateGetInvocationList;
+		private MethodInfo memberInfoGetMetadataToken;
 
 		private readonly IDictionary<Type, int> typeIndices;
 		private readonly ILGenerator generator;
