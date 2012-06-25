@@ -540,7 +540,6 @@ namespace AntMicro.Migrant
 			if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
 			{
 				return (writer, obj) => {
-					Console.WriteLine (this);
 					var startingPosition = writer.Position;
 	                ((ISpeciallySerializable)obj).Save(writer);
 	                writer.Write(writer.Position - startingPosition);
