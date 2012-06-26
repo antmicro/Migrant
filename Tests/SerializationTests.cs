@@ -674,7 +674,7 @@ namespace AntMicro.Migrant.Tests
 			var copy = SerializerClone(triple);
 			copy.Item1.Invoke();
 			Assert.AreEqual(1, copy.Item2.Counter);
-			Assert.AreEqual(1, copy.Item2.Counter);
+			Assert.AreEqual(1, copy.Item3.Counter);
 		}
 
 		private T SerializerClone<T>(T toClone)
