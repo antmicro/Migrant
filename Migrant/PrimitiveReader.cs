@@ -185,6 +185,14 @@ namespace AntMicro.Migrant
         }
 
 		/// <summary>
+		/// Reads and returns <see cref="System.Guid" />.
+		/// </summary>
+		public Guid ReadGuid()
+		{
+			return new Guid(ReadBytes(16));
+		}
+
+		/// <summary>
 		/// Reads and returns string.
 		/// </summary>
         public string ReadString()

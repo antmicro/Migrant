@@ -127,6 +127,14 @@ namespace AntMicro.Migrant.Generators
 				GenerateWriteArray(actualType);
 				return true;
 			}
+			if(typeof(MulticastDelegate).IsAssignableFrom(actualType))
+			{
+				GenerateWriteDelegate(gen =>
+				                      {
+					gen.Emit(OpCodes.Ldarg_2); // value to serialize
+				}, actualType);
+				return true;
+			}
 			bool isGeneric, isGenericallyIterable, isDictionary;
 			Type elementType;
 			if(Helpers.IsCollection(actualType, out elementType, out isGeneric, out isGenericallyIterable, out isDictionary))
@@ -359,6 +367,58 @@ namespace AntMicro.Migrant.Generators
 				GenerateWriteReference(putValueToWriteOnTop, formalType);
 				break;
 			}
+		}
+
+		private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+		{
+			var delegateGetMethodInfo = typeof(MulticastDelegate).GetProperty("Method").GetGetMethod();
+			var delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
+			var delegateGetInvocationList = Helpers.GetMethodInfo<MulticastDelegate>(md => md.GetInvocationList());
+			var memberInfoGetMetadataToken = typeof(MemberInfo).GetProperty("MetadataToken").GetGetMethod();
+
+			var loopCounter = generator.DeclareLocal(typeof(int));
+			var array = generator.DeclareLocal(typeof(Delegate[]));
+			var element = generator.DeclareLocal(typeof(Delegate));
+			var loopLength = generator.DeclareLocal(typeof(int));
+			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+			putValueToWriteOnTop(generator);
+			generator.Emit(OpCodes.Callvirt, delegateGetInvocationList);
+			generator.Emit(OpCodes.Castclass, typeof(Delegate[]));
+			generator.Emit(OpCodes.Dup);
+			generator.Emit(OpCodes.Stloc_S, array.LocalIndex);
+			generator.Emit(OpCodes.Ldlen);
+			generator.Emit(OpCodes.Dup);
+			generator.Emit(OpCodes.Stloc_S, loopLength.LocalIndex);
+			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+
+			generator.Emit(OpCodes.Ldc_I4_0);
+			generator.Emit(OpCodes.Stloc_S, loopCounter.LocalIndex);
+
+			var loopBegin = generator.DefineLabel();
+			generator.MarkLabel(loopBegin);
+			generator.Emit(OpCodes.Ldloc, array.LocalIndex);
+			generator.Emit(OpCodes.Ldloc, loopCounter.LocalIndex);
+			generator.Emit(OpCodes.Ldelem, element.LocalType);
+			generator.Emit(OpCodes.Stloc_S, element.LocalIndex);
+			GenerateWriteReference(gen =>
+			                       {
+				generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
+				gen.Emit(OpCodes.Call, delegateGetTarget);
+			}, typeof(object));
+
+			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+			generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
+			generator.Emit(OpCodes.Call, delegateGetMethodInfo);
+			generator.Emit(OpCodes.Call, memberInfoGetMetadataToken);
+			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+
+			generator.Emit(OpCodes.Ldloc_S, loopCounter.LocalIndex);
+			generator.Emit(OpCodes.Ldc_I4_1);
+			generator.Emit(OpCodes.Add);
+			generator.Emit(OpCodes.Dup);
+			generator.Emit(OpCodes.Stloc_S, loopCounter.LocalIndex);
+			generator.Emit(OpCodes.Ldloc_S, loopLength.LocalIndex);
+			generator.Emit(OpCodes.Blt, loopBegin);
 		}
 
 		private void GenerateWriteValue(Action<ILGenerator> putValueToWriteOnTop, Type formalType)

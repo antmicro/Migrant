@@ -656,6 +656,35 @@ namespace AntMicro.Migrant.Tests
 			CollectionAssert.AreEqual(array, copy);
 		}
 
+		[Test]
+		public void ShouldSerializeEvent()
+		{
+			var withEvent = new ClassWithEvent();
+			var companion = new CompanionToClassWithEvent();
+			withEvent.Event += companion.Method;
+			var pair = Tuple.Create(withEvent, companion);
+
+			var copy = SerializerClone(pair);
+			copy.Item1.Invoke();
+			Assert.AreEqual(1, copy.Item2.Counter);
+		}
+
+		[Test]
+		public void ShouldSerializeMulticastEvent()
+		{
+			var withEvent = new ClassWithEvent();
+			var companion1 = new CompanionToClassWithEvent();
+			withEvent.Event += companion1.Method;
+			var companion2 = new CompanionToClassWithEvent();
+			withEvent.Event += companion2.Method;
+			var triple = Tuple.Create(withEvent, companion1, companion2);
+
+			var copy = SerializerClone(triple);
+			copy.Item1.Invoke();
+			Assert.AreEqual(1, copy.Item2.Counter);
+			Assert.AreEqual(1, copy.Item3.Counter);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -941,6 +970,30 @@ namespace AntMicro.Migrant.Tests
 		private class TransientClass
 		{
 			public IntPtr Pointer { get; set; }
+		}
+
+		private class ClassWithEvent
+		{
+			public event Action Event;
+
+			public void Invoke()
+			{
+				var toInvoke = Event;
+				if(toInvoke != null)
+				{
+					toInvoke();
+				}
+			}
+		}
+
+		private class CompanionToClassWithEvent
+		{
+			public int Counter { get; set; }
+
+			public void Method()
+			{
+				Counter++;
+			}
 		}
 	}
 }

@@ -60,6 +60,7 @@ namespace AntMicro.Migrant
         {
             reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
+			agreedModuleIds = new HashSet<int>();
 			for(var i = 0; i < upfrontKnownTypes.Count; i++)
 			{
 				typeList.Add(upfrontKnownTypes[i]);
@@ -92,7 +93,9 @@ namespace AntMicro.Migrant
             var obj = deserializedObjects[0];
             if(!(obj is T))
             {
-                throw new InvalidDataException();
+				throw new InvalidDataException(
+					string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
+				              typeof(T), obj.GetType()));
             }
             while(objectsCreated >= nextObjectToRead)
             {
@@ -175,6 +178,10 @@ namespace AntMicro.Migrant
             {
                 ReadArray(type.GetElementType(), objectId);
             }
+			else if(typeof(MulticastDelegate).IsAssignableFrom(type))
+			{
+				ReadDelegate(type, objectId);
+			}
             else
             {
                 throw new InvalidOperationException(InternalErrorMessage);
@@ -225,6 +232,7 @@ namespace AntMicro.Migrant
             {
                 return Helpers.GetDefaultValue(formalType);
             }
+
             if(!formalType.IsValueType)
             {
 				var actualType = ReadType();
@@ -401,6 +409,19 @@ namespace AntMicro.Migrant
             FillArrayRowRecursive(array, 0, position, elementFormalType);
         }
 
+		private void ReadDelegate(Type type, int objectId)
+		{
+			var invocationListLength = reader.ReadInt32();
+			for(var i = 0; i < invocationListLength; i++)
+			{
+				var target = ReadField(typeof(object));
+				// constructor cannot be bound to delegate, so we can just cast to methodInfo
+				var method = (MethodInfo)target.GetType().Module.ResolveMethod(reader.ReadInt32());
+				var del = Delegate.CreateDelegate(type, target, method);
+				deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
+			}
+		}
+
         private void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
         {
             var length = array.GetLength(currentDimension);
@@ -434,6 +455,25 @@ namespace AntMicro.Migrant
 			{
 				var typeName = reader.ReadString();
 				typeList.Add(Type.GetType(typeName));
+			}
+			else
+			{
+				return typeList[typeId];
+			}
+			var moduleId = reader.ReadInt32();
+			if(!agreedModuleIds.Contains(moduleId))
+			{
+				var type = typeList[typeId];
+				var oldMvid = reader.ReadGuid();
+				var module = type.Module;
+				var newMvid = module.ModuleVersionId;
+				if(oldMvid != newMvid)
+				{
+					throw new InvalidOperationException(
+						string.Format("Cannot deserialize data. The type '{0}' in module {1} was serialized with mvid {2}, but you are trying to deserialize it using mvid {3}.",
+					              type, module, oldMvid, newMvid));
+				}
+				agreedModuleIds.Add(moduleId);
 			}
 			return typeList[typeId];
 		}
@@ -498,6 +538,7 @@ namespace AntMicro.Migrant
         private PrimitiveReader reader;
         private HashSet<int> inlineRead;
         private readonly List<Type> typeList;
+		private readonly HashSet<int> agreedModuleIds;
         private readonly Stream stream;
         private readonly Action<object> postDeserializationCallback;
         private const int InitialCapacity = 128;

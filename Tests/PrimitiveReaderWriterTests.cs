@@ -26,6 +26,7 @@
 */
 using NUnit.Framework;
 using System.IO;
+using System;
 
 namespace AntMicro.Migrant.Tests
 {
@@ -265,6 +266,36 @@ namespace AntMicro.Migrant.Tests
 				copy = reader.ReadBytes(count);
 			}
 			CollectionAssert.AreEqual(array, copy);
+			Assert.AreEqual(position, stream.Position);
+		}
+
+		[Test]
+		public void ShouldWriteAndReadGuid(
+			[Values(10, 1000, 100000)]
+			int count
+			)
+		{
+			var stream = new MemoryStream();
+			var array = new Guid[count];
+			using(var writer = new PrimitiveWriter(stream))
+			{
+				for(var i = 0; i < count; i++)
+				{
+					var guid = Guid.NewGuid();
+					array[i] = guid;
+					writer.Write(guid);
+				}
+			}
+			var position = stream.Position;
+			stream.Seek(0, SeekOrigin.Begin);
+
+			using(var reader = new PrimitiveReader(stream))
+			{
+				for(var i = 0; i < count; i++)
+				{
+					Assert.AreEqual(array[i], reader.ReadGuid());
+				}
+			}
 			Assert.AreEqual(position, stream.Position);
 		}
 

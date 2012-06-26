@@ -75,6 +75,7 @@ namespace AntMicro.Migrant
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
 			typeIndices = new Dictionary<Type, int>();
+			moduleIndices = new Dictionary<Module, int>();
 			foreach(var type in upfrontKnownTypes)
 			{
 				AddMissingType(type);
@@ -145,7 +146,7 @@ namespace AntMicro.Migrant
 		{
 			if(type.IsPointer || type == typeof(IntPtr))
 			{
-				throw new ArgumentException(); // TODO
+				throw new ArgumentException("Pointer encountered during serialization."); // TODO
 			}
 		}
 
@@ -162,8 +163,24 @@ namespace AntMicro.Migrant
 			typeId = typeIndices[type];
 			writer.Write(typeId);
 			writer.Write(type.AssemblyQualifiedName);
+			WriteModuleId(type.Module);
 			return typeId;
         }
+
+		internal void WriteModuleId(Module module)
+		{
+			int moduleId;
+			if(moduleIndices.ContainsKey(module))
+			{
+				moduleId = moduleIndices[module];
+				writer.Write(moduleId);
+				return;
+			}
+			moduleId = nextModuleId++;
+			writer.Write(moduleId);
+			writer.Write(module.ModuleVersionId);
+			moduleIndices.Add(module, moduleId);
+		}
 
 		internal void TouchAndWriteTypeId(Object o)
 		{
@@ -264,6 +281,19 @@ namespace AntMicro.Migrant
                 WriteArray(elementType, array);
                 return true;
             }
+			var mDelegate = o as MulticastDelegate;
+			if(mDelegate != null)
+			{
+				// is it really multicast?
+				var invocationList = mDelegate.GetInvocationList();
+				writer.Write(invocationList.Length);
+				foreach(var del in invocationList)
+				{
+					WriteField(typeof(object), del.Target);
+					writer.Write(del.Method.MetadataToken);
+				}
+				return true;
+			}
             var str = o as string;
             if(str != null)
             {
@@ -547,6 +577,7 @@ namespace AntMicro.Migrant
 		private ObjectIdentifier identifier;
 		private int objectsWritten;
 		private int nextTypeId;
+		private int nextModuleId;
 		private PrimitiveWriter writer;
 		private HashSet<int> inlineWritten;
 
@@ -555,6 +586,7 @@ namespace AntMicro.Migrant
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
         private readonly Dictionary<Type, int> typeIndices;
+		private readonly Dictionary<Module, int> moduleIndices;
 
 		private readonly Dictionary<Type, bool> transientTypeCache;
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;

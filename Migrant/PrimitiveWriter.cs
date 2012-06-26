@@ -183,6 +183,15 @@ namespace AntMicro.Migrant
             Write((byte)(value ? 1 : 0));
         }
 
+
+		/// <summary>
+		/// Writes the specified value of type <see cref="System.Guid" />.
+		/// </summary>
+		public void Write(Guid guid)
+		{
+			InnerChunkWrite(guid.ToByteArray());
+		}
+
 		/// <summary>
 		/// Writes the specified string.
 		/// </summary>
