@@ -685,6 +685,19 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(1, copy.Item3.Counter);
 		}
 
+		[Test]
+		public void ShouldSerializeDelegateWithTargetFromDifferentModule()
+		{
+			var withEvent = new ClassWithEvent();
+			var companion = new CompanionSecondModule();
+			withEvent.Event += companion.MethodAsExtension;
+			var pair = Tuple.Create(withEvent, companion);
+			
+			var copy = SerializerClone(pair);
+			copy.Item1.Invoke();
+			Assert.AreEqual(1, copy.Item2.Counter);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -994,6 +1007,14 @@ namespace AntMicro.Migrant.Tests
 			{
 				Counter++;
 			}
+		}
+	}
+
+	public static class CompanionExtensions
+	{
+		public static void MethodAsExtension(this CompanionSecondModule companion)
+		{
+			companion.Counter++;
 		}
 	}
 }
