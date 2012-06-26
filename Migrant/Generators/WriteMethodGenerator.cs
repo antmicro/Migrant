@@ -375,6 +375,7 @@ namespace AntMicro.Migrant.Generators
 			var delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
 			var delegateGetInvocationList = Helpers.GetMethodInfo<MulticastDelegate>(md => md.GetInvocationList());
 			var memberInfoGetMetadataToken = typeof(MemberInfo).GetProperty("MetadataToken").GetGetMethod();
+			var memberInfoGetReflectedType = typeof(MemberInfo).GetProperty("ReflectedType").GetGetMethod();
 
 			var loopCounter = generator.DeclareLocal(typeof(int));
 			var array = generator.DeclareLocal(typeof(Delegate[]));
@@ -400,12 +401,22 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Ldloc, loopCounter.LocalIndex);
 			generator.Emit(OpCodes.Ldelem, element.LocalType);
 			generator.Emit(OpCodes.Stloc_S, element.LocalIndex);
+			// target
 			GenerateWriteReference(gen =>
 			                       {
 				generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
 				gen.Emit(OpCodes.Call, delegateGetTarget);
 			}, typeof(object));
 
+			// reflected type
+			generator.Emit(OpCodes.Ldarg_0); // objectWriter
+			generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
+			generator.Emit(OpCodes.Call, delegateGetMethodInfo);
+			generator.Emit(OpCodes.Call, memberInfoGetReflectedType);
+			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type)));
+			generator.Emit(OpCodes.Pop);
+
+			// MD token
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 			generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
 			generator.Emit(OpCodes.Call, delegateGetMethodInfo);

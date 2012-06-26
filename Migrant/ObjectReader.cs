@@ -415,8 +415,9 @@ namespace AntMicro.Migrant
 			for(var i = 0; i < invocationListLength; i++)
 			{
 				var target = ReadField(typeof(object));
+				var containingType = ReadType();
 				// constructor cannot be bound to delegate, so we can just cast to methodInfo
-				var method = (MethodInfo)target.GetType().Module.ResolveMethod(reader.ReadInt32());
+				var method = (MethodInfo)containingType.Module.ResolveMethod(reader.ReadInt32());
 				var del = Delegate.CreateDelegate(type, target, method);
 				deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
 			}

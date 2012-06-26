@@ -290,6 +290,7 @@ namespace AntMicro.Migrant
 				foreach(var del in invocationList)
 				{
 					WriteField(typeof(object), del.Target);
+					TouchAndWriteTypeId(del.Method.ReflectedType);
 					writer.Write(del.Method.MetadataToken);
 				}
 				return true;
