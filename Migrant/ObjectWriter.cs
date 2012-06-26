@@ -287,12 +287,11 @@ namespace AntMicro.Migrant
 				// is it really multicast?
 				var invocationList = mDelegate.GetInvocationList();
 				writer.Write(invocationList.Length);
-				if(invocationList.Length != 1)
+				foreach(var del in invocationList)
 				{
-					throw new NotImplementedException();
+					WriteField(typeof(object), del.Target);
+					writer.Write(del.Method.MetadataToken);
 				}
-				WriteField(typeof(object), mDelegate.Target);
-				writer.Write(mDelegate.Method.MetadataToken);
 				return true;
 			}
             var str = o as string;

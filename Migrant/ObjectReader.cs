@@ -412,14 +412,14 @@ namespace AntMicro.Migrant
 		private void ReadDelegate(Type type, int objectId)
 		{
 			var invocationListLength = reader.ReadInt32();
-			if(invocationListLength != 1)
+			for(var i = 0; i < invocationListLength; i++)
 			{
-				throw new NotImplementedException();
+				var target = ReadField(typeof(object));
+				// constructor cannot be bound to delegate, so we can just cast to methodInfo
+				var method = (MethodInfo)target.GetType().Module.ResolveMethod(reader.ReadInt32());
+				var del = Delegate.CreateDelegate(type, target, method);
+				deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
 			}
-			var target = ReadField(typeof(object));
-			// constructor cannot be bound to delegate, so we can just cast to methodInfo
-			var method = (MethodInfo)target.GetType().Module.ResolveMethod(reader.ReadInt32());
-			deserializedObjects[objectId] = Delegate.CreateDelegate(type, target, method);
 		}
 
         private void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
