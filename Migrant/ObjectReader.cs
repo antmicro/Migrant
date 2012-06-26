@@ -93,7 +93,9 @@ namespace AntMicro.Migrant
             var obj = deserializedObjects[0];
             if(!(obj is T))
             {
-                throw new InvalidDataException();
+				throw new InvalidDataException(
+					string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
+				              typeof(T), obj.GetType()));
             }
             while(objectsCreated >= nextObjectToRead)
             {
