@@ -661,6 +661,22 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(1, copy.Item2.Counter);
 		}
 
+		[Test]
+		public void ShouldSerializeMulticastEvent()
+		{
+			var withEvent = new ClassWithEvent();
+			var companion1 = new CompanionToClassWithEvent();
+			withEvent.Event += companion1.Method;
+			var companion2 = new CompanionToClassWithEvent();
+			withEvent.Event += companion2.Method;
+			var triple = Tuple.Create(withEvent, companion1, companion2);
+
+			var copy = SerializerClone(triple);
+			copy.Item1.Invoke();
+			Assert.AreEqual(1, copy.Item2.Counter);
+			Assert.AreEqual(1, copy.Item2.Counter);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
