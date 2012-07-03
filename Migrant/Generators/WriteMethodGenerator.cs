@@ -173,11 +173,17 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Stloc_2);
 			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
 
+			var loopEnd = generator.DefineLabel();
+			var loopBegin = generator.DefineLabel();
 			// writing elements
 			generator.Emit(OpCodes.Ldc_I4_0);
 			generator.Emit(OpCodes.Stloc_0);
-			var loopBegin = generator.DefineLabel();
+
 			generator.MarkLabel(loopBegin);
+			generator.Emit(OpCodes.Ldloc_0);
+			generator.Emit(OpCodes.Ldloc_2); // length of the array
+			generator.Emit(OpCodes.Bge, loopEnd);
+
 			generator.Emit(OpCodes.Ldarg_2); // array to serialize
 			generator.Emit(OpCodes.Castclass, actualType);
 			generator.Emit(OpCodes.Ldloc_0); // index
@@ -194,9 +200,8 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Ldc_I4_1);
 			generator.Emit(OpCodes.Add);
 			generator.Emit(OpCodes.Stloc_0);
-			generator.Emit(OpCodes.Ldloc_0);
-			generator.Emit(OpCodes.Ldloc_2); // length of the array
-			generator.Emit(OpCodes.Blt, loopBegin);
+			generator.Emit(OpCodes.Br, loopBegin);
+			generator.MarkLabel(loopEnd);
 		}
 
 		private void GenerateWriteMultidimensionalArray(Type actualType, Type elementType)
