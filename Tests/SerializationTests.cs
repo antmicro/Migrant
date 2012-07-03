@@ -698,6 +698,14 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(1, copy.Item2.Counter);
 		}
 
+		[Test]
+		public void ShouldSerializeEmptyArray()
+		{
+			var emptyArray = new int[0];
+			var copy = SerializerClone(emptyArray);
+			CollectionAssert.AreEqual(emptyArray, copy);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
