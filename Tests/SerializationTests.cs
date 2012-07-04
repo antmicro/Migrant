@@ -410,8 +410,8 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldSerializeEnums()
 		{
-			var enumLongValues = Enum.GetValues(typeof(TestEnumLong)).Cast<TestEnumLong>().ToArray();
-			var enumShortValues = Enum.GetValues(typeof(TestEnumShort)).Cast<TestEnumShort>().ToArray();
+			var enumLongValues = Enum.GetValues(typeof(EnumLong)).Cast<EnumLong>().ToArray();
+			var enumShortValues = Enum.GetValues(typeof(EnumShort)).Cast<EnumShort>().ToArray();
 			var enumFlagsValues = Enum.GetValues(typeof(TestEnumFlags)).Cast<TestEnumFlags>()
 				.Union(new []
 				{
@@ -714,6 +714,14 @@ namespace AntMicro.Migrant.Tests
 			CollectionAssert.AreEqual(emptyList, copy);
 		}
 
+		[Test]
+		public void ShouldSerializeByteEnum()
+		{
+			var byteEnum = EnumByte.Two;
+			var copy = SerializerClone(byteEnum);
+			Assert.AreEqual(byteEnum, copy);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -870,18 +878,24 @@ namespace AntMicro.Migrant.Tests
 			Three
 		}
 
-		private enum TestEnumLong : long
+		private enum EnumLong : long
 		{
 			First = -1,
 			Second = long.MaxValue-12345,
 			Third
 		}
 		
-		private enum TestEnumShort : short
+		private enum EnumShort : short
 		{
 			First = short.MinValue+2,
 			Second = 6,
 			Third
+		}
+
+		private enum EnumByte : byte
+		{
+			One = 1,
+			Two = 200
 		}
 
 		[Flags]
