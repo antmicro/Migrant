@@ -438,51 +438,11 @@ namespace AntMicro.Migrant
                 }
                 return;
             }
-            if(formalType == typeof(Int64))
-            {
-                writer.Write((Int64)value);
-                return;
-            }
-            if(formalType == typeof(UInt64))
-            {
-                writer.Write((UInt64)value);
-                return;
-            }
-            if(formalType == typeof(Int32))
-            {
-                writer.Write((Int32)value);
-                return;
-            }
-            if(formalType == typeof(UInt32))
-            {
-                writer.Write((UInt32)value);
-                return;
-            }
-            if(formalType == typeof(Int16))
-            {
-                writer.Write((Int16)value);
-                return;
-            }
-            if(formalType == typeof(UInt16))
-            {
-                writer.Write((UInt16)value);
-                return;
-            }
-            if(formalType == typeof(char))
-            {
-                writer.Write((char)value);
-                return;
-            }
-            if(formalType == typeof(byte))
-            {
-                writer.Write((byte)value);
-                return;
-            }
-            if(formalType == typeof(bool))
-            {
-                writer.Write((bool)value);
-                return;
-            }
+			if(formalType.IsPrimitive)
+			{
+				writer.Write((dynamic)value);
+				return;
+			}
             if(formalType == typeof(DateTime))
             {
                 writer.Write((DateTime)value);
@@ -491,16 +451,6 @@ namespace AntMicro.Migrant
             if(formalType == typeof(TimeSpan))
             {
                 writer.Write((TimeSpan)value);
-                return;
-            }
-            if(formalType == typeof(float))
-            {
-                writer.Write((float)value);
-                return;
-            }
-            if(formalType == typeof(double))
-            {
-                writer.Write((double)value);
                 return;
             }
             // so we guess it is struct
