@@ -35,6 +35,7 @@ using ImpromptuInterface;
 using ImpromptuInterface.Dynamic;
 using AntMicro.Migrant.Generators;
 using System.Reflection.Emit;
+using System.Threading;
 
 namespace AntMicro.Migrant
 {
@@ -144,9 +145,10 @@ namespace AntMicro.Migrant
 
 		internal static void CheckLegality(Type type)
 		{
-			if(type.IsPointer || type == typeof(IntPtr))
+			if(type.IsPointer || type == typeof(IntPtr) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ThreadLocal<>)))
 			{
-				throw new ArgumentException("Pointer encountered during serialization."); // TODO
+				// TODO: message for the user should be more friendly if possible - it should contain path which lead to such field or type
+				throw new InvalidOperationException("Pointer or ThreadLocal encountered during serialization.");
 			}
 		}
 
@@ -399,6 +401,7 @@ namespace AntMicro.Migrant
             {
                 return;
             }
+			CheckLegality(actualType);
             var refId = identifier.GetId(value);
             // if this is a future reference, just after the reference id,
             // we should write inline data
