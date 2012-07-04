@@ -257,7 +257,8 @@ namespace AntMicro.Migrant
             } 
             if(formalType.IsEnum)
             {
-                return Enum.ToObject(formalType, reader.ReadInt64());
+				var value = ReadField(Enum.GetUnderlyingType(formalType));
+				return Enum.ToObject(formalType, Impromptu.InvokeConvert(value, typeof(long), true));
             }
             var nullableActualType = Nullable.GetUnderlyingType(formalType);
             if(nullableActualType != null)

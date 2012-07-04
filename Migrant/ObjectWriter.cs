@@ -421,7 +421,7 @@ namespace AntMicro.Migrant
             // value type -> actual type is the formal type
             if(formalType.IsEnum)
             {
-                writer.Write(Impromptu.InvokeConvert(value, typeof(long), true));
+                writer.Write(Impromptu.InvokeConvert(value, Enum.GetUnderlyingType(formalType), true));
                 return;
             }
             var nullableActualType = Nullable.GetUnderlyingType(formalType);
