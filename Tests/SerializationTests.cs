@@ -1046,6 +1046,11 @@ namespace AntMicro.Migrant.Tests
 
 		private class ClassWithThreadLocal
 		{
+			public ClassWithThreadLocal()
+			{
+				ThreadLocal = new ThreadLocal<int>();
+			}
+
 			public ThreadLocal<int> ThreadLocal { get; set; }
 		}
 	}
