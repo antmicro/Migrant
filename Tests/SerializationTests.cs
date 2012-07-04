@@ -280,8 +280,6 @@ namespace AntMicro.Migrant.Tests
 			CollectionAssert.AreEqual(list, copy);
 		}
 
-		//public void ShouldSerialize
-
 		[Test]
 		public void ShouldSerializeCollectionWithNull()
 		{
@@ -722,6 +720,13 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(byteEnum, copy);
 		}
 
+		[Test]
+		public void ShouldThrowOnThreadLocalSerialization()
+		{
+			var classWithThreadLocal = new ClassWithThreadLocal();
+			Assert.Throws(typeof(InvalidOperationException), () => Serializer.DeepClone(classWithThreadLocal));
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -881,7 +886,7 @@ namespace AntMicro.Migrant.Tests
 		private enum EnumLong : long
 		{
 			First = -1,
-			Second = long.MaxValue-12345,
+			Second = long.MaxValue - 12345,
 			Third
 		}
 		
@@ -1037,6 +1042,11 @@ namespace AntMicro.Migrant.Tests
 			{
 				Counter++;
 			}
+		}
+
+		private class ClassWithThreadLocal
+		{
+			public ThreadLocal<int> ThreadLocal { get; set; }
 		}
 	}
 
