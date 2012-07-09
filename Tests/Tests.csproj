@@ -54,8 +54,4 @@
       <Name>TestsSecondModule</Name>
     </ProjectReference>
   </ItemGroup>
-  <UsingTask TaskName="PepitaGet.RestorePackagesTask" AssemblyFile="$(SolutionDir)Lib\PepitaGet.dll" />
-  <Target Name="BeforeBuild">
-    <PepitaGet.RestorePackagesTask />
-  </Target>
 </Project>
