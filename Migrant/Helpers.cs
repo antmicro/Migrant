@@ -186,8 +186,10 @@ namespace AntMicro.Migrant
 
 		public static IEnumerable<MethodInfo> GetMethodsWithAttribute(Type attributeType, Type objectType)
 		{
-			return objectType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+			var derivedMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
                 BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(x => x.IsDefined(attributeType, false));
+			var baseType = objectType.BaseType;
+			return baseType == null ? derivedMethods : derivedMethods.Union(GetMethodsWithAttribute(attributeType, baseType));
 		}
 
         public static void InvokeAttribute(Type attributeType, object o)
