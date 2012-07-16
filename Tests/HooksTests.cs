@@ -30,16 +30,21 @@ using System.IO;
 
 namespace AntMicro.Migrant.Tests
 {
-	[TestFixture]
+	[TestFixture(false, false)]
+	[TestFixture(true, false)]
 	public class HooksTests
 	{
-		// TODO: do this tests for generated/reflection serializer
+		public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+		{
+			this.useGeneratedDeserializer = useGeneratedDeserializer;
+			this.useGeneratedSerializer = useGeneratedSerializer;
+		}
 
 		[Test]
 		public void ShouldInvokePreSerialization()
 		{
 			var mock = new PreSerializationMock();
-			var copy = Serializer.DeepClone(mock);
+			var copy = SerializerClone(mock);
 			Assert.IsTrue(mock.Invoked);
 			Assert.IsTrue(copy.Invoked);
 		}
@@ -48,7 +53,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokeDerivedPreSerialization()
 		{
 			var mock = new PreSerializationMockDerived();
-			var copy = Serializer.DeepClone(mock);
+			var copy = SerializerClone(mock);
 			Assert.IsTrue(mock.Invoked);
 			Assert.IsTrue(mock.DerivedInvoked);
 			Assert.IsTrue(copy.Invoked);
@@ -59,7 +64,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokePostSerialization()
 		{
 			var mock = new PostSerializationMock();
-			var copy = Serializer.DeepClone(mock);
+			var copy = SerializerClone(mock);
 			Assert.IsTrue(mock.Invoked);
 			Assert.IsFalse(copy.Invoked);
 		}
@@ -68,7 +73,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokeDerivedPostSerialization()
 		{
 			var mock = new PostSerializationMockDerived();
-			var copy = Serializer.DeepClone(mock);
+			var copy = SerializerClone(mock);
 			Assert.IsTrue(mock.Invoked);
 			Assert.IsTrue(mock.DerivedInvoked);
 			Assert.IsFalse(copy.Invoked);
@@ -79,7 +84,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokeStaticPostSerialization()
 		{
 			var mock = new StaticPostSerializationMock();
-			Serializer.DeepClone(mock);
+			SerializerClone(mock);
 			Assert.IsTrue(StaticPostSerializationMock.Invoked);
 		}
 
@@ -87,7 +92,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokePostDeserialization()
 		{
 			var mock = new PostDeserializationMock();
-			var copy = Serializer.DeepClone(mock);
+			var copy = SerializerClone(mock);
 			Assert.IsFalse(mock.Invoked);
 			Assert.IsTrue(copy.Invoked);
 		}
@@ -96,7 +101,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokeDerivedPostDeserialization()
 		{
 			var mock = new PostSerializationMockDerived();
-			var copy = Serializer.DeepClone(mock);
+			var copy = SerializerClone(mock);
 			Assert.IsFalse(mock.Invoked);
 			Assert.IsFalse(mock.DerivedInvoked);
 			Assert.IsTrue(copy.Invoked);
@@ -124,6 +129,28 @@ namespace AntMicro.Migrant.Tests
 			serializer.Deserialize<string[]>(memoryStream);
 			Assert.AreEqual(3, postDeserializationCounter);
 		}
+
+		private T SerializerClone<T>(T toClone)
+		{
+			var settings = SettingsFromFields;
+			return Serializer.DeepClone(toClone, settings);
+		}
+		
+		private Customization.Settings SettingsFromFields
+		{
+			get
+			{
+				var settings = new Customization.Settings
+					(
+						useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
+						useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
+						);
+				return settings;
+			}
+		}
+		
+		private bool useGeneratedSerializer;
+		private bool useGeneratedDeserializer;
 	}
 
 	public class PreSerializationMock
