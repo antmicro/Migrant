@@ -221,6 +221,7 @@ namespace AntMicro.Migrant.Tests
 
 	public class PostDeserializationMockDerived : PostDeserializationMock
 	{
+		[PostDeserialization]
 		private void PostDeserializationDerived()
 		{
 			DerivedInvoked = true;
