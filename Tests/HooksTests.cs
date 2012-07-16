@@ -45,12 +45,34 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
+		public void ShouldInvokeDerivedPreSerialization()
+		{
+			var mock = new PreSerializationMockDerived();
+			var copy = Serializer.DeepClone(mock);
+			Assert.IsTrue(mock.Invoked);
+			Assert.IsTrue(mock.DerivedInvoked);
+			Assert.IsTrue(copy.Invoked);
+			Assert.IsTrue(copy.DerivedInvoked);
+		}
+
+		[Test]
 		public void ShouldInvokePostSerialization()
 		{
 			var mock = new PostSerializationMock();
 			var copy = Serializer.DeepClone(mock);
 			Assert.IsTrue(mock.Invoked);
 			Assert.IsFalse(copy.Invoked);
+		}
+
+		[Test]
+		public void ShouldInvokeDerivedPostSerialization()
+		{
+			var mock = new PostSerializationMockDerived();
+			var copy = Serializer.DeepClone(mock);
+			Assert.IsTrue(mock.Invoked);
+			Assert.IsTrue(mock.DerivedInvoked);
+			Assert.IsFalse(copy.Invoked);
+			Assert.IsFalse(copy.DerivedInvoked);
 		}
 
 		[Test]
@@ -68,6 +90,17 @@ namespace AntMicro.Migrant.Tests
 			var copy = Serializer.DeepClone(mock);
 			Assert.IsFalse(mock.Invoked);
 			Assert.IsTrue(copy.Invoked);
+		}
+
+		[Test]
+		public void ShouldInvokeDerivedPostDeserialization()
+		{
+			var mock = new PostSerializationMockDerived();
+			var copy = Serializer.DeepClone(mock);
+			Assert.IsFalse(mock.Invoked);
+			Assert.IsFalse(mock.DerivedInvoked);
+			Assert.IsTrue(copy.Invoked);
+			Assert.IsTrue(copy.DerivedInvoked);
 		}
 
 		[Test]
@@ -104,6 +137,17 @@ namespace AntMicro.Migrant.Tests
 		public bool Invoked { get; private set; }
 	}
 
+	public class PreSerializationMockDerived : PreSerializationMock
+	{
+		[PreSerialization]
+		private void PreSerializationDerived()
+		{
+			DerivedInvoked = true;
+		}
+
+		public bool DerivedInvoked { get; private set; }
+	}
+
 	public class PostSerializationMock
 	{
 		[PostSerialization]
@@ -113,6 +157,17 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		public bool Invoked { get; private set; }
+	}
+
+	public class PostSerializationMockDerived : PostSerializationMock
+	{
+		[PostSerialization]
+		private void PostSerializationDerived()
+		{
+			DerivedInvoked = true;
+		}
+
+		public bool DerivedInvoked { get; private set; }
 	}
 
 	public class StaticPostSerializationMock
@@ -135,6 +190,16 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		public bool Invoked { get; private set; }
+	}
+
+	public class PostDeserializationMockDerived : PostDeserializationMock
+	{
+		private void PostDeserializationDerived()
+		{
+			DerivedInvoked = true;
+		}
+
+		public bool DerivedInvoked { get; private set; }
 	}
 }
 
