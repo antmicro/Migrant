@@ -100,7 +100,7 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldInvokeDerivedPostDeserialization()
 		{
-			var mock = new PostSerializationMockDerived();
+			var mock = new PostDeserializationMockDerived();
 			var copy = SerializerClone(mock);
 			Assert.IsFalse(mock.Invoked);
 			Assert.IsFalse(mock.DerivedInvoked);
