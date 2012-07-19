@@ -27,6 +27,7 @@
 using AntMicro.Migrant.Hooks;
 using NUnit.Framework;
 using System.IO;
+using System;
 
 namespace AntMicro.Migrant.Tests
 {
@@ -130,6 +131,13 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(3, postDeserializationCounter);
 		}
 
+		[Test]
+		public void ShouldHaveDeserializedReferencedObjectsWhenHookIsInvoked()
+		{
+			var referencing = new ReferencingPostDeserializationMock();
+			SerializerClone(referencing);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -228,6 +236,35 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		public bool DerivedInvoked { get; private set; }
+	}
+
+	public class ReferencingPostDeserializationMock
+	{
+		public ReferencingPostDeserializationMock()
+		{
+			mock = new ReferencedPostDeserializationMock();
+		}
+
+		[PostDeserialization]
+		private void PostDeserialization()
+		{
+			if(mock.TestObject == null)
+			{
+				throw new InvalidOperationException("Referenced mock was still not deserialized when invoking hook.");
+			}
+		}
+
+		private readonly ReferencedPostDeserializationMock mock;
+	}
+
+	public class ReferencedPostDeserializationMock
+	{
+		public ReferencedPostDeserializationMock()
+		{
+			TestObject = new object();
+		}
+
+		public object TestObject { get; private set; }
 	}
 }
 
