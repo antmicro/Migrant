@@ -727,6 +727,18 @@ namespace AntMicro.Migrant.Tests
 			Assert.Throws(typeof(InvalidOperationException), () => Serializer.DeepClone(classWithThreadLocal));
 		}
 
+		[Test]
+		public void ShouldOmitDelegateWithTransientTarget()
+		{
+			var withEvent = new ClassWithEvent();
+			var target1 = new TransientClassWithMethod();
+			var target2 = new CompanionToClassWithEvent();
+			withEvent.Event += target2.Method;
+			withEvent.Event += target1.Method;
+			var copy = SerializerClone(withEvent);
+			copy.Invoke();
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -1052,6 +1064,22 @@ namespace AntMicro.Migrant.Tests
 			}
 
 			public ThreadLocal<int> ThreadLocal { get; set; }
+		}
+
+		[Transient]
+		private class TransientClassWithMethod
+		{
+			public TransientClassWithMethod()
+			{
+				a = 1;
+			}
+
+			public void Method()
+			{
+				a++;
+			}
+
+			private int a;
 		}
 	}
 
