@@ -138,6 +138,11 @@ namespace AntMicro.Migrant
                 break;
             }
             var obj = deserializedObjects[objectId];
+			if(obj == null)
+			{
+				// it can happen if we deserialize delegate with empty invocation list
+				return;
+			}
             Helpers.InvokeAttribute(typeof(PostDeserializationAttribute), obj);
             if(postDeserializationCallback != null)
             {

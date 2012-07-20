@@ -399,13 +399,18 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Stloc_S, loopLength.LocalIndex);
 			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
 
+			var loopEnd = generator.DefineLabel();
+			var loopBegin = generator.DefineLabel();
 			generator.Emit(OpCodes.Ldc_I4_0);
 			generator.Emit(OpCodes.Stloc_S, loopCounter.LocalIndex);
 
-			var loopBegin = generator.DefineLabel();
 			generator.MarkLabel(loopBegin);
-			generator.Emit(OpCodes.Ldloc, array.LocalIndex);
-			generator.Emit(OpCodes.Ldloc, loopCounter.LocalIndex);
+			generator.Emit(OpCodes.Ldloc_S, loopCounter.LocalIndex);
+			generator.Emit(OpCodes.Ldloc_S, loopLength.LocalIndex);
+			generator.Emit(OpCodes.Bge, loopEnd);
+
+			generator.Emit(OpCodes.Ldloc_S, array.LocalIndex);
+			generator.Emit(OpCodes.Ldloc_S, loopCounter.LocalIndex);
 			generator.Emit(OpCodes.Ldelem, element.LocalType);
 			generator.Emit(OpCodes.Stloc_S, element.LocalIndex);
 			// target
@@ -433,10 +438,9 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Ldloc_S, loopCounter.LocalIndex);
 			generator.Emit(OpCodes.Ldc_I4_1);
 			generator.Emit(OpCodes.Add);
-			generator.Emit(OpCodes.Dup);
 			generator.Emit(OpCodes.Stloc_S, loopCounter.LocalIndex);
-			generator.Emit(OpCodes.Ldloc_S, loopLength.LocalIndex);
-			generator.Emit(OpCodes.Blt, loopBegin);
+			generator.Emit(OpCodes.Br, loopBegin);
+			generator.MarkLabel(loopEnd);
 		}
 
 		private void GenerateWriteValue(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
