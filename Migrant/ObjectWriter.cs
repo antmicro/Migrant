@@ -120,6 +120,11 @@ namespace AntMicro.Migrant
 			}
 		}
 
+		internal Delegate[] GetDelegatesWithNonTransientTargets(MulticastDelegate mDelegate)
+		{
+			return mDelegate.GetInvocationList().Where(x => x.Target == null || !CheckTransient(x.Target)).ToArray();
+		}
+
 		internal bool CheckTransient(object o)
 		{
 			return CheckTransient(o.GetType());
@@ -280,8 +285,8 @@ namespace AntMicro.Migrant
 			var mDelegate = o as MulticastDelegate;
 			if(mDelegate != null)
 			{
-				// is it really multicast?
-				var invocationList = mDelegate.GetInvocationList();
+				// if the target is trasient, we omit associated delegate entry
+				var invocationList = GetDelegatesWithNonTransientTargets(mDelegate);
 				writer.Write(invocationList.Length);
 				foreach(var del in invocationList)
 				{

@@ -379,7 +379,7 @@ namespace AntMicro.Migrant.Generators
 		{
 			var delegateGetMethodInfo = typeof(MulticastDelegate).GetProperty("Method").GetGetMethod();
 			var delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
-			var delegateGetInvocationList = Helpers.GetMethodInfo<MulticastDelegate>(md => md.GetInvocationList());
+			var delegateGetInvocationList = Helpers.GetMethodInfo<ObjectWriter, MulticastDelegate>((writer, md) => writer.GetDelegatesWithNonTransientTargets(md));
 			var memberInfoGetMetadataToken = typeof(MemberInfo).GetProperty("MetadataToken").GetGetMethod();
 			var memberInfoGetReflectedType = typeof(MemberInfo).GetProperty("ReflectedType").GetGetMethod();
 
@@ -388,8 +388,9 @@ namespace AntMicro.Migrant.Generators
 			var element = generator.DeclareLocal(typeof(Delegate));
 			var loopLength = generator.DeclareLocal(typeof(int));
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+			generator.Emit(OpCodes.Ldarg_0); // objectWriter
 			putValueToWriteOnTop(generator);
-			generator.Emit(OpCodes.Callvirt, delegateGetInvocationList);
+			generator.Emit(OpCodes.Call, delegateGetInvocationList);
 			generator.Emit(OpCodes.Castclass, typeof(Delegate[]));
 			generator.Emit(OpCodes.Dup);
 			generator.Emit(OpCodes.Stloc_S, array.LocalIndex);
