@@ -739,6 +739,15 @@ namespace AntMicro.Migrant.Tests
 			copy.Invoke();
 		}
 
+		[Test]
+		public void ShouldSerializeEmptyDelegateList()
+		{
+			var withEvent = new ClassWithEvent();
+			var target = new TransientClassWithMethod();
+			withEvent.Event += target.Method;
+			SerializerClone(withEvent);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
