@@ -149,7 +149,7 @@ namespace AntMicro.Migrant
 					upfrontKnownTypes.Add(Type.GetType(reader.ReadString()));
                 }
             }
-            var objectReader = new ObjectReader(stream, upfrontKnownTypes, OnPostDeserialization);
+            var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, OnPostDeserialization);
             var result = objectReader.ReadObject<T>();
             return result;
         }

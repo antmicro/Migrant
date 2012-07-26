@@ -52,12 +52,17 @@ namespace AntMicro.Migrant
 		/// List of types that are considered to be known upfront, i.e. their type information is not written to the serialization stream.
 		/// It has to be consistent with <see cref="AntMicro.Migrant.ObjectWriter" /> that wrote the stream.
 		/// </param>
+		/// <param name='ignoreModuleIdInequality'>
+		/// If set to true, deserialization continues even if the module id used for deserialization differs from the one used for serialization.
+		/// If set to false, exception is thrown instead.
+		/// </param>
 		/// <param name='postDeserializationCallback'>
 		/// Callback which will be called after deserialization of every unique object. Deserialized
 		/// object is given in the callback's only parameter.
 		/// </param>
-        public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, Action<object> postDeserializationCallback = null)
+        public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, Action<object> postDeserializationCallback = null)
         {
+			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
             reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
 			agreedModuleIds = new HashSet<int>();
@@ -474,7 +479,7 @@ namespace AntMicro.Migrant
 				var oldMvid = reader.ReadGuid();
 				var module = type.Module;
 				var newMvid = module.ModuleVersionId;
-				if(oldMvid != newMvid)
+				if(oldMvid != newMvid && !ignoreModuleIdInequality)
 				{
 					throw new InvalidOperationException(
 						string.Format("Cannot deserialize data. The type '{0}' in module {1} was serialized with mvid {2}, but you are trying to deserialize it using mvid {3}.",
@@ -547,6 +552,7 @@ namespace AntMicro.Migrant
         private readonly List<Type> typeList;
 		private readonly HashSet<int> agreedModuleIds;
         private readonly Stream stream;
+		private readonly bool ignoreModuleIdInequality;
         private readonly Action<object> postDeserializationCallback;
         private const int InitialCapacity = 128;
         private const string InternalErrorMessage = "Internal error: should not reach here.";
