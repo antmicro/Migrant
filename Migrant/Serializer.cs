@@ -226,7 +226,7 @@ namespace AntMicro.Migrant
 				// we do not add value types, cause they are inline written unless boxed
 				return;
 			}
-            if(typeof(ISpeciallySerializable).IsAssignableFrom(typeToScan) || typeToScan.IsDefined(typeof(TransientAttribute), false))
+            if(typeof(ISpeciallySerializable).IsAssignableFrom(typeToScan) || Helpers.CheckTransientNoCache(typeToScan))
             {
 				return;
             }

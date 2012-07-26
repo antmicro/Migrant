@@ -238,7 +238,7 @@ namespace AntMicro.Migrant
 
         private object ReadField(Type formalType)
         {
-            if(formalType.IsDefined(typeof(TransientAttribute), false))
+            if(Helpers.CheckTransientNoCache(formalType))
             {
                 return Helpers.GetDefaultValue(formalType);
             }
@@ -250,7 +250,7 @@ namespace AntMicro.Migrant
                 {
                     return null;
                 }
-                if(actualType.IsDefined(typeof(TransientAttribute), false))
+                if(Helpers.CheckTransientNoCache(actualType))
                 {
                     return Helpers.GetDefaultValue(formalType);
                 }

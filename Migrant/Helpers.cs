@@ -49,6 +49,11 @@ namespace AntMicro.Migrant
             return false;
         }
 
+		internal static bool CheckTransientNoCache(Type type)
+		{
+			return type.IsDefined(typeof(TransientAttribute), true);
+		}
+
         public static bool TryGetDictionaryCountAndElementTypes(object o, out int count, out Type formalKeyType, out Type formalValueType)
         {
             if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType))
@@ -247,7 +252,7 @@ namespace AntMicro.Migrant
 
 		internal static SerializationType GetSerializationType(Type type)
 		{
-			if(type.IsDefined(typeof(TransientAttribute), false))
+			if(Helpers.CheckTransientNoCache(type))
             {
                 return SerializationType.Transient;
             }

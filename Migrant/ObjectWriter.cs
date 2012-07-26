@@ -137,7 +137,7 @@ namespace AntMicro.Migrant
 			{
 				return result;
 			}
-			var isTransient = type.IsDefined(typeof(TransientAttribute), false);
+			var isTransient = Helpers.CheckTransientNoCache(type);
 			transientTypeCache.Add(type, isTransient);
 			return isTransient;
 		}
@@ -195,7 +195,7 @@ namespace AntMicro.Migrant
 
 		internal static bool HasSpecialWriteMethod(Type type)
 		{
-			return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || type.IsDefined(typeof(TransientAttribute), false);
+			return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
 		}
 
         private void PrepareForNextWrite()
@@ -389,14 +389,14 @@ namespace AntMicro.Migrant
 			}
             // OK, so we should write a reference
             // a null reference maybe?
-            if(value == null)
+            if(value == null || CheckTransient(value))
             {
                 writer.Write(Consts.NullObjectId);
                 return;
             }
             TouchAndWriteTypeId(value);
 			var actualType = value.GetType();
-            if(actualType.IsDefined(typeof(TransientAttribute), false))
+            if(CheckTransient(actualType))
             {
                 return;
             }

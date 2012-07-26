@@ -552,7 +552,7 @@ namespace AntMicro.Migrant.Generators
 			var skipTransientCheck = false;
 			if(formalTypeIsActualType)
 			{
-				if(formalType.IsDefined(typeof(TransientAttribute), false))
+				if(Helpers.CheckTransientNoCache(formalType))
 				{
 					skipGetId = true;
 				}
