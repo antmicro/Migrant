@@ -52,7 +52,7 @@ namespace AntMicro.Migrant.Tests
 
 			stream.Seek(0, SeekOrigin.Begin);
 			var types = typeIndices.ToArray();
-			var reader = new ObjectReader(stream, types);
+			var reader = new ObjectReader(stream, types, false);
 			Assert.AreEqual(strings[0], reader.ReadObject<string>());
 			Assert.AreEqual(strings[1], reader.ReadObject<string>());
 			Assert.AreEqual(position, stream.Position);

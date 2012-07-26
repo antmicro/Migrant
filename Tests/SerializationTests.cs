@@ -748,6 +748,15 @@ namespace AntMicro.Migrant.Tests
 			SerializerClone(withEvent);
 		}
 
+		[Test]
+		public void TransientDerivedShouldAlsoBeTransient()
+		{
+			var transientDerived = new TransientDerived();
+			var values = new object[] { 0, transientDerived };
+			var copy = SerializerClone(values);
+			CollectionAssert.AreEqual(new object[] { 0, null }, copy);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -1039,6 +1048,11 @@ namespace AntMicro.Migrant.Tests
 		private class TransientClass
 		{
 			public IntPtr Pointer { get; set; }
+		}
+
+		private class TransientDerived : TransientClass
+		{
+			public int Integer { get; set; }
 		}
 
 		private class ClassWithEvent
