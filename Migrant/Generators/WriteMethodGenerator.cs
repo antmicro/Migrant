@@ -424,7 +424,7 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Ldarg_0); // objectWriter
 			generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
 			generator.Emit(OpCodes.Call, delegateGetMethodInfo);
-			generator.Emit(OpCodes.Call, memberInfoGetReflectedType);
+			generator.Emit(OpCodes.Callvirt, memberInfoGetReflectedType);
 			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type)));
 			generator.Emit(OpCodes.Pop);
 
@@ -432,7 +432,7 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 			generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
 			generator.Emit(OpCodes.Call, delegateGetMethodInfo);
-			generator.Emit(OpCodes.Call, memberInfoGetMetadataToken);
+			generator.Emit(OpCodes.Callvirt, memberInfoGetMetadataToken);
 			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
 
 			generator.Emit(OpCodes.Ldloc_S, loopCounter.LocalIndex);
