@@ -32,7 +32,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="nunit.framework">
-      <HintPath>..\Packages\NUnit.2.6.0.12054\lib\nunit.framework.dll</HintPath>
+      <HintPath>..\Lib\nunit.framework.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -49,7 +49,7 @@
       <Project>{5F87C357-09FB-4F53-BE37-41FE5BD88957}</Project>
       <Name>Migrant</Name>
     </ProjectReference>
-    <ProjectReference Include="..\TestsSecondModule\TestsSecondModule.csproj">
+    <ProjectReference Include="SecondModule\TestsSecondModule.csproj">
       <Project>{560B93C1-E336-47DA-A879-4E9C5B75A927}</Project>
       <Name>TestsSecondModule</Name>
     </ProjectReference>
