@@ -138,6 +138,15 @@ namespace AntMicro.Migrant.Tests
 			SerializerClone(referencing);
 		}
 
+		[Test]
+		public void ShouldInvokePostHookAfterBothObjectsInCyclicReferenceAreDeserialized()
+		{
+			var a = new CyclicReferenceMockA();
+			a.B = new CyclicReferenceMockB();
+			a.B.A = a;
+			SerializerClone(a);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -265,6 +274,46 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		public object TestObject { get; private set; }
+	}
+
+	public class CyclicReferenceMockA
+	{
+		public CyclicReferenceMockB B { get; set; }
+		public string Str { get; set; }
+
+		public CyclicReferenceMockA()
+		{
+			Str = "Something";
+		}
+
+		[PostDeserialization]
+		public void TestIfBIsReady()
+		{
+			if(B == null || B.Str == null)
+			{
+				throw new InvalidOperationException("B is not ready after deserialization.");
+			}
+		}
+	}
+
+	public class CyclicReferenceMockB
+	{
+		public CyclicReferenceMockA A { get; set; }
+		public string Str { get; set; }
+
+		public CyclicReferenceMockB()
+		{
+			Str = "Something different";
+		}
+
+		[PostDeserialization]
+		public void TestIfAIsReady()
+		{
+			if(A == null || A.Str == null)
+			{
+				throw new InvalidOperationException("A is not ready after deserialization.");
+			}
+		}
 	}
 }
 
