@@ -206,6 +206,16 @@ namespace AntMicro.Migrant
             }
         }
 
+		public static Action GetDelegateWithAttribute(Type attributeType, object o)
+		{
+			var methodsToInvoke = GetMethodsWithAttribute(attributeType, o.GetType()).ToList();
+			if(methodsToInvoke.Count == 0)
+			{
+				return null;
+			}
+			return methodsToInvoke.Select(x => (Action)Delegate.CreateDelegate(typeof(Action), o, x)).Aggregate((x, y) => (Action)Delegate.Combine(x, y));
+		}
+
         public static bool IsNotTransient(this FieldInfo fieldInfo)
         {
             return !fieldInfo.Attributes.HasFlag(FieldAttributes.Literal) && !fieldInfo.IsDefined(typeof(TransientAttribute), false);

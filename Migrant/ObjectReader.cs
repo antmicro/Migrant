@@ -65,6 +65,7 @@ namespace AntMicro.Migrant
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
             reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
+			postDeserializationHooks = new List<Action>();
 			agreedModuleIds = new HashSet<int>();
 			for(var i = 0; i < upfrontKnownTypes.Count; i++)
 			{
@@ -91,26 +92,30 @@ namespace AntMicro.Migrant
 		/// referenced by it.
 		/// </remarks>
         public T ReadObject<T>()
-        {
+		{
 			var type = ReadType();
-            ReadObjectInner(type, 0);
-            nextObjectToRead++;
-            var obj = deserializedObjects[0];
-            if(!(obj is T))
-            {
+			ReadObjectInner(type, 0);
+			nextObjectToRead++;
+			var obj = deserializedObjects[0];
+			if(!(obj is T))
+			{
 				throw new InvalidDataException(
 					string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
 				              typeof(T), obj.GetType()));
-            }
-            while(objectsCreated >= nextObjectToRead)
-            {
-                if(!inlineRead.Contains(nextObjectToRead))
-                {
-                    ReadObjectInner(ReadType(), nextObjectToRead);
-                }
-                nextObjectToRead++;
-            }
-            PrepareForTheRead();
+			}
+			while(objectsCreated >= nextObjectToRead)
+			{
+				if(!inlineRead.Contains(nextObjectToRead))
+				{
+					ReadObjectInner(ReadType(), nextObjectToRead);
+				}
+				nextObjectToRead++;
+			}
+			PrepareForTheRead();
+			foreach(var hook in postDeserializationHooks)
+			{
+				hook();
+			}
             return (T)obj;
         }
 
@@ -128,27 +133,31 @@ namespace AntMicro.Migrant
         }
 
         private void ReadObjectInner(Type actualType, int objectId)
-        {
-            TouchObject(actualType, objectId);
-            switch(GetCreationWay(actualType))
-            {
-            case CreationWay.Null:
-                ReadNotPrecreated(actualType, objectId);
-                break;
-            case CreationWay.DefaultCtor:
-                UpdateElements(actualType, objectId);
-                break;
-            case CreationWay.Uninitialized:
-                UpdateFields(actualType, deserializedObjects[objectId]);
-                break;
-            }
-            var obj = deserializedObjects[objectId];
+		{
+			TouchObject(actualType, objectId);
+			switch(GetCreationWay(actualType))
+			{
+			case CreationWay.Null:
+				ReadNotPrecreated(actualType, objectId);
+				break;
+			case CreationWay.DefaultCtor:
+				UpdateElements(actualType, objectId);
+				break;
+			case CreationWay.Uninitialized:
+				UpdateFields(actualType, deserializedObjects[objectId]);
+				break;
+			}
+			var obj = deserializedObjects[objectId];
 			if(obj == null)
 			{
 				// it can happen if we deserialize delegate with empty invocation list
 				return;
 			}
-            Helpers.InvokeAttribute(typeof(PostDeserializationAttribute), obj);
+			var postHook = Helpers.GetDelegateWithAttribute(typeof(PostDeserializationAttribute), obj);
+			if(postHook != null)
+			{
+				postDeserializationHooks.Add(postHook);
+			}
             if(postDeserializationCallback != null)
             {
                 postDeserializationCallback(obj);
@@ -554,6 +563,7 @@ namespace AntMicro.Migrant
         private readonly Stream stream;
 		private readonly bool ignoreModuleIdInequality;
         private readonly Action<object> postDeserializationCallback;
+		private readonly List<Action> postDeserializationHooks;
         private const int InitialCapacity = 128;
         private const string InternalErrorMessage = "Internal error: should not reach here.";
         private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
