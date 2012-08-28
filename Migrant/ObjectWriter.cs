@@ -108,6 +108,12 @@ namespace AntMicro.Migrant
             PrepareForNextWrite();
         }
 
+		internal void WriteObjectId(object o)
+		{
+			// this function is called when object to serialize cannot be data-inlined object such as string
+			writer.Write(identifier.GetId(o));
+		}
+
 		internal void WriteObjectIdPossiblyInline(object o)
 		{
 			var refId = identifier.GetId(o);
@@ -414,7 +420,7 @@ namespace AntMicro.Migrant
 
 		private bool ShouldBeInlined(Type type, int referenceId)
 		{
-			return referenceId > objectsWritten && !inlineWritten.Contains(referenceId);
+			return Helpers.CanBeCreatedWithDataOnly(type) && referenceId > objectsWritten && !inlineWritten.Contains(referenceId);
 		}
 
         private void WriteValueType(Type formalType, object value)
