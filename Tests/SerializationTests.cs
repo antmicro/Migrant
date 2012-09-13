@@ -757,6 +757,38 @@ namespace AntMicro.Migrant.Tests
 			CollectionAssert.AreEqual(new object[] { 0, null }, copy);
 		}
 
+		[Test]
+		public void ShouldSerializeNongenericStack()
+		{
+			var stack = new Stack();
+			
+			var test = "It works!";
+			foreach(var chr in test)
+			{
+				stack.Push(chr);
+			}
+			var copy = SerializerClone(stack);
+			CollectionAssert.AreEqual(stack, copy);
+			
+			
+		}
+
+		[Test]
+		public void ShouldSerializeGenericStack()
+		{
+			var stack = new Stack<char>();
+
+			var test = "It works!";
+			foreach(var chr in test)
+			{
+				stack.Push(chr);
+			}
+			var copy = SerializerClone(stack);
+			CollectionAssert.AreEqual(stack, copy);
+
+
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
