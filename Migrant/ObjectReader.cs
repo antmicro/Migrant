@@ -359,7 +359,8 @@ namespace AntMicro.Migrant
             var collectionType = obj.GetType();
             var count = reader.ReadInt32();
             var addMethod = collectionType.GetMethod("Add", new [] { elementFormalType }) ??
-				collectionType.GetMethod("Enqueue", new [] { elementFormalType });
+				collectionType.GetMethod("Enqueue", new [] { elementFormalType }) ??
+				collectionType.GetMethod("Push", new [] { elementFormalType });
             if(addMethod == null)
             {
                 throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage,
@@ -375,11 +376,28 @@ namespace AntMicro.Migrant
                 delegateType = typeof(Func<,>).MakeGenericType(new [] { elementFormalType, addMethod.ReturnType });
             }
             var addDelegate = Delegate.CreateDelegate(delegateType, obj, addMethod);
-            for(var i = 0; i < count; i++)
-            {
-                var fieldValue = ReadField(elementFormalType);
-                addDelegate.FastDynamicInvoke(fieldValue);
-            }
+			if(collectionType == typeof(Stack) || 
+				(collectionType.IsGenericType && collectionType.GetGenericTypeDefinition() == typeof(Stack<>)))
+			{
+				var stack = (dynamic)obj;
+				var temp =  new dynamic[count];
+				for(var i = 0; i < count; i++)
+				{
+					temp[i] = ReadField(elementFormalType);
+				}
+				for(var i = count - 1; i >= 0; --i)
+				{
+					stack.Push(temp[i]);
+				}
+			}
+			else
+			{
+	            for(var i = 0; i < count; i++)
+	            {
+	                var fieldValue = ReadField(elementFormalType);
+	                addDelegate.FastDynamicInvoke(fieldValue);
+	            }
+			}
         }
 
         private void FillDictionary(Type formalKeyType, Type formalValueType, object obj)
