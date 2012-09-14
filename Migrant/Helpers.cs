@@ -215,7 +215,7 @@ namespace AntMicro.Migrant
 			{
 				return null;
 			}
-			return methodsToInvoke.Select(x => (Action)Delegate.CreateDelegate(typeof(Action), o, x)).Aggregate((x, y) => (Action)Delegate.Combine(x, y));
+			return methodsToInvoke.Select(x => (Action)Delegate.CreateDelegate(typeof(Action), x.IsStatic ? null : o, x)).Aggregate((x, y) => (Action)Delegate.Combine(x, y));
 		}
 
         public static bool IsNotTransient(this FieldInfo fieldInfo)

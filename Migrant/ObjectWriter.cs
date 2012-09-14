@@ -73,6 +73,7 @@ namespace AntMicro.Migrant
         {
 			transientTypeCache = new Dictionary<Type, bool>();
 			writeMethods = new List<Action<PrimitiveWriter, object>>();
+			postSerializationHooks = new List<Action>();
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
 			typeIndices = new Dictionary<Type, int>();
@@ -94,17 +95,21 @@ namespace AntMicro.Migrant
 		/// The object to write.
 		/// </param>
         public void WriteObject(object o)
-        {
-            objectsWritten = 0;
-            identifier.GetId(o);
-            while(identifier.Count > objectsWritten)
-            {
-                if(!inlineWritten.Contains(objectsWritten))
-                {
-                    InvokeCallbacksAndWriteObject(identifier[objectsWritten]);
-                }
-                objectsWritten++;
-            }
+		{
+			objectsWritten = 0;
+			identifier.GetId(o);
+			while(identifier.Count > objectsWritten)
+			{
+				if(!inlineWritten.Contains(objectsWritten))
+				{
+					InvokeCallbacksAndWriteObject(identifier[objectsWritten]);
+				}
+				objectsWritten++;
+			}
+			foreach(var postHook in postSerializationHooks)
+			{
+				postHook();
+			}
             PrepareForNextWrite();
         }
 
@@ -245,7 +250,11 @@ namespace AntMicro.Migrant
             {
                 WriteObjectsFields(o, type);
             }
-            Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
+			var postHook = Helpers.GetDelegateWithAttribute(typeof(PostSerializationAttribute), o);
+			if(postHook != null)
+			{
+				postSerializationHooks.Add(postHook);
+			}
 		}
 
         private void WriteObjectsFields(object o, Type type)
@@ -568,6 +577,7 @@ namespace AntMicro.Migrant
         private readonly Stream stream;
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
+		private readonly List<Action> postSerializationHooks;
         private readonly Dictionary<Type, int> typeIndices;
 		private readonly Dictionary<Module, int> moduleIndices;
 
