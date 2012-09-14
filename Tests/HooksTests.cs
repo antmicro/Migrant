@@ -147,6 +147,13 @@ namespace AntMicro.Migrant.Tests
 			SerializerClone(a);
 		}
 
+		[Test]
+		public void ShouldInvokeLatePostHookAfterImmediate()
+		{
+			var late = new LateSerializationMockA();
+			SerializerClone(late);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -314,6 +321,37 @@ namespace AntMicro.Migrant.Tests
 				throw new InvalidOperationException("A is not ready after deserialization.");
 			}
 		}
+	}
+
+	public class LateSerializationMockA
+	{
+		public LateSerializationMockA()
+		{
+			B = new LateSerializationMockB();
+		}
+
+		public LateSerializationMockB B { get; set; }
+
+		[LatePostSerialization]
+		private void PostSerialization()
+		{
+			if(!B.PostSerialized)
+			{
+				throw new InvalidOperationException("Late post serialization hook happened earlier than immediate one on referenced class.");
+			}
+		}
+	}
+
+	public class LateSerializationMockB
+	{
+		public bool PostSerialized { get; private set; }
+
+		[PostSerialization]
+		private void PostSerialization()
+		{
+			PostSerialized = true;
+		}
+
 	}
 }
 

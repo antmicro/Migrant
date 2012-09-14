@@ -51,14 +51,15 @@
     <Compile Include="Serializer.cs" />
     <Compile Include="TransientAttribute.cs" />
     <Compile Include="Utilities\AutoResizingList.cs" />
-    <Compile Include="Hooks\PostDeserializationAttribute.cs" />
-    <Compile Include="Hooks\PostSerializationAttribute.cs" />
     <Compile Include="Hooks\PreSerializationAttribute.cs" />
     <Compile Include="SerializationType.cs" />
     <Compile Include="Customization\Settings.cs" />
     <Compile Include="Customization\Method.cs" />
     <Compile Include="Generators\WriteMethodGenerator.cs" />
     <Compile Include="Utilities\ListWithHash.cs" />
+    <Compile Include="Hooks\LatePostSerializationAttribute.cs" />
+    <Compile Include="Hooks\PostSerializationAttribute.cs" />
+    <Compile Include="Hooks\PostDeserializationAttribute.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

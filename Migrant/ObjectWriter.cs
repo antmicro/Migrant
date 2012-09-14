@@ -250,7 +250,8 @@ namespace AntMicro.Migrant
             {
                 WriteObjectsFields(o, type);
             }
-			var postHook = Helpers.GetDelegateWithAttribute(typeof(PostSerializationAttribute), o);
+			Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
+			var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostSerializationAttribute), o);
 			if(postHook != null)
 			{
 				postSerializationHooks.Add(postHook);
