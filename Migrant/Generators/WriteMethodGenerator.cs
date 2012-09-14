@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using AntMicro.Migrant.Hooks;
+using System.Linq;
 
 namespace AntMicro.Migrant.Generators
 {
@@ -54,7 +55,7 @@ namespace AntMicro.Migrant.Generators
 			generator = dynamicMethod.GetILGenerator();
 
 			// preserialization callbacks
-			GenerateInvokeCallbacks(typeToGenerate, typeof(PreSerializationAttribute));
+			GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));
 
 			if(!GenerateSpecialWrite(typeToGenerate))
 			{
@@ -65,7 +66,7 @@ namespace AntMicro.Migrant.Generators
 			}
 
 			// postserialization callbacks
-			GenerateInvokeCallbacks(typeToGenerate, typeof(PostSerializationAttribute));
+			GenerateAddCallbackToInvokeList(typeToGenerate, typeof(PostSerializationAttribute));
 
 			generator.Emit(OpCodes.Ret);
 		}
@@ -84,16 +85,51 @@ namespace AntMicro.Migrant.Generators
 			primitiveWriterWriteBoolean = Helpers.GetMethodInfo<PrimitiveWriter>(writer => writer.Write(false));
 		}
 
-		private void GenerateInvokeCallbacks(Type actualType, Type attributeType)
+		private void GenerateInvokeCallback(Type actualType, Type attributeType)
 		{
-			var preSerializationMethods = Helpers.GetMethodsWithAttribute(attributeType, actualType);
-			foreach(var method in preSerializationMethods)
+			var methodsWithAttribute = Helpers.GetMethodsWithAttribute(attributeType, actualType);
+			foreach(var method in methodsWithAttribute)
 			{
 				if(!method.IsStatic)
 				{
 					generator.Emit(OpCodes.Ldarg_2); // object to serialize
 				}
 				generator.Emit(OpCodes.Call, method);
+			}
+		}
+
+		private void GenerateAddCallbackToInvokeList(Type actualType, Type attributeType)
+		{
+			var actionCtor = typeof(Action).GetConstructor(new [] { typeof(object), typeof(IntPtr) });
+			var listAdd = Helpers.GetMethodInfo<List<Action>>(x => x.Add(null));
+
+			var methodsWithAttribute = Helpers.GetMethodsWithAttribute(attributeType, actualType).ToList();
+			var count = methodsWithAttribute.Count;
+			if(count > 0)
+			{
+				generator.Emit(OpCodes.Ldarg_0); // objectWriter
+				generator.Emit(OpCodes.Ldfld, typeof(ObjectWriter).GetField("postSerializationHooks", BindingFlags.NonPublic | BindingFlags.Instance)); // invoke list
+			}
+			for(var i = 1; i < count; i++)
+			{
+				generator.Emit(OpCodes.Dup);
+			}
+			foreach(var method in methodsWithAttribute)
+			{
+				// let's make the delegate
+				//generator.Emit(OpCodes.Ldtoken, typeof(Action));
+				if(method.IsStatic)
+				{
+					generator.Emit(OpCodes.Ldnull);
+				}
+				else
+				{
+					generator.Emit(OpCodes.Ldarg_2); // serialized object
+				}
+				generator.Emit(OpCodes.Ldftn, method);
+				generator.Emit(OpCodes.Newobj, actionCtor);
+				// and add it to invoke list
+				generator.Emit(OpCodes.Call, listAdd);
 			}
 		}
 
