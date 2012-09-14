@@ -54,9 +54,11 @@ namespace AntMicro.Migrant
 			return type.IsDefined(typeof(TransientAttribute), true);
 		}
 
-        public static bool TryGetDictionaryCountAndElementTypes(object o, out int count, out Type formalKeyType, out Type formalValueType)
+        public static bool TryGetDictionaryCountAndElementTypes(object o, out int count)
         {
-            if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType))
+			Type elementType;
+			bool fake, fake2, isDictionary;
+			if(IsCollection(o.GetType(), out elementType, out fake, out fake2, out isDictionary) && isDictionary)
             {
                 count = (int)Impromptu.InvokeGet(o, "Count");
                 return true;
