@@ -309,10 +309,12 @@ namespace AntMicro.Migrant
                 return true;
             }
             int count;
-            // non-generic dictionary has precedence before collection
-            if(Helpers.TryGetDictionaryCountAndElementTypes(o, out count))
+            // dictionary has precedence before collection
+            Type formalKeyType;
+            Type formalValueType;
+            if(Helpers.TryGetDictionaryCountAndElementTypes(o, out count, out formalKeyType, out formalValueType))
             {
-                WriteDictionary(count, (IEnumerable)o);
+                WriteDictionary(formalKeyType, formalValueType, count, (IEnumerable)o);
                 return true;
             }
             Type formalElementType;
@@ -333,15 +335,15 @@ namespace AntMicro.Migrant
             }
         }
 
-        private void WriteDictionary(int count, IEnumerable dictionary)
+        private void WriteDictionary(Type formalKeyType, Type formalValueType, int count, IEnumerable dictionary)
         {
             writer.Write(count);
             var keyInvocation = new CacheableInvocation(InvocationKind.Get, "Key");
             var valueInvocation = new CacheableInvocation(InvocationKind.Get, "Value");
             foreach(var element in dictionary)
             {
-                WriteField(typeof(object), keyInvocation.Invoke(element));
-				WriteField(typeof(object), valueInvocation.Invoke(element));
+                WriteField(formalKeyType, keyInvocation.Invoke(element));
+                WriteField(formalValueType, valueInvocation.Invoke(element));
             }
         }
 
