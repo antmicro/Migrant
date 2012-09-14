@@ -148,7 +148,14 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void ShouldInvokeLatePostHookAfterImmediate()
+		public void ShouldInvokeLatePostSerializationHookAfterImmediate()
+		{
+			var late = new LateSerializationMockA();
+			SerializerClone(late);
+		}
+
+		[Test]
+		public void ShouldInvokeLatePostDeserializationHookAfterImmediate()
 		{
 			var late = new LateSerializationMockA();
 			SerializerClone(late);
@@ -234,7 +241,7 @@ namespace AntMicro.Migrant.Tests
 
 	public class PostDeserializationMock
 	{
-		[PostDeserialization]
+		[LatePostDeserializationAttribute]
 		private void PostDeserialization()
 		{
 			Invoked = true;
@@ -245,7 +252,7 @@ namespace AntMicro.Migrant.Tests
 
 	public class PostDeserializationMockDerived : PostDeserializationMock
 	{
-		[PostDeserialization]
+		[LatePostDeserializationAttribute]
 		private void PostDeserializationDerived()
 		{
 			DerivedInvoked = true;
@@ -261,7 +268,7 @@ namespace AntMicro.Migrant.Tests
 			mock = new ReferencedPostDeserializationMock();
 		}
 
-		[PostDeserialization]
+		[LatePostDeserializationAttribute]
 		private void PostDeserialization()
 		{
 			if(mock.TestObject == null)
@@ -293,7 +300,7 @@ namespace AntMicro.Migrant.Tests
 			Str = "Something";
 		}
 
-		[PostDeserialization]
+		[LatePostDeserializationAttribute]
 		public void TestIfBIsReady()
 		{
 			if(B == null || B.Str == null)
@@ -313,7 +320,7 @@ namespace AntMicro.Migrant.Tests
 			Str = "Something different";
 		}
 
-		[PostDeserialization]
+		[LatePostDeserializationAttribute]
 		public void TestIfAIsReady()
 		{
 			if(A == null || A.Str == null)
@@ -351,7 +358,36 @@ namespace AntMicro.Migrant.Tests
 		{
 			PostSerialized = true;
 		}
+	}
 
+	public class LateDeserializationMockA
+	{
+		public LateDeserializationMockA()
+		{
+			B = new LateDeserializationMockB();
+		}
+		
+		public LateDeserializationMockB B { get; set; }
+		
+		[LatePostDeserialization]
+		private void PostDeserialization()
+		{
+			if(!B.PostDeserialized)
+			{
+				throw new InvalidOperationException("Late post serialization hook happened earlier than immediate one on referenced class.");
+			}
+		}
+	}
+	
+	public class LateDeserializationMockB
+	{
+		public bool PostDeserialized { get; private set; }
+		
+		[PostDeserialization]
+		private void PostDeserialization()
+		{
+			PostDeserialized = true;
+		}
 	}
 }
 

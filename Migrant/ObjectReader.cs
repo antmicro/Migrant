@@ -153,7 +153,8 @@ namespace AntMicro.Migrant
 				// it can happen if we deserialize delegate with empty invocation list
 				return;
 			}
-			var postHook = Helpers.GetDelegateWithAttribute(typeof(PostDeserializationAttribute), obj);
+			Helpers.InvokeAttribute(typeof(PostDeserializationAttribute), obj);
+			var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostDeserializationAttribute), obj);
 			if(postHook != null)
 			{
 				postDeserializationHooks.Add(postHook);
