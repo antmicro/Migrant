@@ -54,9 +54,9 @@ namespace AntMicro.Migrant
 			return type.IsDefined(typeof(TransientAttribute), true);
 		}
 
-        public static bool TryGetDictionaryCountAndElementTypes(object o, out int count, out Type formalKeyType, out Type formalValueType)
+        public static bool TryGetDictionaryCountAndElementTypes(object o, out int count, out Type formalKeyType, out Type formalValueType, out bool isGenericDictionary)
         {
-            if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType))
+            if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType, out isGenericDictionary))
             {
                 count = (int)Impromptu.InvokeGet(o, "Count");
                 return true;
@@ -111,12 +111,13 @@ namespace AntMicro.Migrant
             return result;
         }
 
-        public static bool IsDictionary(Type actualType, out Type formalKeyType, out Type formalValueType)
+        public static bool IsDictionary(Type actualType, out Type formalKeyType, out Type formalValueType, out bool isGenericDictionary)
         {
             formalKeyType = typeof(object);
             formalValueType = typeof(object);
             var ifaces = actualType.GetInterfaces();
             var result = false;
+			isGenericDictionary = false;
             foreach(var iface in ifaces)
             {
                 if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
@@ -124,6 +125,7 @@ namespace AntMicro.Migrant
                     var arguments = iface.GetGenericArguments();
                     formalKeyType = arguments[0];
                     formalValueType = arguments[1];
+					isGenericDictionary = true;
                     return true;
                 }
                 if(iface == typeof(IDictionary))

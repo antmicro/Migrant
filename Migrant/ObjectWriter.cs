@@ -312,9 +312,10 @@ namespace AntMicro.Migrant
             // dictionary has precedence before collection
             Type formalKeyType;
             Type formalValueType;
-            if(Helpers.TryGetDictionaryCountAndElementTypes(o, out count, out formalKeyType, out formalValueType))
+			bool isGenericDictionary;
+            if(Helpers.TryGetDictionaryCountAndElementTypes(o, out count, out formalKeyType, out formalValueType, out isGenericDictionary))
             {
-                WriteDictionary(formalKeyType, formalValueType, count, (IEnumerable)o);
+                WriteDictionary(formalKeyType, formalValueType, count, o, isGenericDictionary);
                 return true;
             }
             Type formalElementType;
@@ -335,16 +336,39 @@ namespace AntMicro.Migrant
             }
         }
 
-        private void WriteDictionary(Type formalKeyType, Type formalValueType, int count, IEnumerable dictionary)
+        private void WriteDictionary(Type formalKeyType, Type formalValueType, int count, object dictionary, bool isGenericDictionary)
         {
-            writer.Write(count);
-            var keyInvocation = new CacheableInvocation(InvocationKind.Get, "Key");
-            var valueInvocation = new CacheableInvocation(InvocationKind.Get, "Value");
-            foreach(var element in dictionary)
-            {
-                WriteField(formalKeyType, keyInvocation.Invoke(element));
-                WriteField(formalValueType, valueInvocation.Invoke(element));
-            }
+			writer.Write(count);
+			if(isGenericDictionary)
+			{
+				var enumeratorMethod = typeof(IEnumerable<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(formalKeyType, formalValueType)).GetMethod("GetEnumerator");
+				var enumerator = enumeratorMethod.Invoke(dictionary, null);
+				var enumeratorType = enumeratorMethod.ReturnType;
+
+				var moveNext = Helpers.GetMethodInfo<IEnumerator>(x => x.MoveNext());
+				var currentField = enumeratorType.GetProperty("Current");
+				var current = currentField.GetGetMethod();
+				var currentType = current.ReturnType;
+				var key = currentType.GetProperty("Key").GetGetMethod();
+				var value = currentType.GetProperty("Value").GetGetMethod();
+				while((bool)moveNext.Invoke(enumerator, null))
+				{
+					var currentValue = current.Invoke(enumerator, null);
+					var keyValue = key.Invoke(currentValue, null);
+					var valueValue = value.Invoke(currentValue, null);
+					WriteField(formalKeyType, keyValue);
+					WriteField(formalValueType, valueValue);
+				}
+			}
+			else
+			{
+				var castDictionary = (IDictionary) dictionary;
+				foreach(DictionaryEntry element in castDictionary)
+				{
+					WriteField(typeof(object), element.Key);
+					WriteField(typeof(object), element.Value);
+				}
+			}
         }
 
         private void WriteArray(Type elementFormalType, Array array)

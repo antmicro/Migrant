@@ -225,7 +225,8 @@ namespace AntMicro.Migrant
                 return;
             }
             Type formalKeyType, formalValueType;
-            if(Helpers.IsDictionary(type, out formalKeyType, out formalValueType))
+			bool isGenericDictionary;
+            if(Helpers.IsDictionary(type, out formalKeyType, out formalValueType, out isGenericDictionary))
             {
                 FillDictionary(formalKeyType, formalValueType, obj);
                 return;
