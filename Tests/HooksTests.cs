@@ -64,7 +64,7 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldInvokePostSerialization()
 		{
-			var mock = new PostSerializationMock();
+			var mock = new ImmediatePostSerializationMock();
 			var copy = SerializerClone(mock);
 			Assert.IsTrue(mock.Invoked);
 			Assert.IsFalse(copy.Invoked);
@@ -73,7 +73,7 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldInvokeDerivedPostSerialization()
 		{
-			var mock = new PostSerializationMockDerived();
+			var mock = new ImmediatePostSerializationMockDerived();
 			var copy = SerializerClone(mock);
 			Assert.IsTrue(mock.Invoked);
 			Assert.IsTrue(mock.DerivedInvoked);
@@ -84,9 +84,9 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldInvokeStaticPostSerialization()
 		{
-			var mock = new StaticPostSerializationMock();
+			var mock = new StaticImmediatePostSerializationMock();
 			SerializerClone(mock);
-			Assert.IsTrue(StaticPostSerializationMock.Invoked);
+			Assert.IsTrue(StaticImmediatePostSerializationMock.Invoked);
 		}
 
 		[Test]
@@ -150,14 +150,14 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldInvokeLatePostSerializationHookAfterImmediate()
 		{
-			var late = new LateSerializationMockA();
+			var late = new PostSerializationMockA();
 			SerializerClone(late);
 		}
 
 		[Test]
 		public void ShouldInvokeLatePostDeserializationHookAfterImmediate()
 		{
-			var late = new LateSerializationMockA();
+			var late = new PostSerializationMockA();
 			SerializerClone(late);
 		}
 
@@ -206,9 +206,9 @@ namespace AntMicro.Migrant.Tests
 		public bool DerivedInvoked { get; private set; }
 	}
 
-	public class PostSerializationMock
+	public class ImmediatePostSerializationMock
 	{
-		[PostSerialization]
+		[ImmediatePostSerialization]
 		private void PostSerialization()
 		{
 			Invoked = true;
@@ -217,9 +217,9 @@ namespace AntMicro.Migrant.Tests
 		public bool Invoked { get; private set; }
 	}
 
-	public class PostSerializationMockDerived : PostSerializationMock
+	public class ImmediatePostSerializationMockDerived : ImmediatePostSerializationMock
 	{
-		[PostSerialization]
+		[ImmediatePostSerialization]
 		private void PostSerializationDerived()
 		{
 			DerivedInvoked = true;
@@ -228,9 +228,9 @@ namespace AntMicro.Migrant.Tests
 		public bool DerivedInvoked { get; private set; }
 	}
 
-	public class StaticPostSerializationMock
+	public class StaticImmediatePostSerializationMock
 	{
-		[PostSerialization]
+		[ImmediatePostSerialization]
 		private static void PostSerialization()
 		{
 			Invoked = true;
@@ -241,7 +241,7 @@ namespace AntMicro.Migrant.Tests
 
 	public class PostDeserializationMock
 	{
-		[LatePostDeserializationAttribute]
+		[PostDeserializationAttribute]
 		private void PostDeserialization()
 		{
 			Invoked = true;
@@ -252,7 +252,7 @@ namespace AntMicro.Migrant.Tests
 
 	public class PostDeserializationMockDerived : PostDeserializationMock
 	{
-		[LatePostDeserializationAttribute]
+		[PostDeserializationAttribute]
 		private void PostDeserializationDerived()
 		{
 			DerivedInvoked = true;
@@ -268,7 +268,7 @@ namespace AntMicro.Migrant.Tests
 			mock = new ReferencedPostDeserializationMock();
 		}
 
-		[LatePostDeserializationAttribute]
+		[PostDeserializationAttribute]
 		private void PostDeserialization()
 		{
 			if(mock.TestObject == null)
@@ -300,7 +300,7 @@ namespace AntMicro.Migrant.Tests
 			Str = "Something";
 		}
 
-		[LatePostDeserializationAttribute]
+		[PostDeserializationAttribute]
 		public void TestIfBIsReady()
 		{
 			if(B == null || B.Str == null)
@@ -320,7 +320,7 @@ namespace AntMicro.Migrant.Tests
 			Str = "Something different";
 		}
 
-		[LatePostDeserializationAttribute]
+		[PostDeserializationAttribute]
 		public void TestIfAIsReady()
 		{
 			if(A == null || A.Str == null)
@@ -330,16 +330,16 @@ namespace AntMicro.Migrant.Tests
 		}
 	}
 
-	public class LateSerializationMockA
+	public class PostSerializationMockA
 	{
-		public LateSerializationMockA()
+		public PostSerializationMockA()
 		{
-			B = new LateSerializationMockB();
+			B = new PostSerializationMockB();
 		}
 
-		public LateSerializationMockB B { get; set; }
+		public PostSerializationMockB B { get; set; }
 
-		[LatePostSerialization]
+		[PostSerialization]
 		private void PostSerialization()
 		{
 			if(!B.PostSerialized)
@@ -349,11 +349,11 @@ namespace AntMicro.Migrant.Tests
 		}
 	}
 
-	public class LateSerializationMockB
+	public class PostSerializationMockB
 	{
 		public bool PostSerialized { get; private set; }
 
-		[PostSerialization]
+		[ImmediatePostSerialization]
 		private void PostSerialization()
 		{
 			PostSerialized = true;
@@ -369,7 +369,7 @@ namespace AntMicro.Migrant.Tests
 		
 		public LateDeserializationMockB B { get; set; }
 		
-		[LatePostDeserialization]
+		[PostDeserializationAttribute]
 		private void PostDeserialization()
 		{
 			if(!B.PostDeserialized)
@@ -383,7 +383,7 @@ namespace AntMicro.Migrant.Tests
 	{
 		public bool PostDeserialized { get; private set; }
 		
-		[PostDeserialization]
+		[ImmediatePostDeserializationAttribute]
 		private void PostDeserialization()
 		{
 			PostDeserialized = true;

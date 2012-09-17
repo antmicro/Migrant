@@ -65,7 +65,7 @@ namespace AntMicro.Migrant
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
             reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
-			postDeserializationHooks = new List<Action>();
+			postDeserializationHooks = new Stack<Action>();
 			agreedModuleIds = new HashSet<int>();
 			for(var i = 0; i < upfrontKnownTypes.Count; i++)
 			{
@@ -153,11 +153,11 @@ namespace AntMicro.Migrant
 				// it can happen if we deserialize delegate with empty invocation list
 				return;
 			}
-			Helpers.InvokeAttribute(typeof(PostDeserializationAttribute), obj);
-			var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostDeserializationAttribute), obj);
+			Helpers.InvokeAttribute(typeof(ImmediatePostDeserializationAttribute), obj);
+			var postHook = Helpers.GetDelegateWithAttribute(typeof(PostDeserializationAttribute), obj);
 			if(postHook != null)
 			{
-				postDeserializationHooks.Add(postHook);
+				postDeserializationHooks.Push(postHook);
 			}
             if(postDeserializationCallback != null)
             {
@@ -583,7 +583,7 @@ namespace AntMicro.Migrant
         private readonly Stream stream;
 		private readonly bool ignoreModuleIdInequality;
         private readonly Action<object> postDeserializationCallback;
-		private readonly List<Action> postDeserializationHooks;
+		private readonly Stack<Action> postDeserializationHooks;
         private const int InitialCapacity = 128;
         private const string InternalErrorMessage = "Internal error: should not reach here.";
         private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";

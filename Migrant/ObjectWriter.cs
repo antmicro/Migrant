@@ -73,7 +73,7 @@ namespace AntMicro.Migrant
         {
 			transientTypeCache = new Dictionary<Type, bool>();
 			writeMethods = new List<Action<PrimitiveWriter, object>>();
-			postSerializationHooks = new List<Action>();
+			postSerializationHooks = new Stack<Action>();
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
 			typeIndices = new Dictionary<Type, int>();
@@ -250,11 +250,11 @@ namespace AntMicro.Migrant
             {
                 WriteObjectsFields(o, type);
             }
-			Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
-			var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostSerializationAttribute), o);
+			Helpers.InvokeAttribute(typeof(ImmediatePostSerializationAttribute), o);
+			var postHook = Helpers.GetDelegateWithAttribute(typeof(PostSerializationAttribute), o);
 			if(postHook != null)
 			{
-				postSerializationHooks.Add(postHook);
+				postSerializationHooks.Push(postHook);
 			}
 		}
 
@@ -578,7 +578,7 @@ namespace AntMicro.Migrant
         private readonly Stream stream;
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
-		private readonly List<Action> postSerializationHooks;
+		private readonly Stack<Action> postSerializationHooks;
         private readonly Dictionary<Type, int> typeIndices;
 		private readonly Dictionary<Module, int> moduleIndices;
 

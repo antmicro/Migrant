@@ -30,12 +30,12 @@ namespace AntMicro.Migrant.Hooks
 {
 	/// <summary>
 	/// Method decorated with this attribute will be invoked after deserialization
-	/// of given object and all referenced objects.
+	/// of given object.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
-    public class LatePostDeserializationAttribute : Attribute
-    {
+	public class ImmediatePostSerializationAttribute : Attribute
+	{
 
-    }
+	}
 }
 

@@ -57,10 +57,10 @@
     <Compile Include="Customization\Method.cs" />
     <Compile Include="Generators\WriteMethodGenerator.cs" />
     <Compile Include="Utilities\ListWithHash.cs" />
-    <Compile Include="Hooks\LatePostSerializationAttribute.cs" />
-    <Compile Include="Hooks\PostSerializationAttribute.cs" />
-    <Compile Include="Hooks\LatePostDeserializationAttribute.cs" />
+    <Compile Include="Hooks\ImmediatePostSerializationAttribute.cs" />
+    <Compile Include="Hooks\ImmediatePostDeserializationAttribute.cs" />
     <Compile Include="Hooks\PostDeserializationAttribute.cs" />
+    <Compile Include="Hooks\PostSerializationAttribute.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

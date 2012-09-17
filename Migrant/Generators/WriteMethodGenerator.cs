@@ -66,8 +66,8 @@ namespace AntMicro.Migrant.Generators
 			}
 
 			// postserialization callbacks
-			GenerateInvokeCallback(typeToGenerate, typeof(PostSerializationAttribute));
-			GenerateAddCallbackToInvokeList(typeToGenerate, typeof(LatePostSerializationAttribute));
+			GenerateInvokeCallback(typeToGenerate, typeof(ImmediatePostSerializationAttribute));
+			GenerateAddCallbackToInvokeList(typeToGenerate, typeof(PostSerializationAttribute));
 
 			generator.Emit(OpCodes.Ret);
 		}
@@ -102,7 +102,7 @@ namespace AntMicro.Migrant.Generators
 		private void GenerateAddCallbackToInvokeList(Type actualType, Type attributeType)
 		{
 			var actionCtor = typeof(Action).GetConstructor(new [] { typeof(object), typeof(IntPtr) });
-			var listAdd = Helpers.GetMethodInfo<List<Action>>(x => x.Add(null));
+			var stackPush = Helpers.GetMethodInfo<Stack<Action>>(x => x.Push(null));
 
 			var methodsWithAttribute = Helpers.GetMethodsWithAttribute(attributeType, actualType).ToList();
 			var count = methodsWithAttribute.Count;
@@ -130,7 +130,7 @@ namespace AntMicro.Migrant.Generators
 				generator.Emit(OpCodes.Ldftn, method);
 				generator.Emit(OpCodes.Newobj, actionCtor);
 				// and add it to invoke list
-				generator.Emit(OpCodes.Call, listAdd);
+				generator.Emit(OpCodes.Call, stackPush);
 			}
 		}
 
