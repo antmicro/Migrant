@@ -32,6 +32,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Linq.Expressions;
+using System.Collections.ObjectModel;
 
 namespace AntMicro.Migrant
 {
@@ -138,7 +139,8 @@ namespace AntMicro.Migrant
 
 		public static bool CanBeCreatedWithDataOnly(Type actualType)
 		{
-			return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType);
+			return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType)
+				|| (actualType.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(actualType.GetGenericTypeDefinition()));
 		}
 
 		private static int GetBoundary(long currentPosition)

@@ -32,6 +32,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.IO;
+using System.Collections.ObjectModel;
 
 namespace AntMicro.Migrant.Tests
 {
@@ -243,6 +244,15 @@ namespace AntMicro.Migrant.Tests
 			var collection = new BlockingCollection<int> { 1, 2, 3 };
 			var copy = SerializerClone(collection);
 			CollectionAssert.AreEquivalent(collection, copy);
+		}
+
+		[Test]
+		public void ShouldSerializeReadOnlyCollection()
+		{
+			var list = new List<object> { "asdasd", 1, "cvzxcv" };
+			var roList = new ReadOnlyCollection<object>(list);
+			var copy = SerializerClone(roList);
+			CollectionAssert.AreEqual(roList, copy);
 		}
 
 		[Test]

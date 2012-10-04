@@ -34,6 +34,7 @@ using System.Collections;
 using AntMicro.Migrant.Hooks;
 using AntMicro.Migrant.Utilities;
 using ImpromptuInterface;
+using System.Collections.ObjectModel;
 
 namespace AntMicro.Migrant
 {
@@ -204,6 +205,11 @@ namespace AntMicro.Migrant
 			if(typeof(MulticastDelegate).IsAssignableFrom(type))
 			{
 				ReadDelegate(type, objectId);
+			}
+			else
+			if(type.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
+			{
+				ReadReadOnlyCollection(type, objectId);
 			}
 			else
 			{
@@ -474,6 +480,18 @@ namespace AntMicro.Migrant
 				var del = Delegate.CreateDelegate(type, target, method);
 				deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
 			}
+		}
+
+		private void ReadReadOnlyCollection(Type type, int objectId)
+		{
+			var elementFormalType = type.GetGenericArguments()[0];
+			var length = reader.ReadInt32();
+			var array = Array.CreateInstance(elementFormalType, length);
+			for(var i = 0; i < length; i++)
+			{
+				array.SetValue(ReadField(elementFormalType), i);
+			}
+			deserializedObjects[objectId] = Activator.CreateInstance(type, array);
 		}
 
 		private void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
