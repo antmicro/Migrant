@@ -35,178 +35,179 @@ using System.Linq.Expressions;
 
 namespace AntMicro.Migrant
 {
-    internal static class Helpers
-    {
-        internal static bool TryGetCollectionCountAndElementType(object o, out int count, out Type formalElementType)
-        {
+	internal static class Helpers
+	{
+		internal static bool TryGetCollectionCountAndElementType(object o, out int count, out Type formalElementType)
+		{
 			bool fake, fake2, fake3;
-            if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2, out fake3))
-            {
-                count = (int)Impromptu.InvokeGet(o, "Count");
-                return true;
-            }
-            count = -1;
-            return false;
-        }
+			if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2, out fake3))
+			{
+				count = (int)Impromptu.InvokeGet(o, "Count");
+				return true;
+			}
+			count = -1;
+			return false;
+		}
 
 		internal static bool CheckTransientNoCache(Type type)
 		{
 			return type.IsDefined(typeof(TransientAttribute), true);
 		}
 
-        public static bool TryGetDictionaryCountAndElementTypes(object o, out int count, out Type formalKeyType, out Type formalValueType, out bool isGenericDictionary)
-        {
-            if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType, out isGenericDictionary))
-            {
-                count = (int)Impromptu.InvokeGet(o, "Count");
-                return true;
-            }
-            count = -1;
-            return false;
-        }
+		public static bool TryGetDictionaryCountAndElementTypes(object o, out int count, out Type formalKeyType, out Type formalValueType, out bool isGenericDictionary)
+		{
+			if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType, out isGenericDictionary))
+			{
+				count = (int)Impromptu.InvokeGet(o, "Count");
+				return true;
+			}
+			count = -1;
+			return false;
+		}
 
 		// TODO: refactor with enum as a result instead of isGeneric etc
 		// and join with IsDictionary
 		public static bool IsCollection(Type actualType, out Type formalElementType, out bool isGeneric, out bool isGenericallyIterable, out bool isDictionary)
-        {
-            formalElementType = typeof(object);
-            var ifaces = actualType.GetInterfaces();
-            var result = false;
+		{
+			formalElementType = typeof(object);
+			var ifaces = actualType.GetInterfaces();
+			var result = false;
 			isGeneric = false;
 			isGenericallyIterable = false;
 			isDictionary = false;
 			var isGenericDictionary = false;
-            foreach(var iface in ifaces)
-            {
-                if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>))
-                {
-                    formalElementType = iface.GetGenericArguments()[0];
+			foreach(var iface in ifaces)
+			{
+				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>))
+				{
+					formalElementType = iface.GetGenericArguments()[0];
 					isGeneric = true;
 					isGenericallyIterable = true;
-                    result = true;
-                }
+					result = true;
+				}
 				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
 				{
 					isGenericDictionary = true;
 				}
-                if(iface == typeof(ICollection))
-                {
-                    result = true;
-                }
+				if(iface == typeof(ICollection))
+				{
+					result = true;
+				}
 				if(iface == typeof(IDictionary))
 				{
 					isDictionary = true;
 				}
-                if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                {
-                    formalElementType = iface.GetGenericArguments()[0];
+				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+				{
+					formalElementType = iface.GetGenericArguments()[0];
 					isGenericallyIterable = true;
-                }
-            }
+				}
+			}
 			if(isGenericDictionary)
 			{
 				// we favour treating as a generic dictionary if the collection implements both
 				isDictionary = false;
 			}
-            return result;
-        }
+			return result;
+		}
 
-        public static bool IsDictionary(Type actualType, out Type formalKeyType, out Type formalValueType, out bool isGenericDictionary)
-        {
-            formalKeyType = typeof(object);
-            formalValueType = typeof(object);
-            var ifaces = actualType.GetInterfaces();
-            var result = false;
+		public static bool IsDictionary(Type actualType, out Type formalKeyType, out Type formalValueType, out bool isGenericDictionary)
+		{
+			formalKeyType = typeof(object);
+			formalValueType = typeof(object);
+			var ifaces = actualType.GetInterfaces();
+			var result = false;
 			isGenericDictionary = false;
-            foreach(var iface in ifaces)
-            {
-                if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
-                {
-                    var arguments = iface.GetGenericArguments();
-                    formalKeyType = arguments[0];
-                    formalValueType = arguments[1];
+			foreach(var iface in ifaces)
+			{
+				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+				{
+					var arguments = iface.GetGenericArguments();
+					formalKeyType = arguments[0];
+					formalValueType = arguments[1];
 					isGenericDictionary = true;
-                    return true;
-                }
-                if(iface == typeof(IDictionary))
-                {
-                    result = true;
-                }
-            }
-            return result;
-        }
+					return true;
+				}
+				if(iface == typeof(IDictionary))
+				{
+					result = true;
+				}
+			}
+			return result;
+		}
 
-        public static bool CanBeCreatedWithDataOnly(Type actualType)
-        {
-            return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType);
-        }
+		public static bool CanBeCreatedWithDataOnly(Type actualType)
+		{
+			return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType);
+		}
 
 		private static int GetBoundary(long currentPosition)
 		{
-		    var index = -1;
-            while(currentPosition > PaddingBoundaries[++index]);
+			var index = -1;
+			while(currentPosition > PaddingBoundaries[++index])
+				;
 		    
-            var boundary = PaddingBoundaries[index];
-            if(boundary == int.MaxValue)
-            {
-                boundary = PaddingBoundaries[index - 1];
-            }
+			var boundary = PaddingBoundaries[index];
+			if(boundary == int.MaxValue)
+			{
+				boundary = PaddingBoundaries[index - 1];
+			}
 			return boundary;
 		}
 
-        public static int GetCurrentPaddingValue(long currentPosition)
-        {
+		public static int GetCurrentPaddingValue(long currentPosition)
+		{
 			var boundary = GetBoundary(currentPosition);
-            if(currentPosition % boundary == 0)
-            {
-                return 0;
-            }
-            return boundary - (int)(currentPosition & (boundary - 1));
-        }
+			if(currentPosition % boundary == 0)
+			{
+				return 0;
+			}
+			return boundary - (int)(currentPosition & (boundary - 1));
+		}
 
-        public static int GetNextBytesToRead(long currentPosition)
-        {
+		public static int GetNextBytesToRead(long currentPosition)
+		{
 			var boundary = GetBoundary(currentPosition);
-            var result = boundary - (int)(currentPosition & (boundary - 1));
-            return result;
-        }
+			var result = boundary - (int)(currentPosition & (boundary - 1));
+			return result;
+		}
 
-        public static void ReadOrThrow(this Stream @this, byte[] buffer, int offset, int count)
-        {
-            while(count > 0)
-            {
-                var readThisTime = @this.Read(buffer, offset, count);
-                if(readThisTime == 0)
-                {
-                    throw new EndOfStreamException(
+		public static void ReadOrThrow(this Stream @this, byte[] buffer, int offset, int count)
+		{
+			while(count > 0)
+			{
+				var readThisTime = @this.Read(buffer, offset, count);
+				if(readThisTime == 0)
+				{
+					throw new EndOfStreamException(
                         string.Format("End of stream reached while {0} bytes more expected.", count));
-                }
-                count -= readThisTime;
-                offset += readThisTime;
-            }
-        }
+				}
+				count -= readThisTime;
+				offset += readThisTime;
+			}
+		}
 
-        public static object GetDefaultValue(Type type)
-        {
-            return type.IsValueType ? Activator.CreateInstance(type) : null;
-        }
+		public static object GetDefaultValue(Type type)
+		{
+			return type.IsValueType ? Activator.CreateInstance(type) : null;
+		}
 
 		public static IEnumerable<MethodInfo> GetMethodsWithAttribute(Type attributeType, Type objectType)
 		{
 			var derivedMethods = objectType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
-                BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(x => x.IsDefined(attributeType, false));
+				BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(x => x.IsDefined(attributeType, false));
 			var baseType = objectType.BaseType;
 			return baseType == null ? derivedMethods : derivedMethods.Union(GetMethodsWithAttribute(attributeType, baseType));
 		}
 
-        public static void InvokeAttribute(Type attributeType, object o)
-        {
+		public static void InvokeAttribute(Type attributeType, object o)
+		{
 			var methodsToInvoke = GetMethodsWithAttribute(attributeType, o.GetType());
-            foreach(var method in methodsToInvoke)
-            {
-                method.Invoke(o, new object[0]);
-            }
-        }
+			foreach(var method in methodsToInvoke)
+			{
+				method.Invoke(o, new object[0]);
+			}
+		}
 
 		public static Action GetDelegateWithAttribute(Type attributeType, object o)
 		{
@@ -218,31 +219,31 @@ namespace AntMicro.Migrant
 			return methodsToInvoke.Select(x => (Action)Delegate.CreateDelegate(typeof(Action), x.IsStatic ? null : o, x)).Aggregate((x, y) => (Action)Delegate.Combine(x, y));
 		}
 
-        public static bool IsNotTransient(this FieldInfo fieldInfo)
-        {
-            return !fieldInfo.Attributes.HasFlag(FieldAttributes.Literal) && !fieldInfo.IsDefined(typeof(TransientAttribute), false);
-        }
+		public static bool IsNotTransient(this FieldInfo fieldInfo)
+		{
+			return !fieldInfo.Attributes.HasFlag(FieldAttributes.Literal) && !fieldInfo.IsDefined(typeof(TransientAttribute), false);
+		}
 
-        public static int MaximalPadding
-        {
-            get
-            {
-                return PaddingBoundaries[PaddingBoundaries.Length - 2];
-            }
-        }
+		public static int MaximalPadding
+		{
+			get
+			{
+				return PaddingBoundaries[PaddingBoundaries.Length - 2];
+			}
+		}
 
 		public static IEnumerable<FieldInfo> GetAllFields(this Type t, bool recursive = true)
-        {            
-            if(t == null)
-            {
-                return Enumerable.Empty<FieldInfo>();
-            }
-            if(recursive)
-            {
-                return t.GetFields(DefaultBindingFlags).Union(GetAllFields(t.BaseType));
-            }
-            return t.GetFields(DefaultBindingFlags);
-        }
+		{            
+			if(t == null)
+			{
+				return Enumerable.Empty<FieldInfo>();
+			}
+			if(recursive)
+			{
+				return t.GetFields(DefaultBindingFlags).Union(GetAllFields(t.BaseType));
+			}
+			return t.GetFields(DefaultBindingFlags);
+		}
 
 		public static MethodInfo GetMethodInfo(Expression<Action> expression)
 		{
@@ -265,22 +266,26 @@ namespace AntMicro.Migrant
 		internal static SerializationType GetSerializationType(Type type)
 		{
 			if(Helpers.CheckTransientNoCache(type))
-            {
-                return SerializationType.Transient;
-            }
+			{
+				return SerializationType.Transient;
+			}
 			if(type.IsValueType)
-            {
+			{
 				return SerializationType.Value;
-            }
+			}
 			return SerializationType.Reference;
 		}
 
-        public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
-
-        private static readonly int[] PaddingBoundaries = new [] { 128, 1024, 4096, int.MaxValue };
+		public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
+		private static readonly int[] PaddingBoundaries = new [] {
+				128,
+				1024,
+				4096,
+				int.MaxValue
+			};
 
 		private const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | 
-                BindingFlags.Instance | BindingFlags.DeclaredOnly;
-    }
+				BindingFlags.Instance | BindingFlags.DeclaredOnly;
+	}
 }
 
