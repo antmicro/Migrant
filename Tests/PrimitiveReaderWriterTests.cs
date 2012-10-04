@@ -215,7 +215,7 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
 
-			[Test]
+		[Test]
 		public void ShouldSerializeTimeSpan(
 			[Values(1, 10, 100, 10000)]
 			int numberOfEntries)

@@ -33,9 +33,9 @@ namespace AntMicro.Migrant.Hooks
 	/// of given object and all referenced objects.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
-    public class PostSerializationAttribute : Attribute
-    {
+	public class PostSerializationAttribute : Attribute
+	{
 
-    }
+	}
 }
 

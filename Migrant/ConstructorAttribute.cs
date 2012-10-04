@@ -34,8 +34,8 @@ namespace AntMicro.Migrant
 	/// such object, the parameters given in a attribute are used.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Field)]
-    public class ConstructorAttribute : TransientAttribute
-    {
+	public class ConstructorAttribute : TransientAttribute
+	{
 		/// <summary>
 		/// Initializes attribute with given parameters which will be later passed to the
 		/// constructor.
@@ -43,17 +43,17 @@ namespace AntMicro.Migrant
 		/// <param name='parameters'>
 		/// Parameters.
 		/// </param>
-        public ConstructorAttribute(params object[] parameters)
-        {
-            Parameters = parameters;
-        }
+		public ConstructorAttribute(params object[] parameters)
+		{
+			Parameters = parameters;
+		}
 
 		/// <summary>
 		/// Parameters passed to the attribute.
 		/// </summary>
-        public object[] Parameters { get; private set; }
+		public object[] Parameters { get; private set; }
 
         
-    }
+	}
 }
 

@@ -32,9 +32,9 @@ namespace AntMicro.Migrant.Hooks
 	/// Method decorated with this attribute will be invoked before serialization.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
-    public class PreSerializationAttribute : Attribute
-    {
+	public class PreSerializationAttribute : Attribute
+	{
 
-    }
+	}
 }
 

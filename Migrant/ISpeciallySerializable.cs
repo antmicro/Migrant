@@ -32,8 +32,8 @@ namespace AntMicro.Migrant
 	/// invoked during deserialization, immediately before calling the <see cref="Load" />
 	/// method.
 	/// </summary>
-    public interface ISpeciallySerializable
-    {
+	public interface ISpeciallySerializable
+	{
 		/// <summary>
 		/// Invoked by the serializer immediately after construction of object (using
 		/// parameterless constructor). Should restore the state of the object, previously
@@ -46,7 +46,7 @@ namespace AntMicro.Migrant
 		/// This method must read the number of bytes that were earlier written. Otherwise
 		/// the <see cref="System.InvalidOperationException" /> is thrown.
 		/// </remarks>
-        void Load(PrimitiveReader reader);
+		void Load(PrimitiveReader reader);
 
 		/// <summary>
 		/// Invoked by the serializer during serialization. Should store the state of the
@@ -55,7 +55,7 @@ namespace AntMicro.Migrant
 		/// <param name='writer'>
 		/// Writer used to save the state of the object.
 		/// </param>
-        void Save(PrimitiveWriter writer);
-    }
+		void Save(PrimitiveWriter writer);
+	}
 }
 
