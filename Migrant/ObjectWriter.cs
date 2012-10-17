@@ -64,12 +64,16 @@ namespace AntMicro.Migrant
 		/// Cache in which generated write methods are stored and reused between instances of <see cref="AntMicro.Migrant.ObjectWriter" />.
 		/// Can be null if one does not want to use the cache.
 		/// </param>
+		/// <param name='surrogatesForObjects'>
+		/// Dictionary, containing callbacks that provide surrogate for given type. Callbacks have to be of type Func&lt;T, object&gt; where
+		/// typeof(T) is given type.
+		/// </param>			
 		/// <param name='isGenerating'>
 		/// True if write methods are to be generated, false if one wants to use reflection.
 		/// </param>
 		public ObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
-		                    bool isGenerating = true)
+		                    IDictionary<Type, Delegate> surrogatesForObjects = null, bool isGenerating = true)
 		{
 			transientTypeCache = new Dictionary<Type, bool>();
 			writeMethods = new List<Action<PrimitiveWriter, object>>();

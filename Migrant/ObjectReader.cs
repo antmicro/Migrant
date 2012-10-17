@@ -57,11 +57,16 @@ namespace AntMicro.Migrant
 		/// If set to true, deserialization continues even if the module id used for deserialization differs from the one used for serialization.
 		/// If set to false, exception is thrown instead.
 		/// </param>
+		/// <param name='objectsForSurrogates'>
+		/// Dictionary, containing callbacks that provide objects for given type of surrogate. Callbacks have to be of type Func&lt;T, object&gt; where
+		/// typeof(T) is type of surrogate.
+		/// </param>	
 		/// <param name='postDeserializationCallback'>
 		/// Callback which will be called after deserialization of every unique object. Deserialized
 		/// object is given in the callback's only parameter.
 		/// </param>
-		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, Action<object> postDeserializationCallback = null)
+		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
+		                    Action<object> postDeserializationCallback = null)
 		{
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
 			reader = new PrimitiveReader(stream);

@@ -107,8 +107,40 @@ namespace AntMicro.Migrant
 		{
 			var typeList = upfrontKnownTypes.ToList(); // TODO: see TOOO in ListWithHash
 			WriteHeader(stream, typeList);
-			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, settings.SerializationMethod == Method.Generated);
+			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, 
+			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated);
 			writer.WriteObject(obj);
+		}
+
+		/// <summary>
+		/// Sets the callback providing surrogates for objects of given type. The surrogate will be serialized instead of the object of that type.
+		/// </summary>
+		/// <param name='callback'>
+		/// Callback that will be called when an object of type T is encountered during serialization.
+		/// </param>
+		/// <typeparam name='T'>
+		/// The type for which callback will be invoked. It has to be actual type rather than formal one, that is
+		/// not an interface nor an abstract class.
+		/// </typeparam>
+		public void SetSurrogateForObject<T>(Func<T, object> callback)
+		{
+			surrogatesForObjects[typeof(T)] = callback;
+		}
+
+		/// <summary>
+		/// Sets the callback providing objects for surrogates of given type. The object will be provided instead of such surrogate in the effect
+		/// of deserialization.
+		/// </summary>
+		/// <param name='callback'>
+		/// Callback that will be called when an surrogate of type T is encountered during deserialization.
+		/// </param>
+		/// <typeparam name='T'>
+		/// The type for which callback will be invoked. It has to be actual type rather than formal one, that is
+		/// not an interface nor an abstract class.
+		/// </typeparam>
+		public void SetObjectForSurrogate<T>(Func<T, object> callback)
+		{
+			objectsForSurrogates[typeof(T)] = callback;
 		}
 
 		/// <summary>
@@ -149,7 +181,7 @@ namespace AntMicro.Migrant
 					upfrontKnownTypes.Add(Type.GetType(reader.ReadString()));
 				}
 			}
-			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, OnPostDeserialization);
+			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization);
 			var result = objectReader.ReadObject<T>();
 			return result;
 		}
@@ -261,6 +293,8 @@ namespace AntMicro.Migrant
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
 		private readonly ListWithHash<Type> upfrontKnownTypes;
+		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
+		private readonly Dictionary<Type, Delegate> objectsForSurrogates;
 		private const ushort VersionNumber = 4;
 		private const uint Magic = 0xA5132;
 	}
