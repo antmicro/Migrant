@@ -119,8 +119,7 @@ namespace AntMicro.Migrant
 		/// Callback that will be called when an object of type T is encountered during serialization.
 		/// </param>
 		/// <typeparam name='T'>
-		/// The type for which callback will be invoked. It has to be actual type rather than formal one, that is
-		/// not an interface nor an abstract class.
+		/// The type for which callback will be invoked.
 		/// </typeparam>
 		public void SetSurrogateForObject<T>(Func<T, object> callback)
 		{
@@ -135,8 +134,7 @@ namespace AntMicro.Migrant
 		/// Callback that will be called when an surrogate of type T is encountered during deserialization.
 		/// </param>
 		/// <typeparam name='T'>
-		/// The type for which callback will be invoked. It has to be actual type rather than formal one, that is
-		/// not an interface nor an abstract class.
+		/// The type for which callback will be invoked.
 		/// </typeparam>
 		public void SetObjectForSurrogate<T>(Func<T, object> callback)
 		{

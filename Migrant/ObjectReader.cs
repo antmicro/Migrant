@@ -68,6 +68,7 @@ namespace AntMicro.Migrant
 		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
 		                    Action<object> postDeserializationCallback = null)
 		{
+			this.objectsForSurrogates = objectsForSurrogates;
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
 			reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
@@ -620,6 +621,7 @@ namespace AntMicro.Migrant
 		private readonly bool ignoreModuleIdInequality;
 		private readonly Action<object> postDeserializationCallback;
 		private readonly Stack<Action> postDeserializationHooks;
+		private readonly IDictionary<Type, Delegate> objectsForSurrogates;
 		private const int InitialCapacity = 128;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
 		private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
