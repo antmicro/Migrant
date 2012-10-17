@@ -609,19 +609,10 @@ namespace AntMicro.Migrant.Generators
 
 			if(!skipGetId)
 			{
-				// if the formal type is NOT object, then string or array will not be the content of the field
-				// TODO: what with the abstract Array type?
-				var mayBeInlined = formalType == typeof(object) || Helpers.CanBeCreatedWithDataOnly(formalType);
+
 				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator);
-				if(mayBeInlined)
-				{
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteObjectIdPossiblyInline(null)));
-				}
-				else
-				{
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteObjectId(null)));
-				}
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteObjectIdPossiblyInline(null)));
 			}
 			generator.MarkLabel(finish);
 		}

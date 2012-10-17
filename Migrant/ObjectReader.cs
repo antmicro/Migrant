@@ -282,7 +282,7 @@ namespace AntMicro.Migrant
 				}
 				var refId = reader.ReadInt32();
 				UpdateMaximumReferenceId(refId);
-				if(Helpers.CanBeCreatedWithDataOnly(actualType) && refId > nextObjectToRead && !inlineRead.Contains(refId))
+				if(refId > nextObjectToRead && !inlineRead.Contains(refId))
 				{
 					// future reference, data inlined
 					inlineRead.Add(refId);
