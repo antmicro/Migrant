@@ -158,20 +158,14 @@ namespace AntMicro.Migrant
 				UpdateFields(actualType, deserializedObjects[objectId]);
 				break;
 			}
-			foreach(var objectCandidate in objectsForSurrogates)
-			{
-				if(objectCandidate.Key.IsAssignableFrom(actualType))
-				{
-					deserializedObjects[objectId] = objectCandidate.Value.FastDynamicInvoke(new object[] { deserializedObjects[objectId] });
-					break;
-				}
-			}
 			var obj = deserializedObjects[objectId];
 			if(obj == null)
 			{
 				// it can happen if we deserialize delegate with empty invocation list
 				return;
 			}
+			Helpers.SwapObjectWithSurrogate(ref obj, objectsForSurrogates);
+			deserializedObjects[objectId] = obj; // could be swapped
 			Helpers.InvokeAttribute(typeof(ImmediatePostDeserializationAttribute), obj);
 			var postHook = Helpers.GetDelegateWithAttribute(typeof(PostDeserializationAttribute), obj);
 			if(postHook != null)

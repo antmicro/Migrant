@@ -278,6 +278,19 @@ namespace AntMicro.Migrant
 			return SerializationType.Reference;
 		}
 
+		internal static void SwapObjectWithSurrogate(ref object o, IDictionary<Type, Delegate> swapDictionary)
+		{
+			var type = o.GetType();
+			foreach(var swapCandidate in swapDictionary)
+			{
+				if(swapCandidate.Key.IsAssignableFrom(type))
+				{
+					o = swapCandidate.Value.FastDynamicInvoke(new object[] { o });
+					break;
+				}
+			}
+		}
+
 		public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 		private static readonly int[] PaddingBoundaries = new [] {
 				128,

@@ -233,16 +233,8 @@ namespace AntMicro.Migrant
 
 		private void WriteObjectInner(object o)
 		{
+			Helpers.SwapObjectWithSurrogate(ref o, surrogatesForObjects);
 			var type = o.GetType();
-			foreach(var surrogateCandidate in surrogatesForObjects)
-			{
-				if(surrogateCandidate.Key.IsAssignableFrom(type))
-				{
-					o = surrogateCandidate.Value.FastDynamicInvoke(new object[] { o });
-					type = o.GetType();
-					break;
-				}
-			}
 			var typeId = TouchAndWriteTypeId(type);
 			writeMethods[typeId](writer, o);
 		}
