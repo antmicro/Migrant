@@ -53,6 +53,41 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(counter - 1, secondA.Field);
 		}
 
+		[Test]
+		public void ShouldPlaceSurrogateForObject()
+		{
+			var b = new SurrogateMockB();
+			var pseudocopy = PseudoClone(b, serializer =>
+			                             {
+				serializer.SetSurrogateForObject<SurrogateMockB>(x => new SurrogateMockA(1));
+			});
+			var a = pseudocopy as SurrogateMockA;
+			Assert.IsNotNull(a);
+			Assert.AreEqual(1, a.Field);
+		}
+
+		[Test]
+		public void ShouldPlaceSurrogateForObjectPreservingIdentity()
+		{
+			var b = new SurrogateMockB();
+			var counter = 0;
+			var list = new List<object> { b, new SurrogateMockB(), b };
+			var pseudocopy = PseudoClone(list, serializer =>
+			                             {
+				serializer.SetSurrogateForObject<SurrogateMockB>(x => new SurrogateMockA(counter++));
+			});
+			list = pseudocopy as List<object>;
+			Assert.IsNotNull(list);
+			Assert.AreSame(list[0], list[2]);
+			Assert.AreNotSame(list[0], list[1]);
+			var a = list[0] as SurrogateMockA;
+			Assert.IsNotNull(a);
+			Assert.AreEqual(counter - 2, a.Field);
+			var secondA = list[2] as SurrogateMockA;
+			Assert.IsNotNull(secondA);
+			Assert.AreEqual(counter - 1, a.Field);
+		}
+
 		// pseudo, because cloned object can be/can contain different type due to surrogate operations
 		private object PseudoClone(object obj, Action<Serializer> actionsBeforeSerilization)
 		{
