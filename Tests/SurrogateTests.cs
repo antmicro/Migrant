@@ -127,6 +127,54 @@ namespace AntMicro.Migrant.Tests
 			Assert.IsNotNull(c);
 		}
 
+		[Test]
+		public void ShouldPlaceObjectForDerivedSurrogate()
+		{
+			var d = new SurrogateMockD();
+			var pseudocopy = PseudoClone(d, serializer =>
+			                             {
+				serializer.SetObjectForSurrogate<SurrogateMockC>(x => new SurrogateMockB());
+			});
+			var b = pseudocopy as SurrogateMockB;
+			Assert.IsNotNull(b);
+		}
+
+		[Test]
+		public void ShouldPlaceSurrogateForDerivedObject()
+		{
+			var d = new SurrogateMockD();
+			var pseudocopy = PseudoClone(d, serializer =>
+			                             {
+				serializer.SetSurrogateForObject<SurrogateMockC>(x => new SurrogateMockB());
+			});
+			var b = pseudocopy as SurrogateMockB;
+			Assert.IsNotNull(b);
+		}
+
+		[Test]
+		public void ShouldPlaceObjectForSurrogateImplementingInterface()
+		{
+			var e = new SurrogateMockE();
+			var pseudocopy = PseudoClone(e, serializer =>
+			                             {
+				serializer.SetObjectForSurrogate<ISurrogateMockE>(x => new SurrogateMockB());
+			});
+			var b = pseudocopy as SurrogateMockB;
+			Assert.IsNotNull(b);
+		}
+
+		[Test]
+		public void ShouldPlaceSurrogateForObjectImplementingInterface()
+		{
+			var e = new SurrogateMockE();
+			var pseudocopy = PseudoClone(e, serializer =>
+			                             {
+				serializer.SetSurrogateForObject<ISurrogateMockE>(x => new SurrogateMockB());
+			});
+			var b = pseudocopy as SurrogateMockB;
+			Assert.IsNotNull(b);
+		}
+
 		// pseudo, because cloned object can be/can contain different type due to surrogate operations
 		private object PseudoClone(object obj, Action<Serializer> actionsBeforeSerilization)
 		{
@@ -172,6 +220,21 @@ namespace AntMicro.Migrant.Tests
 	}
 
 	public class SurrogateMockC
+	{
+
+	}
+
+	public class SurrogateMockD : SurrogateMockC
+	{
+
+	}
+
+	public interface ISurrogateMockE
+	{
+
+	}
+
+	public class SurrogateMockE : ISurrogateMockE
 	{
 
 	}
