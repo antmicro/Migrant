@@ -163,6 +163,7 @@ namespace AntMicro.Migrant
 				if(objectCandidate.Key.IsAssignableFrom(actualType))
 				{
 					deserializedObjects[objectId] = objectCandidate.Value.FastDynamicInvoke(new object[] { deserializedObjects[objectId] });
+					break;
 				}
 			}
 			var obj = deserializedObjects[objectId];
