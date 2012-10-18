@@ -75,11 +75,16 @@ namespace AntMicro.Migrant
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
 		                    IDictionary<Type, Delegate> surrogatesForObjects = null, bool isGenerating = true)
 		{
+			if(surrogatesForObjects == null)
+			{
+				surrogatesForObjects = new Dictionary<Type, Delegate>();
+			}
 			transientTypeCache = new Dictionary<Type, bool>();
 			writeMethods = new List<Action<PrimitiveWriter, object>>();
 			postSerializationHooks = new Stack<Action>();
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
+			this.surrogatesForObjects = surrogatesForObjects;
 			typeIndices = new Dictionary<Type, int>();
 			moduleIndices = new Dictionary<Module, int>();
 			foreach(var type in upfrontKnownTypes)
@@ -229,6 +234,15 @@ namespace AntMicro.Migrant
 		private void WriteObjectInner(object o)
 		{
 			var type = o.GetType();
+			foreach(var surrogateCandidate in surrogatesForObjects)
+			{
+				if(surrogateCandidate.Key.IsAssignableFrom(type))
+				{
+					o = surrogateCandidate.Value.FastDynamicInvoke(new object[] { o });
+					type = o.GetType();
+					break;
+				}
+			}
 			var typeId = TouchAndWriteTypeId(type);
 			writeMethods[typeId](writer, o);
 		}
@@ -574,6 +588,7 @@ namespace AntMicro.Migrant
 		private readonly Dictionary<Module, int> moduleIndices;
 		private readonly Dictionary<Type, bool> transientTypeCache;
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
+		private readonly IDictionary<Type, Delegate> surrogatesForObjects;
 		private readonly List<Action<PrimitiveWriter, object>> writeMethods;
 	}
 }
