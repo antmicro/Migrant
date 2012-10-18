@@ -91,7 +91,7 @@ namespace AntMicro.Migrant
 				{
 					continue;
 				}
-				var generator = new WriteMethodGenerator(type, typeIndices);
+				var generator = new WriteMethodGenerator(type);
 				writeMethodCache.Add(type, generator.Method);
 			}
 		}

@@ -192,11 +192,6 @@ namespace AntMicro.Migrant
 			moduleIndices.Add(module, moduleId);
 		}
 
-		internal void TouchAndWriteTypeId(Object o)
-		{
-			TouchAndWriteTypeId(o.GetType());
-		}
-
 		internal static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type)
 		{
 			return type.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name);
@@ -432,7 +427,6 @@ namespace AntMicro.Migrant
 				writer.Write(Consts.NullObjectId);
 				return;
 			}
-			TouchAndWriteTypeId(value);
 			var actualType = value.GetType();
 			if(CheckTransient(actualType))
 			{
@@ -529,7 +523,7 @@ namespace AntMicro.Migrant
 				return WriteObjectUsingReflection;
 			}
 
-			var method = new WriteMethodGenerator(actualType, typeIndices).Method;
+			var method = new WriteMethodGenerator(actualType).Method;
 			var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
 			if(writeMethodCache != null)
 			{

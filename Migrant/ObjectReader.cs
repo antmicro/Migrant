@@ -282,25 +282,19 @@ namespace AntMicro.Migrant
 
 			if(!formalType.IsValueType)
 			{
-				var actualType = ReadType();
-				if(actualType == null)
+				var refId = reader.ReadInt32();
+				if(refId == Consts.NullObjectId)
 				{
 					return null;
 				}
-				if(Helpers.CheckTransientNoCache(actualType))
-				{
-					return Helpers.GetDefaultValue(formalType);
-				}
-				var refId = reader.ReadInt32();
 				UpdateMaximumReferenceId(refId);
 				if(refId > nextObjectToRead && !inlineRead.Contains(refId))
 				{
 					// future reference, data inlined
 					inlineRead.Add(refId);
 					ReadObjectInner(ReadType(), refId);
-					return deserializedObjects[refId];
 				}
-				return TouchObject(actualType, refId);
+				return deserializedObjects[refId];
 			} 
 			if(formalType.IsEnum)
 			{

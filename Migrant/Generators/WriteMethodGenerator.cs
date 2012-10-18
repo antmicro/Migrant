@@ -37,11 +37,10 @@ namespace AntMicro.Migrant.Generators
 {
 	internal class WriteMethodGenerator
 	{
-		internal WriteMethodGenerator(Type typeToGenerate, IDictionary<Type, int> typeIndices)
+		internal WriteMethodGenerator(Type typeToGenerate)
 		{
 			ObjectWriter.CheckLegality(typeToGenerate);
 			InitializeMethodInfos();
-			this.typeIndices = typeIndices;
 			if(!typeToGenerate.IsArray)
 			{
 				dynamicMethod = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
@@ -170,7 +169,7 @@ namespace AntMicro.Migrant.Generators
 				GenerateWriteDelegate(gen =>
 				                      {
 					gen.Emit(OpCodes.Ldarg_2); // value to serialize
-				}, actualType);
+				});
 				return true;
 			}
 			bool isGeneric, isGenericallyIterable, isDictionary;
@@ -367,13 +366,13 @@ namespace AntMicro.Migrant.Generators
 				// key
 				generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Key").GetGetMethod());
 				generator.Emit(OpCodes.Stloc_1);
-				GenerateWriteTypeLocal1(generator, formalElementType);
+				GenerateWriteTypeLocal1(formalElementType);
 
 				// value
 				generator.Emit(OpCodes.Ldloc_0);
 				generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Value").GetGetMethod());
 				generator.Emit(OpCodes.Stloc_1);
-				GenerateWriteTypeLocal1(generator, formalElementType);
+				GenerateWriteTypeLocal1(formalElementType);
 			}
 			else
 			{
@@ -381,14 +380,14 @@ namespace AntMicro.Migrant.Generators
 				generator.Emit(OpCodes.Stloc_1);
 	
 				// operation on current element
-				GenerateWriteTypeLocal1(generator, formalElementType);
+				GenerateWriteTypeLocal1(formalElementType);
 			}
 
 			generator.Emit(OpCodes.Br, loopBegin);
 			generator.MarkLabel(finish);
 		}
 
-		private void GenerateWriteTypeLocal1(ILGenerator generator, Type formalElementType)
+		private void GenerateWriteTypeLocal1(Type formalElementType)
 		{
 			GenerateWriteType(gen =>
 			                  {
@@ -412,7 +411,7 @@ namespace AntMicro.Migrant.Generators
 			}
 		}
 
-		private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+		private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop)
 		{
 			var delegateGetMethodInfo = typeof(MulticastDelegate).GetProperty("Method").GetGetMethod();
 			var delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
@@ -567,21 +566,6 @@ namespace AntMicro.Migrant.Generators
 			generator.MarkLabel(isNotNull);
 
 			var formalTypeIsActualType = formalType.Attributes.HasFlag(TypeAttributes.Sealed); // TODO: more optimizations?
-			// maybe we know the type id yet?
-			if(formalTypeIsActualType && typeIndices.ContainsKey(formalType))
-			{
-				var typeId = typeIndices[formalType];
-				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-				generator.Emit(OpCodes.Ldc_I4, typeId);
-				generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
-			}
-			else
-			{
-				// we have to get the actual type at runtime
-				generator.Emit(OpCodes.Ldarg_0); // objectWriter
-				putValueToWriteOnTop(generator);
-				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, object>((writer, obj) => writer.TouchAndWriteTypeId(obj)));
-			}
 
 			// TODO: other opts here?
 			// if there is possibity that the target object is transient, we have to check that
@@ -604,12 +588,17 @@ namespace AntMicro.Migrant.Generators
 				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator); // value to serialize
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, object>((writer, obj) => writer.CheckTransient(obj)));
-				generator.Emit(OpCodes.Brtrue_S, finish);
+				var isNotTransient = generator.DefineLabel();
+				generator.Emit(OpCodes.Brfalse_S, isNotTransient);
+				generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+				generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);
+				generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+				generator.Emit(OpCodes.Br, finish);
+				generator.MarkLabel(isNotTransient);
 			}
 
 			if(!skipGetId)
 			{
-
 				generator.Emit(OpCodes.Ldarg_0); // objectWriter
 				putValueToWriteOnTop(generator);
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteObjectIdPossiblyInline(null)));
@@ -620,7 +609,6 @@ namespace AntMicro.Migrant.Generators
 		private MethodInfo primitiveWriterWriteInteger;
 		private MethodInfo primitiveWriterWriteBoolean;
 
-		private readonly IDictionary<Type, int> typeIndices;
 		private readonly ILGenerator generator;
 		private readonly DynamicMethod dynamicMethod;
 
