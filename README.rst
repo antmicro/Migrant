@@ -1,4 +1,4 @@
-Migrant 0.1.5
+Migrant 0.2.0
 =============
 
 This is the *Migrant* project, fast and flexible serialization framework usable for undecorated classes, written in C#.
