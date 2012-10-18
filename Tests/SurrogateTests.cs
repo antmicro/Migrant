@@ -19,12 +19,12 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldPlaceObjectForSurrogate()
 		{
-			var b = new B();
+			var b = new SurrogateMockB();
 			var pseudocopy = PseudoClone(b, serializer =>
 			                             {
-				serializer.SetObjectForSurrogate<B>(x => new A(999));
+				serializer.SetObjectForSurrogate<SurrogateMockB>(x => new SurrogateMockA(999));
 			});
-			var a = pseudocopy as A;
+			var a = pseudocopy as SurrogateMockA;
 			Assert.IsNotNull(a);
 			Assert.AreEqual(999, a.Field);
 		}
@@ -32,12 +32,12 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldPlaceObjectForSurrogatePreservingIdentity()
 		{
-			var b = new B();
-			var list = new List<object> { b, new List<object> { b }, new B() };
+			var b = new SurrogateMockB();
+			var list = new List<object> { b, new List<object> { b }, new SurrogateMockB() };
 			var counter = 0;
 			var pseudocopy = PseudoClone(list, serializer =>
 			                             {
-				serializer.SetObjectForSurrogate<B>(x => new A(counter++));
+				serializer.SetObjectForSurrogate<SurrogateMockB>(x => new SurrogateMockA(counter++));
 			});
 			list = pseudocopy as List<object>;
 			Assert.IsNotNull(list);
@@ -45,10 +45,10 @@ namespace AntMicro.Migrant.Tests
 			Assert.IsNotNull(sublist);
 			Assert.AreSame(list[0], sublist[0]);
 			Assert.AreNotSame(list[0], list[2]);
-			var a = list[0] as A;
+			var a = list[0] as SurrogateMockA;
 			Assert.IsNotNull(a);
 			Assert.AreEqual(counter - 2, a.Field);
-			var secondA = list[2] as A;
+			var secondA = list[2] as SurrogateMockA;
 			Assert.IsNotNull(secondA);
 			Assert.AreEqual(counter - 1, secondA.Field);
 		}
@@ -82,9 +82,9 @@ namespace AntMicro.Migrant.Tests
 
 	}
 
-	public class A
+	public class SurrogateMockA
 	{
-		public A(int field)
+		public SurrogateMockA(int field)
 		{
 			Field = field;
 		}
@@ -92,7 +92,7 @@ namespace AntMicro.Migrant.Tests
 		public int Field { get; private set; }
 	}
 
-	public class B
+	public class SurrogateMockB
 	{
 
 	}
