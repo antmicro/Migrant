@@ -54,6 +54,8 @@ Another extra feature, unavailable in convenient form in CLI, is an ability to d
 
 The current release of Migrant uses reflection mechanisms to handle the deserialization, however the serialization is done using on-line generated methods for performance (the user can also use the reflection instead if he wishes). In the next release we plan to offer deserialization using generated methods as well.
 
+Migrant can also be configured to replace objects of given type with user provided objects during serialization or deserialization. The feature is known as **Surrogates**.
+
 Performance benchmarks against other popular serialization frameworks are yet to be run, but initial testing is quite promising.
 
 Compilation
@@ -82,7 +84,7 @@ Simple serialization
   var serializer = new Serializer();
 
   //_Optional_ step to prepare the framework, so the actual serialization is even faster
-  serializer.Initialize( typeof(MyComplexType) );
+  serializer.Initialize(typeof(MyComplexType));
 
   serializer.Serialize(myComplexObject, stream);
 
@@ -108,7 +110,7 @@ Simple types to bytes
   var myOtherArray = new long[myLongArray.Length];
   var stream = new MyCustomStream();
 
-  using( var writer = new PrimitiveWriter(stream) )
+  using(var writer = new PrimitiveWriter(stream))
   {
      foreach(var element in myLongArray)
      {
@@ -118,13 +120,28 @@ Simple types to bytes
 
   stream.Rewind();
 
-  using( var reader = new PrimitiveReader(stream) )
+  using(var reader = new PrimitiveReader(stream))
   {
-     for( var i=0; i<myLongArray.Length; i++)
+     for(var i=0; i<myLongArray.Length; i++)
      {
         myOtherArray[i] = reader.ReadInt64();
      }
   }
+
+Surrogates
+++++++++++
+
+::
+
+  var serializer = new Serializer();
+  var someObject = new SomeObject();
+  serializer.ForObject<SomeObject>().SetSurrogate(x => new AnotherObject());
+  serializer.Serialize(someObject, stream);
+
+  stream.Rewind();
+
+  var anObject = serializer.Deserialize<object>(stream);
+  Console.WriteLine(anObject.GetType().Name); // prints AnotherObject
 
 Referenced libraries
 --------------------
