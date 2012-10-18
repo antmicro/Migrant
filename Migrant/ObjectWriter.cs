@@ -32,7 +32,6 @@ using System.Reflection;
 using System.Collections;
 using AntMicro.Migrant.Hooks;
 using ImpromptuInterface;
-using ImpromptuInterface.Dynamic;
 using AntMicro.Migrant.Generators;
 using System.Reflection.Emit;
 using System.Threading;
@@ -125,9 +124,8 @@ namespace AntMicro.Migrant
 		internal void WriteObjectIdPossiblyInline(object o)
 		{
 			var refId = identifier.GetId(o);
-			var type = o.GetType();
 			writer.Write(refId);
-			if(ShouldBeInlined(type, refId))
+			if(ShouldBeInlined(refId))
 			{
 				inlineWritten.Add(refId);
 				InvokeCallbacksAndWriteObject(o);
@@ -443,14 +441,14 @@ namespace AntMicro.Migrant
 			// if this is a future reference, just after the reference id,
 			// we should write inline data
 			writer.Write(refId);
-			if(ShouldBeInlined(actualType, refId))
+			if(ShouldBeInlined(refId))
 			{
 				inlineWritten.Add(refId);
 				InvokeCallbacksAndWriteObject(value);
 			}
 		}
 
-		private bool ShouldBeInlined(Type type, int referenceId)
+		private bool ShouldBeInlined(int referenceId)
 		{
 			return referenceId > objectsWritten && !inlineWritten.Contains(referenceId);
 		}
