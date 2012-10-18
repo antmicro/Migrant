@@ -61,6 +61,8 @@ namespace AntMicro.Migrant
 			this.settings = settings;
 			writeMethodCache = new Dictionary<Type, DynamicMethod>();
 			upfrontKnownTypes = new ListWithHash<Type>();
+			objectsForSurrogates = new Dictionary<Type, Delegate>();
+			surrogatesForObjects = new Dictionary<Type, Delegate>();
 		}
 
 		/// <summary>

@@ -68,6 +68,10 @@ namespace AntMicro.Migrant
 		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
 		                    Action<object> postDeserializationCallback = null)
 		{
+			if(objectsForSurrogates == null)
+			{
+				objectsForSurrogates = new Dictionary<Type, Delegate>();
+			}
 			this.objectsForSurrogates = objectsForSurrogates;
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
 			reader = new PrimitiveReader(stream);
@@ -153,6 +157,10 @@ namespace AntMicro.Migrant
 			case CreationWay.Uninitialized:
 				UpdateFields(actualType, deserializedObjects[objectId]);
 				break;
+			}
+			if(objectsForSurrogates.ContainsKey(actualType))
+			{
+				deserializedObjects[objectId] = objectsForSurrogates[actualType].FastDynamicInvoke(new object[] { deserializedObjects[objectId] });
 			}
 			var obj = deserializedObjects[objectId];
 			if(obj == null)

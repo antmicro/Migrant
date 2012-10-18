@@ -42,6 +42,7 @@
     <Compile Include="ObjectReaderWriterTests.cs" />
     <Compile Include="PrimitiveReaderWriterTests.cs" />
     <Compile Include="SerializationTests.cs" />
+    <Compile Include="SurrogateTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
