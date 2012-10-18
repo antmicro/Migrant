@@ -112,6 +112,7 @@ namespace AntMicro.Migrant
 			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, 
 			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated);
 			writer.WriteObject(obj);
+			serializationDone = true;
 		}
 
 		/// <summary>
@@ -184,6 +185,7 @@ namespace AntMicro.Migrant
 			}
 			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization);
 			var result = objectReader.ReadObject<T>();
+			deserializationDone = true;
 			return result;
 		}
 
@@ -291,6 +293,9 @@ namespace AntMicro.Migrant
 			}
 		}
 
+		private bool serializationDone;
+		private bool deserializationDone;
+
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
 		private readonly ListWithHash<Type> upfrontKnownTypes;
@@ -321,6 +326,10 @@ namespace AntMicro.Migrant
 			/// </typeparam>
 			public void SetObject<TObject>(Func<TSurrogate, TObject> callback)
 			{
+				if(serializer.deserializationDone)
+				{
+					throw new InvalidOperationException("Cannot set objects for surrogates after any deserialization is done.");
+				}
 				serializer.objectsForSurrogates[typeof(TSurrogate)] = callback;
 			}
 
@@ -349,6 +358,10 @@ namespace AntMicro.Migrant
 			/// </typeparam>
 			public void SetSurrogate<TSurrogate>(Func<TObject, TSurrogate> callback)
 			{
+				if(serializer.serializationDone)
+				{
+					throw new InvalidOperationException("Cannot set surrogates for objects after any serialization is done.");
+				}
 				serializer.surrogatesForObjects[typeof(TObject)] = callback;
 			}
 

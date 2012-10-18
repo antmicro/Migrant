@@ -175,6 +175,25 @@ namespace AntMicro.Migrant.Tests
 			Assert.IsNotNull(b);
 		}
 
+		[Test]
+		public void ShouldThrowWhenSettingSurrogatesAfterSerialization()
+		{
+			var serializer = new Serializer(SettingsFromFields);
+			serializer.Serialize(new object(), Stream.Null);
+			Assert.Throws<InvalidOperationException>(() => serializer.ForObject<object>().SetSurrogate(x => new object()));
+		}
+
+		[Test]
+		public void ShouldThrowWhenSettingObjectForSurrogateAfterDeserialization()
+		{
+			var serializer = new Serializer(SettingsFromFields);
+			var stream = new MemoryStream();
+			serializer.Serialize(new object(), stream);
+			stream.Seek(0, SeekOrigin.Begin);
+			serializer.Deserialize<object>(stream);
+			Assert.Throws<InvalidOperationException>(() => serializer.ForSurrogate<object>().SetObject(x => new object()));
+		}
+
 		// pseudo, because cloned object can be/can contain different type due to surrogate operations
 		private object PseudoClone(object obj, Action<Serializer> actionsBeforeSerilization)
 		{
