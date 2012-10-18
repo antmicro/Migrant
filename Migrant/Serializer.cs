@@ -296,7 +296,7 @@ namespace AntMicro.Migrant
 		private readonly ListWithHash<Type> upfrontKnownTypes;
 		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;
-		private const ushort VersionNumber = 4;
+		private const ushort VersionNumber = 5;
 		private const uint Magic = 0xA5132;
 
 		/// <summary>
