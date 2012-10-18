@@ -48,7 +48,7 @@ namespace AntMicro.Migrant.Tests
 			var b = new SurrogateMockB();
 			var pseudocopy = PseudoClone(b, serializer =>
 			                             {
-				serializer.SetObjectForSurrogate<SurrogateMockB>(x => new SurrogateMockA(999));
+				serializer.ForSurrogate<SurrogateMockB>().SetObject(x => new SurrogateMockA(999));
 			});
 			var a = pseudocopy as SurrogateMockA;
 			Assert.IsNotNull(a);
@@ -63,7 +63,7 @@ namespace AntMicro.Migrant.Tests
 			var counter = 0;
 			var pseudocopy = PseudoClone(list, serializer =>
 			                             {
-				serializer.SetObjectForSurrogate<SurrogateMockB>(x => new SurrogateMockA(counter++));
+				serializer.ForSurrogate<SurrogateMockB>().SetObject(x => new SurrogateMockA(counter++));
 			});
 			list = pseudocopy as List<object>;
 			Assert.IsNotNull(list);
@@ -85,7 +85,7 @@ namespace AntMicro.Migrant.Tests
 			var b = new SurrogateMockB();
 			var pseudocopy = PseudoClone(b, serializer =>
 			                             {
-				serializer.SetSurrogateForObject<SurrogateMockB>(x => new SurrogateMockA(1));
+				serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(1));
 			});
 			var a = pseudocopy as SurrogateMockA;
 			Assert.IsNotNull(a);
@@ -100,7 +100,7 @@ namespace AntMicro.Migrant.Tests
 			var list = new List<object> { b, new SurrogateMockB(), b };
 			var pseudocopy = PseudoClone(list, serializer =>
 			                             {
-				serializer.SetSurrogateForObject<SurrogateMockB>(x => new SurrogateMockA(counter++));
+				serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(counter++));
 			});
 			list = pseudocopy as List<object>;
 			Assert.IsNotNull(list);
@@ -120,8 +120,8 @@ namespace AntMicro.Migrant.Tests
 			var b = new SurrogateMockB();
 			var pseudocopy = PseudoClone(b, serializer =>
 			                             {
-				serializer.SetSurrogateForObject<SurrogateMockB>(x => new SurrogateMockA(1));
-				serializer.SetObjectForSurrogate<SurrogateMockA>(x => new SurrogateMockC());
+				serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(1));
+				serializer.ForSurrogate<SurrogateMockA>().SetObject(x => new SurrogateMockC());
 			});
 			var c = pseudocopy as SurrogateMockC;
 			Assert.IsNotNull(c);
@@ -133,7 +133,7 @@ namespace AntMicro.Migrant.Tests
 			var d = new SurrogateMockD();
 			var pseudocopy = PseudoClone(d, serializer =>
 			                             {
-				serializer.SetObjectForSurrogate<SurrogateMockC>(x => new SurrogateMockB());
+				serializer.ForSurrogate<SurrogateMockC>().SetObject(x => new SurrogateMockB());
 			});
 			var b = pseudocopy as SurrogateMockB;
 			Assert.IsNotNull(b);
@@ -145,7 +145,7 @@ namespace AntMicro.Migrant.Tests
 			var d = new SurrogateMockD();
 			var pseudocopy = PseudoClone(d, serializer =>
 			                             {
-				serializer.SetSurrogateForObject<SurrogateMockC>(x => new SurrogateMockB());
+				serializer.ForObject<SurrogateMockC>().SetSurrogate(x => new SurrogateMockB());
 			});
 			var b = pseudocopy as SurrogateMockB;
 			Assert.IsNotNull(b);
@@ -157,7 +157,7 @@ namespace AntMicro.Migrant.Tests
 			var e = new SurrogateMockE();
 			var pseudocopy = PseudoClone(e, serializer =>
 			                             {
-				serializer.SetObjectForSurrogate<ISurrogateMockE>(x => new SurrogateMockB());
+				serializer.ForSurrogate<ISurrogateMockE>().SetObject(x => new SurrogateMockB());
 			});
 			var b = pseudocopy as SurrogateMockB;
 			Assert.IsNotNull(b);
@@ -169,7 +169,7 @@ namespace AntMicro.Migrant.Tests
 			var e = new SurrogateMockE();
 			var pseudocopy = PseudoClone(e, serializer =>
 			                             {
-				serializer.SetSurrogateForObject<ISurrogateMockE>(x => new SurrogateMockB());
+				serializer.ForObject<ISurrogateMockE>().SetSurrogate(x => new SurrogateMockB());
 			});
 			var b = pseudocopy as SurrogateMockB;
 			Assert.IsNotNull(b);

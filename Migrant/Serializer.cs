@@ -115,32 +115,33 @@ namespace AntMicro.Migrant
 		}
 
 		/// <summary>
-		/// Sets the callback providing surrogates for objects of given type. The surrogate will be serialized instead of the object of that type.
+		/// Gives the ability to set callback providing object for surrogate of given type. The object will be provided instead of such
+		/// surrogate in the effect of deserialization.
 		/// </summary>
-		/// <param name='callback'>
-		/// Callback that will be called when an object of type T is encountered during serialization.
-		/// </param>
-		/// <typeparam name='T'>
+		/// <returns>
+		/// Object letting you set the object for the given surrogate type.
+		/// </returns>
+		/// <typeparam name='TSurrogate'>
 		/// The type for which callback will be invoked.
 		/// </typeparam>
-		public void SetSurrogateForObject<T>(Func<T, object> callback)
+		public ObjectForSurrogateSetter<TSurrogate> ForSurrogate<TSurrogate>()
 		{
-			surrogatesForObjects[typeof(T)] = callback;
+			return new ObjectForSurrogateSetter<TSurrogate>(this);
 		}
 
 		/// <summary>
-		/// Sets the callback providing objects for surrogates of given type. The object will be provided instead of such surrogate in the effect
-		/// of deserialization.
+		/// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of 
+		/// the object of that type.
 		/// </summary>
-		/// <param name='callback'>
-		/// Callback that will be called when an surrogate of type T is encountered during deserialization.
-		/// </param>
-		/// <typeparam name='T'>
+		/// <returns>
+		/// Object letting you set the surrogate for the given type.
+		/// </returns>
+		/// <typeparam name='TObject'>
 		/// The type for which callback will be invoked.
 		/// </typeparam>
-		public void SetObjectForSurrogate<T>(Func<T, object> callback)
+		public SurrogateForObjectSetter<TObject> ForObject<TObject>()
 		{
-			objectsForSurrogates[typeof(T)] = callback;
+			return new SurrogateForObjectSetter<TObject>(this);
 		}
 
 		/// <summary>
@@ -297,6 +298,62 @@ namespace AntMicro.Migrant
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;
 		private const ushort VersionNumber = 4;
 		private const uint Magic = 0xA5132;
+
+		/// <summary>
+		/// Lets you set a callback providing object for type of the surrogate given to method that provided
+		/// this object on a serializer that provided this object.
+		/// </summary>
+		public class ObjectForSurrogateSetter<TSurrogate>
+		{
+			internal ObjectForSurrogateSetter(Serializer serializer)
+			{
+				this.serializer = serializer;
+			}
+
+			/// <summary>
+			/// Sets the callback proividing object for surrogate.
+			/// </summary>
+			/// <param name='callback'>
+			/// Callback proividing object for surrogate.
+			/// </param>
+			/// <typeparam name='TObject'>
+			/// The type of the object returned by callback.
+			/// </typeparam>
+			public void SetObject<TObject>(Func<TSurrogate, TObject> callback)
+			{
+				serializer.objectsForSurrogates[typeof(TSurrogate)] = callback;
+			}
+
+			private readonly Serializer serializer;
+		}
+
+		/// <summary>
+		/// Lets you set a callback providing surrogate for type of the object given to method that provided
+		/// this object on a serializer that provided this object.
+		/// </summary>
+		public class SurrogateForObjectSetter<TObject>
+		{
+			internal SurrogateForObjectSetter(Serializer serializer)
+			{
+				this.serializer = serializer;
+			}
+
+			/// <summary>
+			/// Sets the callback providing surrogate for object.
+			/// </summary>
+			/// <param name='callback'>
+			/// Callback providing surrogate for object.
+			/// </param>
+			/// <typeparam name='TSurrogate'>
+			/// The type of the object returned by callback.
+			/// </typeparam>
+			public void SetSurrogate<TSurrogate>(Func<TObject, TSurrogate> callback)
+			{
+				serializer.surrogatesForObjects[typeof(TObject)] = callback;
+			}
+
+			private readonly Serializer serializer;
+		}
 	}
 }
 
