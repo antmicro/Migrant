@@ -158,9 +158,12 @@ namespace AntMicro.Migrant
 				UpdateFields(actualType, deserializedObjects[objectId]);
 				break;
 			}
-			if(objectsForSurrogates.ContainsKey(actualType))
+			foreach(var objectCandidate in objectsForSurrogates)
 			{
-				deserializedObjects[objectId] = objectsForSurrogates[actualType].FastDynamicInvoke(new object[] { deserializedObjects[objectId] });
+				if(objectCandidate.Key.IsAssignableFrom(actualType))
+				{
+					deserializedObjects[objectId] = objectCandidate.Value.FastDynamicInvoke(new object[] { deserializedObjects[objectId] });
+				}
 			}
 			var obj = deserializedObjects[objectId];
 			if(obj == null)
