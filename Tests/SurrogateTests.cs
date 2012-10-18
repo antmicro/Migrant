@@ -109,7 +109,7 @@ namespace AntMicro.Migrant.Tests
 			var a = list[0] as SurrogateMockA;
 			Assert.IsNotNull(a);
 			Assert.AreEqual(counter - 2, a.Field);
-			var secondA = list[2] as SurrogateMockA;
+			var secondA = list[1] as SurrogateMockA;
 			Assert.IsNotNull(secondA);
 			Assert.AreEqual(counter - 1, secondA.Field);
 		}
