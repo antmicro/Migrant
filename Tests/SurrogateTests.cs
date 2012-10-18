@@ -111,7 +111,7 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(counter - 2, a.Field);
 			var secondA = list[2] as SurrogateMockA;
 			Assert.IsNotNull(secondA);
-			Assert.AreEqual(counter - 1, a.Field);
+			Assert.AreEqual(counter - 1, secondA.Field);
 		}
 
 		[Test]
