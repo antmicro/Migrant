@@ -22,12 +22,15 @@ Migrant is a serialization framework for .NET and Mono projects. Its aim is to p
 There are three main directories:
 
 Migrant
+
 :   contains the source code of the library,
 
 Tests
+
 :   contains unit tests,
 
 Lib
+
 :   contains required libraries.
 
 There are two solution files - Migrant.sln, the core library, and MigrantWithTests.sln, combining both the test project and Migrant library.
