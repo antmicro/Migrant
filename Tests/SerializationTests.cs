@@ -795,8 +795,23 @@ namespace AntMicro.Migrant.Tests
 			}
 			var copy = SerializerClone(stack);
 			CollectionAssert.AreEqual(stack, copy);
+		}
 
+		[Test]
+		public void ShouldSerializeBoxWithGuid()
+		{
+			var box = new GenericBox<Guid>();
+			box.Element = Guid.NewGuid();
+			var copy = SerializerClone(box);
+			Assert.AreEqual(box.Element, copy.Element);
+		}
 
+		[Test]
+		public void ShouldSerializeClassWithGuid()
+		{
+			var withGuid = new ClassWithGuid();
+			var copy = SerializerClone(withGuid);
+			Assert.AreEqual(withGuid, copy);
 		}
 
 		private T SerializerClone<T>(T toClone)
@@ -1145,6 +1160,46 @@ namespace AntMicro.Migrant.Tests
 			}
 
 			private int a;
+		}
+
+		public class ClassWithGuid
+		{
+			public ClassWithGuid()
+			{
+				Id = Guid.NewGuid();
+				Number = Id.ToByteArray()[1] * Id.ToByteArray()[0];
+				Str = Helpers.GetRandomString(Number/256);
+			}
+
+			public override bool Equals(object obj)
+			{
+				if(obj == null)
+					return false;
+				if(ReferenceEquals(this, obj))
+					return true;
+				if(obj.GetType() != typeof(ClassWithGuid))
+					return false;
+				ClassWithGuid other = (ClassWithGuid)obj;
+				return Id == other.Id && Number == other.Number && Str == other.Str;
+			}			
+
+			public override int GetHashCode()
+			{
+				unchecked
+				{
+					return Id.GetHashCode() ^ Number.GetHashCode() ^ (Str != null ? Str.GetHashCode() : 0);
+				}
+			}
+
+			public override string ToString()
+			{
+				return string.Format("[ClassWithGuid: Id={0}, Number={1}, Str={2}]", Id, Number, Str);
+			}
+						
+
+			public Guid Id { get; private set; }
+			public int Number { get; private set; }
+			public string Str { get; private set; }
 		}
 	}
 
