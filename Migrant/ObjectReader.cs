@@ -302,6 +302,10 @@ namespace AntMicro.Migrant
 				var isNotNull = reader.ReadBool();
 				return isNotNull ? ReadField(nullableActualType) : null;
 			}
+			if(formalType == typeof(Guid))
+			{
+				return reader.ReadGuid();
+			}
 			if(formalType == typeof(Int64))
 			{
 				return reader.ReadInt64();

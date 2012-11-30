@@ -491,6 +491,11 @@ namespace AntMicro.Migrant
 				writer.Write((TimeSpan)value);
 				return;
 			}
+			if(formalType == typeof(Guid))
+			{
+				writer.Write((Guid)value);
+				return;
+			}
 			// so we guess it is struct
 			WriteObjectsFields(value, formalType);
 		}
