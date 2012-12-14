@@ -101,7 +101,7 @@ namespace AntMicro.Migrant.Generators
 		private void GenerateAddCallbackToInvokeList(Type actualType, Type attributeType)
 		{
 			var actionCtor = typeof(Action).GetConstructor(new [] { typeof(object), typeof(IntPtr) });
-			var stackPush = Helpers.GetMethodInfo<Stack<Action>>(x => x.Push(null));
+			var stackPush = Helpers.GetMethodInfo<List<Action>>(x => x.Add(null));
 
 			var methodsWithAttribute = Helpers.GetMethodsWithAttribute(attributeType, actualType).ToList();
 			var count = methodsWithAttribute.Count;

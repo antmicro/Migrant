@@ -76,7 +76,7 @@ namespace AntMicro.Migrant
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
 			reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
-			postDeserializationHooks = new Stack<Action>();
+			postDeserializationHooks = new List<Action>();
 			agreedModuleIds = new HashSet<int>();
 			for(var i = 0; i < upfrontKnownTypes.Count; i++)
 			{
@@ -170,7 +170,7 @@ namespace AntMicro.Migrant
 			var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostDeserializationAttribute), obj);
 			if(postHook != null)
 			{
-				postDeserializationHooks.Push(postHook);
+				postDeserializationHooks.Add(postHook);
 			}
 			if(postDeserializationCallback != null)
 			{
@@ -624,7 +624,7 @@ namespace AntMicro.Migrant
 		private readonly Stream stream;
 		private readonly bool ignoreModuleIdInequality;
 		private readonly Action<object> postDeserializationCallback;
-		private readonly Stack<Action> postDeserializationHooks;
+		private readonly List<Action> postDeserializationHooks;
 		private readonly IDictionary<Type, Delegate> objectsForSurrogates;
 		private const int InitialCapacity = 128;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
