@@ -29,11 +29,12 @@ using System;
 namespace AntMicro.Migrant.Hooks
 {
 	/// <summary>
-	/// Method decorated with this attribute will be invoked after deserialization
-	/// of given object.
+	/// Method decorated with this attribute will be invoked after whole
+	/// deserialization has been finished in the opposite order they were encountered
+	/// during deserialization.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Method)]
-	public class ImmediatePostSerializationAttribute : Attribute
+	public class LatePostDeserializationAttribute : Attribute
 	{
 
 	}

@@ -65,8 +65,8 @@ namespace AntMicro.Migrant.Generators
 			}
 
 			// postserialization callbacks
-			GenerateInvokeCallback(typeToGenerate, typeof(ImmediatePostSerializationAttribute));
-			GenerateAddCallbackToInvokeList(typeToGenerate, typeof(PostSerializationAttribute));
+			GenerateInvokeCallback(typeToGenerate, typeof(PostSerializationAttribute));
+			GenerateAddCallbackToInvokeList(typeToGenerate, typeof(LatePostSerializationAttribute));
 
 			generator.Emit(OpCodes.Ret);
 		}

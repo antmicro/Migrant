@@ -166,8 +166,8 @@ namespace AntMicro.Migrant
 			}
 			Helpers.SwapObjectWithSurrogate(ref obj, objectsForSurrogates);
 			deserializedObjects[objectId] = obj; // could be swapped
-			Helpers.InvokeAttribute(typeof(ImmediatePostDeserializationAttribute), obj);
-			var postHook = Helpers.GetDelegateWithAttribute(typeof(PostDeserializationAttribute), obj);
+			Helpers.InvokeAttribute(typeof(PostDeserializationAttribute), obj);
+			var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostDeserializationAttribute), obj);
 			if(postHook != null)
 			{
 				postDeserializationHooks.Push(postHook);
