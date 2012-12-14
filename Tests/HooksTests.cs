@@ -28,6 +28,7 @@ using AntMicro.Migrant.Hooks;
 using NUnit.Framework;
 using System.IO;
 using System;
+using System.Threading;
 
 namespace AntMicro.Migrant.Tests
 {
@@ -159,6 +160,24 @@ namespace AntMicro.Migrant.Tests
 		{
 			var late = new LatePostSerializationMockA();
 			SerializerClone(late);
+		}
+
+		[Test]
+		public void ShouldInvokeImmediateHooksInCorrectOrder()
+		{
+			var forOrderTest = new ForOrderTestA { B = new ForOrderTestB() };
+			var copy = SerializerClone(forOrderTest);
+			Assert.Less(forOrderTest.B.HookInvokedOn, forOrderTest.HookInvokedOn);
+			Assert.Less(copy.B.HookInvokedOn, copy.HookInvokedOn);
+		}
+
+		[Test]
+		public void ShouldInvokeLateHooksInCorrectOrder()
+		{
+			var forLateOrderTest = new ForLateOrderTestA { B = new ForLateOrderTestB() };
+			var copy = SerializerClone(forLateOrderTest);
+			Assert.Less(forLateOrderTest.B.HookInvokedOn, forLateOrderTest.HookInvokedOn);
+			Assert.Less(copy.B.HookInvokedOn, copy.HookInvokedOn);
 		}
 
 		private T SerializerClone<T>(T toClone)
@@ -387,6 +406,42 @@ namespace AntMicro.Migrant.Tests
 		private void PostDeserialization()
 		{
 			PostDeserialized = true;
+		}
+	}
+
+	public class ForOrderTestA : ForOrderTestB
+	{
+		public ForOrderTestB B { get; set; }
+	}
+
+	public class ForOrderTestB
+	{
+		public DateTime HookInvokedOn { get; private set; }
+		
+		[PostDeserialization]
+		[PostSerialization]
+		public void AfterDeOrSerialization()
+		{
+			HookInvokedOn = DateTime.Now;
+			Thread.Sleep(100);
+		}
+	}
+
+	public class ForLateOrderTestA : ForLateOrderTestB
+	{
+		public ForLateOrderTestB B { get; set; }
+	}
+
+	public class ForLateOrderTestB
+	{
+		public DateTime HookInvokedOn { get; private set; }
+		
+		[LatePostDeserialization]
+		[LatePostSerialization]
+		public void AfterDeOrSerialization()
+		{
+			HookInvokedOn = DateTime.Now;
+			Thread.Sleep(100);
 		}
 	}
 }
