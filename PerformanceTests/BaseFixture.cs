@@ -41,6 +41,8 @@ namespace AntMicro.Migrant.PerformanceTests
 			resultsDb = new ResultsDb(DbFileName);
 		}
 
+		public const string DbFileName = "testResults.dat";
+
 		protected void Run(Action whatToRun, string testNameSuffix = "", Action before = null, Action after = null)
 		{
 			results = new List<double>();
@@ -99,7 +101,6 @@ namespace AntMicro.Migrant.PerformanceTests
 		private const double MinimalRequiredStandardDeviation = 0.1;
 		private const double OutlierPercentage = 0.1;
 		private const int MaximalNumberOfRuns = 500;
-		private const string DbFileName = "testResults.dat";
 		private const int WarmUpRounds = 3;
 	}
 }

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestsSecondModule", "Tests\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTests", "PerformanceTests\PerformanceTests.csproj", "{9F40B7EA-5F38-402E-A918-2B05EBD52A82}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResultBrowser", "ResultBrowser\ResultBrowser.csproj", "{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,10 @@ Global
 		{9F40B7EA-5F38-402E-A918-2B05EBD52A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9F40B7EA-5F38-402E-A918-2B05EBD52A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9F40B7EA-5F38-402E-A918-2B05EBD52A82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = Migrant\Migrant.csproj
