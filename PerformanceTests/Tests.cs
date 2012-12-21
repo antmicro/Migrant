@@ -30,15 +30,16 @@ using System.IO;
 
 namespace AntMicro.Migrant.PerformanceTests
 {
-	[TestFixture(TestType.Serialization | TestType.Reflection)]
-	[TestFixture(TestType.Serialization | TestType.Generated)]
-	[TestFixture(TestType.Deserialization | TestType.Reflection)]
+	[TestFixture(TestType.Serialization, SerializerType.MigrantReflection)]
+	[TestFixture(TestType.Deserialization, SerializerType.MigrantReflection)]
+	[TestFixture(TestType.Serialization, SerializerType.MigrantGenerated)]
 	public class Tests : BaseFixture
 	{
-		public Tests(TestType testType)
+		public Tests(TestType testType, SerializerType serializerType)
 		{
 			this.testType = testType;
-		}		
+			this.serializerType = serializerType;
+		}
 
 		[Test]
 		public void SimpleStructSet()
@@ -56,8 +57,8 @@ namespace AntMicro.Migrant.PerformanceTests
 		{
 			var serializer = new Serializer(SettingsFromFields);
 			var stream = new MemoryStream();
-			var testSuffix = testType.ToString();
-			if((testType & TestType.Deserialization) == 0)
+			var testSuffix = string.Format("{0}, {1}", testType, serializerType);
+			if(testType == TestType.Serialization)
 			{
 				Run(() =>
 				{
@@ -78,26 +79,26 @@ namespace AntMicro.Migrant.PerformanceTests
 		{
 			get
 			{
-				var isGenerated = (testType & TestType.Generated) != 0;
-				var settings = new Customization.Settings
-					(
-						isGenerated ? Customization.Method.Generated : Customization.Method.Reflection,
-						isGenerated ? Customization.Method.Generated : Customization.Method.Reflection
-						);
+				var method = serializerType == SerializerType.MigrantGenerated ? Customization.Method.Generated : Customization.Method.Reflection;
+				var settings = new Customization.Settings(method, method);
 				return settings;
 			}
 		}
 		
 		private readonly TestType testType;
+		private readonly SerializerType serializerType;
 	}
-
-	[Flags]
+	
 	public enum TestType
 	{
-		Reflection = 1,
-		Generated = 2,
-		Serialization = 4,
-		Deserialization = 8
+		Serialization,
+		Deserialization
+	}
+
+	public enum SerializerType
+	{
+		MigrantGenerated,
+		MigrantReflection
 	}
 	
 	public struct SimpleStruct
