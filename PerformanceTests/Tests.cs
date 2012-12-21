@@ -42,7 +42,7 @@ namespace AntMicro.Migrant.PerformanceTests
 		}
 
 		[Test]
-		public void SimpleStructSet()
+		public void StructArray()
 		{
 			var structArray = new SimpleStruct[10000];
 			for(var i = 0; i < structArray.Length; i++)
