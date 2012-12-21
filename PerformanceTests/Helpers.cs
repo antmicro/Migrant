@@ -34,20 +34,16 @@ namespace AntMicro.Migrant.PerformanceTests
 	{
 		public static double StandardDeviation(this IEnumerable<double> values)
 		{
-			double ret = 0;
-			int count = values.Count();
-			if (count  > 1)
+			var result = 0.0;
+			var valuesAsArray = values.ToArray();
+			var count = valuesAsArray.Length;
+			if(count > 1)
 			{
-				//Compute the Average
-				double avg = values.Average();
-				
-				//Perform the Sum of (value-avg)^2
-				double sum = values.Sum(d => (d - avg) * (d - avg));
-				
-				//Put it all together
-				ret = Math.Sqrt(sum / count);
+				var average = valuesAsArray.Average();
+				var sum = valuesAsArray.Sum(x => (x - average) * (x - average));
+				result = Math.Sqrt(sum/count);
 			}
-			return ret;
+			return result;
 		}
 
 		public static String NormalizeDecimal(this double what)
