@@ -98,7 +98,7 @@ namespace AntMicro.Migrant.PerformanceTests
 		private const int MinimalNumberOfRuns = 15;
 		private const double MinimalRequiredStandardDeviation = 0.1;
 		private const double OutlierPercentage = 0.1;
-		private const int MaximalNumberOfRuns = 10000;
+		private const int MaximalNumberOfRuns = 500;
 		private const string DbFileName = "testResults.dat";
 		private const int WarmUpRounds = 3;
 	}
