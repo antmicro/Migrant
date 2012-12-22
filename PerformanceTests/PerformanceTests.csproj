@@ -34,6 +34,10 @@
       <HintPath>..\Lib\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System.Core" />
+    <Reference Include="protobuf-net">
+      <HintPath>..\Lib\protobuf-net.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Helpers.cs" />
