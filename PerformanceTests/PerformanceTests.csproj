@@ -46,6 +46,11 @@
     <Compile Include="Tests.cs" />
     <Compile Include="BaseFixture.cs" />
     <Compile Include="SetUp.cs" />
+    <Compile Include="ISerializer.cs" />
+    <Compile Include="MigrantSerializer.cs" />
+    <Compile Include="ProtobufSerializer.cs" />
+    <Compile Include="SerializerFactory.cs" />
+    <Compile Include="SerializerType.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

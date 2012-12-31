@@ -41,6 +41,7 @@ namespace AntMicro.Migrant.PerformanceTests
 		{
 			this.testType = testType;
 			this.serializerType = serializerType;
+			serializer = new SerializerFactory().Produce(serializerType);
 		}
 
 		[Test]
@@ -69,44 +70,22 @@ namespace AntMicro.Migrant.PerformanceTests
 
 		private void Test<T>(T whatToTest)
 		{
-			var migrant = new Serializer(SettingsFromFields);
 			var stream = new MemoryStream();
 			var testSuffix = string.Format("{0}, {1}", testType, serializerType);
 			if(testType == TestType.Serialization)
 			{
-				if(serializerType == SerializerType.ProtoBuf)
-				{
-					Run(() =>
-				    {
-						ProtoBuf.Serializer.Serialize(stream, whatToTest);
-					}, testSuffix, after: () => stream.Seek(0, SeekOrigin.Begin));
-				}
-				else
-				{
-					Run(() =>
-					{
-						migrant.Serialize(whatToTest, stream);
-					}, testSuffix, after: () => stream.Seek(0, SeekOrigin.Begin));
-				}
+				Run(() =>
+			    {
+					serializer.Serialize(whatToTest, stream);
+				}, testSuffix, after: () => stream.Seek(0, SeekOrigin.Begin));
 			}
 			else
 			{
-				if(serializerType == SerializerType.ProtoBuf)
-				{
-					ProtoBuf.Serializer.Serialize(stream, whatToTest);
-					Run(() =>
-					    {
-						ProtoBuf.Serializer.Deserialize<T>(stream);
-					}, testSuffix, before: () => stream.Seek(0, SeekOrigin.Begin));
-				}
-				else
-				{
-					migrant.Serialize(whatToTest, stream);
-					Run(() =>
-					    {
-						migrant.Deserialize<T>(stream);
-					}, testSuffix, before: () => stream.Seek(0, SeekOrigin.Begin));
-				}
+				serializer.Serialize(whatToTest, stream);
+				Run(() =>
+				    {
+					serializer.Deserialize<T>(stream);
+				}, testSuffix, before: () => stream.Seek(0, SeekOrigin.Begin));
 			}
 		}
 
@@ -122,19 +101,13 @@ namespace AntMicro.Migrant.PerformanceTests
 		
 		private readonly TestType testType;
 		private readonly SerializerType serializerType;
+		private readonly ISerializer serializer;
 	}
 	
 	public enum TestType
 	{
 		Serialization,
 		Deserialization
-	}
-
-	public enum SerializerType
-	{
-		MigrantGenerated,
-		MigrantReflection,
-		ProtoBuf
 	}
 
 	[ProtoBuf.ProtoContract]

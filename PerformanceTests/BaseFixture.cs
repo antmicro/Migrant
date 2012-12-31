@@ -45,9 +45,11 @@ namespace AntMicro.Migrant.PerformanceTests
 
 		protected void Run(Action whatToRun, string testNameSuffix = "", Action before = null, Action after = null)
 		{
-			results = new List<double>();
 			before = before ?? new Action(() => {});
 			after = after ?? new Action(() => {});
+
+
+			results = new List<double>();
 			for(var i = 0; i < WarmUpRounds; i++)
 			{
 				before();
