@@ -47,38 +47,49 @@ namespace AntMicro.Migrant.PerformanceTests
 		{
 			before = before ?? new Action(() => {});
 			after = after ?? new Action(() => {});
+			var success = false;
+			var tries = 1;
+			var fails = new List<string>();
 
-
-			results = new List<double>();
-			for(var i = 0; i < WarmUpRounds; i++)
+			while(!success)
 			{
-				before();
-				whatToRun();
-				after();
-			}
-
-			while(true)
-			{
-				before();
-				Measure(whatToRun);
-				after();
-
-				if(results.Count >= MinimalNumberOfRuns)
+				results = new List<double>();
+				for(var i = 0; i < WarmUpRounds; i++)
 				{
-					var currentAverage = results.Average();
-					var currentStdDev = results.StandardDeviation();
-					results.RemoveAll(x => Math.Abs(x - currentAverage) > 3*currentStdDev);
-					currentStdDev = results.StandardDeviation();
-					currentAverage = results.Average();
-					if(currentStdDev/currentAverage <= MinimalRequiredStandardDeviation)
+					before();
+					whatToRun();
+					after();
+				}
+
+				while(true)
+				{
+					before();
+					Measure(whatToRun);
+					after();
+
+					if(results.Count >= MinimalNumberOfRuns)
 					{
+						var currentAverage = results.Average();
+						var currentStdDev = results.StandardDeviation();
+						results.RemoveAll(x => Math.Abs(x - currentAverage) > 3*currentStdDev);
+						currentStdDev = results.StandardDeviation();
+						currentAverage = results.Average();
+						if(currentStdDev/currentAverage <= MinimalRequiredStandardDeviation)
+						{
+							success = true;
+							break;
+						}
+					}
+					if(results.Count > MaximalNumberOfRuns)
+					{
+						fails.Add(string.Format("Maximal number of runs {0} was exceeded, with standard deviation {1:0.00} > {2:0.00}. (Try {3}).", MaximalNumberOfRuns, 
+						                       results.StandardDeviation()/results.Average(), MinimalRequiredStandardDeviation, tries));
 						break;
 					}
 				}
-				if(results.Count > MaximalNumberOfRuns)
+				if(tries++ >= MaximalRetriesCount)
 				{
-					Assert.Fail(string.Format("Maximal number of runs {0} was exceeded, with standard deviation {1:0.00} > {2:0.00}.", MaximalNumberOfRuns, 
-					                          results.StandardDeviation()/results.Average(), MinimalRequiredStandardDeviation));
+					Assert.Fail(fails.Aggregate((x, y) => x + Environment.NewLine + y));
 				}
 			}
 			var average = results.Average();
@@ -102,6 +113,7 @@ namespace AntMicro.Migrant.PerformanceTests
 		private const int MinimalNumberOfRuns = 15;
 		private const double MinimalRequiredStandardDeviation = 0.1;
 		private const int MaximalNumberOfRuns = 1000;
+		private const int MaximalRetriesCount = 3;
 		private const int WarmUpRounds = 3;
 	}
 }
