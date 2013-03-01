@@ -35,6 +35,8 @@ using AntMicro.Migrant.Hooks;
 using AntMicro.Migrant.Utilities;
 using ImpromptuInterface;
 using System.Collections.ObjectModel;
+using System.Reflection.Emit;
+using Migrant.Generators;
 
 namespace AntMicro.Migrant
 {
@@ -66,14 +68,18 @@ namespace AntMicro.Migrant
 		/// object is given in the callback's only parameter.
 		/// </param>
 		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
-		                    Action<object> postDeserializationCallback = null)
+		                    Action<object> postDeserializationCallback = null, IDictionary<Type, Func<object>> readMethods = null, bool generateCode = false)
 		{
+			// TODO: update documentation
+
 			if(objectsForSurrogates == null)
 			{
 				objectsForSurrogates = new Dictionary<Type, Delegate>();
 			}
 			this.objectsForSurrogates = objectsForSurrogates;
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
+			this.readMethodsCache = readMethods;
+			this.useGeneratedDeserialization = generateCode;
 			reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
 			postDeserializationHooks = new List<Action>();
@@ -105,29 +111,37 @@ namespace AntMicro.Migrant
 		public T ReadObject<T>()
 		{
 			var type = ReadType();
-			ReadObjectInner(type, 0);
-			nextObjectToRead++;
-			var obj = deserializedObjects[0];
-			if(!(obj is T))
+			if (useGeneratedDeserialization)
 			{
-				throw new InvalidDataException(
-					string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
-				              typeof(T), obj.GetType()));
+				ReadObjectInner2(type, 0);
+				return (T) deserializedObjects[0];
 			}
-			while(objectsCreated >= nextObjectToRead)
+			else
 			{
-				if(!inlineRead.Contains(nextObjectToRead))
-				{
-					ReadObjectInner(ReadType(), nextObjectToRead);
-				}
+				ReadObjectInner(type, 0);
 				nextObjectToRead++;
+				var obj = deserializedObjects[0];
+				if(!(obj is T))
+				{
+					throw new InvalidDataException(
+						string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
+					              typeof(T), obj.GetType()));
+				}
+				while(objectsCreated >= nextObjectToRead)
+				{
+					if(!inlineRead.Contains(nextObjectToRead))
+					{
+						ReadObjectInner(ReadType(), nextObjectToRead);
+					}
+					nextObjectToRead++;
+				}
+				PrepareForTheRead();
+				foreach(var hook in postDeserializationHooks)
+				{
+					hook();
+				}
+				return (T)obj;
 			}
-			PrepareForTheRead();
-			foreach(var hook in postDeserializationHooks)
-			{
-				hook();
-			}
-			return (T)obj;
 		}
 
 		private void PrepareForTheRead()
@@ -141,6 +155,20 @@ namespace AntMicro.Migrant
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
 			inlineRead = new HashSet<int>();
 			reader = new PrimitiveReader(stream);
+		}
+
+		private void ReadObjectInner2(Type actualType, int objectId)
+		{
+			if (!readMethodsCache.ContainsKey(actualType))
+			{
+				var rmg = new ReadMethodGenerator(actualType);
+				var func = (Func<object>)rmg.Method.CreateDelegate(typeof(Func<object>), this);
+				readMethodsCache.Add(actualType, func);
+			}
+
+			// execution of read method of given type
+			var obj = readMethodsCache[actualType]();
+			deserializedObjects[objectId] = obj;
 		}
 
 		private void ReadObjectInner(Type actualType, int objectId)
@@ -588,7 +616,7 @@ namespace AntMicro.Migrant
 			objectsCreated = Math.Max(objectsCreated, value);
 		}
 
-		private static CreationWay GetCreationWay(Type actualType)
+		public static CreationWay GetCreationWay(Type actualType)
 		{
 			if(Helpers.CanBeCreatedWithDataOnly(actualType))
 			{
@@ -607,17 +635,19 @@ namespace AntMicro.Migrant
 			return CreationWay.Uninitialized;
 		}
 
-		private static IEnumerable<FieldInfo> GetFieldsToSerialize(Type actualType)
+		public static IEnumerable<FieldInfo> GetFieldsToSerialize(Type actualType)
 		{
 			var fields = actualType.GetAllFields().Where(x => !x.Attributes.HasFlag(FieldAttributes.Literal))
                 .OrderBy(x => x.Name);
 			return fields;
 		}
 
+		private bool useGeneratedDeserialization;
 		private int nextObjectToRead;
 		private int objectsCreated;
-		private AutoResizingList<object> deserializedObjects;
-		private PrimitiveReader reader;
+		internal AutoResizingList<object> deserializedObjects;
+		private IDictionary<Type, Func<object>> readMethodsCache;
+		internal PrimitiveReader reader;
 		private HashSet<int> inlineRead;
 		private readonly List<Type> typeList;
 		private readonly HashSet<int> agreedModuleIds;
@@ -630,7 +660,7 @@ namespace AntMicro.Migrant
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
 		private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
 
-		private enum CreationWay
+		public enum CreationWay
 		{
 			Uninitialized,
 			DefaultCtor,

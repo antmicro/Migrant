@@ -4,6 +4,7 @@
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -63,6 +64,7 @@ namespace AntMicro.Migrant
 			upfrontKnownTypes = new ListWithHash<Type>();
 			objectsForSurrogates = new Dictionary<Type, Delegate>();
 			surrogatesForObjects = new Dictionary<Type, Delegate>();
+			readMethodCache = new Dictionary<Type, Func<object>>();
 		}
 
 		/// <summary>
@@ -157,10 +159,7 @@ namespace AntMicro.Migrant
 		/// </typeparam>
 		public T Deserialize<T>(Stream stream)
 		{
-			if(settings.DeserializationMethod == Method.Generated)
-			{
-				throw new NotImplementedException("Generated deserialization is not yet implemented.");
-			}
+			// Read headers
 			List<Type> upfrontKnownTypes;
 			using(var reader = new PrimitiveReader(stream))
 			{
@@ -183,10 +182,21 @@ namespace AntMicro.Migrant
 					upfrontKnownTypes.Add(Type.GetType(reader.ReadString()));
 				}
 			}
-			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization);
-			var result = objectReader.ReadObject<T>();
-			deserializationDone = true;
-			return result;
+
+			if(settings.DeserializationMethod != Method.Generated)
+			{
+				var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization);
+				var result = objectReader.ReadObject<T>();
+				deserializationDone = true;
+				return result;
+			}
+			else
+			{
+				var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, true);
+				var result = objectReader.ReadObject<T>();
+				deserializationDone = true;
+				return result;
+			}
 		}
 
 		/// <summary>
@@ -298,6 +308,7 @@ namespace AntMicro.Migrant
 
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
+		private readonly Dictionary<Type, Func<object>> readMethodCache;
 		private readonly ListWithHash<Type> upfrontKnownTypes;
 		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;

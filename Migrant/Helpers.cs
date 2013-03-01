@@ -247,7 +247,41 @@ namespace AntMicro.Migrant
 			return t.GetFields(DefaultBindingFlags);
 		}
 
+		public static FieldInfo GetFieldInfo<T, TResult>(Expression<Func<T, TResult>> expression)
+		{
+			var mexpr = expression.Body as MemberExpression;
+			if (mexpr == null)
+			{
+				return null;
+			}
+
+			return mexpr.Member as FieldInfo;
+		}
+
+		public static MethodInfo GetPropertyGetterInfo<T, TResult>(Expression<Func<T, TResult>> expression)
+		{
+			var mexpr = expression.Body as MemberExpression;
+			if (mexpr == null)
+			{
+				return null;
+			}
+
+			var pinfo = mexpr.Member as PropertyInfo;
+			if (pinfo == null)
+			{
+				return null;
+			}
+
+			return pinfo.GetGetMethod();
+		}
+
 		public static MethodInfo GetMethodInfo(Expression<Action> expression)
+		{
+			var methodCall = (MethodCallExpression)expression.Body;
+			return methodCall.Method;
+		}
+
+		public static MethodInfo GetMethodInfo<T, TParam1>(Expression<Func<T, TParam1>> expression)
 		{
 			var methodCall = (MethodCallExpression)expression.Body;
 			return methodCall.Method;

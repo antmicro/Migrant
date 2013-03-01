@@ -36,6 +36,9 @@
     <Reference Include="ImpromptuInterface">
       <HintPath>..\Lib\ImpromptuInterface.dll</HintPath>
     </Reference>
+    <Reference Include="dyn">
+      <HintPath>..\Tests\bin\Debug\dyn.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -61,6 +64,7 @@
     <Compile Include="Hooks\LatePostSerializationAttribute.cs" />
     <Compile Include="Hooks\PostSerializationAttribute.cs" />
     <Compile Include="Hooks\PostDeserializationAttribute.cs" />
+    <Compile Include="Generators\ReadMethodGenerator.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
