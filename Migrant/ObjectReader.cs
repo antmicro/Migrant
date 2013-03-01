@@ -554,7 +554,7 @@ namespace AntMicro.Migrant
 			}
 		}
 
-		private Type ReadType()
+		internal Type ReadType()
 		{
 			var typeId = reader.ReadInt32();
 			if(typeId == Consts.NullObjectId)

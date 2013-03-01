@@ -16,20 +16,22 @@ namespace Tests
     {
 		private class Foo
 		{
-		    public int bar = 147;
+		    public char bar = (char)7;
 		    //public int x = 453;
 		    //public float y = 3.5f;
 		    //public string z;
+			public Foo ss;
 		}
 
 		[Test]
 		public void SimpleTest()
 		{
 		    var preser = new Foo();
-		    preser.bar = 133;
+		    //preser.bar = 133;
 		    //preser.x = 53654645;
 		    //preser.y = 3232.432432f;
 		    //preser.z = "Asddas";
+			preser.ss = new Foo();
 
 		    //var x = "Asdas yeah";
 		    var x = 1234232432;
@@ -39,7 +41,7 @@ namespace Tests
 			ser.Serialize(preser, mstream);
 		    mstream.Seek(0, SeekOrigin.Begin);
 
-			using (var file = File.OpenWrite("streamed2.hex"))
+			using (var file = File.OpenWrite("streamed4.hex"))
 			{
 				byte[] buffer = new byte[8 * 1024];
 				int len;
@@ -48,17 +50,20 @@ namespace Tests
 					file.Write(buffer, 0, len);
 				}    
 			}
-
-            // var foo = ser.Deserialize<Foo>(mstream);
+			/*
+            var foo = ser.Deserialize<Foo>(mstream);
 
 			//Assert.AreEqual(preser, foo);
 			//Assert.AreEqual(preser.bar, foo.bar);
     	    //Assert.AreEqual(preser.x, foo.x);
 			//Assert.AreEqual(preser.y, foo.y);
+			Assert.AreEqual(preser.ss, preser);
+			Assert.AreEqual(foo.ss, foo);
 			//Debug.Print(preser.str);
 			//Debug.Print(foo.str);
 
-            // Assert.AreEqual(preser.z, foo.z);
+            //Assert.AreEqual(preser.z, foo.z);
+            */
 		}
     }
 }
