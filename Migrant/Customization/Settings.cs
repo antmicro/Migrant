@@ -47,6 +47,11 @@ namespace AntMicro.Migrant.Customization
 		public bool IgnoreModuleIdInequality { get; private set; }
 
 		/// <summary>
+		/// Gets whether data should be serialized in compressed form.
+		/// </summary>
+		public bool UseCompression { get; private set; }
+
+		/// <summary>
 		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Customization.Settings"/> class.
 		/// </summary>
 		/// <param name='serializationMethod'>
@@ -60,11 +65,14 @@ namespace AntMicro.Migrant.Customization
 		/// exception is thrown (due to possible incompatibility and change of the metadata tokens' meaning). If this parameter
 		/// is set true, no exception is thrown and deserialization continues.
 		/// </param>
-		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Reflection, bool ignoreModuleIdInequality = false)
+		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Reflection, bool ignoreModuleIdInequality = false, bool useCompression = true)
 		{
+			// TODO: uzupełnić dokumentację
+
 			SerializationMethod = serializationMethod;
 			DeserializationMethod = deserializationMethod;
 			IgnoreModuleIdInequality = ignoreModuleIdInequality;
+			UseCompression = useCompression;
 		}
 	}
 }

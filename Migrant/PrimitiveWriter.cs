@@ -49,9 +49,12 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// The underlying stream which will be used to write data. Has to be writeable.
 		/// </param>
-		public PrimitiveWriter(Stream stream)
+		public PrimitiveWriter(Stream stream, bool useCompression = true)
 		{
+			// TODO: dodać dokumentację
+
 			this.stream = stream;
+			this.useCompression = useCompression;
 			buffer = new byte[BufferSize];
 		}
 
@@ -254,15 +257,31 @@ namespace AntMicro.Migrant
 
 		private void InnerWriteInteger(ulong value, int sizeInBytes)
 		{
-			CheckBuffer(sizeInBytes + 1);
-			while(value > 127)
+			if (useCompression)
 			{
-				buffer[currentBufferPosition] = (byte)(value | 128);
-				value >>= 7;
+				CheckBuffer(sizeInBytes + 1);
+				while(value > 127)
+				{
+					buffer[currentBufferPosition] = (byte)(value | 128);
+					value >>= 7;
+					currentBufferPosition++;
+				}
+				buffer[currentBufferPosition] = (byte)(value & 127);
 				currentBufferPosition++;
 			}
-			buffer[currentBufferPosition] = (byte)(value & 127);
-			currentBufferPosition++;
+			else
+			{
+				CheckBuffer(sizeof(ulong));
+				ulong current = 0;
+				for (int i = 0; i < sizeof(ulong); ++i)
+				{
+					current = value & 255;
+					buffer[currentBufferPosition + sizeof(ulong) - i - 1] = (byte)current;
+					value >>= 8;
+				}
+
+				currentBufferPosition += sizeof(ulong);
+			}
 		}
 
 		private void InnerChunkWrite(byte[] data)
@@ -310,6 +329,7 @@ namespace AntMicro.Migrant
 		private long currentPosition;
 		private readonly Stream stream;
 		private const int BufferSize = 4 * 1024;
+		private bool useCompression;
 	}
 }
 

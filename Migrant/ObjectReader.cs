@@ -68,7 +68,7 @@ namespace AntMicro.Migrant
 		/// object is given in the callback's only parameter.
 		/// </param>
 		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
-		                    Action<object> postDeserializationCallback = null, IDictionary<Type, Func<object>> readMethods = null, bool generateCode = false)
+		                    Action<object> postDeserializationCallback = null, IDictionary<Type, Func<object>> readMethods = null, bool generateCode = false, bool useCompression = true)
 		{
 			// TODO: update documentation
 
@@ -79,8 +79,8 @@ namespace AntMicro.Migrant
 			this.objectsForSurrogates = objectsForSurrogates;
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
 			this.readMethodsCache = readMethods;
+			this.useCompression = useCompression;
 			this.useGeneratedDeserialization = generateCode;
-			reader = new PrimitiveReader(stream);
 			typeList = new List<Type>();
 			postDeserializationHooks = new List<Action>();
 			agreedModuleIds = new HashSet<int>();
@@ -154,10 +154,10 @@ namespace AntMicro.Migrant
 			objectsCreated = 0;
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
 			inlineRead = new HashSet<int>();
-			reader = new PrimitiveReader(stream);
+			reader = new PrimitiveReader(stream, useCompression);
 		}
 
-		private void ReadObjectInner2(Type actualType, int objectId)
+		internal void ReadObjectInner2(Type actualType, int objectId)
 		{
 			if (!readMethodsCache.ContainsKey(actualType))
 			{
@@ -642,6 +642,7 @@ namespace AntMicro.Migrant
 			return fields;
 		}
 
+		private bool useCompression;
 		private bool useGeneratedDeserialization;
 		private int nextObjectToRead;
 		private int objectsCreated;

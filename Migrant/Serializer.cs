@@ -112,7 +112,7 @@ namespace AntMicro.Migrant
 			var typeList = upfrontKnownTypes.ToList(); // TODO: see TOOO in ListWithHash
 			WriteHeader(stream, typeList);
 			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, 
-			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated);
+			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated, settings.UseCompression);
 			writer.WriteObject(obj);
 			serializationDone = true;
 		}
@@ -161,7 +161,7 @@ namespace AntMicro.Migrant
 		{
 			// Read headers
 			List<Type> upfrontKnownTypes;
-			using(var reader = new PrimitiveReader(stream))
+			using(var reader = new PrimitiveReader(stream, settings.UseCompression))
 			{
 				var magic = reader.ReadUInt32();
 				if(magic != Magic)
@@ -185,14 +185,14 @@ namespace AntMicro.Migrant
 
 			if(settings.DeserializationMethod != Method.Generated)
 			{
-				var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization);
+				var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, false, settings.UseCompression);
 				var result = objectReader.ReadObject<T>();
 				deserializationDone = true;
 				return result;
 			}
 			else
 			{
-				var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, true);
+				var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, true, settings.UseCompression);
 				var result = objectReader.ReadObject<T>();
 				deserializationDone = true;
 				return result;
@@ -248,7 +248,7 @@ namespace AntMicro.Migrant
 
 		private void WriteHeader(Stream stream, IList<Type> typeList)
 		{
-			using(var writer = new PrimitiveWriter(stream))
+			using(var writer = new PrimitiveWriter(stream, settings.UseCompression))
 			{
 				writer.Write(Magic);
 				writer.Write(VersionNumber);
