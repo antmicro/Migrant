@@ -542,7 +542,7 @@ namespace AntMicro.Migrant
 			deserializedObjects[objectId] = Activator.CreateInstance(type, array);
 		}
 
-		public void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
+		private void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
 		{
 			var length = array.GetLength(currentDimension);
 			for(var i = 0; i < length; i++)

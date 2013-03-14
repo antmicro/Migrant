@@ -531,18 +531,31 @@ namespace Migrant.Generators
 			var lengthsLocal = generator.DeclareLocal(typeof(Int32[]));
 			var arrayLocal = generator.DeclareLocal(typeof(Array));
 			var positionLocal = generator.DeclareLocal(typeof(Int32[]));
-			
+			var loopControlLocal = generator.DeclareLocal(typeof(bool));
+			var loopBeginLabel = generator.DefineLabel();
+			var loopEndLabel = generator.DefineLabel();
+			var lengthIsZeroLabel = generator.DefineLabel();
+
+			var isNotEmptyArrayLocal = generator.DeclareLocal(typeof(bool));
+						
 			GenerateReadPrimitive(typeof(Int32));
 			generator.Emit(OpCodes.Stloc, rankLocal); // read amount of dimensions of the array
 			
 			generator.Emit(OpCodes.Ldloc, rankLocal);
 			generator.Emit(OpCodes.Newarr, typeof(Int32));
 			generator.Emit(OpCodes.Stloc, lengthsLocal); // create an array for keeping the lengths of each dimension
-			
+
 			GenerateLoop(rankLocal, i => {
 				generator.Emit(OpCodes.Ldloc, lengthsLocal);
 				generator.Emit(OpCodes.Ldloc, i);
 				GenerateReadPrimitive(typeof(Int32));
+				generator.Emit(OpCodes.Dup);
+				generator.Emit(OpCodes.Brfalse, lengthIsZeroLabel);
+
+				generator.Emit(OpCodes.Ldc_I4_1);
+				generator.Emit(OpCodes.Stloc, isNotEmptyArrayLocal);
+
+				generator.MarkLabel(lengthIsZeroLabel);
 				generator.Emit(OpCodes.Stelem, typeof(Int32)); // populate the lengths with values read from stream
 			});
 			
@@ -558,19 +571,47 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Ldloc, rankLocal);
 			generator.Emit(OpCodes.Newarr, typeof(Int32));
 			generator.Emit(OpCodes.Stloc, positionLocal); // create an array for keeping the current position of each dimension
-			
-			generator.Emit(OpCodes.Ldarg_0);
+
+			generator.Emit(OpCodes.Ldloc, isNotEmptyArrayLocal);
+			generator.Emit(OpCodes.Stloc, loopControlLocal); // initialize loop control variable
+
+			generator.MarkLabel(loopBeginLabel);
+			generator.Emit(OpCodes.Ldloc, loopControlLocal);
+			generator.Emit(OpCodes.Brfalse, loopEndLabel);
+
 			generator.Emit(OpCodes.Ldloc, arrayLocal);
-			generator.Emit(OpCodes.Ldc_I4_0);
+			GenerateReadField(elementFormalType, true);
 			generator.Emit(OpCodes.Ldloc, positionLocal);
-			PushTypeOntoStack(elementFormalType);
-			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader>(x => x.FillArrayRowRecursive(null, 0, null, null))); // TODO: tu trzeba przepisać!!!
+			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(a => a.SetValue(null, new int[0])));
+
+			generator.Emit(OpCodes.Ldloc, positionLocal);
+			generator.Emit(OpCodes.Ldloc, lengthsLocal);
+			generator.Emit(OpCodes.Ldloc, rankLocal);
+			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, bool>(a => ReadMethodGenerator.ReadArrayPositionIncrementer(null, null, 0)));
+			generator.Emit(OpCodes.Stloc, loopControlLocal);
+
+			generator.Emit(OpCodes.Br, loopBeginLabel);
+			generator.MarkLabel(loopEndLabel);
 		}
 
-		//private static void ReadArrayHelper()
-		//{
-
-		//}
+		private static bool ReadArrayPositionIncrementer(int[] counter, int[] sizes, int ranks)
+		{
+			var currentRank = ranks - 1;
+			
+			while (currentRank >= 0)
+			{
+				counter[currentRank]++;
+				if (counter[currentRank] < sizes[currentRank])
+				{
+					return true;
+				}
+				
+				counter[currentRank] = 0;
+				currentRank--;
+			}
+			
+			return false;
+		}
 
 		#endregion
 
