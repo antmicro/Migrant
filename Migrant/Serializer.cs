@@ -64,7 +64,7 @@ namespace AntMicro.Migrant
 			upfrontKnownTypes = new ListWithHash<Type>();
 			objectsForSurrogates = new Dictionary<Type, Delegate>();
 			surrogatesForObjects = new Dictionary<Type, Delegate>();
-			readMethodCache = new Dictionary<Type, Func<object>>();
+			readMethodCache = new Dictionary<Type, Func<Int32, object>>();
 		}
 
 		/// <summary>
@@ -308,7 +308,7 @@ namespace AntMicro.Migrant
 
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
-		private readonly Dictionary<Type, Func<object>> readMethodCache;
+		private readonly Dictionary<Type, Func<Int32, object>> readMethodCache;
 		private readonly ListWithHash<Type> upfrontKnownTypes;
 		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;

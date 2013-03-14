@@ -144,9 +144,11 @@ namespace AntMicro.Migrant.Utilities
             }
         }
 
+
 		// Method needed for accessing MethodInfo of setter of an element
 		public void SetItem(int index, T value)
 		{
+			ResizeTo(index + 1);
 			data[index] = value;
 		}
 

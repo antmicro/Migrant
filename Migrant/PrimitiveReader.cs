@@ -188,6 +188,14 @@ namespace AntMicro.Migrant
 		}
 
 		/// <summary>
+		/// Reads and returns <see cref="System.Boolean" />.
+		/// </summary>
+		public bool ReadBoolean()
+		{
+			return ReadBool();
+		}
+
+		/// <summary>
 		/// Reads and returns <see cref="System.Guid" />.
 		/// </summary>
 		public Guid ReadGuid()

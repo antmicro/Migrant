@@ -68,7 +68,7 @@ namespace AntMicro.Migrant
 		/// object is given in the callback's only parameter.
 		/// </param>
 		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
-		                    Action<object> postDeserializationCallback = null, IDictionary<Type, Func<object>> readMethods = null, bool generateCode = false, bool useCompression = true)
+		                    Action<object> postDeserializationCallback = null, IDictionary<Type, Func<Int32, object>> readMethods = null, bool generateCode = false, bool useCompression = true)
 		{
 			// TODO: update documentation
 
@@ -114,7 +114,17 @@ namespace AntMicro.Migrant
 			if (useGeneratedDeserialization)
 			{
 				ReadObjectInner2(type, 0);
-				return (T) deserializedObjects[0];
+				var obj = deserializedObjects[0];
+				if(!(obj is T))
+				{
+					throw new InvalidDataException(
+						string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
+					              typeof(T), obj.GetType()));
+				}
+
+				PrepareForTheRead();
+				readMethodsCache.Clear(); // TODO: zastanowić się dlaczego to ustrojstwo nie działa!!!
+				return (T) obj;
 			}
 			else
 			{
@@ -162,12 +172,12 @@ namespace AntMicro.Migrant
 			if (!readMethodsCache.ContainsKey(actualType))
 			{
 				var rmg = new ReadMethodGenerator(actualType);
-				var func = (Func<object>)rmg.Method.CreateDelegate(typeof(Func<object>), this);
+				var func = (Func<Int32, object>)rmg.Method.CreateDelegate(typeof(Func<Int32, object>), this);
 				readMethodsCache.Add(actualType, func);
 			}
 
 			// execution of read method of given type
-			var obj = readMethodsCache[actualType]();
+			var obj = readMethodsCache[actualType](objectId);
 			deserializedObjects[objectId] = obj;
 		}
 
@@ -532,7 +542,7 @@ namespace AntMicro.Migrant
 			deserializedObjects[objectId] = Activator.CreateInstance(type, array);
 		}
 
-		private void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
+		public void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
 		{
 			var length = array.GetLength(currentDimension);
 			for(var i = 0; i < length; i++)
@@ -647,7 +657,7 @@ namespace AntMicro.Migrant
 		private int nextObjectToRead;
 		private int objectsCreated;
 		internal AutoResizingList<object> deserializedObjects;
-		private IDictionary<Type, Func<object>> readMethodsCache;
+		private IDictionary<Type, Func<Int32, object>> readMethodsCache;
 		internal PrimitiveReader reader;
 		private HashSet<int> inlineRead;
 		private readonly List<Type> typeList;

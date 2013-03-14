@@ -340,7 +340,6 @@ namespace AntMicro.Migrant
 
 		public static void DEBUG_BREAKPOINT_FUNC(string text)
 		{
-			//text = "as";
 			return;
 		}
 
