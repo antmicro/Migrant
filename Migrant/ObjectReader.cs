@@ -124,6 +124,10 @@ namespace AntMicro.Migrant
 
 				PrepareForTheRead();
 				readMethodsCache.Clear(); // TODO: zastanowić się dlaczego to ustrojstwo nie działa!!!
+				foreach(var hook in postDeserializationHooks)
+				{
+					hook();
+				}
 				return (T) obj;
 			}
 			else
@@ -664,9 +668,9 @@ namespace AntMicro.Migrant
 		private readonly HashSet<int> agreedModuleIds;
 		private readonly Stream stream;
 		private readonly bool ignoreModuleIdInequality;
-		private readonly Action<object> postDeserializationCallback;
-		private readonly List<Action> postDeserializationHooks;
-		private readonly IDictionary<Type, Delegate> objectsForSurrogates;
+		internal readonly Action<object> postDeserializationCallback;
+		internal readonly List<Action> postDeserializationHooks;
+		internal readonly IDictionary<Type, Delegate> objectsForSurrogates;
 		private const int InitialCapacity = 128;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
 		private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";

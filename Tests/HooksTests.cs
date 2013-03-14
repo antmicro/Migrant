@@ -34,6 +34,8 @@ namespace AntMicro.Migrant.Tests
 {
 	[TestFixture(false, false)]
 	[TestFixture(true, false)]
+	[TestFixture(false, true)]
+	[TestFixture(true, true)]
 	public class HooksTests
 	{
 		public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)

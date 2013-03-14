@@ -34,6 +34,8 @@ namespace AntMicro.Migrant.Tests
 {
 	[TestFixture(false, false)]
 	[TestFixture(true, false)]
+	[TestFixture(false, true)]
+	[TestFixture(true, true)]
 	public class SurrogateTests
 	{
 		public SurrogateTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
