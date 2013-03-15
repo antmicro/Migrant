@@ -49,10 +49,11 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// The underlying stream which will be used to write data. Has to be writeable.
 		/// </param>
+		/// <param name='useCompression'> 
+		/// True if the data in a stream should be stored in compressed (using varint approach) form, false otherwise.
+		/// </param>
 		public PrimitiveWriter(Stream stream, bool useCompression = true)
 		{
-			// TODO: dodać dokumentację
-
 			this.stream = stream;
 			this.useCompression = useCompression;
 			buffer = new byte[BufferSize];

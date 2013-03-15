@@ -65,10 +65,11 @@ namespace AntMicro.Migrant.Customization
 		/// exception is thrown (due to possible incompatibility and change of the metadata tokens' meaning). If this parameter
 		/// is set true, no exception is thrown and deserialization continues.
 		/// </param>
+		/// <param name='useCompression'>
+		/// Flag indicating if the data in a stream should be stored in compressed (using varint approach) form.
+		/// </param>
 		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Reflection, bool ignoreModuleIdInequality = false, bool useCompression = true)
 		{
-			// TODO: uzupełnić dokumentację
-
 			SerializationMethod = serializationMethod;
 			DeserializationMethod = deserializationMethod;
 			IgnoreModuleIdInequality = ignoreModuleIdInequality;

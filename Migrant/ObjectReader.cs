@@ -62,31 +62,40 @@ namespace AntMicro.Migrant
 		/// <param name='objectsForSurrogates'>
 		/// Dictionary, containing callbacks that provide objects for given type of surrogate. Callbacks have to be of type Func&lt;T, object&gt; where
 		/// typeof(T) is type of surrogate.
-		/// </param>	
+		/// </param>
 		/// <param name='postDeserializationCallback'>
 		/// Callback which will be called after deserialization of every unique object. Deserialized
 		/// object is given in the callback's only parameter.
 		/// </param>
+		/// <param name='readMethods'>
+		/// Cache in which generated read methods are stored and reused between instances of <see cref="AntMicro.Migrant.ObjectReader" />.
+		/// Can be null if one does not want to use the cache.
+		/// </param>
+		/// <param name='isGenerating'>
+		/// True if read methods are to be generated, false if one wants to use reflection.
+		/// </param>
+		/// <param name='useCompression'>
+		/// True if the data in a stream is stored in compressed (using varint approach) form, false otherwise.
+		/// </param>
 		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
-		                    Action<object> postDeserializationCallback = null, IDictionary<Type, Func<Int32, object>> readMethods = null, bool generateCode = false, bool useCompression = true)
+		                    Action<object> postDeserializationCallback = null, IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, bool useCompression = true)
 		{
-			// TODO: update documentation
-
 			if(objectsForSurrogates == null)
 			{
 				objectsForSurrogates = new Dictionary<Type, Delegate>();
 			}
 			this.objectsForSurrogates = objectsForSurrogates;
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
-			this.readMethodsCache = readMethods;
+			this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
 			this.useCompression = useCompression;
-			this.useGeneratedDeserialization = generateCode;
+			this.useGeneratedDeserialization = isGenerating;
 			typeList = new List<Type>();
 			postDeserializationHooks = new List<Action>();
 			agreedModuleIds = new HashSet<int>();
 			for(var i = 0; i < upfrontKnownTypes.Count; i++)
 			{
 				typeList.Add(upfrontKnownTypes[i]);
+				EnsureReadMethod(upfrontKnownTypes[i]);
 			}
 			this.stream = stream;
 			this.postDeserializationCallback = postDeserializationCallback;
@@ -113,48 +122,35 @@ namespace AntMicro.Migrant
 			var type = ReadType();
 			if (useGeneratedDeserialization)
 			{
-				ReadObjectInner2(type, 0);
-				var obj = deserializedObjects[0];
-				if(!(obj is T))
-				{
-					throw new InvalidDataException(
-						string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
-					              typeof(T), obj.GetType()));
-				}
-
-				PrepareForTheRead();
-				readMethodsCache.Clear(); // TODO: zastanowić się dlaczego to ustrojstwo nie działa!!!
-				foreach(var hook in postDeserializationHooks)
-				{
-					hook();
-				}
-				return (T) obj;
+				ReadObjectInnerGenerated(type, 0);
 			}
 			else
 			{
 				ReadObjectInner(type, 0);
-				nextObjectToRead++;
-				var obj = deserializedObjects[0];
-				if(!(obj is T))
-				{
-					throw new InvalidDataException(
-						string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
-					              typeof(T), obj.GetType()));
-				}
-				while(objectsCreated >= nextObjectToRead)
-				{
-					if(!inlineRead.Contains(nextObjectToRead))
-					{
-						ReadObjectInner(ReadType(), nextObjectToRead);
-					}
-					nextObjectToRead++;
-				}
-				PrepareForTheRead();
-				foreach(var hook in postDeserializationHooks)
-				{
-					hook();
-				}
-				return (T)obj;
+			}
+
+			var obj = deserializedObjects[0];
+			if(!(obj is T))
+			{
+				throw new InvalidDataException(
+					string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
+				              typeof(T), obj.GetType()));
+			}
+			
+			PrepareForTheRead();
+			foreach(var hook in postDeserializationHooks)
+			{
+				hook();
+			}
+			return (T)obj;
+		}
+
+		private void EnsureReadMethod(Type type)
+		{
+			if (!readMethodsCache.ContainsKey(type))
+			{
+				var rmg = new ReadMethodGenerator(type);
+				readMethodsCache.Add(type, rmg.Method);
 			}
 		}
 
@@ -171,17 +167,18 @@ namespace AntMicro.Migrant
 			reader = new PrimitiveReader(stream, useCompression);
 		}
 
-		internal void ReadObjectInner2(Type actualType, int objectId)
+		internal static bool HasSpecialReadMethod(Type type)
 		{
-			if (!readMethodsCache.ContainsKey(actualType))
-			{
-				var rmg = new ReadMethodGenerator(actualType);
-				var func = (Func<Int32, object>)rmg.Method.CreateDelegate(typeof(Func<Int32, object>), this);
-				readMethodsCache.Add(actualType, func);
-			}
+			return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
+		}
+
+		internal void ReadObjectInnerGenerated(Type actualType, int objectId)
+		{
+			EnsureReadMethod(actualType);
 
 			// execution of read method of given type
-			var obj = readMethodsCache[actualType](objectId);
+			var func = (Func<Int32, object>)readMethodsCache[actualType].CreateDelegate(typeof(Func<Int32, object>), this);
+			var obj = func(objectId);
 			deserializedObjects[objectId] = obj;
 		}
 
@@ -301,11 +298,12 @@ namespace AntMicro.Migrant
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}
-			if(typeof(IList).IsAssignableFrom(type))
+			// TODO: IList is handled by FillCollection method so special case is not needed
+			/*if(typeof(IList).IsAssignableFrom(type))
 			{
 				FillList(elementFormalType, (IList)obj);
 				return;
-			}
+			}*/
 			// so we can assume it is ICollection<T> or ICollection
 			FillCollection(elementFormalType, obj);
 		}
@@ -406,7 +404,7 @@ namespace AntMicro.Migrant
 			// if this is subtype
 			return returnedObject;
 		}
-
+		/*
 		private void FillList(Type elementFormalType, IList list)
 		{
 			var count = reader.ReadInt32();
@@ -416,7 +414,7 @@ namespace AntMicro.Migrant
 				list.Add(element);
 			}
 		}
-
+		*/
 		private void FillCollection(Type elementFormalType, object obj)
 		{
 			var collectionType = obj.GetType();
@@ -630,7 +628,7 @@ namespace AntMicro.Migrant
 			objectsCreated = Math.Max(objectsCreated, value);
 		}
 
-		public static CreationWay GetCreationWay(Type actualType)
+		internal static CreationWay GetCreationWay(Type actualType)
 		{
 			if(Helpers.CanBeCreatedWithDataOnly(actualType))
 			{
@@ -649,7 +647,7 @@ namespace AntMicro.Migrant
 			return CreationWay.Uninitialized;
 		}
 
-		public static IEnumerable<FieldInfo> GetFieldsToSerialize(Type actualType)
+		internal static IEnumerable<FieldInfo> GetFieldsToSerialize(Type actualType)
 		{
 			var fields = actualType.GetAllFields().Where(x => !x.Attributes.HasFlag(FieldAttributes.Literal))
                 .OrderBy(x => x.Name);
@@ -661,7 +659,7 @@ namespace AntMicro.Migrant
 		private int nextObjectToRead;
 		private int objectsCreated;
 		internal AutoResizingList<object> deserializedObjects;
-		private IDictionary<Type, Func<Int32, object>> readMethodsCache;
+		private IDictionary<Type, DynamicMethod> readMethodsCache;
 		internal PrimitiveReader reader;
 		private HashSet<int> inlineRead;
 		private readonly List<Type> typeList;
@@ -675,7 +673,7 @@ namespace AntMicro.Migrant
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
 		private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
 
-		public enum CreationWay
+		internal enum CreationWay
 		{
 			Uninitialized,
 			DefaultCtor,

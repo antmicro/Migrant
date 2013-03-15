@@ -70,12 +70,13 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if write methods are to be generated, false if one wants to use reflection.
 		/// </param>
+		/// <param name='useCompression'>
+		/// True if the data in a stream should be stored in compressed (using varint approach) form, false otherwise.
+		/// </param> 
 		public ObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
 		                    IDictionary<Type, Delegate> surrogatesForObjects = null, bool isGenerating = true, bool useCompression = true)
 		{
-			// TODO: uzupełnić dokumentację
-
 			if(surrogatesForObjects == null)
 			{
 				surrogatesForObjects = new Dictionary<Type, Delegate>();

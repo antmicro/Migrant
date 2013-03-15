@@ -33,6 +33,7 @@ namespace AntMicro.Migrant.PerformanceTests
 	[TestFixture(TestType.Serialization, SerializerType.MigrantReflection)]
 	[TestFixture(TestType.Deserialization, SerializerType.MigrantReflection)]
 	[TestFixture(TestType.Serialization, SerializerType.MigrantGenerated)]
+	[TestFixture(TestType.Deserialization, SerializerType.MigrantGenerated)]
 	[TestFixture(TestType.Serialization, SerializerType.ProtoBuf)]
 	[TestFixture(TestType.Deserialization, SerializerType.ProtoBuf)]
 	public class Tests : BaseFixture

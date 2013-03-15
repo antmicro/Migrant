@@ -21,7 +21,7 @@
   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
   LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.KKKK
 */
 
 using System;
@@ -40,7 +40,7 @@ using System.Linq.Expressions;
 
 namespace Migrant.Generators
 {
-    public class ReadMethodGenerator
+    internal class ReadMethodGenerator
     {
 		public ReadMethodGenerator(Type typeToGenerate)
 		{
@@ -48,33 +48,12 @@ namespace Migrant.Generators
 		    generator = dynamicMethod.GetILGenerator();
 
 			GenerateDynamicCode(typeToGenerate);
-			SaveToFile(typeToGenerate);
-		}
-
-		public void GenerateInitializationCode()
-		{
-		    //REFERENCES_LOCAL_ID = generator.DeclareLocal(typeof(int)).LocalIndex;
-			//DESERIALIZED_OBJECTS_LOCAL_ID = generator.DeclareLocal(typeof(AutoResizingList<object>)).LocalIndex;
-			//NEXT_OBJECT_TO_READ_LOACL_ID = generator.DeclareLocal(typeof(int)).LocalIndex;
-			//INLINE_READ_LOCAL_ID = generator.DeclareLocal(typeof(HashSet<int>)).LocalIndex;
-
-			//generator.Emit(OpCodes.Ldc_I4, 4);
-			//generator.Emit(OpCodes.Newobj, typeof(AutoResizingList<object>).GetConstructor(new[] {typeof(int)}) );
-			//generator.Emit(OpCodes.Stloc, DESERIALIZED_OBJECTS_LOCAL_ID);
-
-			//generator.Emit(OpCodes.Newobj, typeof(HashSet<int>).GetConstructor(Type.EmptyTypes));
-			//generator.Emit(OpCodes.Stloc, INLINE_READ_LOCAL_ID);
-
-			//generator.Emit(OpCodes.Ldc_I4_0);
-			//generator.Emit(OpCodes.Stloc, REFERENCES_LOCAL_ID);
-
-			//generator.Emit(OpCodes.Ldc_I4_0);
-			//generator.Emit(OpCodes.Stloc, NEXT_OBJECT_TO_READ_LOACL_ID);
+			/*SaveToFile(typeToGenerate);*/
 		}
 
         public void GenerateDynamicCode(Type typeToGenerate)
 		{
-			GenerateReadObjectInner(typeToGenerate, false); // TODO: moim skromnym zdaniem to cuś powoduje sporo problemów! (chodzi o parametr false)
+			GenerateReadObjectInner(typeToGenerate);
 			
 			PushDeserializedObjectsCollectionOntoStack();
 			generator.Emit(OpCodes.Ldarg_1);
@@ -96,14 +75,8 @@ namespace Migrant.Generators
             generator.Emit(OpCodes.Call, readMethod);
         }
 
-		private void GenerateReadNotPrecreated(Type formalType)
+		private void GenerateReadNotPrecreated(Type formalType, LocalBuilder objectIdLocal)
 		{
-			// method reads int from stack
-			// objId - identifier of an object reference
-
-			var objectIdLocal = generator.DeclareLocal(typeof(Int32));
-			generator.Emit(OpCodes.Stloc, objectIdLocal);
-
 			if (formalType.IsValueType)
 			{
 				PushDeserializedObjectsCollectionOntoStack();
@@ -142,8 +115,8 @@ namespace Migrant.Generators
 			var targetLocal = generator.DeclareLocal(typeof(object));
 			var containingTypeLocal = generator.DeclareLocal(typeof(Type));
 			var methodNumberLocal = generator.DeclareLocal(typeof(Int32));
-			var methodLocal = generator.DeclareLocal(typeof(MethodInfo));
-			var delLocal = generator.DeclareLocal(typeof(Delegate));
+			//var methodLocal = generator.DeclareLocal(typeof(MethodInfo));
+			//var delLocal = generator.DeclareLocal(typeof(Delegate));
 
 			GenerateReadPrimitive(typeof(Int32));
 			generator.Emit(OpCodes.Stloc, invocationListLengthLocal);
@@ -199,42 +172,26 @@ namespace Migrant.Generators
 			deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
 		}
 
-		private void GenerateReadObjectInner(Type formalType, bool generateReadType = true)
+		private void GenerateReadObjectInner(Type formalType)
 		{
-			// method reads one argument from stack iff generateReadType is set to true
-			// objId - identifier of object to create
-
-		    var finish = generator.DefineLabel();
+			var finish = generator.DefineLabel();
 		    var objectIdLocal = generator.DeclareLocal(typeof(Int32));
-			//var objectTypeLocal = generator.DeclareLocal(typeof(Type));
 
-			if (generateReadType)
-			{
-				generator.Emit(OpCodes.Stloc, objectIdLocal);
-				generator.Emit(OpCodes.Ldloc, objectIdLocal);
-			}
-			else
-			{
-				generator.Emit(OpCodes.Ldarg_1);
-				generator.Emit(OpCodes.Stloc, objectIdLocal);
-			}
+			generator.Emit(OpCodes.Ldarg_1);
+			generator.Emit(OpCodes.Stloc, objectIdLocal);
 
-			GenerateTouchObject(formalType, generateReadType);
-			generator.Emit(OpCodes.Brtrue, finish); // if object has already been created skip initialization
+			GenerateTouchObject(formalType);
 
 			switch (ObjectReader.GetCreationWay(formalType))
 		    {
                 case ObjectReader.CreationWay.Null:
-					generator.Emit(OpCodes.Ldloc, objectIdLocal);
-					GenerateReadNotPrecreated(formalType);
+					GenerateReadNotPrecreated(formalType, objectIdLocal);
                     break;
                 case ObjectReader.CreationWay.DefaultCtor:
-					generator.Emit(OpCodes.Ldloc, objectIdLocal);
-					GenerateUpdateElements(formalType);
+					GenerateUpdateElements(formalType, objectIdLocal);
                     break;
                 case ObjectReader.CreationWay.Uninitialized:
-					PushDeserializedObjectOntoStack(objectIdLocal);
-				    GenerateUpdateFields(formalType);
+				    GenerateUpdateFields(formalType, objectIdLocal);
                     break;
             }
 
@@ -313,14 +270,8 @@ namespace Migrant.Generators
 			return;
 		}
 
-		private void GenerateUpdateElements(Type formalType)
+		private void GenerateUpdateElements(Type formalType, LocalBuilder objectIdLocal)
 		{
-			// method reads one value from stack
-			// objId - identifier of an object to update
-
-			var objectIdLocal = generator.DeclareLocal(typeof(Int32));
-			generator.Emit(OpCodes.Stloc, objectIdLocal);
-
 			if (typeof(ISpeciallySerializable).IsAssignableFrom(formalType))
 			{
 				PushDeserializedObjectOntoStack(objectIdLocal);
@@ -333,8 +284,7 @@ namespace Migrant.Generators
 			bool isGenericDictionary;
 			if (Helpers.IsDictionary(formalType, out formalKeyType, out formalValueType, out isGenericDictionary))
 			{
-				PushDeserializedObjectOntoStack(objectIdLocal);
-				GenerateFillDictionary(formalKeyType, formalValueType, formalType);
+				GenerateFillDictionary(formalKeyType, formalValueType, formalType, objectIdLocal);
 				return;
 			}
 			Type elementFormalType;
@@ -343,16 +293,8 @@ namespace Migrant.Generators
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}
-			// TODO: jak dla mnie to ten special case nie jest potrzebny, gdyż funkcjonalność ta jest pokryta przez FillCollection
-			/*if (typeof(IList).IsAssignableFrom(formalValueType))
-			{
-				PushDeserializedObjectOntoStack(objectIdLocal);
-				GenerateFillList(elementFormalType, formalType);
-				return;
-			}*/
 
-			PushDeserializedObjectOntoStack(objectIdLocal);
-			GenerateFillCollection(elementFormalType, formalType);
+			GenerateFillCollection(elementFormalType, formalType, objectIdLocal);
 		}
 
 		private void GenerateLoop(LocalBuilder countLocal, Action<LocalBuilder> loopAction, bool reversed = false)
@@ -423,15 +365,9 @@ namespace Migrant.Generators
 			});
 		}
 
-		private void GenerateFillDictionary(Type formalKeyType, Type formalValueType, Type dictionaryType)
+		private void GenerateFillDictionary(Type formalKeyType, Type formalValueType, Type dictionaryType, LocalBuilder objectIdLocal)
 		{
-			// method read one value from stack
-			// objRef - reference to the dictionary object
-
-			var dicObjLocal = generator.DeclareLocal(dictionaryType);
 			var countLocal = generator.DeclareLocal(typeof(Int32));
-
-			generator.Emit(OpCodes.Stloc, dicObjLocal);
 
 			GenerateReadPrimitive(typeof(Int32));
 			generator.Emit(OpCodes.Stloc, countLocal); // read dictionary elements count
@@ -448,8 +384,7 @@ namespace Migrant.Generators
 			}
 
 			GenerateLoop(countLocal, lc => {
-				// TODO: it might not work with structs, however they should be boxed - to check!
-				generator.Emit(OpCodes.Ldloc, dicObjLocal);
+				PushDeserializedObjectOntoStack(objectIdLocal);
 				GenerateReadField(formalKeyType, false);
 				GenerateReadField(formalValueType, false);
 				generator.Emit(OpCodes.Call, addMethod);
@@ -488,16 +423,10 @@ namespace Migrant.Generators
 			
 		}
 				
-		private void GenerateFillCollection(Type elementFormalType, Type collectionType)
+		private void GenerateFillCollection(Type elementFormalType, Type collectionType, LocalBuilder objectIdLocal)
 		{
-			// method read one value from stack
-			// objRef - reference to the collection object
-			
-			var collectionObjLocal = generator.DeclareLocal(collectionType);
 			var countLocal = generator.DeclareLocal(typeof(Int32));
-			
-			generator.Emit(OpCodes.Stloc, collectionObjLocal);
-			
+
 			GenerateReadPrimitive(typeof(Int32));
 			generator.Emit(OpCodes.Stloc, countLocal); // read collection elements count
 			
@@ -526,7 +455,9 @@ namespace Migrant.Generators
 				});
 				
 				GenerateLoop(countLocal, cl => {
-					generator.Emit(OpCodes.Ldloc, collectionObjLocal);
+					//generator.Emit(OpCodes.Ldloc, collectionObjLocal);
+					PushDeserializedObjectOntoStack(objectIdLocal);
+
 					generator.Emit(OpCodes.Ldloc, tempArrLocal);
 					generator.Emit(OpCodes.Ldloc, cl);
 					generator.Emit(OpCodes.Ldelem, elementFormalType);
@@ -536,7 +467,9 @@ namespace Migrant.Generators
 			else
 			{
 				GenerateLoop(countLocal, cl => {
-					generator.Emit(OpCodes.Ldloc, collectionObjLocal);
+					// generator.Emit(OpCodes.Ldloc, collectionObjLocal);
+					PushDeserializedObjectOntoStack(objectIdLocal);
+
 					GenerateReadField(elementFormalType, false);
 					generator.Emit(OpCodes.Call, addMethod);
 					if (addMethod.ReturnType != typeof(void))
@@ -637,22 +570,15 @@ namespace Migrant.Generators
 
 		#endregion
 
-		private LocalBuilder GenerateCheckObjectMeta()
+		private LocalBuilder GenerateCheckObjectMeta(LocalBuilder objectIdLocal)
 		{
-			// method read one value from stack
-			// objectId - identifier of an object
-
 			// method returns on stack:
 			// 0 - object type read sucessfully and stored in returned local
 			// 1 - object has already been deserialized
 
-			var objectIdLocal = generator.DeclareLocal(typeof(Int32));
 			var objNotYetDeserialized = generator.DefineLabel();
 			var finish = generator.DefineLabel();
-			var createObj = generator.DefineLabel();
 			var actualTypeLocal = generator.DeclareLocal(typeof(Type));
-
-			generator.Emit(OpCodes.Stloc, objectIdLocal);
 
 			PushDeserializedObjectsCollectionOntoStack();
 			generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<AutoResizingList<object>, int>(x => x.Count)); // check current length of DeserializedObjectsCollection
@@ -711,7 +637,6 @@ namespace Migrant.Generators
 			// method returns read field value on stack
 
 		    var finishLabel = generator.DefineLabel();
-		    var updateMaximumReferenceIdLabel = generator.DefineLabel();
 			var else1 = generator.DefineLabel();
 			var returnNullLabel = generator.DefineLabel();
 			var continueWithNullableLabel = generator.DefineLabel();
@@ -773,8 +698,6 @@ namespace Migrant.Generators
 				// here we have struct
 
 				var structLocal = generator.DeclareLocal(forcedFormalType);
-				generator.Emit(OpCodes.Ldloca, structLocal);
-				generator.Emit(OpCodes.Initobj, forcedFormalType);
 				GenerateUpdateStructFields(forcedFormalType, structLocal);
 
 				generator.Emit(OpCodes.Ldloc, structLocal);
@@ -795,8 +718,7 @@ namespace Migrant.Generators
 				generator.Emit(OpCodes.Ldloc, objectIdLocal);
 				generator.Emit(OpCodes.Beq, returnNullLabel);
 
-				generator.Emit(OpCodes.Ldloc, objectIdLocal);
-				objectActualTypeLocal = GenerateCheckObjectMeta();
+				objectActualTypeLocal = GenerateCheckObjectMeta(objectIdLocal);
 				generator.Emit(OpCodes.Stloc, metaResultLocal);
 
 				generator.Emit(OpCodes.Ldloc, metaResultLocal);
@@ -824,7 +746,7 @@ namespace Migrant.Generators
 					generator.Emit(OpCodes.Ldarg_0);
 					generator.Emit(OpCodes.Ldloc, objectActualTypeLocal);
 					generator.Emit(OpCodes.Ldloc, objectIdLocal);
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader>(r => r.ReadObjectInner2(typeof(void), 0)));
+					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader>(r => r.ReadObjectInnerGenerated(typeof(void), 0)));
 				}
 
 				generator.MarkLabel(else1); // if CheckObjectMeta returned 1
@@ -880,23 +802,13 @@ namespace Migrant.Generators
 			}
 		}
 
-		private void GenerateUpdateFields(Type formalType)
+		private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
 		{
-			// method reads one argument from stack
-			// obj - reference to an object to update
-
-			var objectLocal = generator.DeclareLocal(formalType);
-			generator.Emit(OpCodes.Stloc, objectLocal);
-
 		    var fields = ObjectReader.GetFieldsToSerialize(formalType).ToList();
 		    foreach (var field in fields)
 		    {
-				var tmpLocal = generator.DeclareLocal(field.FieldType);
+				PushDeserializedObjectOntoStack(objectIdLocal);
 				GenerateReadField(field.FieldType, false);
-				generator.Emit(OpCodes.Stloc, tmpLocal);
-				
-				generator.Emit(OpCodes.Ldloc, objectLocal);
-				generator.Emit(OpCodes.Ldloc, tmpLocal);
 				generator.Emit(OpCodes.Stfld, field);
 		    }
 		}
@@ -906,12 +818,8 @@ namespace Migrant.Generators
 			var fields = ObjectReader.GetFieldsToSerialize(formalType).ToList();
 			foreach (var field in fields)
 			{
-				var tmpLocal = generator.DeclareLocal(field.FieldType);
-				GenerateReadField(field.FieldType, false);
-				generator.Emit(OpCodes.Stloc, tmpLocal);
-
 				generator.Emit(OpCodes.Ldloca, structLocal);
-				generator.Emit(OpCodes.Ldloc, tmpLocal);
+				GenerateReadField(field.FieldType, false);
 				generator.Emit(OpCodes.Stfld, field);
 			}
 		}
@@ -951,53 +859,16 @@ namespace Migrant.Generators
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o))); // loads value of <<typeToGenerate>> onto stack
         }
 
-		private void GenerateTouchObject(Type formalType, bool generateReadType = true)
+		private void GenerateTouchObject(Type formalType)
 		{
-			// method reads one value from stack iff generateReadType is set to true:
-			// objId - identifier of an object reference to touch
-
-			// method leaves int value onto stack:
-			// 2 - the reference to the object is null
-			// 1 - the object has already been deserialized and shouldn't be recreated again
-			// 0 - the object has been just created and should be properely initialized
-
-		    var finish = generator.DefineLabel();
-			var objNotYetDeserialized = generator.DefineLabel();
-			var createObj = generator.DefineLabel();
 			var objectIdLocal = generator.DeclareLocal(typeof(Int32));
 			var objectTypeLocal = generator.DeclareLocal(typeof(Type));
 
-			if (generateReadType)
-			{
-				generator.Emit(OpCodes.Stloc, objectIdLocal);
+			generator.Emit(OpCodes.Ldarg_1);
+			generator.Emit(OpCodes.Stloc, objectIdLocal);
 
-				PushDeserializedObjectsCollectionOntoStack();
-				generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<AutoResizingList<object>, int>(x => x.Count)); // check current length of DeserializedObjectsCollection
-				generator.Emit(OpCodes.Ldloc, objectIdLocal);
-				generator.Emit(OpCodes.Ble, objNotYetDeserialized); // jump to object creation if objectId > DOC.Count
-				generator.Emit(OpCodes.Ldc_I4_1); // push value <<1>> onto stack indicating that object has been deserialized earlier
-				generator.Emit(OpCodes.Br, finish); // jump to the end
-
-				generator.MarkLabel(objNotYetDeserialized);
-
-				GenerateReadType();
-				generator.Emit(OpCodes.Dup);
-				generator.Emit(OpCodes.Brtrue, createObj);
-				generator.Emit(OpCodes.Pop);
-				generator.Emit(OpCodes.Ldc_I4_1); // push value <<2>> onto stack indicating that there is null object
-				generator.Emit(OpCodes.Br, finish); // jump to the end
-
-				generator.MarkLabel(createObj);
-				generator.Emit(OpCodes.Stloc, objectTypeLocal);
-			}
-			else
-			{
-				generator.Emit(OpCodes.Ldarg_1);
-				generator.Emit(OpCodes.Stloc, objectIdLocal);
-
-				PushTypeOntoStack(formalType);
-				generator.Emit(OpCodes.Stloc, objectTypeLocal);
-			}
+			PushTypeOntoStack(formalType);
+			generator.Emit(OpCodes.Stloc, objectTypeLocal);
 
 		    switch (ObjectReader.GetCreationWay(formalType))
 		    {
@@ -1008,7 +879,6 @@ namespace Migrant.Generators
 					PushDeserializedObjectsCollectionOntoStack();
 					
 					generator.Emit(OpCodes.Ldloc, objectIdLocal); // first argument
-					//PushTypeOntoStack(formalType);
 					generator.Emit(OpCodes.Ldloc, objectTypeLocal);
                     generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => Activator.CreateInstance(typeof(void)))); // second argument
 					
@@ -1026,9 +896,6 @@ namespace Migrant.Generators
                     generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>>(x => x.SetItem(0, new object())));
 					break;
             }
-
-			generator.Emit(OpCodes.Ldc_I4_0); // push value <<0>> onto stack to indicate that object has just been created and needs initialization
-		    generator.MarkLabel(finish);
 		}
 
 		private void GenerateReadType()

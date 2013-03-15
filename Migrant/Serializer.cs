@@ -34,6 +34,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using AntMicro.Migrant.Utilities;
 using AntMicro.Migrant.Generators;
+using Migrant.Generators;
 
 namespace AntMicro.Migrant
 {
@@ -64,7 +65,7 @@ namespace AntMicro.Migrant
 			upfrontKnownTypes = new ListWithHash<Type>();
 			objectsForSurrogates = new Dictionary<Type, Delegate>();
 			surrogatesForObjects = new Dictionary<Type, Delegate>();
-			readMethodCache = new Dictionary<Type, Func<Int32, object>>();
+			readMethodCache = new Dictionary<Type, DynamicMethod /* Func<Int32, object> */>();
 		}
 
 		/// <summary>
@@ -93,8 +94,15 @@ namespace AntMicro.Migrant
 				{
 					continue;
 				}
-				var generator = new WriteMethodGenerator(type);
-				writeMethodCache.Add(type, generator.Method);
+				var wgenerator = new WriteMethodGenerator(type);
+				writeMethodCache.Add(type, wgenerator.Method);
+
+				if (readMethodCache.ContainsKey(type) || ObjectReader.HasSpecialReadMethod(type))
+				{
+					continue;
+				}
+				var rgenerator = new ReadMethodGenerator(type);
+				readMethodCache.Add(type, rgenerator.Method);
 			}
 		}
 
@@ -183,20 +191,10 @@ namespace AntMicro.Migrant
 				}
 			}
 
-			if(settings.DeserializationMethod != Method.Generated)
-			{
-				var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, false, settings.UseCompression);
-				var result = objectReader.ReadObject<T>();
-				deserializationDone = true;
-				return result;
-			}
-			else
-			{
-				var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, true, settings.UseCompression);
-				var result = objectReader.ReadObject<T>();
-				deserializationDone = true;
-				return result;
-			}
+			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, settings.DeserializationMethod == Method.Generated, settings.UseCompression);
+			var result = objectReader.ReadObject<T>();
+			deserializationDone = true;
+			return result;
 		}
 
 		/// <summary>
@@ -308,7 +306,7 @@ namespace AntMicro.Migrant
 
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
-		private readonly Dictionary<Type, Func<Int32, object>> readMethodCache;
+		private readonly Dictionary<Type, DynamicMethod /* Func<Int32, object> */> readMethodCache;
 		private readonly ListWithHash<Type> upfrontKnownTypes;
 		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;

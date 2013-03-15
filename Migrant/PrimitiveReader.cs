@@ -49,10 +49,11 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// The underlying stream which will be used to read data. Has to be readable.
 		/// </param>
+		/// <param name='useCompression'>
+		/// True if the data in a stream is stored in compressed (using varint approach) form, false otherwise.
+		/// </param>
 		public PrimitiveReader(Stream stream, bool useCompression = true)
 		{
-			// TODO: uzupełnić dokumentację
-
 			this.stream = stream;
 			this.useCompression = useCompression;
 			// buffer size is the size of the maximal padding
