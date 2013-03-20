@@ -160,8 +160,7 @@ namespace AntMicro.Migrant
 			{
 				reader.Dispose();
 			}
-			nextObjectToRead = 0;
-			objectsCreated = 0;
+
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
 			inlineRead = new HashSet<int>();
 			reader = new PrimitiveReader(stream, useCompression);
@@ -298,12 +297,7 @@ namespace AntMicro.Migrant
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}
-			// TODO: IList is handled by FillCollection method so special case is not needed
-			/*if(typeof(IList).IsAssignableFrom(type))
-			{
-				FillList(elementFormalType, (IList)obj);
-				return;
-			}*/
+
 			// so we can assume it is ICollection<T> or ICollection
 			FillCollection(elementFormalType, obj);
 		}
@@ -322,11 +316,8 @@ namespace AntMicro.Migrant
 				{
 					return null;
 				}
-				UpdateMaximumReferenceId(refId);
-				if(refId > nextObjectToRead && !inlineRead.Contains(refId))
+				if (refId >= deserializedObjects.Count)
 				{
-					// future reference, data inlined
-					inlineRead.Add(refId);
 					ReadObjectInner(ReadType(), refId);
 				}
 				return deserializedObjects[refId];
@@ -404,17 +395,7 @@ namespace AntMicro.Migrant
 			// if this is subtype
 			return returnedObject;
 		}
-		/*
-		private void FillList(Type elementFormalType, IList list)
-		{
-			var count = reader.ReadInt32();
-			for(var i = 0; i < count; i++)
-			{
-				var element = ReadField(elementFormalType);
-				list.Add(element);
-			}
-		}
-		*/
+
 		private void FillCollection(Type elementFormalType, object obj)
 		{
 			var collectionType = obj.GetType();
@@ -606,7 +587,7 @@ namespace AntMicro.Migrant
 			{
 				return deserializedObjects[refId];
 			}
-			UpdateMaximumReferenceId(refId);
+
 			object created = null;
 			switch(GetCreationWay(actualType))
 			{
@@ -621,11 +602,6 @@ namespace AntMicro.Migrant
 			}
 			deserializedObjects[refId] = created;
 			return created;
-		}
-
-		private void UpdateMaximumReferenceId(int value)
-		{
-			objectsCreated = Math.Max(objectsCreated, value);
 		}
 
 		internal static CreationWay GetCreationWay(Type actualType)
@@ -656,8 +632,6 @@ namespace AntMicro.Migrant
 
 		private bool useCompression;
 		private bool useGeneratedDeserialization;
-		private int nextObjectToRead;
-		private int objectsCreated;
 		internal AutoResizingList<object> deserializedObjects;
 		private IDictionary<Type, DynamicMethod> readMethodsCache;
 		internal PrimitiveReader reader;

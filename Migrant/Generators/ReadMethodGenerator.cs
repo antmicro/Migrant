@@ -32,6 +32,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization;
 using System.Text;
+using ImpromptuInterface;
 using AntMicro.Migrant;
 using AntMicro.Migrant.Hooks;
 using AntMicro.Migrant.Utilities;
@@ -342,28 +343,7 @@ namespace Migrant.Generators
 			generator.MarkLabel(loopFinishLabel);
 		}
 
-		#region Collection helpers
-
-		private void GenerateFillList(Type elementFormalType, Type listType)
-		{
-			// method read one value from stack
-			// objRef - reference to the list object
-
-			var listObjLocal = generator.DeclareLocal(listType);
-			var countLocal = generator.DeclareLocal(typeof(Int32));
-
-			generator.Emit(OpCodes.Stloc, listObjLocal);
-
-			GenerateReadPrimitive(typeof(Int32));
-			generator.Emit(OpCodes.Stloc, countLocal); // read list elements count
-
-			GenerateLoop(countLocal, cl => {
-				generator.Emit(OpCodes.Ldloc, listObjLocal);
-				GenerateReadField(elementFormalType, false);
-				generator.Emit(OpCodes.Call, listType.GetMethod("Add", new[] { elementFormalType }));
-				generator.Emit(OpCodes.Pop); // Add method returns integer thath should be removed from stack
-			});
-		}
+		#region Collections generators
 
 		private void GenerateFillDictionary(Type formalKeyType, Type formalValueType, Type dictionaryType, LocalBuilder objectIdLocal)
 		{
@@ -420,7 +400,6 @@ namespace Migrant.Generators
 				generator.Emit(OpCodes.Ldloc, arrayLocal);
 				generator.Emit(OpCodes.Newobj, type.GetConstructor(new [] { typeof(IList<>).MakeGenericType(elementFormalType) }));
 			});
-			
 		}
 				
 		private void GenerateFillCollection(Type elementFormalType, Type collectionType, LocalBuilder objectIdLocal)
@@ -636,6 +615,19 @@ namespace Migrant.Generators
 		{
 			// method returns read field value on stack
 
+			// TODO: [MH] check if this special case should be considered later (after nullable)
+			if (Helpers.CheckTransientNoCache(_formalType))
+			{
+				PushTypeOntoStack(_formalType);
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => Helpers.GetDefaultValue(null)));
+
+				if (_formalType.IsValueType && _boxIfValueType)
+				{
+					generator.Emit(OpCodes.Box, _formalType);
+				}
+				return; //return Helpers.GetDefaultValue(_formalType);
+			}
+
 		    var finishLabel = generator.DefineLabel();
 			var else1 = generator.DefineLabel();
 			var returnNullLabel = generator.DefineLabel();
@@ -647,6 +639,75 @@ namespace Migrant.Generators
 			var isBoxed = false;
 			var forcedFormalType = _formalType;
 			var forcedBoxIfValueType = _boxIfValueType;
+
+			if (!_formalType.IsValueType)
+			{
+				GenerateReadPrimitive(typeof(Int32)); // read object reference
+				generator.Emit(OpCodes.Stloc, objectIdLocal);
+				
+				generator.Emit(OpCodes.Ldc_I4, AntMicro.Migrant.Consts.NullObjectId);
+				generator.Emit(OpCodes.Ldloc, objectIdLocal); 
+				generator.Emit(OpCodes.Beq, returnNullLabel); // check if object reference is not <<NULL>>
+				
+				objectActualTypeLocal = GenerateCheckObjectMeta(objectIdLocal); // read object Type
+				generator.Emit(OpCodes.Stloc, metaResultLocal);
+				
+				generator.Emit(OpCodes.Ldloc, metaResultLocal);
+				generator.Emit(OpCodes.Brtrue, else1); // if no actual type on stack jump to the end
+				
+				if (forcedFormalType == typeof(string))
+				{
+					// special case
+					
+					var valueLocal = generator.DeclareLocal(typeof(string));
+					
+					GenerateReadPrimitive(typeof(string));
+					generator.Emit(OpCodes.Stloc, valueLocal);
+					
+					SaveNewDeserializedObject(objectIdLocal, () => {
+						generator.Emit(OpCodes.Ldloc, valueLocal);
+					});
+					
+					generator.Emit(OpCodes.Ldloc, valueLocal);
+					generator.Emit(OpCodes.Br, finishLabel);
+				}
+				else
+				{
+					generator.Emit(OpCodes.Ldarg_0);
+					generator.Emit(OpCodes.Ldloc, objectActualTypeLocal);
+					generator.Emit(OpCodes.Ldloc, objectIdLocal);
+					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader>(r => r.ReadObjectInnerGenerated(typeof(void), 0)));
+				}
+				
+				generator.MarkLabel(else1); // if CheckObjectMeta returned 1
+				
+				PushDeserializedObjectOntoStack(objectIdLocal);
+				generator.Emit(OpCodes.Br, finishLabel);
+				
+				generator.MarkLabel(returnNullLabel);
+				generator.Emit(OpCodes.Ldnull);
+
+				generator.MarkLabel(finishLabel);
+				return;
+			}
+			if (_formalType.IsEnum)
+			{
+				var actualType = Enum.GetUnderlyingType(forcedFormalType);
+				
+				PushTypeOntoStack(forcedFormalType);
+				GenerateReadPrimitive(actualType);
+				generator.Emit(OpCodes.Call, typeof(Enum).GetMethod("ToObject", BindingFlags.Static | BindingFlags.Public, null, new[] { typeof(Type), actualType }, null));
+				isBoxed = true;
+				
+				if (!forcedBoxIfValueType)
+				{
+					generator.Emit(OpCodes.Unbox_Any, forcedFormalType);
+					isBoxed = false;
+				}
+				
+				//generator.Emit(OpCodes.Br, finishLabel);
+				return;
+			}
 
 			var nullableActualType = Nullable.GetUnderlyingType(_formalType);
 			if (nullableActualType != null)
@@ -676,24 +737,7 @@ namespace Migrant.Generators
 
 				generator.Emit(OpCodes.Br, finishLabel);
 			}
-			else if (forcedFormalType.IsEnum)
-			{
-				var actualType = Enum.GetUnderlyingType(forcedFormalType);
-								
-				PushTypeOntoStack(forcedFormalType);
-				GenerateReadPrimitive(actualType);
-				generator.Emit(OpCodes.Call, typeof(Enum).GetMethod("ToObject", BindingFlags.Static | BindingFlags.Public, null, new[] { typeof(Type), actualType }, null));
-				isBoxed = true;
-
-				if (!forcedBoxIfValueType)
-				{
-					generator.Emit(OpCodes.Unbox_Any, forcedFormalType);
-					isBoxed = false;
-				}
-
-				generator.Emit(OpCodes.Br, finishLabel);
-			}
-			else if (forcedFormalType.IsValueType)
+			else
 			{
 				// here we have struct
 
@@ -709,56 +753,6 @@ namespace Migrant.Generators
 
 				generator.Emit(OpCodes.Br, finishLabel);
 			}
-			else
-            {
-				GenerateReadPrimitive(typeof(Int32)); // read object reference
-				generator.Emit(OpCodes.Stloc, objectIdLocal);
-
-				generator.Emit(OpCodes.Ldc_I4, AntMicro.Migrant.Consts.NullObjectId);
-				generator.Emit(OpCodes.Ldloc, objectIdLocal);
-				generator.Emit(OpCodes.Beq, returnNullLabel);
-
-				objectActualTypeLocal = GenerateCheckObjectMeta(objectIdLocal);
-				generator.Emit(OpCodes.Stloc, metaResultLocal);
-
-				generator.Emit(OpCodes.Ldloc, metaResultLocal);
-				generator.Emit(OpCodes.Brtrue, else1); // if no actual type on stack jump to the end
-
-				if (forcedFormalType == typeof(string))
-				{
-					// special case
-
-					var valueLocal = generator.DeclareLocal(typeof(string));
-
-					GenerateReadPrimitive(typeof(string));
-					generator.Emit(OpCodes.Stloc, valueLocal);
-
-					PushDeserializedObjectsCollectionOntoStack();
-					generator.Emit(OpCodes.Ldloc, objectIdLocal);
-					generator.Emit(OpCodes.Ldloc, valueLocal);
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>>(x => x.SetItem(0, null)));
-
-					generator.Emit(OpCodes.Ldloc, valueLocal);
-					generator.Emit(OpCodes.Br, finishLabel);
-				}
-				else
-				{
-					generator.Emit(OpCodes.Ldarg_0);
-					generator.Emit(OpCodes.Ldloc, objectActualTypeLocal);
-					generator.Emit(OpCodes.Ldloc, objectIdLocal);
-					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader>(r => r.ReadObjectInnerGenerated(typeof(void), 0)));
-				}
-
-				generator.MarkLabel(else1); // if CheckObjectMeta returned 1
-
-				PushDeserializedObjectsCollectionOntoStack();
-				generator.Emit(OpCodes.Ldloc, objectIdLocal);
-				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>, object>(x => x[0]));
-				generator.Emit(OpCodes.Br, finishLabel);
-
-				generator.MarkLabel(returnNullLabel);
-				generator.Emit(OpCodes.Ldnull);
-		    }
 
 			generator.MarkLabel(finishLabel);
 
@@ -807,10 +801,31 @@ namespace Migrant.Generators
 		    var fields = ObjectReader.GetFieldsToSerialize(formalType).ToList();
 		    foreach (var field in fields)
 		    {
+				if (field.IsDefined(typeof(TransientAttribute), false))
+				{
+					if (field.IsDefined(typeof(ConstructorAttribute), false))
+					{
+						generator.Emit(OpCodes.Ldtoken, field);
+						generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle)));
+						PushDeserializedObjectOntoStack(objectIdLocal);
+
+						generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => ReadMethodGenerator.UpdateFieldHelper(null, null)));
+					}
+					continue;
+				}
+
 				PushDeserializedObjectOntoStack(objectIdLocal);
 				GenerateReadField(field.FieldType, false);
 				generator.Emit(OpCodes.Stfld, field);
 		    }
+		}
+		
+		private static void UpdateFieldHelper(FieldInfo field, object target)
+		{
+			// TODO: zastanowić się jak to uładnić
+
+			var ctorAttribute = (ConstructorAttribute)field.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
+			field.SetValue(target, Impromptu.InvokeConstructor(field.FieldType, ctorAttribute.Parameters));
 		}
 
 		private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
@@ -824,6 +839,7 @@ namespace Migrant.Generators
 			}
 		}
 
+		#region Push onto stack methods
 		private void PushPrimitiveReaderOntoStack()
 		{
             generator.Emit(OpCodes.Ldarg_0); // object reader
@@ -858,6 +874,7 @@ namespace Migrant.Generators
             generator.Emit(OpCodes.Ldtoken, type);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o))); // loads value of <<typeToGenerate>> onto stack
         }
+		#endregion
 
 		private void GenerateTouchObject(Type formalType)
 		{

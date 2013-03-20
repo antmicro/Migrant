@@ -283,7 +283,12 @@ namespace AntMicro.Migrant
 
 		public static MethodInfo GetMethodInfo<T, TParam1>(Expression<Func<T, TParam1>> expression)
 		{
-			var methodCall = (MethodCallExpression)expression.Body;
+			var methodCall = expression.Body as MethodCallExpression;
+			if (methodCall == null)
+			{
+				// perhaps we have here UnaryExpression wrapping the MethodCallExpression
+				methodCall = (expression.Body as UnaryExpression).Operand as MethodCallExpression;
+			}
 			return methodCall.Method;
 		}
 
