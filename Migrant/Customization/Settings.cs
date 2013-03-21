@@ -68,7 +68,7 @@ namespace AntMicro.Migrant.Customization
 		/// <param name='useCompression'>
 		/// Flag indicating if the data in a stream should be stored in compressed (using varint approach) form.
 		/// </param>
-		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Reflection, bool ignoreModuleIdInequality = false, bool useCompression = true)
+		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, bool ignoreModuleIdInequality = false, bool useCompression = true)
 		{
 			SerializationMethod = serializationMethod;
 			DeserializationMethod = deserializationMethod;

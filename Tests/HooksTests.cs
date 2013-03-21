@@ -116,7 +116,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokeGlobalHooks()
 		{
 			var memoryStream = new MemoryStream();
-			var serializer = new Serializer();
+			var serializer = new Serializer(SettingsFromFields);
 			var preSerializationCounter = 0;
 			var postSerializationCounter = 0;
 			var postDeserializationCounter = 0;

@@ -584,7 +584,9 @@ namespace Migrant.Generators
 				
 				generator.Emit(OpCodes.Ldloc, metaResultLocal);
 				generator.Emit(OpCodes.Brtrue, else1); // if no actual type on stack jump to the end
-				
+
+				// This special case was considered to improve performance, but results in not executing postserialization hooks on every element of string array
+				/*
 				if (forcedFormalType == typeof(string))
 				{
 					// special case
@@ -602,12 +604,12 @@ namespace Migrant.Generators
 					generator.Emit(OpCodes.Br, finishLabel);
 				}
 				else
-				{
+				{*/
 					generator.Emit(OpCodes.Ldarg_0);
 					generator.Emit(OpCodes.Ldloc, objectActualTypeLocal);
 					generator.Emit(OpCodes.Ldloc, objectIdLocal);
 					generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader>(r => r.ReadObjectInnerGenerated(typeof(void), 0)));
-				}
+				/*}*/
 				
 				generator.MarkLabel(else1); // if CheckObjectMeta returned 1
 				
