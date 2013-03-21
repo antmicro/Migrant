@@ -161,6 +161,7 @@ namespace AntMicro.Migrant
 				reader.Dispose();
 			}
 
+			delegatesCache = new Dictionary<Type, Func<int, object>>();
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
 			inlineRead = new HashSet<int>();
 			reader = new PrimitiveReader(stream, useCompression);
@@ -174,11 +175,14 @@ namespace AntMicro.Migrant
 		internal void ReadObjectInnerGenerated(Type actualType, int objectId)
 		{
 			EnsureReadMethod(actualType);
+			if (!delegatesCache.ContainsKey(actualType))
+			{
+				var func = (Func<Int32, object>)readMethodsCache[actualType].CreateDelegate(typeof(Func<Int32, object>), this);
+				delegatesCache.Add(actualType, func);
+			}
 
 			// execution of read method of given type
-			var func = (Func<Int32, object>)readMethodsCache[actualType].CreateDelegate(typeof(Func<Int32, object>), this);
-			var obj = func(objectId);
-			deserializedObjects[objectId] = obj;
+			deserializedObjects[objectId] = delegatesCache[actualType](objectId);
 		}
 
 		private void ReadObjectInner(Type actualType, int objectId)
@@ -634,6 +638,7 @@ namespace AntMicro.Migrant
 		private bool useGeneratedDeserialization;
 		internal AutoResizingList<object> deserializedObjects;
 		private IDictionary<Type, DynamicMethod> readMethodsCache;
+		private Dictionary<Type, Func<Int32, object>> delegatesCache;
 		internal PrimitiveReader reader;
 		private HashSet<int> inlineRead;
 		private readonly List<Type> typeList;

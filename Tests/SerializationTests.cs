@@ -634,6 +634,17 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
+		public void ShouldOmitTransientField()
+		{
+			var trans = new ClassWithTransientField() { a = 147, b = 256, c = 850 };
+			var scd = SerializerClone(trans);
+
+			Assert.AreEqual(trans.a, scd.a);
+			Assert.AreEqual(default(int) , scd.b);
+			Assert.AreEqual(trans.c, scd.c);
+		}
+
+		[Test]
 		public void ShouldSerializeQueue()
 		{
 			var queue = new Queue<int>();
@@ -1112,6 +1123,16 @@ namespace AntMicro.Migrant.Tests
 		private class TransientDerived : TransientClass
 		{
 			public int Integer { get; set; }
+		}
+
+		private class ClassWithTransientField
+		{
+			public int a;
+
+			[Transient]
+			public int b;
+
+			public int c;
 		}
 
 		private class ClassWithEvent

@@ -65,7 +65,7 @@ namespace AntMicro.Migrant
 			upfrontKnownTypes = new ListWithHash<Type>();
 			objectsForSurrogates = new Dictionary<Type, Delegate>();
 			surrogatesForObjects = new Dictionary<Type, Delegate>();
-			readMethodCache = new Dictionary<Type, DynamicMethod /* Func<Int32, object> */>();
+			readMethodCache = new Dictionary<Type, DynamicMethod>();
 		}
 
 		/// <summary>
