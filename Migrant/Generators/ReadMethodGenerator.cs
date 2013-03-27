@@ -30,13 +30,11 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization;
-using System.Text;
 using ImpromptuInterface;
 using AntMicro.Migrant;
 using AntMicro.Migrant.Hooks;
 using AntMicro.Migrant.Utilities;
 using System.Collections;
-using System.Linq.Expressions;
 
 namespace Migrant.Generators
 {
@@ -544,18 +542,18 @@ namespace Migrant.Generators
 			return actualTypeLocal; // you should use this local only when value on stack is equal to 0; i tried to push two values on stack, but it didn't work
 		}
 
-		private void GenerateReadField(Type _formalType, bool _boxIfValueType = true)
+		private void GenerateReadField(Type formalType, bool boxIfValueType = true)
 		{
 			// method returns read field value on stack
 
-			if(Helpers.CheckTransientNoCache(_formalType))
+			if(Helpers.CheckTransientNoCache(formalType))
 			{
-				PushTypeOntoStack(_formalType);
+				PushTypeOntoStack(formalType);
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => Helpers.GetDefaultValue(null)));
 
-				if(_formalType.IsValueType && _boxIfValueType)
+				if(formalType.IsValueType && boxIfValueType)
 				{
-					generator.Emit(OpCodes.Box, _formalType);
+					generator.Emit(OpCodes.Box, formalType);
 				}
 				return; //return Helpers.GetDefaultValue(_formalType);
 			}
@@ -569,10 +567,10 @@ namespace Migrant.Generators
 			var metaResultLocal = generator.DeclareLocal(typeof(Int32));
 
 			var isBoxed = false;
-			var forcedFormalType = _formalType;
-			var forcedBoxIfValueType = _boxIfValueType;
+			var forcedFormalType = formalType;
+			var forcedBoxIfValueType = boxIfValueType;
 
-			if(!_formalType.IsValueType)
+			if(!formalType.IsValueType)
 			{
 				GenerateReadPrimitive(typeof(Int32)); // read object reference
 				generator.Emit(OpCodes.Stloc, objectIdLocal);
@@ -624,7 +622,7 @@ namespace Migrant.Generators
 				generator.MarkLabel(finishLabel);
 				return;
 			}
-			if(_formalType.IsEnum)
+			if(formalType.IsEnum)
 			{
 				var actualType = Enum.GetUnderlyingType(forcedFormalType);
 				
@@ -634,17 +632,15 @@ namespace Migrant.Generators
 					typeof(Type),
 					actualType
 				}, null));
-				isBoxed = true;
 				
 				if(!forcedBoxIfValueType)
 				{
 					generator.Emit(OpCodes.Unbox_Any, forcedFormalType);
-					isBoxed = false;
 				}
 				return;
 			}
 
-			var nullableActualType = Nullable.GetUnderlyingType(_formalType);
+			var nullableActualType = Nullable.GetUnderlyingType(formalType);
 			if(nullableActualType != null)
 			{
 				forcedFormalType = nullableActualType;
@@ -690,7 +686,7 @@ namespace Migrant.Generators
 			// if the value is nullable we must use special initialization of it
 			if(nullableActualType != null)
 			{
-				var nullableLocal = generator.DeclareLocal(_formalType);
+				var nullableLocal = generator.DeclareLocal(formalType);
 				var returnNullNullableLabel = generator.DefineLabel();
 				var endLabel = generator.DefineLabel();
 
@@ -701,13 +697,13 @@ namespace Migrant.Generators
 				{
 					generator.Emit(OpCodes.Unbox_Any, nullableActualType);
 				}
-				generator.Emit(OpCodes.Newobj, _formalType.GetConstructor(new [] { nullableActualType }));
+				generator.Emit(OpCodes.Newobj, formalType.GetConstructor(new [] { nullableActualType }));
 				generator.Emit(OpCodes.Stloc, nullableLocal);
 				generator.Emit(OpCodes.Ldloc, nullableLocal);
 
-				if(_boxIfValueType)
+				if(boxIfValueType)
 				{
-					generator.Emit(OpCodes.Box, _formalType);
+					generator.Emit(OpCodes.Box, formalType);
 				}
 
 				generator.Emit(OpCodes.Br, endLabel);
@@ -715,10 +711,10 @@ namespace Migrant.Generators
 				generator.MarkLabel(returnNullNullableLabel);
 				generator.Emit(OpCodes.Pop);
 				generator.Emit(OpCodes.Ldloca, nullableLocal);
-				generator.Emit(OpCodes.Initobj, _formalType);
+				generator.Emit(OpCodes.Initobj, formalType);
 				
 				generator.Emit(OpCodes.Ldloc, nullableLocal);
-				if(_boxIfValueType)
+				if(boxIfValueType)
 				{
 					generator.Emit(OpCodes.Box, nullableLocal);
 				}
