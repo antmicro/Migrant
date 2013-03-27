@@ -196,7 +196,7 @@ namespace AntMicro.Migrant.Tests
 					(
 						useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
 						useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
-						);
+				);
 				return settings;
 			}
 		}
@@ -314,6 +314,7 @@ namespace AntMicro.Migrant.Tests
 	public class CyclicReferenceMockA
 	{
 		public CyclicReferenceMockB B { get; set; }
+
 		public string Str { get; set; }
 
 		public CyclicReferenceMockA()
@@ -334,6 +335,7 @@ namespace AntMicro.Migrant.Tests
 	public class CyclicReferenceMockB
 	{
 		public CyclicReferenceMockA A { get; set; }
+
 		public string Str { get; set; }
 
 		public CyclicReferenceMockB()

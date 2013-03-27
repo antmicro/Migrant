@@ -52,7 +52,7 @@ namespace AntMicro.Migrant.PerformanceTests
 			for(var i = 0; i < structArray.Length; i++)
 			{
 				structArray[i].A = i;
-				structArray[i].B = 1.0/i;
+				structArray[i].B = 1.0 / i;
 			}
 			Test(structArray);
 		}
@@ -76,7 +76,7 @@ namespace AntMicro.Migrant.PerformanceTests
 			if(testType == TestType.Serialization)
 			{
 				Run(() =>
-			    {
+				{
 					serializer.Serialize(whatToTest, stream);
 				}, testSuffix, after: () => stream.Seek(0, SeekOrigin.Begin));
 			}
@@ -84,7 +84,7 @@ namespace AntMicro.Migrant.PerformanceTests
 			{
 				serializer.Serialize(whatToTest, stream);
 				Run(() =>
-				    {
+				{
 					serializer.Deserialize<T>(stream);
 				}, testSuffix, before: () => stream.Seek(0, SeekOrigin.Begin));
 			}
@@ -115,19 +115,22 @@ namespace AntMicro.Migrant.PerformanceTests
 	public struct SimpleStruct
 	{
 		[ProtoBuf.ProtoMember(1)]
-		public int A;
+		public int
+			A;
 		[ProtoBuf.ProtoMember(2)]
-		public double B;
+		public double
+			B;
 	}
 
 	[ProtoBuf.ProtoContract]
 	public class SimpleClass
 	{
 		[ProtoBuf.ProtoMember(1)]
-		public int A;
-
+		public int
+			A;
 		[ProtoBuf.ProtoMember(2)]
-		public double B;
+		public double
+			B;
 	}
 }
 

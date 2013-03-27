@@ -127,7 +127,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldNotSerializeIntPtr()
 		{
 			var intPtrClass = new ClassWithIntPtr{Ptr = new IntPtr(0x666)};
-		    try
+			try
 			{
 				SerializerClone(intPtrClass);
 				Assert.Fail("Class with IntPtr was serialized without exception.");
@@ -335,12 +335,12 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldSerialize4DArrayWithPrimitives()
 		{
-			var array = new int[2,2,3,4];
-			array[0,0,0,0] = 1;
-			array[1,0,1,0] = 2;
-			array[0,1,0,1] = 3;
-			array[0,1,2,2] = 4;
-			array[1,0,2,3] = 5;
+			var array = new int[2, 2, 3, 4];
+			array[0, 0, 0, 0] = 1;
+			array[1, 0, 1, 0] = 2;
+			array[0, 1, 0, 1] = 3;
+			array[0, 1, 2, 2] = 4;
+			array[1, 0, 2, 3] = 5;
 			var copy = SerializerClone(array);
 			Assert.AreEqual(array, copy);
 		}
@@ -430,15 +430,15 @@ namespace AntMicro.Migrant.Tests
 					, TestEnumFlags.Second | TestEnumFlags.Third
 				}).ToArray();
 
-			foreach (var item in enumLongValues) 
+			foreach(var item in enumLongValues)
 			{
 				Assert.AreEqual(item, SerializerClone(item));
 			}
-			foreach (var item in enumShortValues) 
+			foreach(var item in enumShortValues)
 			{
 				Assert.AreEqual(item, SerializerClone(item));
 			}
-			foreach (var item in enumFlagsValues) 
+			foreach(var item in enumFlagsValues)
 			{
 				Assert.AreEqual(item, SerializerClone(item));
 			}
@@ -576,7 +576,7 @@ namespace AntMicro.Migrant.Tests
 			var dictionary = new ConcurrentDictionary<int, int>();
 			for(var i = 0; i < 10; i++)
 			{
-				dictionary.TryAdd(i, 2*i);
+				dictionary.TryAdd(i, 2 * i);
 			}
 			var copy = SerializerClone(dictionary);
 			CollectionAssert.AreEquivalent(dictionary, copy);
@@ -640,7 +640,7 @@ namespace AntMicro.Migrant.Tests
 			var scd = SerializerClone(trans);
 
 			Assert.AreEqual(trans.a, scd.a);
-			Assert.AreEqual(default(int) , scd.b);
+			Assert.AreEqual(default(int), scd.b);
 			Assert.AreEqual(trans.c, scd.c);
 		}
 
@@ -658,7 +658,12 @@ namespace AntMicro.Migrant.Tests
 		[Test]
 		public void ShouldSerializeWithInitialization()
 		{
-			var objs = new object[] { null, 1,"Napis", new GenericBox<int> { Element = 6 } };
+			var objs = new object[] {
+				null,
+				1,
+				"Napis",
+				new GenericBox<int> { Element = 6 }
+			};
 			var serializer = new Serializer(SettingsFromFields);
 			serializer.Initialize(typeof(GenericBox<int>));
 			serializer.Initialize(typeof(string));
@@ -852,6 +857,7 @@ namespace AntMicro.Migrant.Tests
 		public class SimpleClass
 		{
 			public int Value { get; set; }
+
 			public string Str { get; set; }
 
 			public override bool Equals(object obj)
@@ -870,13 +876,13 @@ namespace AntMicro.Migrant.Tests
 				}
 				var other = (SimpleClass)obj;
 				return Value == other.Value && Str == other.Str;
-			}			
+			}
 
 			public override int GetHashCode()
 			{
 				unchecked
 				{
-					return Value.GetHashCode() ^ 33*(Str != null ? Str.GetHashCode() : 0);
+					return Value.GetHashCode() ^ 33 * (Str != null ? Str.GetHashCode() : 0);
 				}
 			}
 
@@ -889,12 +895,14 @@ namespace AntMicro.Migrant.Tests
 		public class SimpleContainer
 		{
 			public SimpleClass First { get; set; }
+
 			public SimpleClass Second { get; set; }
 		}
 
 		public class CyclicRef
 		{
 			public CyclicRef Another { get; set; }
+
 			public int Val { get; set; }
 		}
 
@@ -992,7 +1000,7 @@ namespace AntMicro.Migrant.Tests
 		
 		private enum EnumShort : short
 		{
-			First = short.MinValue+2,
+			First = short.MinValue + 2,
 			Second = 6,
 			Third
 		}
@@ -1111,7 +1119,8 @@ namespace AntMicro.Migrant.Tests
 			}
 
 			[Constructor(false)]
-			private ManualResetEvent resetEvent;
+			private ManualResetEvent
+				resetEvent;
 		}
 
 		[Transient]
@@ -1128,10 +1137,9 @@ namespace AntMicro.Migrant.Tests
 		private class ClassWithTransientField
 		{
 			public int a;
-
 			[Transient]
-			public int b;
-
+			public int
+				b;
 			public int c;
 		}
 
@@ -1191,20 +1199,26 @@ namespace AntMicro.Migrant.Tests
 			{
 				Id = Guid.NewGuid();
 				Number = Id.ToByteArray()[1] * Id.ToByteArray()[0];
-				Str = Helpers.GetRandomString(Number/256);
+				Str = Helpers.GetRandomString(Number / 256);
 			}
 
 			public override bool Equals(object obj)
 			{
 				if(obj == null)
+				{
 					return false;
+				}
 				if(ReferenceEquals(this, obj))
+				{
 					return true;
+				}
 				if(obj.GetType() != typeof(ClassWithGuid))
+				{
 					return false;
+				}
 				ClassWithGuid other = (ClassWithGuid)obj;
 				return Id == other.Id && Number == other.Number && Str == other.Str;
-			}			
+			}
 
 			public override int GetHashCode()
 			{
@@ -1218,10 +1232,11 @@ namespace AntMicro.Migrant.Tests
 			{
 				return string.Format("[ClassWithGuid: Id={0}, Number={1}, Str={2}]", Id, Number, Str);
 			}
-						
 
 			public Guid Id { get; private set; }
+
 			public int Number { get; private set; }
+
 			public string Str { get; private set; }
 		}
 	}

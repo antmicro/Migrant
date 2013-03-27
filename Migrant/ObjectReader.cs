@@ -120,7 +120,7 @@ namespace AntMicro.Migrant
 		public T ReadObject<T>()
 		{
 			var type = ReadType();
-			if (useGeneratedDeserialization)
+			if(useGeneratedDeserialization)
 			{
 				ReadObjectInnerGenerated(type, 0);
 			}
@@ -147,7 +147,7 @@ namespace AntMicro.Migrant
 
 		private void EnsureReadMethod(Type type)
 		{
-			if (!readMethodsCache.ContainsKey(type))
+			if(!readMethodsCache.ContainsKey(type))
 			{
 				var rmg = new ReadMethodGenerator(type);
 				readMethodsCache.Add(type, rmg.Method);
@@ -175,7 +175,7 @@ namespace AntMicro.Migrant
 		internal void ReadObjectInnerGenerated(Type actualType, int objectId)
 		{
 			EnsureReadMethod(actualType);
-			if (!delegatesCache.ContainsKey(actualType))
+			if(!delegatesCache.ContainsKey(actualType))
 			{
 				var func = (Func<Int32, object>)readMethodsCache[actualType].CreateDelegate(typeof(Func<Int32, object>), this);
 				delegatesCache.Add(actualType, func);
@@ -320,7 +320,7 @@ namespace AntMicro.Migrant
 				{
 					return null;
 				}
-				if (refId >= deserializedObjects.Count)
+				if(refId >= deserializedObjects.Count)
 				{
 					ReadObjectInner(ReadType(), refId);
 				}

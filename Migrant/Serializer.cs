@@ -97,7 +97,7 @@ namespace AntMicro.Migrant
 				var wgenerator = new WriteMethodGenerator(type);
 				writeMethodCache.Add(type, wgenerator.Method);
 
-				if (readMethodCache.ContainsKey(type) || ObjectReader.HasSpecialReadMethod(type))
+				if(readMethodCache.ContainsKey(type) || ObjectReader.HasSpecialReadMethod(type))
 				{
 					continue;
 				}
@@ -303,7 +303,6 @@ namespace AntMicro.Migrant
 
 		private bool serializationDone;
 		private bool deserializationDone;
-
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
 		private readonly Dictionary<Type, DynamicMethod /* Func<Int32, object> */> readMethodCache;
