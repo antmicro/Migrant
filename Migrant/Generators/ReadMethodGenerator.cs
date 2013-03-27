@@ -48,7 +48,9 @@ namespace Migrant.Generators
 			generator = dynamicMethod.GetILGenerator();
 
 			GenerateDynamicCode(typeToGenerate);
-			/*SaveToFile(typeToGenerate);*/
+#if DEBUG
+			SaveToFile(typeToGenerate);
+#endif
 		}
 
 		public void GenerateDynamicCode(Type typeToGenerate)
@@ -891,9 +893,8 @@ namespace Migrant.Generators
 			}
 		}
 
-		#region DEBUG
+#if DEBUG
 
-		// Only for debugging purpouses
 		public void SaveToFile(Type ttg)
 		{
 			var name = "dyn-" + ttg.Name.Substring(0, 3) + (ttg.IsArray ? "-arr" : "");
@@ -945,7 +946,7 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => Helpers.DEBUG_BREAKPOINT_FUNC(null, "text")));
 		}
 		
-		#endregion
+#endif
 		
 		private ILGenerator generator;
 		private DynamicMethod dynamicMethod;
