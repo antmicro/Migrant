@@ -336,61 +336,11 @@ namespace AntMicro.Migrant
 				var isNotNull = reader.ReadBool();
 				return isNotNull ? ReadField(nullableActualType) : null;
 			}
-			if(formalType == typeof(Guid))
+			if(Helpers.IsWriteableByPrimitiveWriter(formalType))
 			{
-				return reader.ReadGuid();
-			}
-			if(formalType == typeof(Int64))
-			{
-				return reader.ReadInt64();
-			} 
-			if(formalType == typeof(UInt64))
-			{
-				return reader.ReadUInt64();
-			}
-			if(formalType == typeof(Int32))
-			{
-				return reader.ReadInt32();
-			} 
-			if(formalType == typeof(UInt32))
-			{
-				return reader.ReadUInt32();
-			} 
-			if(formalType == typeof(Int16))
-			{
-				return reader.ReadInt16();
-			} 
-			if(formalType == typeof(UInt16))
-			{
-				return reader.ReadUInt16();
-			} 
-			if(formalType == typeof(char))
-			{
-				return reader.ReadChar();
-			}
-			if(formalType == typeof(byte))
-			{
-				return reader.ReadByte();
-			}
-			if(formalType == typeof(bool))
-			{
-				return reader.ReadBool();
-			}
-			if(formalType == typeof(DateTime))
-			{
-				return reader.ReadDateTime();
-			}
-			if(formalType == typeof(TimeSpan))
-			{
-				return reader.ReadTimeSpan();
-			}
-			if(formalType == typeof(float))
-			{
-				return reader.ReadSingle();
-			}
-			if(formalType == typeof(double))
-			{
-				return reader.ReadDouble();
+				var methodName = string.Concat("Read", formalType.Name);
+				var readMethod = typeof(PrimitiveReader).GetMethod(methodName);
+				return readMethod.Invoke(reader, Type.EmptyTypes);
 			}
 			var returnedObject = Activator.CreateInstance(formalType);
 			// here we have a boxed struct which we put to struct reference list
