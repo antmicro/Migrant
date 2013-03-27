@@ -163,7 +163,6 @@ namespace AntMicro.Migrant
 
 			delegatesCache = new Dictionary<Type, Func<int, object>>();
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
-			inlineRead = new HashSet<int>();
 			reader = new PrimitiveReader(stream, useCompression);
 		}
 
@@ -640,7 +639,6 @@ namespace AntMicro.Migrant
 		private IDictionary<Type, DynamicMethod> readMethodsCache;
 		private Dictionary<Type, Func<Int32, object>> delegatesCache;
 		internal PrimitiveReader reader;
-		private HashSet<int> inlineRead;
 		private readonly List<Type> typeList;
 		private readonly HashSet<int> agreedModuleIds;
 		private readonly Stream stream;
