@@ -70,12 +70,9 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if write methods are to be generated, false if one wants to use reflection.
 		/// </param>
-		/// <param name='useCompression'>
-		/// True if the data in a stream should be stored in compressed (using varint approach) form, false otherwise.
-		/// </param> 
 		public ObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
-		                    IDictionary<Type, Delegate> surrogatesForObjects = null, bool isGenerating = true, bool useCompression = true)
+		                    IDictionary<Type, Delegate> surrogatesForObjects = null, bool isGenerating = true)
 		{
 			if(surrogatesForObjects == null)
 			{
@@ -86,7 +83,6 @@ namespace AntMicro.Migrant
 			postSerializationHooks = new List<Action>();
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
-			this.useCompression = useCompression;
 			this.surrogatesForObjects = surrogatesForObjects;
 			typeIndices = new Dictionary<Type, int>();
 			moduleIndices = new Dictionary<Module, int>();
@@ -216,7 +212,7 @@ namespace AntMicro.Migrant
 				writer.Dispose();
 			}
 			identifier = new ObjectIdentifier();
-			writer = new PrimitiveWriter(stream, useCompression);
+			writer = new PrimitiveWriter(stream);
 			inlineWritten = new HashSet<int>();
 		}
 
@@ -565,7 +561,6 @@ namespace AntMicro.Migrant
 		private PrimitiveWriter writer;
 		private HashSet<int> inlineWritten;
 		private readonly bool isGenerating;
-		private readonly bool useCompression;
 		private readonly Stream stream;
 		private readonly Action<object> preSerializationCallback;
 		private readonly Action<object> postSerializationCallback;

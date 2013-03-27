@@ -49,13 +49,9 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// The underlying stream which will be used to read data. Has to be readable.
 		/// </param>
-		/// <param name='useCompression'>
-		/// True if the data in a stream is stored in compressed (using varint approach) form, false otherwise.
-		/// </param>
-		public PrimitiveReader(Stream stream, bool useCompression = true)
+		public PrimitiveReader(Stream stream)
 		{
 			this.stream = stream;
-			this.useCompression = useCompression;
 			// buffer size is the size of the maximal padding
 			buffer = new byte[Helpers.MaximalPadding];
 		}
@@ -280,24 +276,11 @@ namespace AntMicro.Migrant
 
 		private ulong InnerReadInteger()
 		{
-			if(useCompression)
+			ulong next;
+			var result = 0UL;
+#if DEBUG
+			if(PrimitiveWriter.DontUseVarintCompression)
 			{
-				ulong next;
-				var result = 0UL;
-				var shift = 0;
-				do
-				{
-					next = ReadByte();
-					result |= (next & 0x7FU) << shift;
-					shift += 7;
-				}
-				while((next & 128) > 0);
-				return result;
-			}
-			else
-			{
-				ulong next;
-				var result = 0UL;
 				for(int i = 0; i < sizeof(ulong); ++i)
 				{
 					next = ReadByte();
@@ -306,6 +289,16 @@ namespace AntMicro.Migrant
 
 				return result;
 			}
+#endif
+			var shift = 0;
+			do
+			{
+				next = ReadByte();
+				result |= (next & 0x7FU) << shift;
+				shift += 7;
+			}
+			while((next & 128) > 0);
+			return result;
 		}
 
 		private void CheckBuffer()
@@ -351,7 +344,6 @@ namespace AntMicro.Migrant
 		private int currentBufferSize;
 		private int currentBufferPosition;
 		private readonly Stream stream;
-		private bool useCompression;
 	}
 }
 

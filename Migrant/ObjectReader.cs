@@ -74,11 +74,8 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if read methods are to be generated, false if one wants to use reflection.
 		/// </param>
-		/// <param name='useCompression'>
-		/// True if the data in a stream is stored in compressed (using varint approach) form, false otherwise.
-		/// </param>
 		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
-		                    Action<object> postDeserializationCallback = null, IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, bool useCompression = true)
+		                    Action<object> postDeserializationCallback = null, IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false)
 		{
 			if(objectsForSurrogates == null)
 			{
@@ -87,7 +84,6 @@ namespace AntMicro.Migrant
 			this.objectsForSurrogates = objectsForSurrogates;
 			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
 			this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
-			this.useCompression = useCompression;
 			this.useGeneratedDeserialization = isGenerating;
 			typeList = new List<Type>();
 			postDeserializationHooks = new List<Action>();
@@ -163,7 +159,7 @@ namespace AntMicro.Migrant
 
 			delegatesCache = new Dictionary<Type, Func<int, object>>();
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
-			reader = new PrimitiveReader(stream, useCompression);
+			reader = new PrimitiveReader(stream);
 		}
 
 		internal static bool HasSpecialReadMethod(Type type)
@@ -583,7 +579,6 @@ namespace AntMicro.Migrant
 			return fields;
 		}
 
-		private bool useCompression;
 		private bool useGeneratedDeserialization;
 		internal AutoResizingList<object> deserializedObjects;
 		private IDictionary<Type, DynamicMethod> readMethodsCache;

@@ -120,7 +120,7 @@ namespace AntMicro.Migrant
 			var typeList = upfrontKnownTypes.ToList(); // TODO: see TOOO in ListWithHash
 			WriteHeader(stream, typeList);
 			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, 
-			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated, settings.UseCompression);
+			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated);
 			writer.WriteObject(obj);
 			serializationDone = true;
 		}
@@ -169,7 +169,7 @@ namespace AntMicro.Migrant
 		{
 			// Read headers
 			List<Type> upfrontKnownTypes;
-			using(var reader = new PrimitiveReader(stream, settings.UseCompression))
+			using(var reader = new PrimitiveReader(stream))
 			{
 				var magic = reader.ReadUInt32();
 				if(magic != Magic)
@@ -191,7 +191,7 @@ namespace AntMicro.Migrant
 				}
 			}
 
-			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, settings.DeserializationMethod == Method.Generated, settings.UseCompression);
+			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, settings.DeserializationMethod == Method.Generated);
 			var result = objectReader.ReadObject<T>();
 			deserializationDone = true;
 			return result;
@@ -246,7 +246,7 @@ namespace AntMicro.Migrant
 
 		private void WriteHeader(Stream stream, IList<Type> typeList)
 		{
-			using(var writer = new PrimitiveWriter(stream, settings.UseCompression))
+			using(var writer = new PrimitiveWriter(stream))
 			{
 				writer.Write(Magic);
 				writer.Write(VersionNumber);
