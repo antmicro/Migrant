@@ -480,26 +480,12 @@ namespace AntMicro.Migrant
 				}
 				return;
 			}
-			if(formalType.IsPrimitive)
+			if(Helpers.IsWriteableByPrimitiveWriter(formalType))
 			{
 				writer.Write((dynamic)value);
 				return;
 			}
-			if(formalType == typeof(DateTime))
-			{
-				writer.Write((DateTime)value);
-				return;
-			}
-			if(formalType == typeof(TimeSpan))
-			{
-				writer.Write((TimeSpan)value);
-				return;
-			}
-			if(formalType == typeof(Guid))
-			{
-				writer.Write((Guid)value);
-				return;
-			}
+
 			// so we guess it is struct
 			WriteObjectsFields(value, formalType);
 		}

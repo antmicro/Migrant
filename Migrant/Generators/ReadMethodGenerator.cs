@@ -659,7 +659,7 @@ namespace Migrant.Generators
 				generator.MarkLabel(continueWithNullableLabel);
 			}
 
-			if(PrimitiveTypes.Contains(forcedFormalType))
+			if(Helpers.IsWriteableByPrimitiveWriter(forcedFormalType))
 			{
 				// value type
 				GenerateReadPrimitive(forcedFormalType);
@@ -897,22 +897,6 @@ namespace Migrant.Generators
 		private static readonly Type[] ParameterTypes = new [] {
 			typeof(ObjectReader),
 			typeof(Int32)
-		};
-		private static readonly Type[] PrimitiveTypes = new [] {
-			typeof(Guid), 
-			typeof(Int64),
-			typeof(UInt64),
-			typeof(Int32),
-			typeof(UInt32),
-			typeof(Int16),
-			typeof(UInt16),
-			typeof(char),
-			typeof(byte),
-			typeof(bool),
-			typeof(DateTime),
-			typeof(TimeSpan),
-			typeof(float),
-			typeof(double)
 		};
 	}
 }

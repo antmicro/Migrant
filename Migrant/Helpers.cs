@@ -330,7 +330,19 @@ namespace AntMicro.Migrant
 			}
 		}
 
+		public static bool IsWriteableByPrimitiveWriter(Type type)
+		{
+			return TypesWriteableByPrimitiveWriter.Contains(type);
+		}
+
+		static Helpers()
+		{
+			TypesWriteableByPrimitiveWriter = typeof(PrimitiveWriter).GetMethods().Where(x => x.Name == "Write").Select(x => x.GetParameters()[0].ParameterType).ToArray();
+		}
+
 		public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
+
+		private static readonly Type[] TypesWriteableByPrimitiveWriter;
 		private static readonly int[] PaddingBoundaries = new [] {
 				128,
 				1024,
