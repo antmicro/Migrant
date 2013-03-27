@@ -48,9 +48,6 @@ namespace Migrant.Generators
 			generator = dynamicMethod.GetILGenerator();
 
 			GenerateDynamicCode(typeToGenerate);
-#if DEBUG
-			SaveToFile(typeToGenerate);
-#endif
 		}
 
 		public void GenerateDynamicCode(Type typeToGenerate)
@@ -892,61 +889,6 @@ namespace Migrant.Generators
 				return dynamicMethod; 
 			}
 		}
-
-#if DEBUG
-
-		public void SaveToFile(Type ttg)
-		{
-			var name = "dyn-" + ttg.Name.Substring(0, 3) + (ttg.IsArray ? "-arr" : "");
-			
-			var da = AppDomain.CurrentDomain.DefineDynamicAssembly(
-				new AssemblyName(name), // call it whatever you want
-				AssemblyBuilderAccess.Save);
-			
-			var dm = da.DefineDynamicModule("dyn_mod", name + ".dll");
-			var dt = dm.DefineType("dyn_type", TypeAttributes.Public);
-			
-			var method = dt.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static, typeof(object), ParameterTypes);
-			
-			generator = method.GetILGenerator();
-			GenerateDynamicCode(ttg);
-			
-			dt.CreateType();
-			
-			da.Save(name + ".dll");
-		}
-		
-		private void DEBUG_CALL(string text)
-		{
-			generator.Emit(OpCodes.Ldstr, text);
-			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => Helpers.DEBUG_BREAKPOINT_FUNC("text")));
-		}
-		
-		private void DEBUG_STACKVALUE<T>(string text)
-		{
-			generator.Emit(OpCodes.Dup);
-			
-			if(typeof(T).IsValueType)
-			{
-				generator.Emit(OpCodes.Box, typeof(T));
-			}
-			generator.Emit(OpCodes.Ldstr, text);
-			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => Helpers.DEBUG_BREAKPOINT_FUNC(null, "text")));
-		}
-		
-		private void DEBUG_LOCALVALUE(string text, LocalBuilder local)
-		{
-			generator.Emit(OpCodes.Ldloc, local);
-			if(local.LocalType.IsValueType)
-			{
-				generator.Emit(OpCodes.Box, local.LocalType);
-			}
-			
-			generator.Emit(OpCodes.Ldstr, text);
-			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => Helpers.DEBUG_BREAKPOINT_FUNC(null, "text")));
-		}
-		
-#endif
 		
 		private ILGenerator generator;
 		private DynamicMethod dynamicMethod;

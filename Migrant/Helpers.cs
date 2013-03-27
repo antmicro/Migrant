@@ -339,20 +339,6 @@ namespace AntMicro.Migrant
 			};
 		private const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | 
 			BindingFlags.Instance | BindingFlags.DeclaredOnly;
-
-#if DEBUG
-
-		public static void DEBUG_BREAKPOINT_FUNC(string text)
-		{
-			return;
-		}
-
-		public static void DEBUG_BREAKPOINT_FUNC(object obj, string text)
-		{
-			return;
-		}
-
-#endif
 	}
 }
 
