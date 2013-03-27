@@ -333,7 +333,7 @@ namespace AntMicro.Migrant
 			var nullableActualType = Nullable.GetUnderlyingType(formalType);
 			if(nullableActualType != null)
 			{
-				var isNotNull = reader.ReadBool();
+				var isNotNull = reader.ReadBoolean();
 				return isNotNull ? ReadField(nullableActualType) : null;
 			}
 			if(Helpers.IsWriteableByPrimitiveWriter(formalType))

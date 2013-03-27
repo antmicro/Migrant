@@ -183,17 +183,9 @@ namespace AntMicro.Migrant
 		/// <summary>
 		/// Reads and returns <see cref="System.Boolean" />.
 		/// </summary>
-		public bool ReadBool()
-		{
-			return ReadByte() == 1;
-		}
-
-		/// <summary>
-		/// Reads and returns <see cref="System.Boolean" />.
-		/// </summary>
 		public bool ReadBoolean()
 		{
-			return ReadBool();
+			return ReadByte() == 1;
 		}
 
 		/// <summary>
