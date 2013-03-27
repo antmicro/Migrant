@@ -1,4 +1,4 @@
-# Migrant 0.2.1
+# Migrant 0.3
 
 This is the *Migrant* project by [Ant Micro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
 
@@ -43,7 +43,7 @@ Apart from the main serialization framework, we provide a mechanism to translate
 
 Another extra feature, unavailable in convenient form in CLI, is an ability to deep clone given objects. With just one method invocation, Migrant will return an object copy, using the same mechanisms as the rest of the serialization framework.
 
-The current release of Migrant uses reflection mechanisms to handle the deserialization, however the serialization is done using on-line generated methods for performance (the user can also use the reflection instead if he wishes). In the next release we plan to offer deserialization using generated methods as well.
+Serialization and deserialization is done using on-line generated methods for performance (the user can also use the reflection instead if he wishes).
 
 Migrant can also be configured to replace objects of given type with user provided objects during serialization or deserialization. The feature is known as **Surrogates**.
 
