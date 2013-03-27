@@ -288,7 +288,7 @@ namespace AntMicro.Migrant
 
 		private ulong InnerReadInteger()
 		{
-			if (useCompression)
+			if(useCompression)
 			{
 				ulong next;
 				var result = 0UL;
@@ -306,7 +306,7 @@ namespace AntMicro.Migrant
 			{
 				ulong next;
 				var result = 0UL;
-				for (int i = 0; i < sizeof(ulong); ++i)
+				for(int i = 0; i < sizeof(ulong); ++i)
 				{
 					next = ReadByte();
 					result |= (next << 8 * (sizeof(ulong) - i - 1));

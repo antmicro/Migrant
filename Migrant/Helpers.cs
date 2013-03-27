@@ -250,7 +250,7 @@ namespace AntMicro.Migrant
 		public static FieldInfo GetFieldInfo<T, TResult>(Expression<Func<T, TResult>> expression)
 		{
 			var mexpr = expression.Body as MemberExpression;
-			if (mexpr == null)
+			if(mexpr == null)
 			{
 				return null;
 			}
@@ -261,13 +261,13 @@ namespace AntMicro.Migrant
 		public static MethodInfo GetPropertyGetterInfo<T, TResult>(Expression<Func<T, TResult>> expression)
 		{
 			var mexpr = expression.Body as MemberExpression;
-			if (mexpr == null)
+			if(mexpr == null)
 			{
 				return null;
 			}
 
 			var pinfo = mexpr.Member as PropertyInfo;
-			if (pinfo == null)
+			if(pinfo == null)
 			{
 				return null;
 			}
@@ -284,7 +284,7 @@ namespace AntMicro.Migrant
 		public static MethodInfo GetMethodInfo<T, TParam1>(Expression<Func<T, TParam1>> expression)
 		{
 			var methodCall = expression.Body as MethodCallExpression;
-			if (methodCall == null)
+			if(methodCall == null)
 			{
 				// perhaps we have here UnaryExpression wrapping the MethodCallExpression
 				methodCall = (expression.Body as UnaryExpression).Operand as MethodCallExpression;
@@ -337,11 +337,8 @@ namespace AntMicro.Migrant
 				4096,
 				int.MaxValue
 			};
-
 		private const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | 
-				BindingFlags.Instance | BindingFlags.DeclaredOnly;
-
-
+			BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
 		public static void DEBUG_BREAKPOINT_FUNC(string text)
 		{

@@ -258,7 +258,7 @@ namespace AntMicro.Migrant
 
 		private void InnerWriteInteger(ulong value, int sizeInBytes)
 		{
-			if (useCompression)
+			if(useCompression)
 			{
 				CheckBuffer(sizeInBytes + 1);
 				while(value > 127)
@@ -274,7 +274,7 @@ namespace AntMicro.Migrant
 			{
 				CheckBuffer(sizeof(ulong));
 				ulong current = 0;
-				for (int i = 0; i < sizeof(ulong); ++i)
+				for(int i = 0; i < sizeof(ulong); ++i)
 				{
 					current = value & 255;
 					buffer[currentBufferPosition + sizeof(ulong) - i - 1] = (byte)current;
