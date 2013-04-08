@@ -38,7 +38,7 @@ using System.Collections;
 
 namespace Migrant.Generators
 {
-	internal class ReadMethodGenerator
+	internal sealed class ReadMethodGenerator
 	{
 		public ReadMethodGenerator(Type typeToGenerate)
 		{
@@ -48,7 +48,7 @@ namespace Migrant.Generators
 			GenerateDynamicCode(typeToGenerate);
 		}
 
-		public void GenerateDynamicCode(Type typeToGenerate)
+		private void GenerateDynamicCode(Type typeToGenerate)
 		{
 			GenerateReadObjectInner(typeToGenerate);
 			
