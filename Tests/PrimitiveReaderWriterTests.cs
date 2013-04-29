@@ -27,6 +27,7 @@
 using NUnit.Framework;
 using System.IO;
 using System;
+using System.Linq;
 
 namespace AntMicro.Migrant.Tests
 {
@@ -294,6 +295,40 @@ namespace AntMicro.Migrant.Tests
 				for(var i = 0; i < count; i++)
 				{
 					Assert.AreEqual(array[i], reader.ReadGuid());
+				}
+			}
+			Assert.AreEqual(position, stream.Position);
+		}
+
+		[Test]
+		public void ShouldWriteAndReadPartsOfByteArrays()
+		{
+			var arrays = new byte[100][];
+			for(var i = 0; i < arrays.Length; i++)
+			{
+				arrays[i] = Enumerable.Range(0, 256).Select(x => (byte)x).ToArray();
+			}
+
+			var stream = new MemoryStream();
+			using(var writer = new PrimitiveWriter(stream))
+			{
+				for(var i = 0; i < arrays.Length; i++)
+				{
+					writer.Write(arrays[i], i, arrays[i].Length - i);
+				}
+			}
+
+			var position = stream.Position;
+			stream.Seek(0, SeekOrigin.Begin);
+			using(var reader = new PrimitiveReader(stream))
+			{
+				for(var i = 0; i < arrays.Length; i++)
+				{
+					var writtenLength = arrays[i].Length - i;
+					var writtenArray = reader.ReadBytes(writtenLength);
+					var subarray = new byte[writtenLength];
+					Array.Copy(arrays[i], i, subarray, 0, writtenLength);
+					CollectionAssert.AreEqual(subarray, writtenArray);
 				}
 			}
 			Assert.AreEqual(position, stream.Position);

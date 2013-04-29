@@ -214,6 +214,17 @@ namespace AntMicro.Migrant
 		}
 
 		/// <summary>
+		/// Write the specified bytes array, starting at offset and writing count from it.
+		/// </summary>
+		/// <param name="bytes">The array which is a source to write.</param>
+		/// <param name="offset">Index of the array to start writing at.</param>
+		/// <param name="count">Total bytes to write.</param>
+		public void Write(byte[] bytes, int offset, int count)
+		{
+			InnerChunkWrite(bytes, offset, count);
+		}
+
+		/// <summary>
 		/// Copies given number of bytes from the source stream to the underlying stream.
 		/// </summary>
 		/// <param name='source'>
@@ -283,16 +294,20 @@ namespace AntMicro.Migrant
 
 		private void InnerChunkWrite(byte[] data)
 		{
-			var length = data.Length;
+			InnerChunkWrite(data, 0, data.Length);
+		}
+
+		private void InnerChunkWrite(byte[] data, int offset, int length)
+		{
 			CheckBuffer(length);
 			if(length > BufferSize)
 			{
-				stream.Write(data, 0, data.Length);
-				currentPosition += data.Length;
+				stream.Write(data, offset, length);
+				currentPosition += length;
 			}
 			else
 			{
-				data.CopyTo(buffer, currentBufferPosition);
+				Array.Copy(data, offset, buffer, currentBufferPosition, length);
 				currentBufferPosition += length;
 			}
 		}
