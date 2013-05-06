@@ -145,16 +145,14 @@ namespace AntMicro.Migrant
 
 		private static int GetBoundary(long currentPosition)
 		{
-			var index = -1;
-			while(currentPosition > PaddingBoundaries[++index])
-				;
-		    
-			var boundary = PaddingBoundaries[index];
-			if(boundary == int.MaxValue)
+			foreach(var padding in PaddingBoundaries)
 			{
-				boundary = PaddingBoundaries[index - 1];
+				if(currentPosition <= padding)
+				{
+					return padding;
+				}
 			}
-			return boundary;
+			return MaximalPadding;
 		}
 
 		public static int GetCurrentPaddingValue(long currentPosition)
@@ -230,7 +228,7 @@ namespace AntMicro.Migrant
 		{
 			get
 			{
-				return PaddingBoundaries[PaddingBoundaries.Length - 2];
+				return PaddingBoundaries[PaddingBoundaries.Length - 1];
 			}
 		}
 
@@ -346,8 +344,7 @@ namespace AntMicro.Migrant
 		private static readonly int[] PaddingBoundaries = new [] {
 				128,
 				1024,
-				4096,
-				int.MaxValue
+				4096
 			};
 		private const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | 
 			BindingFlags.Instance | BindingFlags.DeclaredOnly;
