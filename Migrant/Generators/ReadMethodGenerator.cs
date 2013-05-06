@@ -232,19 +232,7 @@ namespace Migrant.Generators
 				PushDeserializedObjectOntoStack(objectIdLocal);
 				generator.Emit(OpCodes.Castclass, typeof(ISpeciallySerializable));
 				PushPrimitiveReaderOntoStack();
-
-				GenerateCodeCall<ISpeciallySerializable, PrimitiveReader>((obj, reader) => {
-					var beforePosition = reader.Position;
-					obj.Load(reader);
-					var afterPosition = reader.Position;
-					var serializedLength = reader.ReadInt64();
-					if(serializedLength + beforePosition != afterPosition)
-					{
-						throw new InvalidOperationException(string.Format(
-							"Stream corruption by '{0}', {1} bytes was read.", obj, serializedLength));
-					}
-				});
-
+				GenerateCodeCall<ISpeciallySerializable, PrimitiveReader>(ObjectReader.LoadAndVerifySpeciallySerializableAndVerify);
 				return;
 			}
 			Type formalKeyType, formalValueType;

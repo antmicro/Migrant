@@ -272,15 +272,7 @@ namespace AntMicro.Migrant
 			var speciallyDeserializable = obj as ISpeciallySerializable;
 			if(speciallyDeserializable != null)
 			{
-				var beforePosition = reader.Position;
-				speciallyDeserializable.Load(reader);
-				var afterPosition = reader.Position;
-				var serializedLength = reader.ReadInt64();
-				if(serializedLength + beforePosition != afterPosition)
-				{
-					throw new InvalidOperationException(string.Format(
-                        "Stream corruption by '{0}', {1} bytes was read.", obj, serializedLength));
-				}
+				LoadAndVerifySpeciallySerializableAndVerify(speciallyDeserializable, reader);
 				return;
 			}
 			Type formalKeyType, formalValueType;
@@ -493,6 +485,19 @@ namespace AntMicro.Migrant
 				{
 					position[j] = 0;
 				}
+			}
+		}
+
+		internal static void LoadAndVerifySpeciallySerializableAndVerify(ISpeciallySerializable obj, PrimitiveReader reader)
+		{
+			var beforePosition = reader.Position;
+			obj.Load(reader);
+			var afterPosition = reader.Position;
+			var serializedLength = reader.ReadInt64();
+			if(serializedLength + beforePosition != afterPosition)
+			{
+				throw new InvalidOperationException(string.Format(
+					"Stream corruption by '{0}', incorrent magic {1} when {2} expected.", obj.GetType(), serializedLength, afterPosition - beforePosition));
 			}
 		}
 
