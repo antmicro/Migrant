@@ -205,7 +205,8 @@ namespace AntMicro.Migrant
 			var methodsToInvoke = GetMethodsWithAttribute(attributeType, o.GetType());
 			foreach(var method in methodsToInvoke)
 			{
-				method.Invoke(o, new object[0]);
+				var methodToInvoke = (Action)Delegate.CreateDelegate(typeof(Action), o, method);
+				methodToInvoke();
 			}
 		}
 
