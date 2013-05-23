@@ -31,4 +31,4 @@ using System.Reflection;
 [assembly: AssemblyCompany("AntMicro")]
 [assembly: AssemblyCopyright("Copyright by AntMicro 2012 - 2013")]
 
-[assembly: AssemblyVersion("0.3.0")]
+[assembly: AssemblyVersion("0.3.1")]
