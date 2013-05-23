@@ -106,19 +106,25 @@ namespace AntMicro.Migrant
 		{
 			objectsWritten = 0;
 			identifier.GetId(o);
-			while(identifier.Count > objectsWritten)
+			try
 			{
-				if(!inlineWritten.Contains(objectsWritten))
+				while(identifier.Count > objectsWritten)
 				{
-					InvokeCallbacksAndWriteObject(identifier[objectsWritten]);
+					if(!inlineWritten.Contains(objectsWritten))
+					{
+						InvokeCallbacksAndWriteObject(identifier[objectsWritten]);
+					}
+					objectsWritten++;
 				}
-				objectsWritten++;
 			}
-			foreach(var postHook in postSerializationHooks)
+			finally
 			{
-				postHook();
+				foreach(var postHook in postSerializationHooks)
+				{
+					postHook();
+				}
+				PrepareForNextWrite();
 			}
-			PrepareForNextWrite();
 		}
 
 		internal void WriteObjectIdPossiblyInline(object o)
