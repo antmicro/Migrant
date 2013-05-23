@@ -248,16 +248,22 @@ namespace AntMicro.Migrant
 			// the primitiveWriter parameter is not used here in fact, it is only to have
 			// signature compatible with the generated method
 			Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
-			var type = o.GetType();
-			if(!WriteSpecialObject(o))
+			try
 			{
-				WriteObjectsFields(o, type);
+				var type = o.GetType();
+				if(!WriteSpecialObject(o))
+				{
+					WriteObjectsFields(o, type);
+				}
 			}
-			Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
-			var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostSerializationAttribute), o);
-			if(postHook != null)
+			finally
 			{
-				postSerializationHooks.Add(postHook);
+				Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
+				var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostSerializationAttribute), o);
+				if(postHook != null)
+				{
+					postSerializationHooks.Add(postHook);
+				}
 			}
 		}
 
