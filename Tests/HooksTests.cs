@@ -182,6 +182,33 @@ namespace AntMicro.Migrant.Tests
 			Assert.Less(copy.B.HookInvokedOn, copy.HookInvokedOn);
 		}
 
+		[Test]
+		public void ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerializationEarly()
+		{
+			ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization(new PrePostSerializationMock());
+		}
+
+		[Test]
+		public void ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerializationLate()
+		{
+			ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization(new LatePrePostSerializationMock());
+		}
+
+		private void ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization<T>(T prePostMock) where T : IPrePostMock
+		{
+			try
+			{
+				SerializerClone(prePostMock);
+				Assert.Fail("The exception has not propagated.");
+			}
+			catch(InvalidOperationException)
+			{
+
+			}
+			Assert.AreEqual(true, prePostMock.PreExecuted);
+			Assert.AreEqual(true, prePostMock.PostExecuted);
+		}
+
 		private T SerializerClone<T>(T toClone)
 		{
 			var settings = SettingsFromFields;
@@ -447,6 +474,75 @@ namespace AntMicro.Migrant.Tests
 			HookInvokedOn = DateTime.Now;
 			Thread.Sleep(100);
 		}
+	}
+
+	public class ClassSendingExcetpionDuringSerialization
+	{
+		[PreSerialization]
+		private void SendException()
+		{
+			throw new InvalidOperationException();
+		}
+	}
+
+	public interface IPrePostMock
+	{
+		bool PreExecuted { get; }
+		bool PostExecuted { get; }
+	}
+
+	public class PrePostSerializationMock : IPrePostMock
+	{
+		public PrePostSerializationMock()
+		{
+			sendingException = new ClassSendingExcetpionDuringSerialization();
+		}
+
+		public bool PreExecuted { get; private set; }
+		public bool PostExecuted { get; private set; }
+
+		[PreSerialization]
+		private void BeforeSerialization()
+		{
+			PreExecuted = true;
+		}
+
+		[PostSerialization]
+		private void AfterSerialization()
+		{
+			PostExecuted = true;
+		}
+
+#pragma warning disable 0414
+		private ClassSendingExcetpionDuringSerialization sendingException;
+#pragma warning restore 0414
+	}
+
+	public class LatePrePostSerializationMock : IPrePostMock
+	{
+		public LatePrePostSerializationMock()
+		{
+			sendingException = new ClassSendingExcetpionDuringSerialization();
+		}
+
+		public bool PreExecuted { get; private set; }
+		public bool PostExecuted { get; private set; }
+
+		[PreSerialization]
+		private void BeforeSerialization()
+		{
+			PreExecuted = true;
+		}
+
+		[LatePostSerialization]
+		private void AfterSerialization()
+		{
+			PostExecuted = true;
+		}
+
+		#pragma warning disable 0414
+		private ClassSendingExcetpionDuringSerialization sendingException;
+		#pragma warning restore 0414
 	}
 }
 
