@@ -55,6 +55,12 @@ namespace AntMicro.Migrant.Generators
 
 			// preserialization callbacks
 			GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));
+			var exceptionBlockNeeded = Helpers.GetMethodsWithAttribute(typeof(PostSerializationAttribute), typeToGenerate).Any() ||
+				Helpers.GetMethodsWithAttribute(typeof(LatePostSerializationAttribute), typeToGenerate).Any();
+			if(exceptionBlockNeeded)
+			{
+				generator.BeginExceptionBlock();
+			}
 
 			if(!GenerateSpecialWrite(typeToGenerate))
 			{
@@ -63,11 +69,17 @@ namespace AntMicro.Migrant.Generators
 					gen.Emit(OpCodes.Ldarg_2);
 				}, typeToGenerate);
 			}
-
+			if(exceptionBlockNeeded)
+			{
+				generator.BeginFinallyBlock();
+			}
 			// postserialization callbacks
 			GenerateInvokeCallback(typeToGenerate, typeof(PostSerializationAttribute));
 			GenerateAddCallbackToInvokeList(typeToGenerate, typeof(LatePostSerializationAttribute));
-
+			if(exceptionBlockNeeded)
+			{
+				generator.EndExceptionBlock();
+			}
 			generator.Emit(OpCodes.Ret);
 		}
 
