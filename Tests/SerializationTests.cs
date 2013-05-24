@@ -619,7 +619,7 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(tuple, copy);
 		}
 
-		[Test]
+		[Test, Ignore]
 		public void ShouldInvokeConstructorForField()
 		{
 			var withCtor = new WithConstructorAttribute();
@@ -830,6 +830,26 @@ namespace AntMicro.Migrant.Tests
 			var withGuid = new ClassWithGuid();
 			var copy = SerializerClone(withGuid);
 			Assert.AreEqual(withGuid, copy);
+		}
+
+		[Test]
+		public void ShouldFindPathToPointerContainingObject()
+		{
+			Exception exception = null;
+			var toClone = new GenericBox<AnotherContainingType>();
+			toClone.Element = new AnotherContainingType();
+			try
+			{
+				SerializerClone(toClone);
+				Assert.Fail("Exception was not thrown.");
+			}
+			catch(Exception e)
+			{
+				exception = e;
+			}
+			Assert.IsTrue(exception.Message.Contains(toClone.GetType().Name));
+			Assert.IsTrue(exception.Message.Contains(toClone.Element.GetType().Name));
+			Assert.IsTrue(exception.Message.Contains(toClone.Element.WithIntPtr.GetType().Name));
 		}
 
 		private T SerializerClone<T>(T toClone)
@@ -1238,6 +1258,16 @@ namespace AntMicro.Migrant.Tests
 			public int Number { get; private set; }
 
 			public string Str { get; private set; }
+		}
+
+		public class AnotherContainingType
+		{
+			public AnotherContainingType()
+			{
+				WithIntPtr = new ClassWithIntPtr();
+			}
+
+			public ClassWithIntPtr WithIntPtr { get; private set; }
 		}
 	}
 
