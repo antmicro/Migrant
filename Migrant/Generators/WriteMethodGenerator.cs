@@ -39,6 +39,7 @@ namespace AntMicro.Migrant.Generators
 	{
 		internal WriteMethodGenerator(Type typeToGenerate)
 		{
+			typeWeAreGeneratingFor = typeToGenerate;
 			ObjectWriter.CheckLegality(typeToGenerate);
 			InitializeMethodInfos();
 			if(!typeToGenerate.IsArray)
@@ -493,7 +494,7 @@ namespace AntMicro.Migrant.Generators
 
 		private void GenerateWriteValue(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
 		{
-			ObjectWriter.CheckLegality(formalType);
+			ObjectWriter.CheckLegality(formalType, typeWeAreGeneratingFor);
 			if(formalType.IsEnum)
 			{
 				formalType = Enum.GetUnderlyingType(formalType);
@@ -623,6 +624,7 @@ namespace AntMicro.Migrant.Generators
 
 		private readonly ILGenerator generator;
 		private readonly DynamicMethod dynamicMethod;
+		private readonly Type typeWeAreGeneratingFor;
 
 		private static int WriteArrayMethodCounter;
 		private static readonly Type[] ParameterTypes = new [] { typeof(ObjectWriter), typeof(PrimitiveWriter), typeof(object) };

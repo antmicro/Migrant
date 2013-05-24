@@ -35,6 +35,7 @@ using ImpromptuInterface;
 using AntMicro.Migrant.Generators;
 using System.Reflection.Emit;
 using System.Threading;
+using System.Diagnostics;
 
 namespace AntMicro.Migrant
 {
@@ -78,6 +79,7 @@ namespace AntMicro.Migrant
 			{
 				surrogatesForObjects = new Dictionary<Type, Delegate>();
 			}
+			currentlyWrittenTypes = new Stack<Type>();
 			transientTypeCache = new Dictionary<Type, bool>();
 			writeMethods = new List<Action<PrimitiveWriter, object>>();
 			postSerializationHooks = new List<Action>();
@@ -160,12 +162,21 @@ namespace AntMicro.Migrant
 			return isTransient;
 		}
 
-		internal static void CheckLegality(Type type)
+		internal static void CheckLegality(Type type, Type containingType = null, IEnumerable<Type> writtenTypes = null)
 		{
+			// containing type is a hint in case of 
 			if(type.IsPointer || type == typeof(IntPtr) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ThreadLocal<>)))
 			{
-				// TODO: message for the user should be more friendly if possible - it should contain path which lead to such field or type
-				throw new InvalidOperationException("Pointer or ThreadLocal encountered during serialization.");
+				if(writtenTypes == null)
+				{
+					var stackTrace = new StackTrace();
+					var methods = stackTrace.GetFrames().Select(x => x.GetMethod()).ToArray();
+					var topType = containingType != null ? new [] { containingType } : Type.EmptyTypes;
+					writtenTypes = topType.Union(methods.Where(x => x.Name == "Write" && x.GetParameters()[0].ParameterType == typeof(ObjectWriter))
+					                             .Select(x => x.DeclaringType));
+				}
+				var path = writtenTypes.Select(x => x.Name).Reverse().Aggregate((x, y) => x + " => " + y);
+				throw new InvalidOperationException("Pointer or ThreadLocal encountered during serialization. The classes path that lead to it was: " + path);
 			}
 		}
 
@@ -251,10 +262,12 @@ namespace AntMicro.Migrant
 			try
 			{
 				var type = o.GetType();
+				currentlyWrittenTypes.Push(type);
 				if(!WriteSpecialObject(o))
 				{
 					WriteObjectsFields(o, type);
 				}
+				currentlyWrittenTypes.Pop();
 			}
 			finally
 			{
@@ -448,7 +461,7 @@ namespace AntMicro.Migrant
 			{
 				return;
 			}
-			CheckLegality(actualType);
+			CheckLegality(actualType, writtenTypes: currentlyWrittenTypes);
 			var refId = identifier.GetId(value);
 			// if this is a future reference, just after the reference id,
 			// we should write inline data
@@ -467,7 +480,7 @@ namespace AntMicro.Migrant
 
 		private void WriteValueType(Type formalType, object value)
 		{
-			CheckLegality(formalType);
+			CheckLegality(formalType, writtenTypes: currentlyWrittenTypes);
 			// value type -> actual type is the formal type
 			if(formalType.IsEnum)
 			{
@@ -583,6 +596,7 @@ namespace AntMicro.Migrant
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
 		private readonly IDictionary<Type, Delegate> surrogatesForObjects;
 		private readonly List<Action<PrimitiveWriter, object>> writeMethods;
+		private readonly Stack<Type> currentlyWrittenTypes;
 	}
 }
 
