@@ -619,7 +619,7 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(tuple, copy);
 		}
 
-		[Test, Ignore]
+		[Test]
 		public void ShouldInvokeConstructorForField()
 		{
 			var withCtor = new WithConstructorAttribute();
