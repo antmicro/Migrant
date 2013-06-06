@@ -30,6 +30,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using ImpromptuInterface;
 using AntMicro.Migrant;
 using AntMicro.Migrant.Hooks;
@@ -155,7 +156,7 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Stloc, objectIdLocal);
 
 			GenerateTouchObject(formalType);
-
+			
 			switch(ObjectReader.GetCreationWay(formalType))
 			{
 			case ObjectReader.CreationWay.Null:
@@ -168,10 +169,10 @@ namespace Migrant.Generators
 				GenerateUpdateFields(formalType, objectIdLocal);
 				break;
 			}
-
+			
 			PushDeserializedObjectOntoStack(objectIdLocal);
 			generator.Emit(OpCodes.Brfalse, finish);
-
+			
 			PushDeserializedObjectOntoStack(objectIdLocal);
 			generator.Emit(OpCodes.Ldarg_0);
 			generator.Emit(OpCodes.Ldloc, objectIdLocal);
@@ -184,9 +185,10 @@ namespace Migrant.Generators
 			foreach(var method in methods)
 			{
 				PushDeserializedObjectOntoStack(objectIdLocal);
+				generator.Emit(OpCodes.Castclass, method.ReflectedType);
 				generator.Emit(OpCodes.Call, method);
 			}
-
+			
 			methods = Helpers.GetMethodsWithAttribute(typeof(LatePostDeserializationAttribute), formalType);
 			foreach(var method in methods)
 			{
@@ -201,6 +203,7 @@ namespace Migrant.Generators
 				else
 				{
 					PushDeserializedObjectOntoStack(objectIdLocal);
+					generator.Emit(OpCodes.Castclass, method.ReflectedType);
 				}
 				generator.Emit(OpCodes.Ldtoken, method);
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, MethodBase>(x => MethodBase.GetMethodFromHandle(new RuntimeMethodHandle())));
@@ -221,7 +224,7 @@ namespace Migrant.Generators
 					or.postDeserializationCallback(obj);
 				}
 			});
-
+			
 			generator.MarkLabel(finish);
 		}
 
@@ -319,9 +322,11 @@ namespace Migrant.Generators
 
 			GenerateLoop(countLocal, lc => {
 				PushDeserializedObjectOntoStack(objectIdLocal);
+				generator.Emit(OpCodes.Castclass, dictionaryType);
+
 				GenerateReadField(formalKeyType, false);
 				GenerateReadField(formalValueType, false);
-				generator.Emit(OpCodes.Call, addMethod);
+				generator.Emit(OpCodes.Callvirt, addMethod);
 				if(addMethod.ReturnType != typeof(void))
 				{
 					generator.Emit(OpCodes.Pop); // remove returned unused value from stack
@@ -334,7 +339,7 @@ namespace Migrant.Generators
 			var elementFormalType = type.GetGenericArguments()[0];
 			
 			var lengthLocal = generator.DeclareLocal(typeof(Int32));
-			var arrayLocal = generator.DeclareLocal(typeof(Array));
+			var arrayLocal = generator.DeclareLocal(elementFormalType.MakeArrayType());
 			
 			GenerateReadPrimitive(typeof(Int32));
 			generator.Emit(OpCodes.Stloc, lengthLocal); // read number of elements in the collection
@@ -352,6 +357,7 @@ namespace Migrant.Generators
 			
 			SaveNewDeserializedObject(objectIdLocal, () => {
 				generator.Emit(OpCodes.Ldloc, arrayLocal);
+				generator.Emit(OpCodes.Castclass, typeof(IList<>).MakeGenericType(elementFormalType));
 				generator.Emit(OpCodes.Newobj, type.GetConstructor(new [] { typeof(IList<>).MakeGenericType(elementFormalType) }));
 			});
 		}
@@ -388,23 +394,24 @@ namespace Migrant.Generators
 				});
 				
 				GenerateLoop(countLocal, cl => {
-					//generator.Emit(OpCodes.Ldloc, collectionObjLocal);
 					PushDeserializedObjectOntoStack(objectIdLocal);
+					generator.Emit(OpCodes.Castclass, collectionType);
 
 					generator.Emit(OpCodes.Ldloc, tempArrLocal);
 					generator.Emit(OpCodes.Ldloc, cl);
 					generator.Emit(OpCodes.Ldelem, elementFormalType);
-					generator.Emit(OpCodes.Call, collectionType.GetMethod("Push"));
+					generator.Emit(OpCodes.Callvirt, collectionType.GetMethod("Push"));
 				}, true);
 			}
 			else
 			{
 				GenerateLoop(countLocal, cl => {
-					// generator.Emit(OpCodes.Ldloc, collectionObjLocal);
-					PushDeserializedObjectOntoStack(objectIdLocal);
 
+					PushDeserializedObjectOntoStack(objectIdLocal);
+					generator.Emit(OpCodes.Castclass, collectionType);
 					GenerateReadField(elementFormalType, false);
-					generator.Emit(OpCodes.Call, addMethod);
+					generator.Emit(OpCodes.Callvirt, addMethod);
+
 					if(addMethod.ReturnType != typeof(void))
 					{
 						generator.Emit(OpCodes.Pop); // remove returned unused value from stack
@@ -581,6 +588,7 @@ namespace Migrant.Generators
 				generator.MarkLabel(else1); // if CheckObjectMeta returned 1
 				
 				PushDeserializedObjectOntoStack(objectIdLocal);
+				generator.Emit(OpCodes.Castclass, formalType);
 				generator.Emit(OpCodes.Br, finishLabel);
 				
 				generator.MarkLabel(returnNullLabel);
@@ -700,7 +708,15 @@ namespace Migrant.Generators
 					if(field.IsDefined(typeof(ConstructorAttribute), false))
 					{
 						generator.Emit(OpCodes.Ldtoken, field);
-						generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle)));
+						if (field.DeclaringType.IsGenericType)
+						{
+                            generator.Emit(OpCodes.Ldtoken, field.ReflectedType);
+                            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle, new RuntimeTypeHandle())));
+						}
+						else
+						{
+                            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle)));
+						}
 						PushDeserializedObjectOntoStack(objectIdLocal);
 
 						GenerateCodeCall<FieldInfo, object>((fi, target) => {
@@ -712,9 +728,38 @@ namespace Migrant.Generators
 					continue;
 				}
 
-				PushDeserializedObjectOntoStack(objectIdLocal);
-				GenerateReadField(field.FieldType, false);
-				generator.Emit(OpCodes.Stfld, field);
+                if (field.IsInitOnly)
+                {
+					// if field is readonly Stfld will cause error - that's why reflection is introduced
+                    generator.Emit(OpCodes.Ldtoken, field);
+
+                    if (field.DeclaringType.IsGenericType)
+                    {
+						generator.Emit(OpCodes.Ldtoken, field.ReflectedType);
+                        generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle, new RuntimeTypeHandle())));
+                    }
+                    else
+                    {
+                        generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle)));
+                    }
+
+                    PushDeserializedObjectOntoStack(objectIdLocal);
+                    generator.Emit(OpCodes.Castclass, field.ReflectedType);
+                    GenerateReadField(field.FieldType, false);
+					if (field.FieldType.IsValueType)
+					{
+					    generator.Emit(OpCodes.Box, field.FieldType);
+					}
+
+                    generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<FieldInfo>(x => x.SetValue(null, null)));
+                }
+                else
+                {
+                    PushDeserializedObjectOntoStack(objectIdLocal);
+                    generator.Emit(OpCodes.Castclass, field.ReflectedType);
+                    GenerateReadField(field.FieldType, false);
+                    generator.Emit(OpCodes.Stfld, field);
+                }
 			}
 		}
 
@@ -852,9 +897,9 @@ namespace Migrant.Generators
 				return dynamicMethod; 
 			}
 		}
-		
+
 		private ILGenerator generator;
-		private DynamicMethod dynamicMethod;
+		private readonly DynamicMethod dynamicMethod;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
 		private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
 		private static readonly Type[] ParameterTypes = new [] {
