@@ -44,13 +44,13 @@ namespace AntMicro.Migrant.Generators
 			InitializeMethodInfos();
 			if(!typeToGenerate.IsArray)
 			{
-				dynamicMethod = new DynamicMethod("Write", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
+				dynamicMethod = new DynamicMethod(string.Format("Write_{0}", typeToGenerate.Name), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
 			                               typeof(void), ParameterTypes, typeToGenerate, true);
 			}
 			else
 			{
 				var methodNo = Interlocked.Increment(ref WriteArrayMethodCounter);
-				dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}", methodNo), null, ParameterTypes, true);
+				dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}_{1}", methodNo, typeToGenerate.Name), null, ParameterTypes, true);
 			}
 			generator = dynamicMethod.GetILGenerator();
 

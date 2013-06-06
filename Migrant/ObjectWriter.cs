@@ -164,18 +164,26 @@ namespace AntMicro.Migrant
 
 		internal static void CheckLegality(Type type, Type containingType = null, IEnumerable<Type> writtenTypes = null)
 		{
-			// containing type is a hint in case of 
+		    // containing type is a hint in case of 
 			if(type.IsPointer || type == typeof(IntPtr) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ThreadLocal<>)))
 			{
-				if(writtenTypes == null)
+			    IEnumerable<string> typeNames;
+			    if(writtenTypes == null)
 				{
 					var stackTrace = new StackTrace();
 					var methods = stackTrace.GetFrames().Select(x => x.GetMethod()).ToArray();
-					var topType = containingType != null ? new [] { containingType } : Type.EmptyTypes;
-					writtenTypes = topType.Union(methods.Where(x => x.Name == "Write" && x.GetParameters()[0].ParameterType == typeof(ObjectWriter))
-					                             .Select(x => x.DeclaringType));
+					var topType = containingType != null ? new [] { containingType.Name } : (new string[0]);
+					typeNames = topType.Union(
+                        methods
+							.Where(x => (x.Name.StartsWith("Write_") || x.Name.StartsWith("WriteArray")) && x.GetParameters()[0].ParameterType == typeof(ObjectWriter))
+							.Select(x => x.Name.Substring(x.Name.IndexOf('_') + 1)));
 				}
-				var path = writtenTypes.Select(x => x.Name).Reverse().Aggregate((x, y) => x + " => " + y);
+				else
+				{
+				    typeNames = writtenTypes.Select(x => x.Name);
+				}
+
+				var path = typeNames.Reverse().Aggregate((x, y) => x + " => " + y);
 				throw new InvalidOperationException("Pointer or ThreadLocal encountered during serialization. The classes path that lead to it was: " + path);
 			}
 		}
