@@ -30,7 +30,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization;
-using System.Text.RegularExpressions;
 using ImpromptuInterface;
 using AntMicro.Migrant;
 using AntMicro.Migrant.Hooks;
@@ -43,7 +42,14 @@ namespace Migrant.Generators
 	{
 		public ReadMethodGenerator(Type typeToGenerate)
 		{
-			dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, true);
+			if (typeToGenerate.IsArray)
+			{
+				dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, true);
+			}
+			else
+			{
+				dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, typeToGenerate, true);
+			}
 			generator = dynamicMethod.GetILGenerator();
 
 			GenerateDynamicCode(typeToGenerate);
@@ -728,38 +734,10 @@ namespace Migrant.Generators
 					continue;
 				}
 
-                if (field.IsInitOnly)
-                {
-					// if field is readonly Stfld will cause error - that's why reflection is introduced
-                    generator.Emit(OpCodes.Ldtoken, field);
-
-                    if (field.DeclaringType.IsGenericType)
-                    {
-						generator.Emit(OpCodes.Ldtoken, field.ReflectedType);
-                        generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle, new RuntimeTypeHandle())));
-                    }
-                    else
-                    {
-                        generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle)));
-                    }
-
-                    PushDeserializedObjectOntoStack(objectIdLocal);
-                    generator.Emit(OpCodes.Castclass, field.ReflectedType);
-                    GenerateReadField(field.FieldType, false);
-					if (field.FieldType.IsValueType)
-					{
-					    generator.Emit(OpCodes.Box, field.FieldType);
-					}
-
-                    generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<FieldInfo>(x => x.SetValue(null, null)));
-                }
-                else
-                {
-                    PushDeserializedObjectOntoStack(objectIdLocal);
-                    generator.Emit(OpCodes.Castclass, field.ReflectedType);
-                    GenerateReadField(field.FieldType, false);
-                    generator.Emit(OpCodes.Stfld, field);
-                }
+                PushDeserializedObjectOntoStack(objectIdLocal);
+                generator.Emit(OpCodes.Castclass, field.ReflectedType);
+                GenerateReadField(field.FieldType, false);
+                generator.Emit(OpCodes.Stfld, field);
 			}
 		}
 
