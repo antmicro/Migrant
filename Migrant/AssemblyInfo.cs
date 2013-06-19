@@ -4,6 +4,7 @@
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -31,4 +32,4 @@ using System.Reflection;
 [assembly: AssemblyCompany("AntMicro")]
 [assembly: AssemblyCopyright("Copyright by AntMicro 2012 - 2013")]
 
-[assembly: AssemblyVersion("0.3.1")]
+[assembly: AssemblyVersion("0.3.2")]
