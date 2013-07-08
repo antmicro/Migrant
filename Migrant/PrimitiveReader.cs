@@ -125,6 +125,12 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public short ReadInt16()
 		{
+#if DEBUG
+			if(PrimitiveWriter.DontUseVarintCompression)
+			{
+				return (short)InnerReadInteger();
+			}
+#endif
 			var value = (ushort)InnerReadInteger();
 			return (short)((value & 1) == 1 ? -(1 + value) / 2 : value / 2);
 		}
@@ -134,6 +140,12 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public ushort ReadUInt16()
 		{
+#if DEBUG
+			if(PrimitiveWriter.DontUseVarintCompression)
+			{
+				return (ushort)InnerReadInteger();
+			}
+#endif
 			return (ushort)(InnerReadInteger()/2);
 		}
 
@@ -142,6 +154,12 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public int ReadInt32()
 		{
+#if DEBUG
+			if(PrimitiveWriter.DontUseVarintCompression)
+			{
+				return (int)InnerReadInteger();
+			}
+#endif
 			var value = (uint)InnerReadInteger();
 			return (int)((value & 1) == 1 ? -(1 + value) / 2 : value / 2);
 		}
@@ -151,6 +169,12 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public uint ReadUInt32()
 		{
+#if DEBUG
+			if(PrimitiveWriter.DontUseVarintCompression)
+			{
+				return (uint)InnerReadInteger();
+			}
+#endif
 			return (uint)(InnerReadInteger()/2);
 		}
 
@@ -159,6 +183,12 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public long ReadInt64()
 		{
+#if DEBUG
+			if(PrimitiveWriter.DontUseVarintCompression)
+			{
+				return (long)InnerReadInteger();
+			}
+#endif
 			var value = InnerReadInteger();
 			return (value & 1) == 1 ? -(long)((1 + value) / 2) : (long)(value / 2);
 		}
@@ -168,6 +198,12 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public ulong ReadUInt64()
 		{
+#if DEBUG
+			if(PrimitiveWriter.DontUseVarintCompression)
+			{
+				return InnerReadInteger();
+			}
+#endif
 			return InnerReadInteger()/2;
 		}
 
