@@ -125,7 +125,7 @@ namespace AntMicro.Migrant
 		public void Write(short value)
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				InnerWriteInteger((ushort)value, sizeof(int));
 				return;
@@ -141,7 +141,7 @@ namespace AntMicro.Migrant
 		public void Write(ushort value)
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				InnerWriteInteger(value, sizeof(int));
 				return;
@@ -156,7 +156,7 @@ namespace AntMicro.Migrant
 		public void Write(int value)
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				InnerWriteInteger((uint)value, sizeof(int));
 				return;
@@ -172,7 +172,7 @@ namespace AntMicro.Migrant
 		public void Write(uint value)
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				InnerWriteInteger(value, sizeof(int));
 				return;
@@ -187,7 +187,7 @@ namespace AntMicro.Migrant
 		public void Write(long value)
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				Write((ulong)value);
 				return;
@@ -203,7 +203,7 @@ namespace AntMicro.Migrant
 		public void Write(ulong value)
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				InnerWriteInteger(value, sizeof(ulong) + 1);
 				return;
@@ -311,7 +311,7 @@ namespace AntMicro.Migrant
 		private void InnerWriteInteger(ulong value, int sizeInBytes)
 		{
 #if DEBUG
-			if(DontUseVarintCompression)
+			if(DontUseIntegerCompression)
 			{
 				CheckBuffer(sizeof(ulong));
 				ulong current = 0;
@@ -388,7 +388,7 @@ namespace AntMicro.Migrant
 		private const int BufferSize = 4 * 1024;
 
 #if DEBUG
-		internal static readonly bool DontUseVarintCompression = false;
+		internal static readonly bool DontUseIntegerCompression = false;
 #endif
 	}
 }

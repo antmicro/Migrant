@@ -126,7 +126,7 @@ namespace AntMicro.Migrant
 		public short ReadInt16()
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				return (short)InnerReadInteger();
 			}
@@ -141,7 +141,7 @@ namespace AntMicro.Migrant
 		public ushort ReadUInt16()
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				return (ushort)InnerReadInteger();
 			}
@@ -155,7 +155,7 @@ namespace AntMicro.Migrant
 		public int ReadInt32()
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				return (int)InnerReadInteger();
 			}
@@ -170,7 +170,7 @@ namespace AntMicro.Migrant
 		public uint ReadUInt32()
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				return (uint)InnerReadInteger();
 			}
@@ -184,7 +184,7 @@ namespace AntMicro.Migrant
 		public long ReadInt64()
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				return (long)InnerReadInteger();
 			}
@@ -199,7 +199,7 @@ namespace AntMicro.Migrant
 		public ulong ReadUInt64()
 		{
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				return InnerReadInteger();
 			}
@@ -318,7 +318,7 @@ namespace AntMicro.Migrant
 			ulong next;
 			var result = 0UL;
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				for(int i = 0; i < sizeof(ulong); ++i)
 				{
