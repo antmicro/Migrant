@@ -124,7 +124,8 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(short value)
 		{
-			InnerWriteInteger((ushort)value, sizeof(int));
+			var valueToWrite = value < 0 ? -value * 2 - 1 : value * 2;
+			InnerWriteInteger((ushort)valueToWrite, sizeof(int));
 		}
 
 		/// <summary>
@@ -132,7 +133,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(ushort value)
 		{
-			InnerWriteInteger(value, sizeof(int));
+			InnerWriteInteger(2u * value, sizeof(int));
 		}
 
 		/// <summary>
@@ -140,7 +141,8 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(int value)
 		{
-			InnerWriteInteger((uint)value, sizeof(int));
+			var valueToWrite = value < 0 ? -value * 2 - 1 : value * 2;
+			InnerWriteInteger((uint)valueToWrite, sizeof(int));
 		}
 
 		/// <summary>
@@ -148,7 +150,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(uint value)
 		{
-			InnerWriteInteger(value, sizeof(int));
+			InnerWriteInteger(2u * value, sizeof(int));
 		}
 
 		/// <summary>
@@ -156,7 +158,8 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(long value)
 		{
-			Write((ulong)value);
+			var valueToWrite = value < 0 ? -value * 2 - 1 : value * 2;
+			InnerWriteInteger((ulong)valueToWrite, sizeof(ulong));
 		}
 
 		/// <summary>
@@ -164,7 +167,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(ulong value)
 		{
-			InnerWriteInteger(value, sizeof(ulong) + 1);
+			InnerWriteInteger(2ul * value, sizeof(ulong));
 		}
 
 		/// <summary>

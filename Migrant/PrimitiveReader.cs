@@ -125,7 +125,8 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public short ReadInt16()
 		{
-			return (short)InnerReadInteger();
+			var value = (ushort)InnerReadInteger();
+			return (short)((value & 1) == 1 ? -(1 + value) / 2 : value / 2);
 		}
 
 		/// <summary>
@@ -133,7 +134,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public ushort ReadUInt16()
 		{
-			return (ushort)InnerReadInteger();
+			return (ushort)(InnerReadInteger()/2);
 		}
 
 		/// <summary>
@@ -141,7 +142,8 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public int ReadInt32()
 		{
-			return (int)InnerReadInteger();
+			var value = (uint)InnerReadInteger();
+			return (int)((value & 1) == 1 ? -(1 + value) / 2 : value / 2);
 		}
 
 		/// <summary>
@@ -149,7 +151,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public uint ReadUInt32()
 		{
-			return (uint)InnerReadInteger();
+			return (uint)(InnerReadInteger()/2);
 		}
 
 		/// <summary>
@@ -157,7 +159,8 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public long ReadInt64()
 		{
-			return (long)InnerReadInteger();
+			var value = InnerReadInteger();
+			return (value & 1) == 1 ? -(long)((1 + value) / 2) : (long)(value / 2);
 		}
 
 		/// <summary>
@@ -165,7 +168,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public ulong ReadUInt64()
 		{
-			return InnerReadInteger();
+			return InnerReadInteger()/2;
 		}
 
 		/// <summary>
