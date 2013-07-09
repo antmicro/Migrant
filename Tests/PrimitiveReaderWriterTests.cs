@@ -381,6 +381,32 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(position, stream.Position);
 		}
 
+		[Test]
+		public void ShouldHandleNotAlignedWrites()
+		{
+			const int iterationCount = 80000;
+			var stream = new MemoryStream();
+			using(var writer = new PrimitiveWriter(stream))
+			{
+				writer.Write((byte)1);
+				for(var i = 0; i < iterationCount; i++)
+				{
+					writer.Write(int.MaxValue);
+				}
+			}
+			var position = stream.Position;
+			stream.Seek(0, SeekOrigin.Begin);
+			using(var reader = new PrimitiveReader(stream))
+			{
+				Assert.AreEqual((byte)1, reader.ReadByte());
+				for(var i = 0; i < iterationCount; i++)
+				{
+					Assert.AreEqual(int.MaxValue, reader.ReadInt32());
+				}
+			}
+			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
+		}
+
 		private const string StreamCorruptedMessage = "Stream was corrupted during read (in terms of position).";
 	}
 }
