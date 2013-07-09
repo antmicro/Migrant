@@ -127,12 +127,12 @@ namespace AntMicro.Migrant
 #if DEBUG
 			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
-				InnerWriteInteger((ushort)value, sizeof(int));
+				InnerWriteInteger((ushort)value, sizeof(short) + 1);
 				return;
 			}
 #endif
-			var valueToWrite = value < 0 ? -value * 2 - 1 : value * 2;
-			InnerWriteInteger((ushort)valueToWrite, sizeof(int));
+			var valueToWrite = (value << 1) ^ (value >> 15);
+			InnerWriteInteger((ushort)valueToWrite, sizeof(short) + 1);
 		}
 
 		/// <summary>
@@ -140,14 +140,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(ushort value)
 		{
-#if DEBUG
-			if(PrimitiveWriter.DontUseIntegerCompression)
-			{
-				InnerWriteInteger(value, sizeof(int));
-				return;
-			}
-#endif
-			InnerWriteInteger(2u * value, sizeof(int));
+			InnerWriteInteger(value, sizeof(ushort) + 1);
 		}
 
 		/// <summary>
@@ -158,12 +151,12 @@ namespace AntMicro.Migrant
 #if DEBUG
 			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
-				InnerWriteInteger((uint)value, sizeof(int));
+				InnerWriteInteger((uint)value, sizeof(int) + 1);
 				return;
 			}
 #endif
-			var valueToWrite = value < 0 ? -value * 2 - 1 : value * 2;
-			InnerWriteInteger((uint)valueToWrite, sizeof(int));
+			var valueToWrite = (value << 1) ^ (value >> 31);
+			InnerWriteInteger((uint)valueToWrite, sizeof(int) + 1);
 		}
 
 		/// <summary>
@@ -171,14 +164,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(uint value)
 		{
-#if DEBUG
-			if(PrimitiveWriter.DontUseIntegerCompression)
-			{
-				InnerWriteInteger(value, sizeof(int));
-				return;
-			}
-#endif
-			InnerWriteInteger(2u * value, sizeof(int));
+			InnerWriteInteger(value, sizeof(uint) + 1);
 		}
 
 		/// <summary>
@@ -193,8 +179,8 @@ namespace AntMicro.Migrant
 				return;
 			}
 #endif
-			var valueToWrite = value < 0 ? -value * 2 - 1 : value * 2;
-			InnerWriteInteger((ulong)valueToWrite, sizeof(ulong) + 1);
+			var valueToWrite = (value << 1) ^ (value >> 63);
+			InnerWriteInteger((ulong)valueToWrite, sizeof(long) + 1);
 		}
 
 		/// <summary>
@@ -202,14 +188,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(ulong value)
 		{
-#if DEBUG
-			if(PrimitiveWriter.DontUseIntegerCompression)
-			{
-				InnerWriteInteger(value, sizeof(ulong) + 1);
-				return;
-			}
-#endif
-			InnerWriteInteger(2ul * value, sizeof(ulong));
+			InnerWriteInteger(value, sizeof(ulong) + 1);
 		}
 
 		/// <summary>
