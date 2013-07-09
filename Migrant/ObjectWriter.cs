@@ -36,6 +36,7 @@ using AntMicro.Migrant.Generators;
 using System.Reflection.Emit;
 using System.Threading;
 using System.Diagnostics;
+using AntMicro.Migrant.VersionTolerance;
 
 namespace AntMicro.Migrant
 {
@@ -220,11 +221,6 @@ namespace AntMicro.Migrant
 			moduleIndices.Add(module, moduleId);
 		}
 
-		internal static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type)
-		{
-			return type.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name);
-		}
-
 		internal static bool HasSpecialWriteMethod(Type type)
 		{
 			return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
@@ -291,7 +287,7 @@ namespace AntMicro.Migrant
 		private void WriteObjectsFields(object o, Type type)
 		{
 			// fields in the alphabetical order
-			var fields = GetFieldsInSerializationOrder(type);
+			var fields = TypeStamper.GetFieldsInSerializationOrder(type);
 			foreach(var field in fields)
 			{
 				var fieldType = field.FieldType;

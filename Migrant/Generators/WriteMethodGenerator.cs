@@ -32,6 +32,7 @@ using System.Reflection;
 using System.Threading;
 using AntMicro.Migrant.Hooks;
 using System.Linq;
+using AntMicro.Migrant.VersionTolerance;
 
 namespace AntMicro.Migrant.Generators
 {
@@ -148,7 +149,7 @@ namespace AntMicro.Migrant.Generators
 
 		private void GenerateWriteFields(Action<ILGenerator> putValueToWriteOnTop, Type actualType)
 		{
-			var fields = ObjectWriter.GetFieldsInSerializationOrder(actualType);
+			var fields = TypeStamper.GetFieldsInSerializationOrder(actualType);
 			foreach(var field in fields)
 			{
 				GenerateWriteType(gen => 
