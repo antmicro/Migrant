@@ -180,7 +180,7 @@ namespace AntMicro.Migrant
 			}
 #endif
 			var valueToWrite = (value << 1) ^ (value >> 63);
-			InnerWriteInteger((ulong)valueToWrite, sizeof(long) + 1);
+			InnerWriteInteger((ulong)valueToWrite, sizeof(long) + 2);
 		}
 
 		/// <summary>
@@ -188,7 +188,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(ulong value)
 		{
-			InnerWriteInteger(value, sizeof(ulong) + 1);
+			InnerWriteInteger(value, sizeof(ulong) + 2);
 		}
 
 		/// <summary>
@@ -305,7 +305,7 @@ namespace AntMicro.Migrant
 				return;
 			}
 #endif
-			CheckBuffer(sizeInBytes + 1);
+			CheckBuffer(sizeInBytes);
 			while(value > 127)
 			{
 				buffer[currentBufferPosition] = (byte)(value | 128);
