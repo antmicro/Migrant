@@ -308,12 +308,10 @@ namespace AntMicro.Migrant
 			CheckBuffer(sizeInBytes);
 			while(value > 127)
 			{
-				buffer[currentBufferPosition] = (byte)(value | 128);
+				buffer[currentBufferPosition++] = (byte)(value | 128);
 				value >>= 7;
-				currentBufferPosition++;
 			}
-			buffer[currentBufferPosition] = (byte)(value & 127);
-			currentBufferPosition++;
+			buffer[currentBufferPosition++] = (byte)(value & 127);
 		}
 
 		private void InnerChunkWrite(byte[] data)
