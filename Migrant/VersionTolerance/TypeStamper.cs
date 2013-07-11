@@ -38,7 +38,6 @@ namespace AntMicro.Migrant.VersionTolerance
 			{
 				return null;
 			}
-			// TODO: do not verify if field is primitive or special
 			var result = new List<FieldInfoOrEntryToOmit>();
 			var currentFields = GetFieldsInSerializationOrder(type).ToDictionary(x => x.Name, x => x);
 			var fieldNo = reader.ReadInt32();
