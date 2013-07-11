@@ -33,10 +33,10 @@ using System.Collections.Generic;
 using System.Collections;
 using AntMicro.Migrant.Hooks;
 using AntMicro.Migrant.Utilities;
-using ImpromptuInterface;
 using System.Collections.ObjectModel;
 using System.Reflection.Emit;
 using Migrant.Generators;
+using Dynamitey;
 
 namespace AntMicro.Migrant
 {
@@ -225,7 +225,7 @@ namespace AntMicro.Migrant
 					if(field.IsDefined(typeof(ConstructorAttribute), false))
 					{
 						var ctorAttribute = (ConstructorAttribute)field.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
-						field.SetValue(target, Impromptu.InvokeConstructor(field.FieldType, ctorAttribute.Parameters));
+						field.SetValue(target, Dynamic.InvokeConstructor(field.FieldType, ctorAttribute.Parameters));
 					}
 					continue;
 				}
@@ -316,7 +316,7 @@ namespace AntMicro.Migrant
 			if(formalType.IsEnum)
 			{
 				var value = ReadField(Enum.GetUnderlyingType(formalType));
-				return Enum.ToObject(formalType, Impromptu.InvokeConvert(value, typeof(long), true));
+				return Enum.ToObject(formalType, Dynamic.InvokeConvert(value, typeof(long), true));
 			}
 			var nullableActualType = Nullable.GetUnderlyingType(formalType);
 			if(nullableActualType != null)

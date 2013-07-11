@@ -31,11 +31,11 @@ using System.Linq;
 using System.Reflection;
 using System.Collections;
 using AntMicro.Migrant.Hooks;
-using ImpromptuInterface;
 using AntMicro.Migrant.Generators;
 using System.Reflection.Emit;
 using System.Threading;
 using System.Diagnostics;
+using Dynamitey;
 
 namespace AntMicro.Migrant
 {
@@ -492,7 +492,7 @@ namespace AntMicro.Migrant
 			// value type -> actual type is the formal type
 			if(formalType.IsEnum)
 			{
-				writer.Write(Impromptu.InvokeConvert(value, Enum.GetUnderlyingType(formalType), true));
+				writer.Write(Dynamic.InvokeConvert(value, Enum.GetUnderlyingType(formalType), true));
 				return;
 			}
 			var nullableActualType = Nullable.GetUnderlyingType(formalType);

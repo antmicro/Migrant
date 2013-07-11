@@ -26,13 +26,13 @@
 */
 using System;
 using System.Collections.Generic;
-using ImpromptuInterface;
 using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Collections.ObjectModel;
+using Dynamitey;
 
 namespace AntMicro.Migrant
 {
@@ -43,7 +43,7 @@ namespace AntMicro.Migrant
 			bool fake, fake2, fake3;
 			if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2, out fake3))
 			{
-				count = (int)Impromptu.InvokeGet(o, "Count");
+				count = (int)Dynamic.InvokeGet(o, "Count");
 				return true;
 			}
 			count = -1;
@@ -59,7 +59,7 @@ namespace AntMicro.Migrant
 		{
 			if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType, out isGenericDictionary))
 			{
-				count = (int)Impromptu.InvokeGet(o, "Count");
+				count = (int)Dynamic.InvokeGet(o, "Count");
 				return true;
 			}
 			count = -1;
