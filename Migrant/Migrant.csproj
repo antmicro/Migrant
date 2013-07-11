@@ -63,6 +63,7 @@
     <Compile Include="Hooks\PostDeserializationAttribute.cs" />
     <Compile Include="Generators\ReadMethodGenerator.cs" />
     <Compile Include="VersionTolerance\TypeStamper.cs" />
+    <Compile Include="VersionTolerance\FieldInfoOrEntryToOmit.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
