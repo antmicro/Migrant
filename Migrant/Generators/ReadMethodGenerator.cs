@@ -34,7 +34,6 @@ using AntMicro.Migrant;
 using AntMicro.Migrant.Hooks;
 using AntMicro.Migrant.Utilities;
 using System.Collections;
-using Dynamitey;
 
 namespace Migrant.Generators
 {
@@ -727,9 +726,8 @@ namespace Migrant.Generators
 
 						GenerateCodeCall<FieldInfo, object>((fi, target) => {
 							var ctorAttribute = (ConstructorAttribute)fi.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
-							fi.SetValue(target, Dynamic.InvokeConstructor(fi.FieldType, ctorAttribute.Parameters));
+                            fi.SetValue(target, Activator.CreateInstance(fi.FieldType, ctorAttribute.Parameters));
 						});
-
 					}
 					continue;
 				}

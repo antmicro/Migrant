@@ -32,7 +32,6 @@ using System.Linq;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Collections.ObjectModel;
-using Dynamitey;
 
 namespace AntMicro.Migrant
 {
@@ -43,7 +42,7 @@ namespace AntMicro.Migrant
 			bool fake, fake2, fake3;
 			if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2, out fake3))
 			{
-				count = (int)Dynamic.InvokeGet(o, "Count");
+                count = (int)o.GetType().GetProperty("Count").GetValue(o, null);
 				return true;
 			}
 			count = -1;
@@ -59,7 +58,7 @@ namespace AntMicro.Migrant
 		{
 			if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType, out isGenericDictionary))
 			{
-				count = (int)Dynamic.InvokeGet(o, "Count");
+				count = (int)o.GetType().GetProperty("Count").GetValue(o, null);
 				return true;
 			}
 			count = -1;
@@ -323,7 +322,7 @@ namespace AntMicro.Migrant
 			{
 				if(swapCandidate.Key.IsAssignableFrom(type))
 				{
-					o = swapCandidate.Value.FastDynamicInvoke(new object[] { o });
+					o = swapCandidate.Value.DynamicInvoke(new object[] { o });
 					break;
 				}
 			}

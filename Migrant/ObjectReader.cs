@@ -36,7 +36,6 @@ using AntMicro.Migrant.Utilities;
 using System.Collections.ObjectModel;
 using System.Reflection.Emit;
 using Migrant.Generators;
-using Dynamitey;
 
 namespace AntMicro.Migrant
 {
@@ -225,7 +224,8 @@ namespace AntMicro.Migrant
 					if(field.IsDefined(typeof(ConstructorAttribute), false))
 					{
 						var ctorAttribute = (ConstructorAttribute)field.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
-						field.SetValue(target, Dynamic.InvokeConstructor(field.FieldType, ctorAttribute.Parameters));
+
+						field.SetValue(target, Activator.CreateInstance(field.FieldType, ctorAttribute.Parameters));
 					}
 					continue;
 				}
@@ -316,7 +316,7 @@ namespace AntMicro.Migrant
 			if(formalType.IsEnum)
 			{
 				var value = ReadField(Enum.GetUnderlyingType(formalType));
-				return Enum.ToObject(formalType, Dynamic.InvokeConvert(value, typeof(long), true));
+                return Enum.ToObject(formalType, value);
 			}
 			var nullableActualType = Nullable.GetUnderlyingType(formalType);
 			if(nullableActualType != null)
@@ -381,7 +381,7 @@ namespace AntMicro.Migrant
 				for(var i = 0; i < count; i++)
 				{
 					var fieldValue = ReadField(elementFormalType);
-					addDelegate.FastDynamicInvoke(fieldValue);
+					addDelegate.DynamicInvoke(fieldValue);
 				}
 			}
 		}
@@ -420,7 +420,7 @@ namespace AntMicro.Migrant
 			{
 				var key = ReadField(formalKeyType);
 				var value = ReadField(formalValueType);
-				addDelegate.FastDynamicInvoke(key, value);
+				addDelegate.DynamicInvoke(key, value);
 			}
 		}
 
