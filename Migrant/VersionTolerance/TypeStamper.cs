@@ -19,7 +19,10 @@ namespace AntMicro.Migrant.VersionTolerance
 
 		public void Stamp(Type type)
 		{
-			// TODO: do not write stamps if field is primitive or special (collection etc)
+			if(!IsStampNeeded(type))
+			{
+				return;
+			}
 			var fields = GetFieldsInSerializationOrder(type).ToArray();
 			writer.Write(fields.Length);
 			foreach(var field in fields)
@@ -31,6 +34,10 @@ namespace AntMicro.Migrant.VersionTolerance
 
 		public IEnumerable<FieldInfoOrEntryToOmit> VerifyAndProvideCompatibleFields(Type type)
 		{
+			if(!IsStampNeeded(type))
+			{
+				return null;
+			}
 			// TODO: do not verify if field is primitive or special
 			var result = new List<FieldInfoOrEntryToOmit>();
 			var currentFields = GetFieldsInSerializationOrder(type).ToDictionary(x => x.Name, x => x);
@@ -63,6 +70,13 @@ namespace AntMicro.Migrant.VersionTolerance
 		public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type)
 		{
 			return type.GetAllFields().Where(Helpers.IsNotTransient).OrderBy(x => x.Name);
+		}
+
+		private static bool IsStampNeeded(Type type)
+		{
+			Type fake1;
+			bool fake2, fake3, fake4;
+			return !Helpers.IsWriteableByPrimitiveWriter(type) || !Helpers.IsCollection(type, out fake1, out fake2, out fake3, out fake4);
 		}
 
 		private readonly PrimitiveReader reader;
