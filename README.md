@@ -1,4 +1,4 @@
-# Migrant 0.3.2
+# Migrant 0.3.3
 
 This is the *Migrant* project by [Ant Micro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
 
@@ -9,9 +9,8 @@ This is the *Migrant* project by [Ant Micro](http://antmicro.com), a fast and fl
 3.  Features
 4.  Compilation
 5.  Usage
-6.  Referenced libraries
-7.  More information
-8.  Licence
+5.  More information
+6.  Licence
 
 ## Introduction
 
@@ -118,10 +117,6 @@ Here we present some simple use cases of Migrant. They are written in pseudo-C\#
 
     var anObject = serializer.Deserialize<object>(stream);
     Console.WriteLine(anObject.GetType().Name); // prints AnotherObject
-
-## Referenced libraries
-
-> ImpromptuInterface \>= 5.6.7
 
 ## More information
 
