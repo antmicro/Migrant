@@ -203,6 +203,7 @@ namespace AntMicro.Migrant
 			writer.Write(typeId);
 			writer.Write(type.AssemblyQualifiedName);
 			WriteModuleId(type.Module);
+			typeStamper.Stamp(type);
 			return typeId;
 		}
 
@@ -234,6 +235,7 @@ namespace AntMicro.Migrant
 			}
 			identifier = new ObjectIdentifier();
 			writer = new PrimitiveWriter(stream);
+			typeStamper = new TypeStamper(writer);
 			inlineWritten = new HashSet<int>();
 		}
 
@@ -588,6 +590,7 @@ namespace AntMicro.Migrant
 		private int nextTypeId;
 		private int nextModuleId;
 		private PrimitiveWriter writer;
+		private TypeStamper typeStamper;
 		private HashSet<int> inlineWritten;
 		private readonly bool isGenerating;
 		private readonly Stream stream;

@@ -17,7 +17,7 @@ namespace AntMicro.Migrant.VersionTolerance
 			this.writer = writer;
 		}		
 
-		public void Write(Type type)
+		public void Stamp(Type type)
 		{
 			// TODO: do not write stamps if field is primitive or special (collection etc)
 			var fields = GetFieldsInSerializationOrder(type).ToArray();
