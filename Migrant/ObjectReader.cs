@@ -156,7 +156,7 @@ namespace AntMicro.Migrant
 			delegatesCache = new Dictionary<Type, Func<int, object>>();
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
 			reader = new PrimitiveReader(stream);
-			stamper = new TypeStamper(reader);
+			stamper = new TypeStampReader(reader);
 		}
 
 		internal static bool HasSpecialReadMethod(Type type)
@@ -587,7 +587,7 @@ namespace AntMicro.Migrant
 		private IDictionary<Type, DynamicMethod> readMethodsCache;
 		private Dictionary<Type, Func<Int32, object>> delegatesCache;
 		internal PrimitiveReader reader;
-		private TypeStamper stamper;
+		private TypeStampReader stamper;
 		private readonly List<Type> typeList;
 		private readonly HashSet<int> agreedModuleIds;
 		private readonly Stream stream;

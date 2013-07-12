@@ -290,7 +290,7 @@ namespace AntMicro.Migrant
 		private void WriteObjectsFields(object o, Type type)
 		{
 			// fields in the alphabetical order
-			var fields = TypeStamper.GetFieldsInSerializationOrder(type);
+			var fields = StampHelpers.GetFieldsInSerializationOrder(type);
 			foreach(var field in fields)
 			{
 				var fieldType = field.FieldType;

@@ -64,6 +64,8 @@
     <Compile Include="Generators\ReadMethodGenerator.cs" />
     <Compile Include="VersionTolerance\TypeStamper.cs" />
     <Compile Include="VersionTolerance\FieldInfoOrEntryToOmit.cs" />
+    <Compile Include="VersionTolerance\TypeStampReader.cs" />
+    <Compile Include="VersionTolerance\StampHelpers.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

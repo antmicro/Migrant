@@ -149,7 +149,7 @@ namespace AntMicro.Migrant.Generators
 
 		private void GenerateWriteFields(Action<ILGenerator> putValueToWriteOnTop, Type actualType)
 		{
-			var fields = TypeStamper.GetFieldsInSerializationOrder(actualType);
+			var fields = StampHelpers.GetFieldsInSerializationOrder(actualType);
 			foreach(var field in fields)
 			{
 				GenerateWriteType(gen => 
