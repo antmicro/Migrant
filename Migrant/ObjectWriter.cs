@@ -203,8 +203,13 @@ namespace AntMicro.Migrant
 			writer.Write(typeId);
 			writer.Write(type.AssemblyQualifiedName);
 			WriteModuleId(type.Module);
-			typeStamper.Stamp(type);
+			Stamp(type);
 			return typeId;
+		}
+
+		internal void Stamp(Type type)
+		{
+			typeStamper.Stamp(type);
 		}
 
 		internal void WriteModuleId(Module module)
@@ -514,6 +519,7 @@ namespace AntMicro.Migrant
 			}
 
 			// so we guess it is struct
+			Stamp(formalType);
 			WriteObjectsFields(value, formalType);
 		}
 

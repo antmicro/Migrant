@@ -35,6 +35,7 @@ using AntMicro.Migrant;
 using AntMicro.Migrant.Hooks;
 using AntMicro.Migrant.Utilities;
 using System.Collections;
+using AntMicro.Migrant.VersionTolerance;
 
 namespace Migrant.Generators
 {
@@ -650,7 +651,10 @@ namespace Migrant.Generators
 			else
 			{
 				// here we have struct
-
+				generator.Emit(OpCodes.Ldarg_0);
+				generator.Emit(OpCodes.Ldtoken, formalType);
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, Type>((reader, type) => reader.ReadStamp(type)));
 				var structLocal = generator.DeclareLocal(forcedFormalType);
 				GenerateUpdateStructFields(forcedFormalType, structLocal);
 
@@ -706,7 +710,7 @@ namespace Migrant.Generators
 
 		private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
 		{
-			var fields = ObjectReader.GetFieldsToSerialize(formalType).ToList();
+			var fields = TypeStamper.GetFieldsInSerializationOrder(formalType).ToList();
 			foreach(var field in fields)
 			{
 				if(field.IsDefined(typeof(TransientAttribute), false))
@@ -743,7 +747,7 @@ namespace Migrant.Generators
 
 		private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
 		{			
-			var fields = ObjectReader.GetFieldsToSerialize(formalType).ToList();
+			var fields = TypeStamper.GetFieldsInSerializationOrder(formalType).ToList();
 			foreach(var field in fields)
 			{
 				generator.Emit(OpCodes.Ldloca, structLocal);

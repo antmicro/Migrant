@@ -219,7 +219,7 @@ namespace AntMicro.Migrant
 
 		private void UpdateFields(Type actualType, object target)
 		{
-			var fields = GetFieldsToSerialize(actualType);
+			var fields = stamper.GetFieldsToDeserialize(actualType).Select(x => x.Field);
 			foreach(var field in fields)
 			{
 				if(field.IsDefined(typeof(TransientAttribute), false))
@@ -334,6 +334,7 @@ namespace AntMicro.Migrant
 			}
 			var returnedObject = Activator.CreateInstance(formalType);
 			// here we have a boxed struct which we put to struct reference list
+			ReadStamp(formalType);
 			UpdateFields(formalType, returnedObject);
 			// if this is subtype
 			return returnedObject;
@@ -534,8 +535,14 @@ namespace AntMicro.Migrant
 				}
 				agreedModuleIds.Add(moduleId);
 			}
-			stamper.VerifyAndProvideCompatibleFields(typeList[typeId]);
-			return typeList[typeId];
+			var readType = typeList[typeId];
+			ReadStamp(readType);
+			return readType;
+		}
+
+		internal void ReadStamp(Type type)
+		{
+			stamper.ReadStamp(type);
 		}
 
 		private object TouchObject(Type actualType, int refId)
@@ -578,13 +585,6 @@ namespace AntMicro.Migrant
 				return CreationWay.DefaultCtor;
 			}
 			return CreationWay.Uninitialized;
-		}
-
-		internal static IEnumerable<FieldInfo> GetFieldsToSerialize(Type actualType)
-		{
-			var fields = actualType.GetAllFields().Where(x => !x.Attributes.HasFlag(FieldAttributes.Literal))
-                .OrderBy(x => x.Name);
-			return fields;
 		}
 
 		private bool useGeneratedDeserialization;
