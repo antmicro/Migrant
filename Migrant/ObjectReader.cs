@@ -125,7 +125,7 @@ namespace AntMicro.Migrant
 			if(!(obj is T))
 			{
 				throw new InvalidDataException(
-					string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
+					string.Format("Type {0} requested to be deserialized, however type {1} encountered in the stream.",
 				              typeof(T), obj.GetType()));
 			}
 			
