@@ -656,25 +656,6 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void ShouldSerializeWithInitialization()
-		{
-			var objs = new object[] {
-				null,
-				1,
-				"Napis",
-				new GenericBox<int> { Element = 6 }
-			};
-			var serializer = new Serializer(SettingsFromFields);
-			serializer.Initialize(typeof(GenericBox<int>));
-			serializer.Initialize(typeof(string));
-			var stream = new MemoryStream();
-			serializer.Serialize(objs, stream);
-			stream.Seek(0, SeekOrigin.Begin);
-			var copy = serializer.Deserialize<object[]>(stream);
-			CollectionAssert.AreEqual(objs, copy);
-		}
-
-		[Test]
 		public void ShouldSerializeByteArray()
 		{
 			var array = new byte[] { 2, 4, 6, 8, 10 };

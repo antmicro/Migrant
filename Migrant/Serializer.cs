@@ -29,12 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using AntMicro.Migrant.Customization;
-using System.Collections;
-using System.Linq;
 using System.Reflection.Emit;
-using AntMicro.Migrant.Utilities;
-using AntMicro.Migrant.Generators;
-using Migrant.Generators;
 
 namespace AntMicro.Migrant
 {
@@ -62,22 +57,9 @@ namespace AntMicro.Migrant
 			}
 			this.settings = settings;
 			writeMethodCache = new Dictionary<Type, DynamicMethod>();
-			upfrontKnownTypes = new ListWithHash<Type>();
 			objectsForSurrogates = new Dictionary<Type, Delegate>();
 			surrogatesForObjects = new Dictionary<Type, Delegate>();
 			readMethodCache = new Dictionary<Type, DynamicMethod>();
-		}
-
-		/// <summary>
-		/// Initializes the given type (and its base and field types recursively). It does the
-		/// initial check whether it is serializable and prepares the serializer.
-		/// </summary>
-		/// <param name='typeToScan'>
-		/// Type to scan.
-		/// </param>
-		public void Initialize(Type typeToScan)
-		{
-			throw new NotImplementedException();
 		}
 
 		/// <summary>
@@ -91,9 +73,8 @@ namespace AntMicro.Migrant
 		/// </param>
 		public void Serialize(object obj, Stream stream)
 		{
-			var typeList = upfrontKnownTypes.ToList(); // TODO: see TOOO in ListWithHash
-			WriteHeader(stream, typeList);
-			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, 
+			WriteHeader(stream);
+			var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, writeMethodCache, 
 			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated);
 			writer.WriteObject(obj);
 			serializationDone = true;
@@ -142,7 +123,6 @@ namespace AntMicro.Migrant
 		public T Deserialize<T>(Stream stream)
 		{
 			// Read headers
-			List<Type> upfrontKnownTypes;
 			using(var reader = new PrimitiveReader(stream))
 			{
 				var magic = reader.ReadUInt32();
@@ -157,15 +137,10 @@ namespace AntMicro.Migrant
 					throw new InvalidOperationException(string.Format(
                         "Could not deserialize data serialized with another version of serializer, namely {0}.", version));
 				}
-				var numberOfTypes = reader.ReadInt32();
-				upfrontKnownTypes = new List<Type>(numberOfTypes);
-				for(var i = 0; i < numberOfTypes; i++)
-				{
-					upfrontKnownTypes.Add(Type.GetType(reader.ReadString()));
-				}
 			}
 
-			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, settings.DeserializationMethod == Method.Generated);
+			var objectReader = new ObjectReader(stream, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization,
+			                                    readMethodCache, settings.DeserializationMethod == Method.Generated);
 			var result = objectReader.ReadObject<T>();
 			deserializationDone = true;
 			return result;
@@ -218,60 +193,12 @@ namespace AntMicro.Migrant
 			return result;
 		}
 
-		private void WriteHeader(Stream stream, IList<Type> typeList)
+		private void WriteHeader(Stream stream)
 		{
 			using(var writer = new PrimitiveWriter(stream))
 			{
 				writer.Write(Magic);
 				writer.Write(VersionNumber);
-				writer.Write(typeList.Count);
-				foreach(var type in typeList)
-				{
-					writer.Write(type.AssemblyQualifiedName);
-				}
-			}
-		}
-
-		private void Scan(Type typeToScan)
-		{
-			if(typeToScan == null)
-			{
-				return;
-			}
-			if(typeToScan.IsInterface || typeToScan.IsValueType)
-			{
-				// we do not add value types, cause they are inline written unless boxed
-				return;
-			}
-			if(typeof(ISpeciallySerializable).IsAssignableFrom(typeToScan) || Helpers.CheckTransientNoCache(typeToScan))
-			{
-				return;
-			}
-			if(typeof(IEnumerable).IsAssignableFrom(typeToScan))
-			{
-				// this is probably collection with special rules; and this is only hint system, so we can simply omit it
-				upfrontKnownTypes.Add(typeToScan);
-			}
-			if(typeToScan.HasElementType)
-			{
-				Scan(typeToScan.GetElementType());
-			}
-			if(!typeToScan.IsAbstract)
-			{
-				if(!upfrontKnownTypes.Add(typeToScan))
-				{
-					return;
-				}
-			}
-			// although we do not add abstract type to serialized types (it can't be encountered as the actual type),
-			// we should scan its fields, cause they are used in any implementation; we should of course scan the
-			// base type as well
-			Scan(typeToScan.BaseType);
-			var fields = typeToScan.GetAllFields(false).Where(Helpers.IsNotTransient);
-			var typesToAdd = fields.Select(x => x.FieldType);
-			foreach(var type in typesToAdd)
-			{
-				Scan(type);
 			}
 		}
 
@@ -280,7 +207,6 @@ namespace AntMicro.Migrant
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
 		private readonly Dictionary<Type, DynamicMethod /* Func<Int32, object> */> readMethodCache;
-		private readonly ListWithHash<Type> upfrontKnownTypes;
 		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;
 		private const ushort VersionNumber = 5;

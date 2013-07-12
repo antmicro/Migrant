@@ -72,7 +72,7 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if write methods are to be generated, false if one wants to use reflection.
 		/// </param>
-		public ObjectWriter(Stream stream, IList<Type> upfrontKnownTypes, Action<object> preSerializationCallback = null, 
+		public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null, 
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
 		                    IDictionary<Type, Delegate> surrogatesForObjects = null, bool isGenerating = true)
 		{
@@ -89,10 +89,6 @@ namespace AntMicro.Migrant
 			this.surrogatesForObjects = surrogatesForObjects;
 			typeIndices = new Dictionary<Type, int>();
 			moduleIndices = new Dictionary<Module, int>();
-			foreach(var type in upfrontKnownTypes)
-			{
-				AddMissingType(type);
-			}
 			this.stream = stream;
 			this.preSerializationCallback = preSerializationCallback;
 			this.postSerializationCallback = postSerializationCallback;

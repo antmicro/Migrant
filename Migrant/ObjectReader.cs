@@ -75,7 +75,7 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if read methods are to be generated, false if one wants to use reflection.
 		/// </param>
-		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
+		public ObjectReader(Stream stream, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
 		                    Action<object> postDeserializationCallback = null, IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false)
 		{
 			if(objectsForSurrogates == null)
@@ -89,11 +89,6 @@ namespace AntMicro.Migrant
 			typeList = new List<Type>();
 			postDeserializationHooks = new List<Action>();
 			agreedModuleIds = new HashSet<int>();
-			for(var i = 0; i < upfrontKnownTypes.Count; i++)
-			{
-				typeList.Add(upfrontKnownTypes[i]);
-				EnsureReadMethod(upfrontKnownTypes[i]);
-			}
 			this.stream = stream;
 			this.postDeserializationCallback = postDeserializationCallback;
 			PrepareForTheRead();
