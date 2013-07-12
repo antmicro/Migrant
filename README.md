@@ -69,9 +69,6 @@ Here we present some simple use cases of Migrant. They are written in pseudo-C\#
     var myComplexObject = new MyComplexType(complexParameters);
     var serializer = new Serializer();
 
-    //_Optional_ step to prepare the framework, so the actual serialization is even faster
-    serializer.Initialize(typeof(MyComplexType));
-
     serializer.Serialize(myComplexObject, stream);
 
     stream.Rewind();
