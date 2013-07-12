@@ -52,7 +52,7 @@ namespace AntMicro.Migrant.VersionTolerance
 				return;
 			}
 			var result = new List<FieldInfoOrEntryToOmit>();
-			var currentFields = GetFieldsInSerializationOrder(type).ToDictionary(x => x.Name, x => x);
+			var currentFields = GetFieldsInSerializationOrder(type, true).ToDictionary(x => x.Name, x => x);
 			var fieldNo = reader.ReadInt32();
 			for(var i = 0; i < fieldNo; i++)
 			{
@@ -87,9 +87,10 @@ namespace AntMicro.Migrant.VersionTolerance
 			return type.GetAllFields().Where(x => withTransient || Helpers.IsNotTransient(x)).OrderBy(x => x.Name);
 		}
 
-		public IEnumerable<FieldInfoOrEntryToOmit> GetFieldsToDeserialize(Type type)
+		public IEnumerable<FieldInfo> GetFieldsToDeserialize(Type type)
 		{
-			return stampCache[type];
+			// TODO: why select? simply hold only fields in cache
+			return stampCache[type].Select(x => x.Field);
 		}
 
 		private static bool IsStampNeeded(Type type)

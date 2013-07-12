@@ -77,33 +77,7 @@ namespace AntMicro.Migrant
 		/// </param>
 		public void Initialize(Type typeToScan)
 		{
-			Scan(typeToScan);
-			if(settings.SerializationMethod != Method.Generated)
-			{
-				return;
-			}
-			var typeIndices = new Dictionary<Type, int>(upfrontKnownTypes.Count);
-			var i = 0;
-			foreach(var type in upfrontKnownTypes)
-			{
-				typeIndices.Add(type, i++);
-			}
-			foreach(var type in upfrontKnownTypes)
-			{
-				if(writeMethodCache.ContainsKey(type) || ObjectWriter.HasSpecialWriteMethod(type))
-				{
-					continue;
-				}
-				var wgenerator = new WriteMethodGenerator(type);
-				writeMethodCache.Add(type, wgenerator.Method);
-
-				if(readMethodCache.ContainsKey(type) || ObjectReader.HasSpecialReadMethod(type))
-				{
-					continue;
-				}
-				var rgenerator = new ReadMethodGenerator(type);
-				readMethodCache.Add(type, rgenerator.Method);
-			}
+			throw new NotImplementedException();
 		}
 
 		/// <summary>

@@ -41,8 +41,9 @@ namespace Migrant.Generators
 {
 	internal sealed class ReadMethodGenerator
 	{
-		public ReadMethodGenerator(Type typeToGenerate)
+		public ReadMethodGenerator(Type typeToGenerate, TypeStamper typeStamper)
 		{
+			this.typeStamper = typeStamper;
 			if (typeToGenerate.IsArray)
 			{
 				dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, true);
@@ -710,7 +711,7 @@ namespace Migrant.Generators
 
 		private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
 		{
-			var fields = TypeStamper.GetFieldsInSerializationOrder(formalType).ToList();
+			var fields = typeStamper.GetFieldsToDeserialize(formalType);
 			foreach(var field in fields)
 			{
 				if(field.IsDefined(typeof(TransientAttribute), false))
@@ -882,6 +883,7 @@ namespace Migrant.Generators
 
 		private ILGenerator generator;
 		private readonly DynamicMethod dynamicMethod;
+		private readonly TypeStamper typeStamper;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
 		private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
 		private static readonly Type[] ParameterTypes = new [] {

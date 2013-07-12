@@ -146,7 +146,7 @@ namespace AntMicro.Migrant
 		{
 			if(!readMethodsCache.ContainsKey(type))
 			{
-				var rmg = new ReadMethodGenerator(type);
+				var rmg = new ReadMethodGenerator(type, stamper);
 				readMethodsCache.Add(type, rmg.Method);
 			}
 		}
@@ -219,7 +219,7 @@ namespace AntMicro.Migrant
 
 		private void UpdateFields(Type actualType, object target)
 		{
-			var fields = stamper.GetFieldsToDeserialize(actualType).Select(x => x.Field);
+			var fields = stamper.GetFieldsToDeserialize(actualType);
 			foreach(var field in fields)
 			{
 				if(field.IsDefined(typeof(TransientAttribute), false))
