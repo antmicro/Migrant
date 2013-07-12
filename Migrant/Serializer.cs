@@ -206,7 +206,7 @@ namespace AntMicro.Migrant
 		private bool deserializationDone;
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
-		private readonly Dictionary<Type, DynamicMethod /* Func<Int32, object> */> readMethodCache;
+		private readonly Dictionary<Type, DynamicMethod> readMethodCache;
 		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;
 		private const ushort VersionNumber = 5;
