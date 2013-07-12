@@ -214,7 +214,7 @@ namespace AntMicro.Migrant
 
 		private void UpdateFields(Type actualType, object target)
 		{
-			var fields = stamper.GetFieldsToDeserialize(actualType);
+			var fields = stamper.GetFieldsToDeserialize(actualType).Select(x => x.Field);
 			foreach(var field in fields)
 			{
 				if(field.IsDefined(typeof(TransientAttribute), false))

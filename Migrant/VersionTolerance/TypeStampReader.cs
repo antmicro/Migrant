@@ -53,10 +53,9 @@ namespace AntMicro.Migrant.VersionTolerance
 			stampCache.Add(type, result);
 		}
 
-		public IEnumerable<FieldInfo> GetFieldsToDeserialize(Type type)
+		public IEnumerable<FieldInfoOrEntryToOmit> GetFieldsToDeserialize(Type type)
 		{
-			// TODO: why select? simply hold only fields in cache
-			return stampCache[type].Select(x => x.Field);
+			return stampCache[type];
 		}
 
 		private readonly Dictionary<Type, List<FieldInfoOrEntryToOmit>> stampCache;

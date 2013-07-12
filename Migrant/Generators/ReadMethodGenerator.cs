@@ -711,7 +711,7 @@ namespace Migrant.Generators
 
 		private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
 		{
-			var fields = stampReader.GetFieldsToDeserialize(formalType);
+			var fields = stampReader.GetFieldsToDeserialize(formalType).Select(x => x.Field);
 			foreach(var field in fields)
 			{
 				if(field.IsDefined(typeof(TransientAttribute), false))
