@@ -24,8 +24,13 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+using System;
+
+
 namespace AntMicro.Migrant.Customization
 {
+	// The reason settings are serializable is to enable tests regarding version tolerant serialization
+	[Serializable]
 	/// <summary>
 	/// Contains serialization settings.
 	/// </summary>
