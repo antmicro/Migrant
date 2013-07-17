@@ -711,12 +711,20 @@ namespace Migrant.Generators
 
 		private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
 		{
-			var fields = stampReader.GetFieldsToDeserialize(formalType).Select(x => x.Field);
-			foreach(var field in fields)
+			var fields = stampReader.GetFieldsToDeserialize(formalType);
+			foreach(var fieldOrType in fields)
 			{
-				if(field.IsDefined(typeof(TransientAttribute), false))
+				if (fieldOrType.Field == null) 
 				{
-					if(field.IsDefined(typeof(ConstructorAttribute), false))
+					GenerateReadField(fieldOrType.TypeToOmit, false);
+					generator.Emit(OpCodes.Pop);
+					continue;
+				}
+				var field = fieldOrType.Field;
+
+				if (field.IsDefined(typeof(TransientAttribute), false))
+				{
+					if (field.IsDefined(typeof(ConstructorAttribute), false))
 					{
 						generator.Emit(OpCodes.Ldtoken, field);
 						if (field.DeclaringType.IsGenericType)

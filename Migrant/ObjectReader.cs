@@ -220,7 +220,7 @@ namespace AntMicro.Migrant
 				if(fieldOrTypeInfo.Field == null)
 				{
 					ReadField(fieldOrTypeInfo.TypeToOmit);
-					return;
+					continue;
 				}
 				var field = fieldOrTypeInfo.Field;
 				if(field.IsDefined(typeof(TransientAttribute), false))
