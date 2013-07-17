@@ -31,22 +31,36 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void TestFieldAddition()
+		public void TestSimpleFieldAddition()
 		{
-			const string field1Name = "Field1";
-			const string field2Name = "Field2";
-
 			var fields = new List<Tuple<string, Type>>();
-			fields.Add(Tuple.Create(field1Name, typeof(int)));
+			fields.Add(Tuple.Create(Field1Name, typeof(int)));
 			testsOnDomain1.BuildTypeOnAppDomain(TypeName, fields);
-			var fieldCheck = new FieldCheck(field1Name, 666);
+			var fieldCheck = new FieldCheck(Field1Name, 666);
 			testsOnDomain1.SetValueOnAppDomain(fieldCheck);
 			var data = testsOnDomain1.SerializeOnAppDomain();
 
-			fields.Add(Tuple.Create(field2Name, typeof(int)));
+			fields.Add(Tuple.Create(Field2Name, typeof(int)));
 			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields);
 
-			testsOnDomain2.DeserializeOnAppDomain(data, new [] { fieldCheck, new FieldCheck(field2Name, 0) });
+			testsOnDomain2.DeserializeOnAppDomain(data, new [] { fieldCheck, new FieldCheck(Field2Name, 0) });
+		}
+
+		[Test]
+		public void TestSimpleFieldRemoval()
+		{
+			var fields = new List<Tuple<string, Type>>();
+			fields.Add(Tuple.Create(Field1Name, typeof(int)));
+			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields);
+
+			fields.Add(Tuple.Create(Field2Name, typeof(int)));
+			testsOnDomain1.BuildTypeOnAppDomain(TypeName, fields);
+			var field1Check = new FieldCheck(Field1Name, 667);
+			testsOnDomain1.SetValueOnAppDomain(field1Check);
+			testsOnDomain1.SetValueOnAppDomain(new FieldCheck(Field2Name, 668));
+			var data = testsOnDomain1.SerializeOnAppDomain();
+
+			testsOnDomain2.DeserializeOnAppDomain(data, new [] { field1Check });
 		}
 
 		public void BuildTypeOnAppDomain(string typeName, IEnumerable<Tuple<string, Type>> fields)
@@ -112,6 +126,8 @@ namespace AntMicro.Migrant.Tests
 		private Type builtType;
 		private object obj;
 
+		private const string Field1Name = "Field1";
+		private const string Field2Name = "Field2";
 		private static readonly AssemblyName AssemblyName = new AssemblyName("TestAssembly");
 	}
 }
