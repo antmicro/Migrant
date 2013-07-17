@@ -87,6 +87,7 @@ namespace AntMicro.Migrant
 			this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
 			this.useGeneratedDeserialization = isGenerating;
 			typeList = new List<Type>();
+			methodList = new List<MethodInfo>();
 			postDeserializationHooks = new List<Action>();
 			agreedModuleIds = new HashSet<int>();
 			this.stream = stream;
@@ -450,9 +451,7 @@ namespace AntMicro.Migrant
 			for(var i = 0; i < invocationListLength; i++)
 			{
 				var target = ReadField(typeof(object));
-				var containingType = ReadType();
-				// constructor cannot be bound to delegate, so we can just cast to methodInfo
-				var method = (MethodInfo)containingType.Module.ResolveMethod(reader.ReadInt32());
+				var method = ReadMethod();
 				var del = Delegate.CreateDelegate(type, target, method);
 				deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
 			}
@@ -541,6 +540,29 @@ namespace AntMicro.Migrant
 			return readType;
 		}
 
+		internal MethodInfo ReadMethod()
+		{
+			var methodId = reader.ReadInt32();
+			if (methodList.Count <= methodId) 
+			{
+				var type = ReadType();
+				var methodName = reader.ReadString();
+				var parametersCount = reader.ReadInt32();
+				var types = new Type[parametersCount];
+				for (int i = 0; i < types.Length; i++) {
+					types[i] = ReadType();
+				}
+
+				var info = type.GetMethod(methodName, types);
+				methodList.Add(info);
+				return info;
+			}
+			else
+			{
+				return methodList[methodId];
+			}
+		}
+
 		internal void ReadStamp(Type type)
 		{
 			stamper.ReadStamp(type);
@@ -595,6 +617,7 @@ namespace AntMicro.Migrant
 		internal PrimitiveReader reader;
 		private TypeStampReader stamper;
 		private readonly List<Type> typeList;
+		private readonly List<MethodInfo> methodList;
 		private readonly HashSet<int> agreedModuleIds;
 		private readonly Stream stream;
 		private readonly bool ignoreModuleIdInequality;

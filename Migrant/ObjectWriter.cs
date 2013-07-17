@@ -89,6 +89,7 @@ namespace AntMicro.Migrant
 			this.surrogatesForObjects = surrogatesForObjects;
 			typeIndices = new Dictionary<Type, int>();
 			moduleIndices = new Dictionary<Module, int>();
+			methodIndices = new Dictionary<MethodInfo, int>();
 			this.stream = stream;
 			this.preSerializationCallback = preSerializationCallback;
 			this.postSerializationCallback = postSerializationCallback;
@@ -201,6 +202,31 @@ namespace AntMicro.Migrant
 			WriteModuleId(type.Module);
 			Stamp(type);
 			return typeId;
+		}
+
+		internal int TouchAndWriteMethodId(MethodInfo info)
+		{
+			int methodId;
+			if (methodIndices.ContainsKey(info))
+			{
+				methodId = methodIndices[info];
+				writer.Write(methodId);
+				return methodId;
+			}
+			AddMissingMethod(info);
+			methodId = methodIndices[info];
+			writer.Write(methodId);
+			TouchAndWriteTypeId(info.ReflectedType);
+			writer.Write(info.Name);
+
+			var parameters = info.GetParameters();
+			writer.Write(parameters.Length);
+			foreach (var p in parameters) 
+			{
+				TouchAndWriteTypeId(p.ParameterType);
+			}
+
+			return methodId;
 		}
 
 		internal void Stamp(Type type)
@@ -336,8 +362,7 @@ namespace AntMicro.Migrant
 				foreach(var del in invocationList)
 				{
 					WriteField(typeof(object), del.Target);
-					TouchAndWriteTypeId(del.Method.ReflectedType);
-					writer.Write(del.Method.MetadataToken);
+					TouchAndWriteMethodId(del.Method);
 				}
 				return true;
 			}
@@ -534,7 +559,14 @@ namespace AntMicro.Migrant
 					writeMethod = PrepareWriteMethod(type);
 				}
 			}
+
+			// an element is always included (event when null) to ensure indices to be exact with typeId
 			writeMethods.Add(writeMethod);
+		}
+
+		private void AddMissingMethod(MethodInfo info)
+		{
+			methodIndices.Add(info, nextMethodId++);
 		}
 
 		private Action<PrimitiveWriter, object> PrepareWriteMethod(Type actualType)
@@ -591,6 +623,7 @@ namespace AntMicro.Migrant
 		private int objectsWritten;
 		private int nextTypeId;
 		private int nextModuleId;
+		private int nextMethodId;
 		private PrimitiveWriter writer;
 		private TypeStamper typeStamper;
 		private HashSet<int> inlineWritten;
@@ -600,6 +633,7 @@ namespace AntMicro.Migrant
 		private readonly Action<object> postSerializationCallback;
 		private readonly List<Action> postSerializationHooks;
 		private readonly Dictionary<Type, int> typeIndices;
+		private readonly Dictionary<MethodInfo, int> methodIndices;
 		private readonly Dictionary<Module, int> moduleIndices;
 		private readonly Dictionary<Type, bool> transientTypeCache;
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;

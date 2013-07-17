@@ -427,19 +427,19 @@ namespace AntMicro.Migrant.Generators
 
 		private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop)
 		{
+			var delegateTouchAndWriteMethodId = Helpers.GetMethodInfo<ObjectWriter, MethodInfo>((writer, method) => writer.TouchAndWriteMethodId(method));
+			var delegateGetInvocationList = Helpers.GetMethodInfo<ObjectWriter, MulticastDelegate>((writer, md) => writer.GetDelegatesWithNonTransientTargets(md));
 			var delegateGetMethodInfo = typeof(MulticastDelegate).GetProperty("Method").GetGetMethod();
 			var delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
-			var delegateGetInvocationList = Helpers.GetMethodInfo<ObjectWriter, MulticastDelegate>((writer, md) => writer.GetDelegatesWithNonTransientTargets(md));
-			var memberInfoGetMetadataToken = typeof(MemberInfo).GetProperty("MetadataToken").GetGetMethod();
-			var memberInfoGetReflectedType = typeof(MemberInfo).GetProperty("ReflectedType").GetGetMethod();
 
-			var loopCounter = generator.DeclareLocal(typeof(int));
 			var array = generator.DeclareLocal(typeof(Delegate[]));
-			var element = generator.DeclareLocal(typeof(Delegate));
 			var loopLength = generator.DeclareLocal(typeof(int));
+			var element = generator.DeclareLocal(typeof(Delegate));
+
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 			generator.Emit(OpCodes.Ldarg_0); // objectWriter
-			putValueToWriteOnTop(generator);
+			putValueToWriteOnTop(generator); // delegate to serialize of type MulticastDelegate
+
 			generator.Emit(OpCodes.Call, delegateGetInvocationList);
 			generator.Emit(OpCodes.Castclass, typeof(Delegate[]));
 			generator.Emit(OpCodes.Dup);
@@ -449,48 +449,23 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Stloc_S, loopLength.LocalIndex);
 			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
 
-			var loopEnd = generator.DefineLabel();
-			var loopBegin = generator.DefineLabel();
-			generator.Emit(OpCodes.Ldc_I4_0);
-			generator.Emit(OpCodes.Stloc_S, loopCounter.LocalIndex);
+			GeneratorHelper.GenerateLoop(generator, loopLength, c => {
+				generator.Emit(OpCodes.Ldloc, array);
+				generator.Emit(OpCodes.Ldloc, c);
+				generator.Emit(OpCodes.Ldelem, element.LocalType);
+				generator.Emit(OpCodes.Stloc, element);
 
-			generator.MarkLabel(loopBegin);
-			generator.Emit(OpCodes.Ldloc_S, loopCounter.LocalIndex);
-			generator.Emit(OpCodes.Ldloc_S, loopLength.LocalIndex);
-			generator.Emit(OpCodes.Bge, loopEnd);
+				GenerateWriteReference(gen => {
+					gen.Emit(OpCodes.Ldloc, element);
+					gen.Emit(OpCodes.Call, delegateGetTarget);
+				}, typeof(object));
 
-			generator.Emit(OpCodes.Ldloc_S, array.LocalIndex);
-			generator.Emit(OpCodes.Ldloc_S, loopCounter.LocalIndex);
-			generator.Emit(OpCodes.Ldelem, element.LocalType);
-			generator.Emit(OpCodes.Stloc_S, element.LocalIndex);
-			// target
-			GenerateWriteReference(gen =>
-			                       {
-				generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
-				gen.Emit(OpCodes.Call, delegateGetTarget);
-			}, typeof(object));
-
-			// reflected type
-			generator.Emit(OpCodes.Ldarg_0); // objectWriter
-			generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
-			generator.Emit(OpCodes.Call, delegateGetMethodInfo);
-			generator.Emit(OpCodes.Callvirt, memberInfoGetReflectedType);
-			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type)));
-			generator.Emit(OpCodes.Pop);
-
-			// MD token
-			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-			generator.Emit(OpCodes.Ldloc_S, element.LocalIndex);
-			generator.Emit(OpCodes.Call, delegateGetMethodInfo);
-			generator.Emit(OpCodes.Callvirt, memberInfoGetMetadataToken);
-			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
-
-			generator.Emit(OpCodes.Ldloc_S, loopCounter.LocalIndex);
-			generator.Emit(OpCodes.Ldc_I4_1);
-			generator.Emit(OpCodes.Add);
-			generator.Emit(OpCodes.Stloc_S, loopCounter.LocalIndex);
-			generator.Emit(OpCodes.Br, loopBegin);
-			generator.MarkLabel(loopEnd);
+				generator.Emit(OpCodes.Ldarg_0); // objectWriter
+				generator.Emit(OpCodes.Ldloc, element);
+				generator.Emit(OpCodes.Call, delegateGetMethodInfo);
+				generator.Emit(OpCodes.Call, delegateTouchAndWriteMethodId);
+				generator.Emit(OpCodes.Pop);
+			});
 		}
 
 		private void GenerateWriteValue(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
