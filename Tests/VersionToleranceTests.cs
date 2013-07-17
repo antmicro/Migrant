@@ -10,8 +10,23 @@ using AntMicro.Migrant.Customization;
 namespace AntMicro.Migrant.Tests
 {
 	[Serializable]
-	public class VersionToleranceTests
+	[TestFixture(false, false)]
+	[TestFixture(true, false)]
+	[TestFixture(false, true)]
+	[TestFixture(true, true)]
+	public class VersionToleranceTests : MarshalByRefObject
 	{
+		public VersionToleranceTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+		{
+			this.useGeneratedDeserializer = useGeneratedDeserializer;
+			this.useGeneratedSerializer = useGeneratedSerializer;
+		}
+
+		public VersionToleranceTests()
+		{
+
+		}
+
 		[SetUp]
 		public void SetUp()
 		{
@@ -28,6 +43,7 @@ namespace AntMicro.Migrant.Tests
 			testsOnDomain2 = null;
 			AppDomain.Unload(domain1);
 			AppDomain.Unload(domain2);
+			File.Delete(AssemblyName.Name + ".dll");
 		}
 
 		[Test]
@@ -35,15 +51,15 @@ namespace AntMicro.Migrant.Tests
 		{
 			var fields = new List<Tuple<string, Type>>();
 			fields.Add(Tuple.Create(Field1Name, typeof(int)));
-			testsOnDomain1.BuildTypeOnAppDomain(TypeName, fields);
+			testsOnDomain1.BuildTypeOnAppDomain(TypeName, fields, false);
 			var fieldCheck = new FieldCheck(Field1Name, 666);
 			testsOnDomain1.SetValueOnAppDomain(fieldCheck);
 			var data = testsOnDomain1.SerializeOnAppDomain();
 
 			fields.Add(Tuple.Create(Field2Name, typeof(int)));
-			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields);
+			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields, true);
 
-			testsOnDomain2.DeserializeOnAppDomain(data, new [] { fieldCheck, new FieldCheck(Field2Name, 0) });
+			testsOnDomain2.DeserializeOnAppDomain(data, new [] { fieldCheck, new FieldCheck(Field2Name, 0) }, SettingsFromFields);
 		}
 
 		[Test]
@@ -51,21 +67,21 @@ namespace AntMicro.Migrant.Tests
 		{
 			var fields = new List<Tuple<string, Type>>();
 			fields.Add(Tuple.Create(Field1Name, typeof(int)));
-			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields);
-
 			fields.Add(Tuple.Create(Field2Name, typeof(int)));
-			testsOnDomain1.BuildTypeOnAppDomain(TypeName, fields);
+			testsOnDomain1.BuildTypeOnAppDomain(TypeName, fields, false);
 			var field1Check = new FieldCheck(Field1Name, 667);
 			testsOnDomain1.SetValueOnAppDomain(field1Check);
 			testsOnDomain1.SetValueOnAppDomain(new FieldCheck(Field2Name, 668));
 			var data = testsOnDomain1.SerializeOnAppDomain();
 
-			testsOnDomain2.DeserializeOnAppDomain(data, new [] { field1Check });
+			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields.Take(1).ToArray(), true);
+
+			testsOnDomain2.DeserializeOnAppDomain(data, new [] { field1Check }, SettingsFromFields);
 		}
 
-		public void BuildTypeOnAppDomain(string typeName, IEnumerable<Tuple<string, Type>> fields)
+		public void BuildTypeOnAppDomain(string typeName, IEnumerable<Tuple<string, Type>> fields, bool persistent)
 		{
-			var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName, AssemblyBuilderAccess.RunAndSave);
+			var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName, persistent ? AssemblyBuilderAccess.RunAndSave : AssemblyBuilderAccess.Run);
 			var moduleBuilder = assemblyBuilder.DefineDynamicModule(AssemblyName.Name + ".dll");
 			var typeBuilder = moduleBuilder.DefineType(typeName, TypeAttributes.Class | TypeAttributes.Public);
 			foreach(var field in fields)
@@ -74,7 +90,10 @@ namespace AntMicro.Migrant.Tests
 			}
 			builtType = typeBuilder.CreateType();
 			obj = Activator.CreateInstance(builtType);
-			assemblyBuilder.Save(AssemblyName.Name + ".dll"); // TODO: file.Delete?
+			if(persistent)
+			{
+				assemblyBuilder.Save(AssemblyName.Name + ".dll");
+			}
 		}
 
 		public void SetValueOnAppDomain(FieldCheck fieldCheck)
@@ -91,10 +110,9 @@ namespace AntMicro.Migrant.Tests
 			return stream.ToArray();
 		}
 
-		public void DeserializeOnAppDomain(byte[] data, IEnumerable<FieldCheck> fieldsToCheck)
+		public void DeserializeOnAppDomain(byte[] data, IEnumerable<FieldCheck> fieldsToCheck, Settings settings)
 		{
 			var stream = new MemoryStream(data);
-			var settings = new Settings(ignoreModuleIdInequality: true); // TODO
 			var deserializer = new Serializer(settings);
 			var deserializedObject = deserializer.Deserialize<object>(stream);
 			var fields = deserializedObject.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -106,6 +124,7 @@ namespace AntMicro.Migrant.Tests
 			}
 		}
 
+		[Serializable]
 		public class FieldCheck
 		{
 			public FieldCheck(string name, object value)
@@ -118,6 +137,20 @@ namespace AntMicro.Migrant.Tests
 			public object Value { get; private set; }
 		}
 
+		private Settings SettingsFromFields
+		{
+			get
+			{
+				var settings = new Settings
+					(
+						useGeneratedSerializer ? Method.Generated : Method.Reflection,
+						useGeneratedDeserializer ? Method.Generated : Method.Reflection,
+						ignoreModuleIdInequality: true // TODO
+						);
+				return settings;
+			}
+		}
+
 		private const string TypeName = "SampleType";
 		private VersionToleranceTests testsOnDomain1;
 		private VersionToleranceTests testsOnDomain2;
@@ -125,6 +158,8 @@ namespace AntMicro.Migrant.Tests
 		private AppDomain domain2;
 		private Type builtType;
 		private object obj;
+		private bool useGeneratedSerializer;
+		private bool useGeneratedDeserializer;
 
 		private const string Field1Name = "Field1";
 		private const string Field2Name = "Field2";
