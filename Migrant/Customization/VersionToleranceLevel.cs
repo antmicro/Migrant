@@ -41,7 +41,7 @@ namespace AntMicro.Migrant.Customization
 		/// Both serialized and serialized classes must have identical module ID (which is GUID). In other words
 		/// that means these assemblies are from one and the same compilation.
 		/// </summary>
-		GUID,
+		Guid,
 
 		/// <summary>
 		/// The new layout can have more fields that the old one. They are initialized to their default values.

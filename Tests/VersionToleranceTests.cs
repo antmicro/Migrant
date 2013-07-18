@@ -78,7 +78,7 @@ namespace AntMicro.Migrant.Tests
 			testsOnDomain1.BuildTypeOnAppDomain(TypeName, fields, false);
 			var data = testsOnDomain1.SerializeOnAppDomain();
 			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields, true);
-			Assert.Throws<InvalidOperationException>(() => testsOnDomain2.DeserializeOnAppDomain(data, Enumerable.Empty<FieldCheck>(), GetSettings(VersionToleranceLevel.GUID)));
+			Assert.Throws<InvalidOperationException>(() => testsOnDomain2.DeserializeOnAppDomain(data, Enumerable.Empty<FieldCheck>(), GetSettings(VersionToleranceLevel.Guid)));
 		}
 
 		[Test]

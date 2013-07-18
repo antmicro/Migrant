@@ -63,7 +63,7 @@ namespace AntMicro.Migrant.VersionTolerance
 				stampCache.Add(type, StampHelpers.GetFieldsInSerializationOrder(type, true).Select(x => new FieldInfoOrEntryToOmit(x)).ToList());
 				return;
 			}
-			if(versionToleranceLevel == VersionToleranceLevel.GUID)
+			if(versionToleranceLevel == VersionToleranceLevel.Guid)
 			{
 				throw new InvalidOperationException(string.Format("The class was serialized with different module version id {0}, current one is {1}.",
 				                                                  moduleGuid, type.Module.ModuleVersionId));
