@@ -88,7 +88,6 @@ namespace AntMicro.Migrant
 			this.isGenerating = isGenerating;
 			this.surrogatesForObjects = surrogatesForObjects;
 			typeIndices = new Dictionary<Type, int>();
-			moduleIndices = new Dictionary<Module, int>();
 			methodIndices = new Dictionary<MethodInfo, int>();
 			this.stream = stream;
 			this.preSerializationCallback = preSerializationCallback;
@@ -199,7 +198,6 @@ namespace AntMicro.Migrant
 			typeId = typeIndices[type];
 			writer.Write(typeId);
 			writer.Write(type.AssemblyQualifiedName);
-			WriteModuleId(type.Module);
 			Stamp(type);
 			return typeId;
 		}
@@ -232,21 +230,6 @@ namespace AntMicro.Migrant
 		internal void Stamp(Type type)
 		{
 			typeStamper.Stamp(type);
-		}
-
-		internal void WriteModuleId(Module module)
-		{
-			int moduleId;
-			if(moduleIndices.ContainsKey(module))
-			{
-				moduleId = moduleIndices[module];
-				writer.Write(moduleId);
-				return;
-			}
-			moduleId = nextModuleId++;
-			writer.Write(moduleId);
-			writer.Write(module.ModuleVersionId);
-			moduleIndices.Add(module, moduleId);
 		}
 
 		internal static bool HasSpecialWriteMethod(Type type)
@@ -622,7 +605,6 @@ namespace AntMicro.Migrant
 		private ObjectIdentifier identifier;
 		private int objectsWritten;
 		private int nextTypeId;
-		private int nextModuleId;
 		private int nextMethodId;
 		private PrimitiveWriter writer;
 		private TypeStamper typeStamper;
@@ -634,7 +616,6 @@ namespace AntMicro.Migrant
 		private readonly List<Action> postSerializationHooks;
 		private readonly Dictionary<Type, int> typeIndices;
 		private readonly Dictionary<MethodInfo, int> methodIndices;
-		private readonly Dictionary<Module, int> moduleIndices;
 		private readonly Dictionary<Type, bool> transientTypeCache;
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
 		private readonly IDictionary<Type, Delegate> surrogatesForObjects;

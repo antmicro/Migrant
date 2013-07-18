@@ -139,7 +139,7 @@ namespace AntMicro.Migrant
 				}
 			}
 
-			var objectReader = new ObjectReader(stream, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization,
+			var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization,
 			                                    readMethodCache, settings.DeserializationMethod == Method.Generated);
 			var result = objectReader.ReadObject<T>();
 			deserializationDone = true;

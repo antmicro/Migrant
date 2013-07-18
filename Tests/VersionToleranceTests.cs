@@ -144,8 +144,8 @@ namespace AntMicro.Migrant.Tests
 				var settings = new Settings
 					(
 						useGeneratedSerializer ? Method.Generated : Method.Reflection,
-						useGeneratedDeserializer ? Method.Generated : Method.Reflection,
-						ignoreModuleIdInequality: true // TODO
+						useGeneratedDeserializer ? Method.Generated : Method.Reflection
+						// TODO: missing parameter
 						);
 				return settings;
 			}

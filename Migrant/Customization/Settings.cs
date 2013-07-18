@@ -47,9 +47,10 @@ namespace AntMicro.Migrant.Customization
 		public Method DeserializationMethod { get; private set; }
 
 		/// <summary>
-		/// Gets whether not equal module ids should be ignored; when false (which is default), exception is thrown.
+		/// Specifies how much the layout of the serialized class can differ from the version
+		/// that is available when that data is deserialized.
 		/// </summary>
-		public bool IgnoreModuleIdInequality { get; private set; }
+		public VersionToleranceLevel VersionTolerance { get; private set; }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Customization.Settings"/> class.
@@ -60,16 +61,15 @@ namespace AntMicro.Migrant.Customization
 		/// <param name='deserializationMethod'>
 		/// Method used for deserialization.
 		/// </param>
-		/// <param name='ignoreModuleIdInequality'>
-		/// If serialized module's id differs from the one used in deserialization and this parameter is false (which is default),
-		/// exception is thrown (due to possible incompatibility and change of the metadata tokens' meaning). If this parameter
-		/// is set true, no exception is thrown and deserialization continues.
+		/// <param name='versionTolerance'>
+		/// Specifies the possible level of difference between class layout when it was serialized and in the
+		/// moment of deserialization.
 		/// </param>
-		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, bool ignoreModuleIdInequality = false)
+		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0)
 		{
 			SerializationMethod = serializationMethod;
 			DeserializationMethod = deserializationMethod;
-			IgnoreModuleIdInequality = ignoreModuleIdInequality;
+			VersionTolerance = versionTolerance;
 		}
 	}
 }

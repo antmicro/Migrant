@@ -45,7 +45,7 @@ namespace AntMicro.Migrant.Tests
 			var position = stream.Position;
 
 			stream.Seek(0, SeekOrigin.Begin);
-			var reader = new ObjectReader(stream, false);
+			var reader = new ObjectReader(stream);
 			Assert.AreEqual(strings[0], reader.ReadObject<string>());
 			Assert.AreEqual(strings[1], reader.ReadObject<string>());
 			Assert.AreEqual(position, stream.Position);

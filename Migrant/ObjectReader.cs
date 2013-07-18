@@ -75,7 +75,7 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if read methods are to be generated, false if one wants to use reflection.
 		/// </param>
-		public ObjectReader(Stream stream, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
+		public ObjectReader(Stream stream, IDictionary<Type, Delegate> objectsForSurrogates = null,
 		                    Action<object> postDeserializationCallback = null, IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false)
 		{
 			if(objectsForSurrogates == null)
@@ -83,13 +83,11 @@ namespace AntMicro.Migrant
 				objectsForSurrogates = new Dictionary<Type, Delegate>();
 			}
 			this.objectsForSurrogates = objectsForSurrogates;
-			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
 			this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
 			this.useGeneratedDeserialization = isGenerating;
 			typeList = new List<Type>();
 			methodList = new List<MethodInfo>();
 			postDeserializationHooks = new List<Action>();
-			agreedModuleIds = new HashSet<int>();
 			this.stream = stream;
 			this.postDeserializationCallback = postDeserializationCallback;
 			PrepareForTheRead();
@@ -316,7 +314,7 @@ namespace AntMicro.Migrant
 					ReadObjectInner(ReadType(), refId);
 				}
 				return deserializedObjects[refId];
-			} 
+			}
 			if(formalType.IsEnum)
 			{
 				var value = ReadField(Enum.GetUnderlyingType(formalType));
@@ -520,21 +518,6 @@ namespace AntMicro.Migrant
 			{
 				return typeList[typeId];
 			}
-			var moduleId = reader.ReadInt32();
-			if(!agreedModuleIds.Contains(moduleId))
-			{
-				var type = typeList[typeId];
-				var oldMvid = reader.ReadGuid();
-				var module = type.Module;
-				var newMvid = module.ModuleVersionId;
-				if(oldMvid != newMvid && !ignoreModuleIdInequality)
-				{
-					throw new InvalidOperationException(
-						string.Format("Cannot deserialize data. The type '{0}' in module {1} was serialized with mvid {2}, but you are trying to deserialize it using mvid {3}.",
-					              type, module, oldMvid, newMvid));
-				}
-				agreedModuleIds.Add(moduleId);
-			}
 			var readType = typeList[typeId];
 			ReadStamp(readType);
 			return readType;
@@ -618,9 +601,7 @@ namespace AntMicro.Migrant
 		private TypeStampReader stamper;
 		private readonly List<Type> typeList;
 		private readonly List<MethodInfo> methodList;
-		private readonly HashSet<int> agreedModuleIds;
 		private readonly Stream stream;
-		private readonly bool ignoreModuleIdInequality;
 		internal readonly Action<object> postDeserializationCallback;
 		internal readonly List<Action> postDeserializationHooks;
 		internal readonly IDictionary<Type, Delegate> objectsForSurrogates;
