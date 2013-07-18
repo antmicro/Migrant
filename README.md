@@ -1,4 +1,4 @@
-# Migrant 0.3.2
+# Migrant 0.4
 
 This is the *Migrant* project by [Ant Micro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
 
@@ -115,6 +115,17 @@ Here we present some simple use cases of Migrant. They are written in pseudo-C\#
 
     var anObject = serializer.Deserialize<object>(stream);
     Console.WriteLine(anObject.GetType().Name); // prints AnotherObject
+
+### Version tolerance
+
+What if some changes are made to the layout of the class between serialization and deserialization? Migrant can cope with that up to some extent. During creation of serializer you can specify settings, among which there is a version tolerance level. This is an enumeration with five possible values:
+
+- ``GUID`` - the most restrictive option. Deserialization is possible if module ID (which is GUID generated when module is compiled) is the same as it was during serialization. In other words it deserialization must be done using the same assembly as serialization used.
+- ``Exact`` - this is a default value. Deserialization is possible if no fields are added or removed and no type changes were done.
+- ``FieldAddition`` - new version of the type can contain more fields than it contained during serialization. They are initialized with their default values.
+- ``FieldRemoval`` - new version of the type can contain less fields than it contained during serialization.
+- ``FieldAdditionAndRemoval`` - combination of these two above.
+
 
 ## Referenced libraries
 
