@@ -50,7 +50,7 @@ namespace AntMicro.Migrant.VersionTolerance
 			// result should also contain transient fields, because some of them may
 			// be marked with the [Constructor] attribute
 			result.AddRange(currentFields.Select(x => x.Value).Where(x => !Helpers.IsNotTransient(x)).Select(x => new FieldInfoOrEntryToOmit(x)));
-			stampCache.Add(type, result.OrderBy(x => x.Field == null ? x.TypeToOmit.Name : x.Field.FieldType.Name).ToList());
+			stampCache.Add(type, result);
 		}
 
 		public IEnumerable<FieldInfoOrEntryToOmit> GetFieldsToDeserialize(Type type)
