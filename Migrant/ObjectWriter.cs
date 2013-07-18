@@ -52,10 +52,6 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// Stream to which data will be written.
 		/// </param>
-		/// <param name='upfrontKnownTypes'>
-		/// List of types that are considered to be known upfront, i.e. their type information is not written to the serialization stream.
-		/// The <see cref="AntMicro.Migrant.ObjectReader" /> that will read such stream must receive consistent list.
-		/// </param>
 		/// <param name='preSerializationCallback'>
 		/// Callback which is called once on every unique object before its serialization. Contains this object in its only parameter.
 		/// </param>

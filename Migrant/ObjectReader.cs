@@ -54,14 +54,6 @@ namespace AntMicro.Migrant
 		/// <param name='stream'>
 		/// Stream from which objects will be read.
 		/// </param>
-		/// <param name='upfrontKnownTypes'>
-		/// List of types that are considered to be known upfront, i.e. their type information is not written to the serialization stream.
-		/// It has to be consistent with <see cref="AntMicro.Migrant.ObjectWriter" /> that wrote the stream.
-		/// </param>
-		/// <param name='ignoreModuleIdInequality'>
-		/// If set to true, deserialization continues even if the module id used for deserialization differs from the one used for serialization.
-		/// If set to false, exception is thrown instead.
-		/// </param>
 		/// <param name='objectsForSurrogates'>
 		/// Dictionary, containing callbacks that provide objects for given type of surrogate. Callbacks have to be of type Func&lt;T, object&gt; where
 		/// typeof(T) is type of surrogate.
@@ -77,6 +69,9 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if read methods are to be generated, false if one wants to use reflection.
 		/// </param>
+		/// <param name="versionToleranceLevel"> 
+		/// Describes the tolerance level of this reader when handling discrepancies in type description (new or missing fields, etc.).
+		/// </param> 
 		public ObjectReader(Stream stream, IDictionary<Type, Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
 		                    IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, VersionToleranceLevel versionToleranceLevel = 0)
 		{
