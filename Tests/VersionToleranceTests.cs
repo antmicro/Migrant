@@ -47,6 +47,16 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
+		public void TestGuidVerification()
+		{
+			var fields = new List<Tuple<string, Type>> { Tuple.Create("Field", typeof(int)) };
+			testsOnDomain1.BuildTypeOnAppDomain(TypeName, fields, false);
+			var data = testsOnDomain1.SerializeOnAppDomain();
+			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields, true);
+			Assert.Throws<InvalidOperationException>(() => testsOnDomain2.DeserializeOnAppDomain(data, Enumerable.Empty<FieldCheck>(), GetSettings(VersionToleranceLevel.GUID)));
+		}
+
+		[Test]
 		public void TestSimpleFieldAddition(
 			[Values(VersionToleranceLevel.Exact, VersionToleranceLevel.FieldAddition, VersionToleranceLevel.FieldAdditionAndRemoval)] VersionToleranceLevel versionToleranceLevel)
 		{
