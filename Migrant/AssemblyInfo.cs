@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012 - 2013 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -32,4 +32,4 @@ using System.Reflection;
 [assembly: AssemblyCompany("AntMicro")]
 [assembly: AssemblyCopyright("Copyright by AntMicro 2012 - 2013")]
 
-[assembly: AssemblyVersion("0.3.2")]
+[assembly: AssemblyVersion("0.4")]
