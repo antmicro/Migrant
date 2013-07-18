@@ -26,8 +26,24 @@ namespace AntMicro.Migrant.VersionTolerance
 				return;
 			}
 			var result = new List<FieldInfoOrEntryToOmit>();
-			var currentFields = StampHelpers.GetFieldsInSerializationOrder(type, true).ToDictionary(x => x.Name, x => x);
 			var fieldNo = reader.ReadInt32();
+			var moduleGuid = reader.ReadGuid();
+			if(moduleGuid == type.Module.ModuleVersionId)
+			{
+				// short path, nothing to check
+				for(var i = 0; i < fieldNo*2; i++)
+				{
+					reader.ReadString();
+				}
+				stampCache.Add(type, StampHelpers.GetFieldsInSerializationOrder(type, true).Select(x => new FieldInfoOrEntryToOmit(x)).ToList());
+				return;
+			}
+			if(versionToleranceLevel == VersionToleranceLevel.GUID)
+			{
+				throw new InvalidOperationException(string.Format("The class was serialized with different module version id {0}, current one is {1}.",
+				                                                  moduleGuid, type.Module.ModuleVersionId));
+			}
+			var currentFields = StampHelpers.GetFieldsInSerializationOrder(type, true).ToDictionary(x => x.Name, x => x);
 			for(var i = 0; i < fieldNo; i++)
 			{
 				var fieldName = reader.ReadString();

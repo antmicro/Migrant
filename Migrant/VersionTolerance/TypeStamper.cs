@@ -26,6 +26,8 @@ namespace AntMicro.Migrant.VersionTolerance
 			alreadyWritten.Add(type);
 			var fields = StampHelpers.GetFieldsInSerializationOrder(type).ToArray();
 			writer.Write(fields.Length);
+			var moduleGuid = type.Module.ModuleVersionId;
+			writer.Write(moduleGuid);
 			foreach(var field in fields)
 			{
 				var fieldType = field.FieldType;
