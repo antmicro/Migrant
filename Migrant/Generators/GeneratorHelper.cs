@@ -29,7 +29,7 @@ using System.Reflection.Emit;
 
 namespace AntMicro.Migrant.Generators
 {
-	public class GeneratorHelper
+	internal class GeneratorHelper
 	{
 		public static void GenerateLoop(ILGenerator generator, LocalBuilder countLocal, Action<LocalBuilder> loopAction, bool reversed = false)
 		{
