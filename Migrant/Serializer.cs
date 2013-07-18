@@ -122,21 +122,21 @@ namespace AntMicro.Migrant
 		/// </typeparam>
 		public T Deserialize<T>(Stream stream)
 		{
-			// Read headers
-			using(var reader = new PrimitiveReader(stream))
+			// Read header
+			var magic1 = stream.ReadByte();
+			var magic2 = stream.ReadByte();
+			var magic3 = stream.ReadByte();
+			if(magic1 != Magic1 || magic2 != Magic2 || magic3 != Magic3)
 			{
-				var magic = reader.ReadUInt32();
-				if(magic != Magic)
-				{
-					throw new InvalidOperationException(string.Format(
-                        "Cound not find proper magic {0}, instead {1} was read.", Magic, magic));
-				}
-				var version = reader.ReadUInt16();
-				if(version != VersionNumber)
-				{
-					throw new InvalidOperationException(string.Format(
-                        "Could not deserialize data serialized with another version of serializer, namely {0}.", version));
-				}
+				throw new InvalidOperationException(string.Format(
+					"Cound not find proper magic {0}, {1}, {2}, instead {3}, {4}, {5} was read.", Magic1, Magic2, Magic3,
+					magic1, magic2, magic3));
+			}
+			var version = stream.ReadByte();
+			if(version != VersionNumber)
+			{
+				throw new InvalidOperationException(string.Format(
+					"Could not deserialize data serialized with another version of serializer, namely {0}. Current is {1}.", version, VersionNumber));
 			}
 
 			var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
@@ -195,11 +195,10 @@ namespace AntMicro.Migrant
 
 		private void WriteHeader(Stream stream)
 		{
-			using(var writer = new PrimitiveWriter(stream))
-			{
-				writer.Write(Magic);
-				writer.Write(VersionNumber);
-			}
+			stream.WriteByte(Magic1);
+			stream.WriteByte(Magic2);
+			stream.WriteByte(Magic3);
+			stream.WriteByte(VersionNumber);
 		}
 
 		private bool serializationDone;
@@ -209,8 +208,10 @@ namespace AntMicro.Migrant
 		private readonly Dictionary<Type, DynamicMethod> readMethodCache;
 		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;
-		private const ushort VersionNumber = 5;
-		private const uint Magic = 0xA5132;
+		private const byte VersionNumber = 1;
+		private const byte Magic1 = 0x32;
+		private const byte Magic2 = 0x66;
+		private const byte Magic3 = 0x34;
 
 		/// <summary>
 		/// Lets you set a callback providing object for type of the surrogate given to method that provided
