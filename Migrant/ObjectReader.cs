@@ -38,6 +38,7 @@ using System.Collections.ObjectModel;
 using System.Reflection.Emit;
 using Migrant.Generators;
 using AntMicro.Migrant.VersionTolerance;
+using AntMicro.Migrant.Customization;
 
 namespace AntMicro.Migrant
 {
@@ -75,8 +76,8 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if read methods are to be generated, false if one wants to use reflection.
 		/// </param>
-		public ObjectReader(Stream stream, IDictionary<Type, Delegate> objectsForSurrogates = null,
-		                    Action<object> postDeserializationCallback = null, IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false)
+		public ObjectReader(Stream stream, IDictionary<Type, Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
+		                    IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, VersionToleranceLevel versionToleranceLevel = 0)
 		{
 			if(objectsForSurrogates == null)
 			{
@@ -90,6 +91,7 @@ namespace AntMicro.Migrant
 			postDeserializationHooks = new List<Action>();
 			this.stream = stream;
 			this.postDeserializationCallback = postDeserializationCallback;
+			this.versionToleranceLevel = versionToleranceLevel;
 			PrepareForTheRead();
 		}
 
@@ -155,7 +157,7 @@ namespace AntMicro.Migrant
 			delegatesCache = new Dictionary<Type, Func<int, object>>();
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
 			reader = new PrimitiveReader(stream);
-			stamper = new TypeStampReader(reader);
+			stamper = new TypeStampReader(reader, versionToleranceLevel);
 		}
 
 		internal static bool HasSpecialReadMethod(Type type)
@@ -599,6 +601,7 @@ namespace AntMicro.Migrant
 		private Dictionary<Type, Func<Int32, object>> delegatesCache;
 		internal PrimitiveReader reader;
 		private TypeStampReader stamper;
+		private readonly VersionToleranceLevel versionToleranceLevel;
 		private readonly List<Type> typeList;
 		private readonly List<MethodInfo> methodList;
 		private readonly Stream stream;

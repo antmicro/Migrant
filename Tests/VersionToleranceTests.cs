@@ -47,7 +47,8 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void TestSimpleFieldAddition()
+		public void TestSimpleFieldAddition(
+			[Values(VersionToleranceLevel.Exact, VersionToleranceLevel.FieldAddition, VersionToleranceLevel.FieldAdditionAndRemoval)] VersionToleranceLevel versionToleranceLevel)
 		{
 			var fields = new List<Tuple<string, Type>>();
 			fields.Add(Tuple.Create(Field1Name, typeof(int)));
@@ -59,11 +60,21 @@ namespace AntMicro.Migrant.Tests
 			fields.Add(Tuple.Create(Field2Name, typeof(int)));
 			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields, true);
 
-			testsOnDomain2.DeserializeOnAppDomain(data, new [] { fieldCheck, new FieldCheck(Field2Name, 0) }, SettingsFromFields);
+			TestDelegate deserialization = () => testsOnDomain2.DeserializeOnAppDomain(data, new [] { fieldCheck, new FieldCheck(Field2Name, 0) }, GetSettings(versionToleranceLevel));
+			if(versionToleranceLevel == VersionToleranceLevel.Exact)
+			{
+				Assert.Throws<InvalidOperationException>(deserialization);
+			}
+			else
+			{
+				deserialization();
+			}
+
 		}
 
 		[Test]
-		public void TestSimpleFieldRemoval()
+		public void TestSimpleFieldRemoval(
+			[Values(VersionToleranceLevel.Exact, VersionToleranceLevel.FieldRemoval, VersionToleranceLevel.FieldAdditionAndRemoval)] VersionToleranceLevel versionToleranceLevel)
 		{
 			var fields = new List<Tuple<string, Type>>();
 			fields.Add(Tuple.Create(Field1Name, typeof(int)));
@@ -76,7 +87,15 @@ namespace AntMicro.Migrant.Tests
 
 			testsOnDomain2.BuildTypeOnAppDomain(TypeName, fields.Take(1).ToArray(), true);
 
-			testsOnDomain2.DeserializeOnAppDomain(data, new [] { field1Check }, SettingsFromFields);
+			TestDelegate deserialization = () => testsOnDomain2.DeserializeOnAppDomain(data, new [] { field1Check }, GetSettings(versionToleranceLevel));
+			if(versionToleranceLevel == VersionToleranceLevel.Exact)
+			{
+				Assert.Throws<InvalidOperationException>(deserialization);
+			}
+			else
+			{
+				deserialization();
+			}
 		}
 
 		public void BuildTypeOnAppDomain(string typeName, IEnumerable<Tuple<string, Type>> fields, bool persistent)
@@ -124,6 +143,13 @@ namespace AntMicro.Migrant.Tests
 			}
 		}
 
+		private Settings GetSettings(VersionToleranceLevel level = 0)
+		{
+			return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
+			                    useGeneratedDeserializer ? Method.Generated : Method.Reflection,					
+			                    level);
+		}
+
 		[Serializable]
 		public class FieldCheck
 		{
@@ -135,20 +161,6 @@ namespace AntMicro.Migrant.Tests
 
 			public string Name { get; private set; }
 			public object Value { get; private set; }
-		}
-
-		private Settings SettingsFromFields
-		{
-			get
-			{
-				var settings = new Settings
-					(
-						useGeneratedSerializer ? Method.Generated : Method.Reflection,
-						useGeneratedDeserializer ? Method.Generated : Method.Reflection
-						// TODO: missing parameter
-						);
-				return settings;
-			}
 		}
 
 		private const string TypeName = "SampleType";
