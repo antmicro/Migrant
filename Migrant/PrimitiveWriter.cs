@@ -99,7 +99,17 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(TimeSpan value)
 		{
-			Write(value.Ticks);
+			// first unit, then value in this unit
+			if(value.Ticks % TimeSpan.TicksPerSecond != 0)
+			{
+				Write((byte)Helpers.TickIndicator);
+				Write(value.Ticks);
+				return;
+			}
+			var type = (byte)(value.Hours);
+			Write(type);
+			Write((ushort)(value.Seconds + 60*value.Minutes));
+			Write(value.Days);
 		}
 
 		/// <summary>

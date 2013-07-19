@@ -92,7 +92,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public DateTime ReadDateTime()
 		{
-			return Helpers.DateTimeEpoch.AddTicks(ReadInt64());
+			return Helpers.DateTimeEpoch + ReadTimeSpan();
 		}
 
 		/// <summary>
@@ -100,7 +100,15 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public TimeSpan ReadTimeSpan()
 		{
-			return TimeSpan.FromTicks(ReadInt64());
+			var type = ReadByte();
+			switch(type)
+			{
+			case Helpers.TickIndicator:
+				return TimeSpan.FromTicks(ReadInt64());
+			}
+			var tms = ReadUInt16();
+			var days = ReadInt32();
+			return new TimeSpan(days, type, tms / 60, tms % 60);
 		}
 
 		/// <summary>

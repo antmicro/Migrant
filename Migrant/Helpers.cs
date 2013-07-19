@@ -346,8 +346,11 @@ namespace AntMicro.Migrant
 				1024,
 				4096
 			};
+
 		private const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | 
 			BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
+		public const byte TickIndicator = 255;
 	}
 }
 
