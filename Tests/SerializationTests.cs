@@ -704,6 +704,32 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
+		public void ShouldSerializeDelegateWithInterfaceMethod()
+		{
+			var withEvent = new ClassWithEvent<IInterfaceForDelegate>();
+			var companion = new ClassImplementingInterfaceForDelegate();
+			withEvent.Event += companion.Method;
+			var pair = Tuple.Create(withEvent, companion);
+
+			var copy = SerializerClone(pair);
+			copy.Item1.Invoke(null);
+			Assert.AreEqual(true, copy.Item2.Invoked);
+		}
+
+		[Test]
+		public void ShouldSerializeDelegateWithLambdaAttached()
+		{
+			var withEvent = new ClassWithEvent();
+			var companion = new ClassImplementingInterfaceForDelegate();
+			withEvent.Event += () => companion.Method(null);
+			var pair = Tuple.Create(withEvent, companion);
+
+			var copy = SerializerClone(pair);
+			copy.Item1.Invoke();
+			Assert.AreEqual(true, copy.Item2.Invoked);
+		}
+
+		[Test]
 		public void ShouldSerializeEmptyArray()
 		{
 			var emptyArray = new int[0];
@@ -1225,6 +1251,39 @@ namespace AntMicro.Migrant.Tests
 			}
 
 			public ClassWithIntPtr WithIntPtr { get; private set; }
+		}
+
+		private class ClassWithEvent<T>
+		{
+			public event Action<T> Event;
+
+			public void Invoke(T arg)
+			{
+				var toInvoke = Event;
+				if(toInvoke != null)
+				{
+					toInvoke(arg);
+				}
+			}
+		}
+
+		private interface IInterfaceForDelegate
+		{
+			void Method(IInterfaceForDelegate arg);
+		}
+
+		private class ClassImplementingInterfaceForDelegate : IInterfaceForDelegate
+		{
+			public bool Invoked { get; private set; }
+
+			#region InterfaceForDelegate implementation
+
+			public void Method(IInterfaceForDelegate arg)
+			{
+				Invoked = true;
+			}
+
+			#endregion
 		}
 	}
 
