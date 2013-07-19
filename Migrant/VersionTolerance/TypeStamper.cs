@@ -1,10 +1,8 @@
 /*
-  Copyright (c) 2012 - 2013 Ant Micro <www.antmicro.com>
+  Copyright (c) 2013 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
-   * Piotr Zierhoffer (pzierhoffer@antmicro.com)
-   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -25,11 +23,46 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+using System;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 
-[assembly: AssemblyTitle("Migrant")]
-[assembly: AssemblyDescription("Fast and flexible serialization framework usable on undecorated classes.")]
-[assembly: AssemblyCompany("AntMicro")]
-[assembly: AssemblyCopyright("Copyright by AntMicro 2012 - 2013")]
+namespace AntMicro.Migrant.VersionTolerance
+{
+	internal sealed class TypeStamper
+	{
+		public TypeStamper(PrimitiveWriter writer)
+		{
+			this.writer = writer;
+			alreadyWritten = new HashSet<Type>();
+		}
 
-[assembly: AssemblyVersion("0.4")]
+		public void Stamp(Type type)
+		{
+			if(!StampHelpers.IsStampNeeded(type))
+			{
+				return;
+			}
+			if(alreadyWritten.Contains(type))
+			{
+				return;
+			}
+			alreadyWritten.Add(type);
+			var fields = StampHelpers.GetFieldsInSerializationOrder(type).ToArray();
+			writer.Write(fields.Length);
+			var moduleGuid = type.Module.ModuleVersionId;
+			writer.Write(moduleGuid);
+			foreach(var field in fields)
+			{
+				var fieldType = field.FieldType;
+				writer.Write(field.Name);
+				writer.Write(fieldType.AssemblyQualifiedName);
+			}
+		}
+
+		private readonly PrimitiveWriter writer;
+		private readonly HashSet<Type> alreadyWritten;
+	}
+}
+

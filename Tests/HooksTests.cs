@@ -36,12 +36,10 @@ namespace AntMicro.Migrant.Tests
 	[TestFixture(true, false)]
 	[TestFixture(false, true)]
 	[TestFixture(true, true)]
-	public class HooksTests
+	public class HooksTests : BaseTestWithSettings
 	{
-		public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+		public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer) : base(useGeneratedSerializer, useGeneratedDeserializer)
 		{
-			this.useGeneratedDeserializer = useGeneratedDeserializer;
-			this.useGeneratedSerializer = useGeneratedSerializer;
 		}
 
 		[Test]
@@ -116,7 +114,7 @@ namespace AntMicro.Migrant.Tests
 		public void ShouldInvokeGlobalHooks()
 		{
 			var memoryStream = new MemoryStream();
-			var serializer = new Serializer(SettingsFromFields);
+			var serializer = new Serializer(GetSettings());
 			var preSerializationCounter = 0;
 			var postSerializationCounter = 0;
 			var postDeserializationCounter = 0;
@@ -208,28 +206,6 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(true, prePostMock.PreExecuted);
 			Assert.AreEqual(true, prePostMock.PostExecuted);
 		}
-
-		private T SerializerClone<T>(T toClone)
-		{
-			var settings = SettingsFromFields;
-			return Serializer.DeepClone(toClone, settings);
-		}
-		
-		private Customization.Settings SettingsFromFields
-		{
-			get
-			{
-				var settings = new Customization.Settings
-					(
-						useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
-						useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
-				);
-				return settings;
-			}
-		}
-		
-		private bool useGeneratedSerializer;
-		private bool useGeneratedDeserializer;
 	}
 
 	public class PreSerializationMock

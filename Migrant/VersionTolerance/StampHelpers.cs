@@ -1,10 +1,8 @@
 /*
-  Copyright (c) 2012 - 2013 Ant Micro <www.antmicro.com>
+  Copyright (c) 2013 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
-   * Piotr Zierhoffer (pzierhoffer@antmicro.com)
-   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -25,11 +23,27 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+using System;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 
-[assembly: AssemblyTitle("Migrant")]
-[assembly: AssemblyDescription("Fast and flexible serialization framework usable on undecorated classes.")]
-[assembly: AssemblyCompany("AntMicro")]
-[assembly: AssemblyCopyright("Copyright by AntMicro 2012 - 2013")]
+namespace AntMicro.Migrant.VersionTolerance
+{
+	internal static class StampHelpers
+	{
+		public static bool IsStampNeeded(Type type)
+		{
+			Type fake1;
+			bool fake2, fake3, fake4;
+			return !Helpers.IsWriteableByPrimitiveWriter(type) || !Helpers.IsCollection(type, out fake1, out fake2, out fake3, out fake4);
+		}
 
-[assembly: AssemblyVersion("0.4")]
+		// TODO: find all the usages and use verify or sth there
+		public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)
+		{
+			return type.GetAllFields().Where(x => withTransient || Helpers.IsNotTransient(x)).OrderBy(x => x.Name);
+		}
+	}
+}
+

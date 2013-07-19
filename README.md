@@ -1,4 +1,4 @@
-# Migrant 0.3.3
+# Migrant 0.4
 
 This is the *Migrant* project by [Ant Micro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
 
@@ -38,7 +38,7 @@ Many of the available serialization frameworks do not consider complex graph rel
 
 Migrant's ease of use does not prohibit the programmer from controlling the serialization behaviour in more complex scenarios. It is possible to hide some fields of a class, to deserialize objects using their custom constructors and to add hooks to the class code that will execute before or after (de)serialization. With little effort it is possible for the programmer to reimplement (de)serialization patterns for specific types.
 
-Apart from the main serialization framework, we provide a mechanism to translate primitive .NET types (and some other) to their binary representation and push them to a stream. Such a form is very compact - the number of bytes used by a serialized object is not based on its type, but on the object's value, using the [Varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) and, optionally, [ZigZag encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints). For example, serializing an Int64 variable with value 1 gives a smaller representation than Int32 with value 1000. Although CLS offers the BinaryWriter class, it is known to be quite clumsy and not very elegant to use.
+Apart from the main serialization framework, we provide a mechanism to translate primitive .NET types (and some other) to their binary representation and push them to a stream. Such a form is very compact - Migrant uses the [Varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) and the [ZigZag encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints). For example, serializing an Int64 variable with value 1 gives a smaller representation than Int32 with value 1000. Although CLS offers the BinaryWriter class, it is known to be quite clumsy and not very elegant to use.
 
 Another extra feature, unavailable in convenient form in CLI, is an ability to deep clone given objects. With just one method invocation, Migrant will return an object copy, using the same mechanisms as the rest of the serialization framework.
 
@@ -67,9 +67,6 @@ Here we present some simple use cases of Migrant. They are written in pseudo-C\#
     var stream = new MyCustomStream();
     var myComplexObject = new MyComplexType(complexParameters);
     var serializer = new Serializer();
-
-    //_Optional_ step to prepare the framework, so the actual serialization is even faster
-    serializer.Initialize(typeof(MyComplexType));
 
     serializer.Serialize(myComplexObject, stream);
 
@@ -117,6 +114,17 @@ Here we present some simple use cases of Migrant. They are written in pseudo-C\#
 
     var anObject = serializer.Deserialize<object>(stream);
     Console.WriteLine(anObject.GetType().Name); // prints AnotherObject
+
+### Version tolerance
+
+What if some changes are made to the layout of the class between serialization and deserialization? Migrant can cope with that up to some extent. During creation of serializer you can specify settings, among which there is a version tolerance level. This is an enumeration with five possible values:
+
+- ``GUID`` - the most restrictive option. Deserialization is possible if module ID (which is GUID generated when module is compiled) is the same as it was during serialization. In other words it deserialization must be done using the same assembly as serialization used.
+- ``Exact`` - this is a default value. Deserialization is possible if no fields are added or removed and no type changes were done.
+- ``FieldAddition`` - new version of the type can contain more fields than it contained during serialization. They are initialized with their default values.
+- ``FieldRemoval`` - new version of the type can contain less fields than it contained during serialization.
+- ``FieldAdditionAndRemoval`` - combination of these two above.
+
 
 ## More information
 

@@ -29,12 +29,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using AntMicro.Migrant.Customization;
-using System.Collections;
-using System.Linq;
 using System.Reflection.Emit;
-using AntMicro.Migrant.Utilities;
-using AntMicro.Migrant.Generators;
-using Migrant.Generators;
 
 namespace AntMicro.Migrant
 {
@@ -62,48 +57,9 @@ namespace AntMicro.Migrant
 			}
 			this.settings = settings;
 			writeMethodCache = new Dictionary<Type, DynamicMethod>();
-			upfrontKnownTypes = new ListWithHash<Type>();
 			objectsForSurrogates = new Dictionary<Type, Delegate>();
 			surrogatesForObjects = new Dictionary<Type, Delegate>();
 			readMethodCache = new Dictionary<Type, DynamicMethod>();
-		}
-
-		/// <summary>
-		/// Initializes the given type (and its base and field types recursively). It does the
-		/// initial check whether it is serializable and prepares the serializer.
-		/// </summary>
-		/// <param name='typeToScan'>
-		/// Type to scan.
-		/// </param>
-		public void Initialize(Type typeToScan)
-		{
-			Scan(typeToScan);
-			if(settings.SerializationMethod != Method.Generated)
-			{
-				return;
-			}
-			var typeIndices = new Dictionary<Type, int>(upfrontKnownTypes.Count);
-			var i = 0;
-			foreach(var type in upfrontKnownTypes)
-			{
-				typeIndices.Add(type, i++);
-			}
-			foreach(var type in upfrontKnownTypes)
-			{
-				if(writeMethodCache.ContainsKey(type) || ObjectWriter.HasSpecialWriteMethod(type))
-				{
-					continue;
-				}
-				var wgenerator = new WriteMethodGenerator(type);
-				writeMethodCache.Add(type, wgenerator.Method);
-
-				if(readMethodCache.ContainsKey(type) || ObjectReader.HasSpecialReadMethod(type))
-				{
-					continue;
-				}
-				var rgenerator = new ReadMethodGenerator(type);
-				readMethodCache.Add(type, rgenerator.Method);
-			}
 		}
 
 		/// <summary>
@@ -117,9 +73,8 @@ namespace AntMicro.Migrant
 		/// </param>
 		public void Serialize(object obj, Stream stream)
 		{
-			var typeList = upfrontKnownTypes.ToList(); // TODO: see TOOO in ListWithHash
-			WriteHeader(stream, typeList);
-			var writer = new ObjectWriter(stream, typeList, OnPreSerialization, OnPostSerialization, writeMethodCache, 
+			WriteHeader(stream);
+			var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, writeMethodCache, 
 			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated);
 			writer.WriteObject(obj);
 			serializationDone = true;
@@ -167,31 +122,25 @@ namespace AntMicro.Migrant
 		/// </typeparam>
 		public T Deserialize<T>(Stream stream)
 		{
-			// Read headers
-			List<Type> upfrontKnownTypes;
-			using(var reader = new PrimitiveReader(stream))
+			// Read header
+			var magic1 = stream.ReadByte();
+			var magic2 = stream.ReadByte();
+			var magic3 = stream.ReadByte();
+			if(magic1 != Magic1 || magic2 != Magic2 || magic3 != Magic3)
 			{
-				var magic = reader.ReadUInt32();
-				if(magic != Magic)
-				{
-					throw new InvalidOperationException(string.Format(
-                        "Cound not find proper magic {0}, instead {1} was read.", Magic, magic));
-				}
-				var version = reader.ReadUInt16();
-				if(version != VersionNumber)
-				{
-					throw new InvalidOperationException(string.Format(
-                        "Could not deserialize data serialized with another version of serializer, namely {0}.", version));
-				}
-				var numberOfTypes = reader.ReadInt32();
-				upfrontKnownTypes = new List<Type>(numberOfTypes);
-				for(var i = 0; i < numberOfTypes; i++)
-				{
-					upfrontKnownTypes.Add(Type.GetType(reader.ReadString()));
-				}
+				throw new InvalidOperationException(string.Format(
+					"Cound not find proper magic {0}, {1}, {2}, instead {3}, {4}, {5} was read.", Magic1, Magic2, Magic3,
+					magic1, magic2, magic3));
+			}
+			var version = stream.ReadByte();
+			if(version != VersionNumber)
+			{
+				throw new InvalidOperationException(string.Format(
+					"Could not deserialize data serialized with another version of serializer, namely {0}. Current is {1}.", version, VersionNumber));
 			}
 
-			var objectReader = new ObjectReader(stream, upfrontKnownTypes, settings.IgnoreModuleIdInequality, objectsForSurrogates, OnPostDeserialization, readMethodCache, settings.DeserializationMethod == Method.Generated);
+			var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
+			                                    settings.DeserializationMethod == Method.Generated, settings.VersionTolerance);
 			var result = objectReader.ReadObject<T>();
 			deserializationDone = true;
 			return result;
@@ -244,73 +193,25 @@ namespace AntMicro.Migrant
 			return result;
 		}
 
-		private void WriteHeader(Stream stream, IList<Type> typeList)
+		private void WriteHeader(Stream stream)
 		{
-			using(var writer = new PrimitiveWriter(stream))
-			{
-				writer.Write(Magic);
-				writer.Write(VersionNumber);
-				writer.Write(typeList.Count);
-				foreach(var type in typeList)
-				{
-					writer.Write(type.AssemblyQualifiedName);
-				}
-			}
-		}
-
-		private void Scan(Type typeToScan)
-		{
-			if(typeToScan == null)
-			{
-				return;
-			}
-			if(typeToScan.IsInterface || typeToScan.IsValueType)
-			{
-				// we do not add value types, cause they are inline written unless boxed
-				return;
-			}
-			if(typeof(ISpeciallySerializable).IsAssignableFrom(typeToScan) || Helpers.CheckTransientNoCache(typeToScan))
-			{
-				return;
-			}
-			if(typeof(IEnumerable).IsAssignableFrom(typeToScan))
-			{
-				// this is probably collection with special rules; and this is only hint system, so we can simply omit it
-				upfrontKnownTypes.Add(typeToScan);
-			}
-			if(typeToScan.HasElementType)
-			{
-				Scan(typeToScan.GetElementType());
-			}
-			if(!typeToScan.IsAbstract)
-			{
-				if(!upfrontKnownTypes.Add(typeToScan))
-				{
-					return;
-				}
-			}
-			// although we do not add abstract type to serialized types (it can't be encountered as the actual type),
-			// we should scan its fields, cause they are used in any implementation; we should of course scan the
-			// base type as well
-			Scan(typeToScan.BaseType);
-			var fields = typeToScan.GetAllFields(false).Where(Helpers.IsNotTransient);
-			var typesToAdd = fields.Select(x => x.FieldType);
-			foreach(var type in typesToAdd)
-			{
-				Scan(type);
-			}
+			stream.WriteByte(Magic1);
+			stream.WriteByte(Magic2);
+			stream.WriteByte(Magic3);
+			stream.WriteByte(VersionNumber);
 		}
 
 		private bool serializationDone;
 		private bool deserializationDone;
 		private readonly Settings settings;
 		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
-		private readonly Dictionary<Type, DynamicMethod /* Func<Int32, object> */> readMethodCache;
-		private readonly ListWithHash<Type> upfrontKnownTypes;
+		private readonly Dictionary<Type, DynamicMethod> readMethodCache;
 		private readonly Dictionary<Type, Delegate> surrogatesForObjects;
 		private readonly Dictionary<Type, Delegate> objectsForSurrogates;
-		private const ushort VersionNumber = 5;
-		private const uint Magic = 0xA5132;
+		private const byte VersionNumber = 1;
+		private const byte Magic1 = 0x32;
+		private const byte Magic2 = 0x66;
+		private const byte Magic3 = 0x34;
 
 		/// <summary>
 		/// Lets you set a callback providing object for type of the surrogate given to method that provided

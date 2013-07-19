@@ -1,10 +1,8 @@
 /*
-  Copyright (c) 2012 - 2013 Ant Micro <www.antmicro.com>
+  Copyright (c) 2013 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
-   * Piotr Zierhoffer (pzierhoffer@antmicro.com)
-   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -25,11 +23,33 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-using System.Reflection;
+using System;
+using AntMicro.Migrant.Customization;
 
-[assembly: AssemblyTitle("Migrant")]
-[assembly: AssemblyDescription("Fast and flexible serialization framework usable on undecorated classes.")]
-[assembly: AssemblyCompany("AntMicro")]
-[assembly: AssemblyCopyright("Copyright by AntMicro 2012 - 2013")]
+namespace AntMicro.Migrant.Tests
+{
+	public abstract class BaseTestWithSettings
+	{
+		protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+		{
+			this.useGeneratedSerializer = useGeneratedSerializer;
+			this.useGeneratedDeserializer = useGeneratedDeserializer;
+		}
 
-[assembly: AssemblyVersion("0.4")]
+		protected Settings GetSettings(VersionToleranceLevel level = 0)
+		{
+			return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
+			                    useGeneratedDeserializer ? Method.Generated : Method.Reflection,					
+			                    level);
+		}
+
+		protected T SerializerClone<T>(T toClone)
+		{
+			return Serializer.DeepClone(toClone, GetSettings());
+		}
+
+		private bool useGeneratedSerializer;
+		private bool useGeneratedDeserializer;
+	}
+}
+

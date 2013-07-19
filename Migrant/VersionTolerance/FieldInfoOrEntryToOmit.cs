@@ -1,10 +1,8 @@
 /*
-  Copyright (c) 2012 - 2013 Ant Micro <www.antmicro.com>
+  Copyright (c) 2013 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
-   * Piotr Zierhoffer (pzierhoffer@antmicro.com)
-   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -25,11 +23,30 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+using System;
 using System.Reflection;
 
-[assembly: AssemblyTitle("Migrant")]
-[assembly: AssemblyDescription("Fast and flexible serialization framework usable on undecorated classes.")]
-[assembly: AssemblyCompany("AntMicro")]
-[assembly: AssemblyCopyright("Copyright by AntMicro 2012 - 2013")]
+namespace AntMicro.Migrant.VersionTolerance
+{
+	internal sealed class FieldInfoOrEntryToOmit
+	{
+		public FieldInfoOrEntryToOmit(Type typeToOmit)
+		{
+			this.TypeToOmit = typeToOmit;
+		}
 
-[assembly: AssemblyVersion("0.4")]
+		public FieldInfoOrEntryToOmit(FieldInfo field)
+		{
+			this.Field = field;
+		}		
+
+		public Type TypeToOmit { get; private set; }
+		public FieldInfo Field { get; private set; }
+
+		public override string ToString()
+		{
+			return string.Format("[FieldInfoOrEntryToOmit: TypeToOmit={0}, Field={1}]", TypeToOmit, Field);
+		}
+	}
+}
+

@@ -25,10 +25,8 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
-using System.Linq;
 using NUnit.Framework;
 using System.IO;
-using System.Collections.Generic;
 
 namespace AntMicro.Migrant.Tests
 {
@@ -40,19 +38,14 @@ namespace AntMicro.Migrant.Tests
 		{
 			var strings = new [] { "One", "Two" };
 
-			var typeIndices = new List<Type>
-			{
-				typeof(string)
-			};
 			var stream = new MemoryStream();
-			var writer = new ObjectWriter(stream, typeIndices);
+			var writer = new ObjectWriter(stream);
 			writer.WriteObject(strings[0]);
 			writer.WriteObject(strings[1]);
 			var position = stream.Position;
 
 			stream.Seek(0, SeekOrigin.Begin);
-			var types = typeIndices.ToArray();
-			var reader = new ObjectReader(stream, types, false);
+			var reader = new ObjectReader(stream);
 			Assert.AreEqual(strings[0], reader.ReadObject<string>());
 			Assert.AreEqual(strings[1], reader.ReadObject<string>());
 			Assert.AreEqual(position, stream.Position);

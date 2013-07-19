@@ -40,13 +40,11 @@ namespace AntMicro.Migrant.Tests
 	[TestFixture(true, false)]
 	[TestFixture(false, true)]
 	[TestFixture(true, true)]
-	public class SerializationTests
+	public class SerializationTests : BaseTestWithSettings
 	{
 
-		public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+		public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer) : base(useGeneratedSerializer, useGeneratedDeserializer)
 		{
-			this.useGeneratedDeserializer = useGeneratedDeserializer;
-			this.useGeneratedSerializer = useGeneratedSerializer;
 		}
 
 		[Test]
@@ -587,7 +585,7 @@ namespace AntMicro.Migrant.Tests
 		{
 			var someObjects = new object[] { "One", 2, null, "Four" };
 			var stream = new MemoryStream();
-			var serializer = new Serializer(SettingsFromFields);
+			var serializer = new Serializer(GetSettings());
 			serializer.Serialize(someObjects, stream);
 			serializer.Serialize(someObjects, stream);
 			stream.Seek(0, SeekOrigin.Begin);
@@ -656,25 +654,6 @@ namespace AntMicro.Migrant.Tests
 		}
 
 		[Test]
-		public void ShouldSerializeWithInitialization()
-		{
-			var objs = new object[] {
-				null,
-				1,
-				"Napis",
-				new GenericBox<int> { Element = 6 }
-			};
-			var serializer = new Serializer(SettingsFromFields);
-			serializer.Initialize(typeof(GenericBox<int>));
-			serializer.Initialize(typeof(string));
-			var stream = new MemoryStream();
-			serializer.Serialize(objs, stream);
-			stream.Seek(0, SeekOrigin.Begin);
-			var copy = serializer.Deserialize<object[]>(stream);
-			CollectionAssert.AreEqual(objs, copy);
-		}
-
-		[Test]
 		public void ShouldSerializeByteArray()
 		{
 			var array = new byte[] { 2, 4, 6, 8, 10 };
@@ -722,6 +701,32 @@ namespace AntMicro.Migrant.Tests
 			var copy = SerializerClone(pair);
 			copy.Item1.Invoke();
 			Assert.AreEqual(1, copy.Item2.Counter);
+		}
+
+		[Test]
+		public void ShouldSerializeDelegateWithInterfaceMethod()
+		{
+			var withEvent = new ClassWithEvent<IInterfaceForDelegate>();
+			var companion = new ClassImplementingInterfaceForDelegate();
+			withEvent.Event += companion.Method;
+			var pair = Tuple.Create(withEvent, companion);
+
+			var copy = SerializerClone(pair);
+			copy.Item1.Invoke(null);
+			Assert.AreEqual(true, copy.Item2.Invoked);
+		}
+
+		[Test]
+		public void ShouldSerializeDelegateWithLambdaAttached()
+		{
+			var withEvent = new ClassWithEvent();
+			var companion = new ClassImplementingInterfaceForDelegate();
+			withEvent.Event += () => companion.Method(null);
+			var pair = Tuple.Create(withEvent, companion);
+
+			var copy = SerializerClone(pair);
+			copy.Item1.Invoke();
+			Assert.AreEqual(true, copy.Item2.Invoked);
 		}
 
 		[Test]
@@ -851,28 +856,6 @@ namespace AntMicro.Migrant.Tests
 			Assert.IsTrue(exception.Message.Contains(toClone.Element.GetType().Name));
 			Assert.IsTrue(exception.Message.Contains(toClone.Element.WithIntPtr.GetType().Name));
 		}
-
-		private T SerializerClone<T>(T toClone)
-		{
-			var settings = SettingsFromFields;
-			return Serializer.DeepClone(toClone, settings);
-		}
-
-		private Customization.Settings SettingsFromFields
-		{
-			get
-			{
-				var settings = new Customization.Settings
-				(
-					useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
-					useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
-				);
-				return settings;
-			}
-		}
-
-		private bool useGeneratedSerializer;
-		private bool useGeneratedDeserializer;
 
 		public class SimpleClass
 		{
@@ -1268,6 +1251,39 @@ namespace AntMicro.Migrant.Tests
 			}
 
 			public ClassWithIntPtr WithIntPtr { get; private set; }
+		}
+
+		private class ClassWithEvent<T>
+		{
+			public event Action<T> Event;
+
+			public void Invoke(T arg)
+			{
+				var toInvoke = Event;
+				if(toInvoke != null)
+				{
+					toInvoke(arg);
+				}
+			}
+		}
+
+		private interface IInterfaceForDelegate
+		{
+			void Method(IInterfaceForDelegate arg);
+		}
+
+		private class ClassImplementingInterfaceForDelegate : IInterfaceForDelegate
+		{
+			public bool Invoked { get; private set; }
+
+			#region InterfaceForDelegate implementation
+
+			public void Method(IInterfaceForDelegate arg)
+			{
+				Invoked = true;
+			}
+
+			#endregion
 		}
 	}
 

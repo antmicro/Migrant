@@ -21,7 +21,7 @@
   NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
   LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.KKKK
+  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
 using System.Collections.Generic;
@@ -34,13 +34,16 @@ using AntMicro.Migrant;
 using AntMicro.Migrant.Hooks;
 using AntMicro.Migrant.Utilities;
 using System.Collections;
+using AntMicro.Migrant.VersionTolerance;
+using AntMicro.Migrant.Generators;
 
 namespace Migrant.Generators
 {
 	internal sealed class ReadMethodGenerator
 	{
-		public ReadMethodGenerator(Type typeToGenerate)
+		public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader)
 		{
+			this.stampReader = stampReader;
 			if (typeToGenerate.IsArray)
 			{
 				dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, true);
@@ -103,7 +106,7 @@ namespace Migrant.Generators
 			else
 			if(typeof(MulticastDelegate).IsAssignableFrom(formalType))
 			{
-				GenereateReadDelegate(formalType, objectIdLocal);
+				GenerateReadDelegate(formalType, objectIdLocal);
 			}
 			else
 			if(formalType.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(formalType.GetGenericTypeDefinition()))
@@ -116,36 +119,27 @@ namespace Migrant.Generators
 			}
 		}
 
-		private void GenereateReadDelegate(Type type, LocalBuilder objectIdLocal)
+		private void GenerateReadDelegate(Type type, LocalBuilder objectIdLocal)
 		{
 			var invocationListLengthLocal = generator.DeclareLocal(typeof(Int32));
 			var targetLocal = generator.DeclareLocal(typeof(object));
-			var containingTypeLocal = generator.DeclareLocal(typeof(Type));
-			var methodNumberLocal = generator.DeclareLocal(typeof(Int32));
+
+
 
 			GenerateReadPrimitive(typeof(Int32));
 			generator.Emit(OpCodes.Stloc, invocationListLengthLocal);
 
-			GenerateLoop(invocationListLengthLocal, cl => {
+			GeneratorHelper.GenerateLoop(generator, invocationListLengthLocal, cl => {
 				GenerateReadField(typeof(object));
 				generator.Emit(OpCodes.Stloc, targetLocal);
 
-				GenerateReadType();
-				generator.Emit(OpCodes.Stloc, containingTypeLocal);
-
-				GenerateReadPrimitive(typeof(Int32));
-				generator.Emit(OpCodes.Stloc, methodNumberLocal);
-
-				generator.Emit(OpCodes.Ldloc, containingTypeLocal);
-				generator.Emit(OpCodes.Ldloc, methodNumberLocal);
+				GenerateReadMethod();
 				PushTypeOntoStack(type);
 				generator.Emit(OpCodes.Ldloc, targetLocal);
 				PushDeserializedObjectsCollectionOntoStack();
 				generator.Emit(OpCodes.Ldloc, objectIdLocal);
 
-				GenerateCodeCall<Type, int, Type, object, AutoResizingList<object>, int>((containingType, methodNumber, t, target, deserializedObjects, objectId) => {
-					// constructor cannot be bound to delegate, so we can just cast to methodInfo
-					var method = (MethodInfo)containingType.Module.ResolveMethod(methodNumber);
+				GenerateCodeCall<MethodInfo, Type, object, AutoResizingList<object>, int>((method, t, target, deserializedObjects, objectId) => {
 					var del = Delegate.CreateDelegate(t, target, method);
 					deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
 				});
@@ -260,50 +254,7 @@ namespace Migrant.Generators
 			GenerateFillCollection(elementFormalType, formalType, objectIdLocal);
 		}
 
-		private void GenerateLoop(LocalBuilder countLocal, Action<LocalBuilder> loopAction, bool reversed = false)
-		{
-			var loopControlLocal = generator.DeclareLocal(typeof(Int32));
-			
-			var loopLabel = generator.DefineLabel();
-			var loopFinishLabel = generator.DefineLabel();
 
-			if(reversed)
-			{
-				generator.Emit(OpCodes.Ldloc, countLocal);
-				generator.Emit(OpCodes.Ldc_I4_1);
-				generator.Emit(OpCodes.Sub); // put <<countLocal>> - 1 on stack
-			}
-			else
-			{
-				generator.Emit(OpCodes.Ldc_I4_0); // put <<0> on stack
-			}
-
-			generator.Emit(OpCodes.Stloc, loopControlLocal); // initialize <<loopControl>> variable using value from stack
-			
-			generator.MarkLabel(loopLabel);
-			generator.Emit(OpCodes.Ldloc, loopControlLocal);
-
-			if(reversed)
-			{
-				generator.Emit(OpCodes.Ldc_I4, -1);
-			}
-			else
-			{
-				generator.Emit(OpCodes.Ldloc, countLocal);
-
-			}
-			generator.Emit(OpCodes.Beq, loopFinishLabel);
-
-			loopAction(loopControlLocal);
-
-			generator.Emit(OpCodes.Ldloc, loopControlLocal);
-			generator.Emit(OpCodes.Ldc_I4, reversed ? 1 : -1);
-			generator.Emit(OpCodes.Sub);
-			generator.Emit(OpCodes.Stloc, loopControlLocal); // change <<loopControl>> variable by one
-			generator.Emit(OpCodes.Br, loopLabel); // jump to the next loop iteration
-			
-			generator.MarkLabel(loopFinishLabel);
-		}
 
 		#region Collections generators
 
@@ -325,7 +276,7 @@ namespace Migrant.Generators
 				throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage, dictionaryType));
 			}
 
-			GenerateLoop(countLocal, lc => {
+			GeneratorHelper.GenerateLoop(generator, countLocal, lc => {
 				PushDeserializedObjectOntoStack(objectIdLocal);
 				generator.Emit(OpCodes.Castclass, dictionaryType);
 
@@ -353,7 +304,7 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Newarr, elementFormalType);
 			generator.Emit(OpCodes.Stloc, arrayLocal); // create array
 			
-			GenerateLoop(lengthLocal, lc => {
+			GeneratorHelper.GenerateLoop(generator, lengthLocal, lc => {
 				generator.Emit(OpCodes.Ldloc, arrayLocal);
 				generator.Emit(OpCodes.Ldloc, lc);
 				GenerateReadField(elementFormalType);
@@ -391,14 +342,14 @@ namespace Migrant.Generators
 				generator.Emit(OpCodes.Newarr, elementFormalType); 
 				generator.Emit(OpCodes.Stloc, tempArrLocal); // creates temporal array
 				
-				GenerateLoop(countLocal, cl => {
+				GeneratorHelper.GenerateLoop(generator, countLocal, cl => {
 					generator.Emit(OpCodes.Ldloc, tempArrLocal);
 					generator.Emit(OpCodes.Ldloc, cl);
 					GenerateReadField(elementFormalType, false);
 					generator.Emit(OpCodes.Stelem, elementFormalType);
 				});
 				
-				GenerateLoop(countLocal, cl => {
+				GeneratorHelper.GenerateLoop(generator, countLocal, cl => {
 					PushDeserializedObjectOntoStack(objectIdLocal);
 					generator.Emit(OpCodes.Castclass, collectionType);
 
@@ -410,7 +361,7 @@ namespace Migrant.Generators
 			}
 			else
 			{
-				GenerateLoop(countLocal, cl => {
+				GeneratorHelper.GenerateLoop(generator, countLocal, cl => {
 
 					PushDeserializedObjectOntoStack(objectIdLocal);
 					generator.Emit(OpCodes.Castclass, collectionType);
@@ -445,7 +396,7 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Newarr, typeof(Int32));
 			generator.Emit(OpCodes.Stloc, lengthsLocal); // create an array for keeping the lengths of each dimension
 
-			GenerateLoop(rankLocal, i => {
+			GeneratorHelper.GenerateLoop(generator, rankLocal, i => {
 				generator.Emit(OpCodes.Ldloc, lengthsLocal);
 				generator.Emit(OpCodes.Ldloc, i);
 				GenerateReadPrimitive(typeof(Int32));
@@ -649,7 +600,10 @@ namespace Migrant.Generators
 			else
 			{
 				// here we have struct
-
+				generator.Emit(OpCodes.Ldarg_0);
+				generator.Emit(OpCodes.Ldtoken, formalType);
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
+				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, Type>((reader, type) => reader.ReadStamp(type)));
 				var structLocal = generator.DeclareLocal(forcedFormalType);
 				GenerateUpdateStructFields(forcedFormalType, structLocal);
 
@@ -705,12 +659,20 @@ namespace Migrant.Generators
 
 		private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
 		{
-			var fields = ObjectReader.GetFieldsToSerialize(formalType).ToList();
-			foreach(var field in fields)
+			var fields = stampReader.GetFieldsToDeserialize(formalType);
+			foreach(var fieldOrType in fields)
 			{
-				if(field.IsDefined(typeof(TransientAttribute), false))
+				if (fieldOrType.Field == null) 
 				{
-					if(field.IsDefined(typeof(ConstructorAttribute), false))
+					GenerateReadField(fieldOrType.TypeToOmit, false);
+					generator.Emit(OpCodes.Pop);
+					continue;
+				}
+				var field = fieldOrType.Field;
+
+				if (field.IsDefined(typeof(TransientAttribute), false))
+				{
+					if (field.IsDefined(typeof(ConstructorAttribute), false))
 					{
 						generator.Emit(OpCodes.Ldtoken, field);
 						if (field.DeclaringType.IsGenericType)
@@ -741,7 +703,7 @@ namespace Migrant.Generators
 
 		private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
 		{			
-			var fields = ObjectReader.GetFieldsToSerialize(formalType).ToList();
+			var fields = StampHelpers.GetFieldsInSerializationOrder(formalType).ToList();
 			foreach(var field in fields)
 			{
 				generator.Emit(OpCodes.Ldloca, structLocal);
@@ -787,16 +749,6 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o))); // loads value of <<typeToGenerate>> onto stack
 		}
 
-		private void GenerateCodeCall(Action a)
-		{
-			generator.Emit(OpCodes.Call, a.Method);
-		}
-		
-		private void GenerateCodeCall<T>(Action<T> a)
-		{
-			generator.Emit(OpCodes.Call, a.Method);
-		}
-		
 		private void GenerateCodeCall<T1, T2>(Action<T1, T2> a)
 		{
 			generator.Emit(OpCodes.Call, a.Method);
@@ -807,7 +759,7 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Call, a.Method);
 		}
 
-		private void GenerateCodeCall<T1, T2, T3, T4, T5, T6>(Action<T1, T2, T3, T4, T5, T6> a)
+		private void GenerateCodeCall<T1, T2, T3, T4, T5>(Action<T1, T2, T3, T4, T5> a)
 		{
 			generator.Emit(OpCodes.Call, a.Method);
 		}
@@ -866,6 +818,14 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, Type>(or => or.ReadType()));
 		}
 
+		private void GenerateReadMethod()
+		{
+			// method returns read methodInfo (or null)
+
+			generator.Emit(OpCodes.Ldarg_0); // object reader
+			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, MethodInfo>(or => or.ReadMethod()));
+		}
+
 		public DynamicMethod Method
 		{
 			get
@@ -876,6 +836,7 @@ namespace Migrant.Generators
 
 		private ILGenerator generator;
 		private readonly DynamicMethod dynamicMethod;
+		private readonly TypeStampReader stampReader;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
 		private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
 		private static readonly Type[] ParameterTypes = new [] {

@@ -134,7 +134,15 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(short value)
 		{
-			InnerWriteInteger((ushort)value, sizeof(int));
+#if DEBUG
+			if(PrimitiveWriter.DontUseIntegerCompression)
+			{
+				InnerWriteInteger((ushort)value, sizeof(short) + 1);
+				return;
+			}
+#endif
+			var valueToWrite = (value << 1) ^ (value >> 15);
+			InnerWriteInteger((ushort)valueToWrite, sizeof(short) + 1);
 		}
 
 		/// <summary>
@@ -142,7 +150,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(ushort value)
 		{
-			InnerWriteInteger(value, sizeof(int));
+			InnerWriteInteger(value, sizeof(ushort) + 1);
 		}
 
 		/// <summary>
@@ -150,7 +158,15 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(int value)
 		{
-			InnerWriteInteger((uint)value, sizeof(int));
+#if DEBUG
+			if(PrimitiveWriter.DontUseIntegerCompression)
+			{
+				InnerWriteInteger((uint)value, sizeof(int) + 1);
+				return;
+			}
+#endif
+			var valueToWrite = (value << 1) ^ (value >> 31);
+			InnerWriteInteger((uint)valueToWrite, sizeof(int) + 1);
 		}
 
 		/// <summary>
@@ -158,7 +174,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(uint value)
 		{
-			InnerWriteInteger(value, sizeof(int));
+			InnerWriteInteger(value, sizeof(uint) + 1);
 		}
 
 		/// <summary>
@@ -166,7 +182,15 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(long value)
 		{
-			Write((ulong)value);
+#if DEBUG
+			if(PrimitiveWriter.DontUseIntegerCompression)
+			{
+				Write((ulong)value);
+				return;
+			}
+#endif
+			var valueToWrite = (value << 1) ^ (value >> 63);
+			InnerWriteInteger((ulong)valueToWrite, sizeof(long) + 2);
 		}
 
 		/// <summary>
@@ -174,7 +198,7 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public void Write(ulong value)
 		{
-			InnerWriteInteger(value, sizeof(ulong) + 1);
+			InnerWriteInteger(value, sizeof(ulong) + 2);
 		}
 
 		/// <summary>
@@ -276,7 +300,7 @@ namespace AntMicro.Migrant
 		private void InnerWriteInteger(ulong value, int sizeInBytes)
 		{
 #if DEBUG
-			if(DontUseVarintCompression)
+			if(DontUseIntegerCompression)
 			{
 				CheckBuffer(sizeof(ulong));
 				ulong current = 0;
@@ -291,15 +315,13 @@ namespace AntMicro.Migrant
 				return;
 			}
 #endif
-			CheckBuffer(sizeInBytes + 1);
+			CheckBuffer(sizeInBytes);
 			while(value > 127)
 			{
-				buffer[currentBufferPosition] = (byte)(value | 128);
+				buffer[currentBufferPosition++] = (byte)(value | 128);
 				value >>= 7;
-				currentBufferPosition++;
 			}
-			buffer[currentBufferPosition] = (byte)(value & 127);
-			currentBufferPosition++;
+			buffer[currentBufferPosition++] = (byte)(value & 127);
 		}
 
 		private void InnerChunkWrite(byte[] data)
@@ -353,7 +375,7 @@ namespace AntMicro.Migrant
 		private const int BufferSize = 4 * 1024;
 
 #if DEBUG
-		internal static readonly bool DontUseVarintCompression = true;
+		internal static readonly bool DontUseIntegerCompression = false;
 #endif
 	}
 }

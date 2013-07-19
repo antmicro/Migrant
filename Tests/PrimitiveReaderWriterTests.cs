@@ -334,6 +334,79 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreEqual(position, stream.Position);
 		}
 
+		[Test]
+		public void ShouldReadAndWriteLimits()
+		{
+			var stream = new MemoryStream();
+			using(var writer = new PrimitiveWriter(stream))
+			{
+				writer.Write(byte.MinValue);
+				writer.Write(byte.MaxValue);
+				writer.Write(sbyte.MinValue);
+				writer.Write(sbyte.MaxValue);
+				writer.Write(short.MinValue);
+				writer.Write(short.MaxValue);
+				writer.Write(ushort.MinValue);
+				writer.Write(ushort.MaxValue);
+				writer.Write(int.MinValue);
+				writer.Write(int.MaxValue);
+				writer.Write(uint.MinValue);
+				writer.Write(uint.MaxValue);
+				writer.Write(long.MinValue);
+				writer.Write(long.MaxValue);
+				writer.Write(ulong.MinValue);
+				writer.Write(ulong.MaxValue);
+			}
+			var position = stream.Position;
+			stream.Seek(0, SeekOrigin.Begin);
+			using(var reader = new PrimitiveReader(stream))
+			{
+				Assert.AreEqual(byte.MinValue, reader.ReadByte());
+				Assert.AreEqual(byte.MaxValue, reader.ReadByte());
+				Assert.AreEqual(sbyte.MinValue, reader.ReadSByte());
+				Assert.AreEqual(sbyte.MaxValue, reader.ReadSByte());
+				Assert.AreEqual(short.MinValue, reader.ReadInt16());
+				Assert.AreEqual(short.MaxValue, reader.ReadInt16());
+				Assert.AreEqual(ushort.MinValue, reader.ReadUInt16());
+				Assert.AreEqual(ushort.MaxValue, reader.ReadUInt16());
+				Assert.AreEqual(int.MinValue, reader.ReadInt32());
+				Assert.AreEqual(int.MaxValue, reader.ReadInt32());
+				Assert.AreEqual(uint.MinValue, reader.ReadUInt32());
+				Assert.AreEqual(uint.MaxValue, reader.ReadUInt32());
+				Assert.AreEqual(long.MinValue, reader.ReadInt64());
+				Assert.AreEqual(long.MaxValue, reader.ReadInt64());
+				Assert.AreEqual(ulong.MinValue, reader.ReadUInt64());
+				Assert.AreEqual(ulong.MaxValue, reader.ReadUInt64());
+			}
+			Assert.AreEqual(position, stream.Position);
+		}
+
+		[Test]
+		public void ShouldHandleNotAlignedWrites()
+		{
+			const int iterationCount = 80000;
+			var stream = new MemoryStream();
+			using(var writer = new PrimitiveWriter(stream))
+			{
+				writer.Write((byte)1);
+				for(var i = 0; i < iterationCount; i++)
+				{
+					writer.Write(int.MaxValue);
+				}
+			}
+			var position = stream.Position;
+			stream.Seek(0, SeekOrigin.Begin);
+			using(var reader = new PrimitiveReader(stream))
+			{
+				Assert.AreEqual((byte)1, reader.ReadByte());
+				for(var i = 0; i < iterationCount; i++)
+				{
+					Assert.AreEqual(int.MaxValue, reader.ReadInt32());
+				}
+			}
+			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
+		}
+
 		private const string StreamCorruptedMessage = "Stream was corrupted during read (in terms of position).";
 	}
 }

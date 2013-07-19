@@ -133,7 +133,14 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public short ReadInt16()
 		{
-			return (short)InnerReadInteger();
+#if DEBUG
+			if(PrimitiveWriter.DontUseIntegerCompression)
+			{
+				return (short)InnerReadInteger();
+			}
+#endif
+			var value = (short)InnerReadInteger();
+			return (short)(((value >> 1) & AllButMostSignificantShort) ^ -(value & 1));
 		}
 
 		/// <summary>
@@ -149,7 +156,14 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public int ReadInt32()
 		{
-			return (int)InnerReadInteger();
+#if DEBUG
+			if(PrimitiveWriter.DontUseIntegerCompression)
+			{
+				return (int)InnerReadInteger();
+			}
+#endif
+			var value = (int)InnerReadInteger();
+			return ((value >> 1) & AllButMostSignificantInt) ^ -(value & 1);
 		}
 
 		/// <summary>
@@ -165,7 +179,14 @@ namespace AntMicro.Migrant
 		/// </summary>
 		public long ReadInt64()
 		{
-			return (long)InnerReadInteger();
+#if DEBUG
+			if(PrimitiveWriter.DontUseIntegerCompression)
+			{
+				return (long)InnerReadInteger();
+			}
+#endif
+			var value = (long)InnerReadInteger();
+			return ((value >> 1) & AllButMostSignificantLong) ^ -(value & 1);
 		}
 
 		/// <summary>
@@ -287,7 +308,7 @@ namespace AntMicro.Migrant
 			ulong next;
 			var result = 0UL;
 #if DEBUG
-			if(PrimitiveWriter.DontUseVarintCompression)
+			if(PrimitiveWriter.DontUseIntegerCompression)
 			{
 				for(int i = 0; i < sizeof(ulong); ++i)
 				{
@@ -346,6 +367,14 @@ namespace AntMicro.Migrant
 			currentBufferPosition += byteNumber;
 			return result;
 		}
+
+		/*
+		 * Since we want the shift in zigzag decoding to be unsigned shift, we simulate it here, turning off
+		 * the most significant bit (which is always zero in unsigned shift).
+		 */
+		private const int AllButMostSignificantShort = unchecked((short)~(1 << 15));
+		private const int AllButMostSignificantInt = ~(1 << 31);
+		private const long AllButMostSignificantLong = ~(1L << 63);
 
 		private long currentPosition;
 		private readonly byte[] buffer;

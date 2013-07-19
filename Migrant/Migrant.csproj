@@ -59,6 +59,12 @@
     <Compile Include="Hooks\PostSerializationAttribute.cs" />
     <Compile Include="Hooks\PostDeserializationAttribute.cs" />
     <Compile Include="Generators\ReadMethodGenerator.cs" />
+    <Compile Include="VersionTolerance\TypeStamper.cs" />
+    <Compile Include="VersionTolerance\FieldInfoOrEntryToOmit.cs" />
+    <Compile Include="VersionTolerance\TypeStampReader.cs" />
+    <Compile Include="VersionTolerance\StampHelpers.cs" />
+    <Compile Include="Generators\GeneratorHelper.cs" />
+    <Compile Include="Customization\VersionToleranceLevel.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -66,5 +72,6 @@
     <Folder Include="Hooks\" />
     <Folder Include="Customization\" />
     <Folder Include="Generators\" />
+    <Folder Include="VersionTolerance\" />
   </ItemGroup>
 </Project>

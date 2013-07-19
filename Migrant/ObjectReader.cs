@@ -1,9 +1,10 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012 - 2013 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -36,6 +37,8 @@ using AntMicro.Migrant.Utilities;
 using System.Collections.ObjectModel;
 using System.Reflection.Emit;
 using Migrant.Generators;
+using AntMicro.Migrant.VersionTolerance;
+using AntMicro.Migrant.Customization;
 
 namespace AntMicro.Migrant
 {
@@ -49,14 +52,6 @@ namespace AntMicro.Migrant
 		/// </summary>
 		/// <param name='stream'>
 		/// Stream from which objects will be read.
-		/// </param>
-		/// <param name='upfrontKnownTypes'>
-		/// List of types that are considered to be known upfront, i.e. their type information is not written to the serialization stream.
-		/// It has to be consistent with <see cref="AntMicro.Migrant.ObjectWriter" /> that wrote the stream.
-		/// </param>
-		/// <param name='ignoreModuleIdInequality'>
-		/// If set to true, deserialization continues even if the module id used for deserialization differs from the one used for serialization.
-		/// If set to false, exception is thrown instead.
 		/// </param>
 		/// <param name='objectsForSurrogates'>
 		/// Dictionary, containing callbacks that provide objects for given type of surrogate. Callbacks have to be of type Func&lt;T, object&gt; where
@@ -73,27 +68,25 @@ namespace AntMicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if read methods are to be generated, false if one wants to use reflection.
 		/// </param>
-		public ObjectReader(Stream stream, IList<Type> upfrontKnownTypes, bool ignoreModuleIdInequality, IDictionary<Type, Delegate> objectsForSurrogates = null,
-		                    Action<object> postDeserializationCallback = null, IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false)
+		/// <param name="versionToleranceLevel"> 
+		/// Describes the tolerance level of this reader when handling discrepancies in type description (new or missing fields, etc.).
+		/// </param> 
+		public ObjectReader(Stream stream, IDictionary<Type, Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
+		                    IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, VersionToleranceLevel versionToleranceLevel = 0)
 		{
 			if(objectsForSurrogates == null)
 			{
 				objectsForSurrogates = new Dictionary<Type, Delegate>();
 			}
 			this.objectsForSurrogates = objectsForSurrogates;
-			this.ignoreModuleIdInequality = ignoreModuleIdInequality;
 			this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
 			this.useGeneratedDeserialization = isGenerating;
 			typeList = new List<Type>();
+			methodList = new List<MethodInfo>();
 			postDeserializationHooks = new List<Action>();
-			agreedModuleIds = new HashSet<int>();
-			for(var i = 0; i < upfrontKnownTypes.Count; i++)
-			{
-				typeList.Add(upfrontKnownTypes[i]);
-				EnsureReadMethod(upfrontKnownTypes[i]);
-			}
 			this.stream = stream;
 			this.postDeserializationCallback = postDeserializationCallback;
+			this.versionToleranceLevel = versionToleranceLevel;
 			PrepareForTheRead();
 		}
 
@@ -128,7 +121,7 @@ namespace AntMicro.Migrant
 			if(!(obj is T))
 			{
 				throw new InvalidDataException(
-					string.Format("Type {0} requested to deserialize, however type {1} encountered in the stream.",
+					string.Format("Type {0} requested to be deserialized, however type {1} encountered in the stream.",
 				              typeof(T), obj.GetType()));
 			}
 			
@@ -144,7 +137,7 @@ namespace AntMicro.Migrant
 		{
 			if(!readMethodsCache.ContainsKey(type))
 			{
-				var rmg = new ReadMethodGenerator(type);
+				var rmg = new ReadMethodGenerator(type, stamper);
 				readMethodsCache.Add(type, rmg.Method);
 			}
 		}
@@ -159,6 +152,7 @@ namespace AntMicro.Migrant
 			delegatesCache = new Dictionary<Type, Func<int, object>>();
 			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
 			reader = new PrimitiveReader(stream);
+			stamper = new TypeStampReader(reader, versionToleranceLevel);
 		}
 
 		internal static bool HasSpecialReadMethod(Type type)
@@ -216,9 +210,15 @@ namespace AntMicro.Migrant
 
 		private void UpdateFields(Type actualType, object target)
 		{
-			var fields = GetFieldsToSerialize(actualType);
-			foreach(var field in fields)
+			var fieldOrTypeInfos = stamper.GetFieldsToDeserialize(actualType);
+			foreach(var fieldOrTypeInfo in fieldOrTypeInfos)
 			{
+				if(fieldOrTypeInfo.Field == null)
+				{
+					ReadField(fieldOrTypeInfo.TypeToOmit);
+					continue;
+				}
+				var field = fieldOrTypeInfo.Field;
 				if(field.IsDefined(typeof(TransientAttribute), false))
 				{
 					if(field.IsDefined(typeof(ConstructorAttribute), false))
@@ -312,7 +312,7 @@ namespace AntMicro.Migrant
 					ReadObjectInner(ReadType(), refId);
 				}
 				return deserializedObjects[refId];
-			} 
+			}
 			if(formalType.IsEnum)
 			{
 				var value = ReadField(Enum.GetUnderlyingType(formalType));
@@ -332,6 +332,7 @@ namespace AntMicro.Migrant
 			}
 			var returnedObject = Activator.CreateInstance(formalType);
 			// here we have a boxed struct which we put to struct reference list
+			ReadStamp(formalType);
 			UpdateFields(formalType, returnedObject);
 			// if this is subtype
 			return returnedObject;
@@ -446,9 +447,7 @@ namespace AntMicro.Migrant
 			for(var i = 0; i < invocationListLength; i++)
 			{
 				var target = ReadField(typeof(object));
-				var containingType = ReadType();
-				// constructor cannot be bound to delegate, so we can just cast to methodInfo
-				var method = (MethodInfo)containingType.Module.ResolveMethod(reader.ReadInt32());
+				var method = ReadMethod();
 				var del = Delegate.CreateDelegate(type, target, method);
 				deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
 			}
@@ -517,22 +516,40 @@ namespace AntMicro.Migrant
 			{
 				return typeList[typeId];
 			}
-			var moduleId = reader.ReadInt32();
-			if(!agreedModuleIds.Contains(moduleId))
+			var readType = typeList[typeId];
+			ReadStamp(readType);
+			return readType;
+		}
+
+		internal MethodInfo ReadMethod()
+		{
+            MethodInfo result = null;
+
+			var methodId = reader.ReadInt32();
+			if (methodList.Count <= methodId) 
 			{
-				var type = typeList[typeId];
-				var oldMvid = reader.ReadGuid();
-				var module = type.Module;
-				var newMvid = module.ModuleVersionId;
-				if(oldMvid != newMvid && !ignoreModuleIdInequality)
-				{
-					throw new InvalidOperationException(
-						string.Format("Cannot deserialize data. The type '{0}' in module {1} was serialized with mvid {2}, but you are trying to deserialize it using mvid {3}.",
-					              type, module, oldMvid, newMvid));
+				var type = ReadType();
+				var methodName = reader.ReadString();
+				var parametersCount = reader.ReadInt32();
+				var types = new Type[parametersCount];
+				for (int i = 0; i < types.Length; i++) {
+					types[i] = ReadType();
 				}
-				agreedModuleIds.Add(moduleId);
+
+                result = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |BindingFlags.NonPublic, null, types, null);
+				methodList.Add(result);
 			}
-			return typeList[typeId];
+			else
+			{
+				result = methodList[methodId];
+			}
+
+            return result;
+		}
+
+		internal void ReadStamp(Type type)
+		{
+			stamper.ReadStamp(type);
 		}
 
 		private object TouchObject(Type actualType, int refId)
@@ -577,22 +594,16 @@ namespace AntMicro.Migrant
 			return CreationWay.Uninitialized;
 		}
 
-		internal static IEnumerable<FieldInfo> GetFieldsToSerialize(Type actualType)
-		{
-			var fields = actualType.GetAllFields().Where(x => !x.Attributes.HasFlag(FieldAttributes.Literal))
-                .OrderBy(x => x.Name);
-			return fields;
-		}
-
 		private bool useGeneratedDeserialization;
 		internal AutoResizingList<object> deserializedObjects;
 		private IDictionary<Type, DynamicMethod> readMethodsCache;
 		private Dictionary<Type, Func<Int32, object>> delegatesCache;
 		internal PrimitiveReader reader;
+		private TypeStampReader stamper;
+		private readonly VersionToleranceLevel versionToleranceLevel;
 		private readonly List<Type> typeList;
-		private readonly HashSet<int> agreedModuleIds;
+		private readonly List<MethodInfo> methodList;
 		private readonly Stream stream;
-		private readonly bool ignoreModuleIdInequality;
 		internal readonly Action<object> postDeserializationCallback;
 		internal readonly List<Action> postDeserializationHooks;
 		internal readonly IDictionary<Type, Delegate> objectsForSurrogates;
