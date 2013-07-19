@@ -523,6 +523,8 @@ namespace AntMicro.Migrant
 
 		internal MethodInfo ReadMethod()
 		{
+            MethodInfo result = null;
+
 			var methodId = reader.ReadInt32();
 			if (methodList.Count <= methodId) 
 			{
@@ -534,14 +536,15 @@ namespace AntMicro.Migrant
 					types[i] = ReadType();
 				}
 
-				var info = type.GetMethod(methodName, types);
-				methodList.Add(info);
-				return info;
+                result = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |BindingFlags.NonPublic, null, types, null);
+				methodList.Add(result);
 			}
 			else
 			{
-				return methodList[methodId];
+				result = methodList[methodId];
 			}
+
+            return result;
 		}
 
 		internal void ReadStamp(Type type)

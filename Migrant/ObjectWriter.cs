@@ -527,8 +527,8 @@ namespace AntMicro.Migrant
 		private void AddMissingType(Type type)
 		{
 			typeIndices.Add(type, nextTypeId++);
-			Action<PrimitiveWriter, object> writeMethod = null; // for transient class the delegate will never be called
-			if(!CheckTransient(type))
+			Action<PrimitiveWriter, object> writeMethod = null; // for transient class or interface the delegate will never be called
+			if(!CheckTransient(type) && !type.IsInterface)
 			{
 				if(writeMethodCache != null && writeMethodCache.ContainsKey(type))
 				{
@@ -540,7 +540,7 @@ namespace AntMicro.Migrant
 				}
 			}
 
-			// an element is always included (event when null) to ensure indices to be exact with typeId
+			// an element is always included (even when null) to ensure indices to be exact with typeId
 			writeMethods.Add(writeMethod);
 		}
 
