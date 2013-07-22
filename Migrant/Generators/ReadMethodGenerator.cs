@@ -686,6 +686,10 @@ namespace Migrant.Generators
 						PushDeserializedObjectOntoStack(objectIdLocal);
 
 						GenerateCodeCall<FieldInfo, object>((fi, target) => {
+                            // this code is done using reflection and not generated due to
+                            // small estimated profit and lot of code to write:
+                            // * copying constructor attributes from generating to generated code
+                            // * calculating optimal constructor to call based on a collection of arguments
 							var ctorAttribute = (ConstructorAttribute)fi.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
                             fi.SetValue(target, Activator.CreateInstance(fi.FieldType, ctorAttribute.Parameters));
 						});
