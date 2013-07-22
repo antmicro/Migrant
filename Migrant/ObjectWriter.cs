@@ -126,7 +126,7 @@ namespace AntMicro.Migrant
 		{
 			var refId = identifier.GetId(o);
 			writer.Write(refId);
-			if(WasNotAlreadyWritten(refId))
+			if(WasNotWrittenYet(refId))
 			{
 				inlineWritten.Add(refId);
 				InvokeCallbacksAndWriteObject(o);
@@ -477,14 +477,14 @@ namespace AntMicro.Migrant
 			// if this is a future reference, just after the reference id,
 			// we should write inline data
 			writer.Write(refId);
-			if(WasNotAlreadyWritten(refId))
+			if(WasNotWrittenYet(refId))
 			{
 				inlineWritten.Add(refId);
 				InvokeCallbacksAndWriteObject(value);
 			}
 		}
 
-		private bool WasNotAlreadyWritten(int referenceId)
+		private bool WasNotWrittenYet(int referenceId)
 		{
 			return referenceId > objectsWritten && !inlineWritten.Contains(referenceId);
 		}
