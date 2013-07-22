@@ -267,7 +267,7 @@ namespace AntMicro.Migrant.Tests
 				copy = reader.ReadBytes(count);
 			}
 			CollectionAssert.AreEqual(array, copy);
-			Assert.AreEqual(position, stream.Position);
+			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
 
 		[Test]
@@ -297,7 +297,7 @@ namespace AntMicro.Migrant.Tests
 					Assert.AreEqual(array[i], reader.ReadGuid());
 				}
 			}
-			Assert.AreEqual(position, stream.Position);
+			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
 
 		[Test]
@@ -331,7 +331,7 @@ namespace AntMicro.Migrant.Tests
 					CollectionAssert.AreEqual(subarray, writtenArray);
 				}
 			}
-			Assert.AreEqual(position, stream.Position);
+			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
 
 		[Test]
@@ -378,7 +378,7 @@ namespace AntMicro.Migrant.Tests
 				Assert.AreEqual(ulong.MinValue, reader.ReadUInt64());
 				Assert.AreEqual(ulong.MaxValue, reader.ReadUInt64());
 			}
-			Assert.AreEqual(position, stream.Position);
+			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
 
 		[Test]
