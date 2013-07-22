@@ -283,8 +283,7 @@ namespace AntMicro.Migrant
 				return;
 			}
 			Type elementFormalType;
-			bool fake, fake2, fake3;
-			if(!Helpers.IsCollection(type, out elementFormalType, out fake, out fake2, out fake3))
+			if(!Helpers.IsCollection(type, out elementFormalType))
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}
@@ -581,9 +580,7 @@ namespace AntMicro.Migrant
 			{
 				return CreationWay.Null;
 			}
-			Type fake;
-			bool fake2, fake3, fake4;
-			if(Helpers.IsCollection(actualType, out fake, out fake2, out fake3, out fake4))
+			if(Helpers.IsCollection(actualType))
 			{
 				return CreationWay.DefaultCtor;
 			}

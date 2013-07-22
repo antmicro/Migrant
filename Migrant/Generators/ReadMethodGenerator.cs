@@ -245,8 +245,7 @@ namespace Migrant.Generators
 				return;
 			}
 			Type elementFormalType;
-			bool fake, fake2, fake3;
-			if(!Helpers.IsCollection(formalType, out elementFormalType, out fake, out fake2, out fake3))
+			if(!Helpers.IsCollection(formalType, out elementFormalType))
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}

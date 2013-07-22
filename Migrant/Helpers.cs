@@ -39,8 +39,7 @@ namespace AntMicro.Migrant
 	{
 		internal static bool TryGetCollectionCountAndElementType(object o, out int count, out Type formalElementType)
 		{
-			bool fake, fake2, fake3;
-			if(IsCollection(o.GetType(), out formalElementType, out fake, out fake2, out fake3))
+			if(IsCollection(o.GetType(), out formalElementType))
 			{
                 count = (int)o.GetType().GetProperty("Count").GetValue(o, null);
 				return true;
@@ -63,6 +62,18 @@ namespace AntMicro.Migrant
 			}
 			count = -1;
 			return false;
+		}
+
+		public static bool IsCollection(Type actualType)
+		{
+			Type fake;
+			return IsCollection(actualType, out fake);
+		}
+
+		public static bool IsCollection(Type actualType, out Type formalElementType)
+		{
+			bool fake1, fake2, fake3;
+			return IsCollection(actualType, out formalElementType, out fake1, out fake2, out fake3);
 		}
 
 		// TODO: refactor with enum as a result instead of isGeneric etc
