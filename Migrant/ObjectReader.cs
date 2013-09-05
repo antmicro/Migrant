@@ -275,20 +275,21 @@ namespace AntMicro.Migrant
 				LoadAndVerifySpeciallySerializableAndVerify(speciallyDeserializable, reader);
 				return;
 			}
-			var collectionMetaToken = Helpers.ExamineCollection(type);
-			if(collectionMetaToken.IsDictionary)
+			Type formalKeyType, formalValueType;
+			bool isGenericDictionary;
+			if(Helpers.IsDictionary(type, out formalKeyType, out formalValueType, out isGenericDictionary))
 			{
-				FillDictionary(collectionMetaToken, obj);
+				FillDictionary(formalKeyType, formalValueType, obj);
 				return;
 			}
-
-			if(!collectionMetaToken.IsLinearCollection)
+			Type elementFormalType;
+			if(!Helpers.IsCollection(type, out elementFormalType))
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}
 
 			// so we can assume it is ICollection<T> or ICollection
-			FillCollection(collectionMetaToken.FormalElementType ?? typeof(object), obj);
+			FillCollection(elementFormalType, obj);
 		}
 
 		private object ReadField(Type formalType)
@@ -385,13 +386,13 @@ namespace AntMicro.Migrant
 			}
 		}
 
-		private void FillDictionary(CollectionMetaToken token, object obj)
+		private void FillDictionary(Type formalKeyType, Type formalValueType, object obj)
 		{
 			var dictionaryType = obj.GetType();
 			var count = reader.ReadInt32();
 			var addMethodArgumentTypes = new [] {
-				token.FormalKeyType ?? typeof(object),
-				token.FormalValueType ?? typeof(object)
+				formalKeyType,
+				formalValueType
 			};
 			var addMethod = dictionaryType.GetMethod("Add", addMethodArgumentTypes) ??
 				dictionaryType.GetMethod("TryAdd", addMethodArgumentTypes);
@@ -408,8 +409,8 @@ namespace AntMicro.Migrant
 			else
 			{
 				delegateType = typeof(Func<,,>).MakeGenericType(new [] {
-					addMethodArgumentTypes[0],
-					addMethodArgumentTypes[1],
+					formalKeyType,
+					formalValueType,
 					addMethod.ReturnType
 				});
 			}
@@ -417,8 +418,8 @@ namespace AntMicro.Migrant
 
 			for(var i = 0; i < count; i++)
 			{
-				var key = ReadField(addMethodArgumentTypes[0]);
-				var value = ReadField(addMethodArgumentTypes[1]);
+				var key = ReadField(formalKeyType);
+				var value = ReadField(formalValueType);
 				addDelegate.DynamicInvoke(key, value);
 			}
 		}
@@ -579,7 +580,7 @@ namespace AntMicro.Migrant
 			{
 				return CreationWay.Null;
 			}
-			if(Helpers.ExamineCollection(actualType).IsCollection)
+			if(Helpers.IsCollection(actualType))
 			{
 				return CreationWay.DefaultCtor;
 			}

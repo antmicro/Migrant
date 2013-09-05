@@ -124,6 +124,8 @@ namespace Migrant.Generators
 			var invocationListLengthLocal = generator.DeclareLocal(typeof(Int32));
 			var targetLocal = generator.DeclareLocal(typeof(object));
 
+
+
 			GenerateReadPrimitive(typeof(Int32));
 			generator.Emit(OpCodes.Stloc, invocationListLengthLocal);
 
@@ -235,24 +237,27 @@ namespace Migrant.Generators
 				GenerateCodeCall<ISpeciallySerializable, PrimitiveReader>(ObjectReader.LoadAndVerifySpeciallySerializableAndVerify);
 				return;
 			}
-
-			var collectionToken = Helpers.ExamineCollection(formalType);
-			if(collectionToken.IsDictionary)
+			Type formalKeyType, formalValueType;
+			bool isGenericDictionary;
+			if(Helpers.IsDictionary(formalType, out formalKeyType, out formalValueType, out isGenericDictionary))
 			{
-				GenerateFillDictionary(collectionToken, formalType, objectIdLocal);
+				GenerateFillDictionary(formalKeyType, formalValueType, formalType, objectIdLocal);
 				return;
 			}
-			else if(!collectionToken.IsLinearCollection)
+			Type elementFormalType;
+			if(!Helpers.IsCollection(formalType, out elementFormalType))
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}
 
-			GenerateFillCollection(collectionToken.FormalElementType ?? typeof(object), formalType, objectIdLocal);
+			GenerateFillCollection(elementFormalType, formalType, objectIdLocal);
 		}
+
+
 
 		#region Collections generators
 
-		private void GenerateFillDictionary(CollectionMetaToken collectionToken, Type dictionaryType, LocalBuilder objectIdLocal)
+		private void GenerateFillDictionary(Type formalKeyType, Type formalValueType, Type dictionaryType, LocalBuilder objectIdLocal)
 		{
 			var countLocal = generator.DeclareLocal(typeof(Int32));
 
@@ -260,8 +265,8 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Stloc, countLocal); // read dictionary elements count
 
 			var addMethodArgumentTypes = new [] {
-				collectionToken.FormalKeyType ?? typeof(object),
-				collectionToken.FormalValueType ?? typeof(object)
+				formalKeyType,
+				formalValueType
 			};
 			var addMethod = dictionaryType.GetMethod("Add", addMethodArgumentTypes) ??
 				dictionaryType.GetMethod("TryAdd", addMethodArgumentTypes);
@@ -274,8 +279,8 @@ namespace Migrant.Generators
 				PushDeserializedObjectOntoStack(objectIdLocal);
 				generator.Emit(OpCodes.Castclass, dictionaryType);
 
-				GenerateReadField(collectionToken.FormalKeyType ?? typeof(object), false);
-				GenerateReadField(collectionToken.FormalValueType ?? typeof(object), false);
+				GenerateReadField(formalKeyType, false);
+				GenerateReadField(formalValueType, false);
 				generator.Emit(OpCodes.Callvirt, addMethod);
 				if(addMethod.ReturnType != typeof(void))
 				{
@@ -318,7 +323,7 @@ namespace Migrant.Generators
 
 			GenerateReadPrimitive(typeof(Int32));
 			generator.Emit(OpCodes.Stloc, countLocal); // read collection elements count
-
+			
 			var addMethod = collectionType.GetMethod("Add", new [] { elementFormalType }) ??
 				collectionType.GetMethod("Enqueue", new [] { elementFormalType }) ??
 				collectionType.GetMethod("Push", new [] { elementFormalType });

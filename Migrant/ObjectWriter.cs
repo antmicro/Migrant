@@ -351,19 +351,20 @@ namespace AntMicro.Migrant
 				writer.Write(str);
 				return true;
 			}
-
-			var collectionToken = Helpers.ExamineCollection(o.GetType());
-			if(collectionToken.IsCollection)
+			int count;
+			// dictionary has precedence before collection
+			Type formalKeyType;
+			Type formalValueType;
+			bool isGenericDictionary;
+			if(Helpers.TryGetDictionaryCountAndElementTypes(o, out count, out formalKeyType, out formalValueType, out isGenericDictionary))
 			{
-				var count = (int)o.GetType().GetProperty("Count").GetValue(o, null);
-				if(collectionToken.IsDictionary)
-				{
-					WriteDictionary(collectionToken, count, o);
-				}
-				else if(collectionToken.IsLinearCollection)
-				{
-					WriteEnumerable(collectionToken.FormalElementType ?? typeof(object), count, (IEnumerable)o);
-				}
+				WriteDictionary(formalKeyType, formalValueType, count, o, isGenericDictionary);
+				return true;
+			}
+			Type formalElementType;
+			if(Helpers.TryGetCollectionCountAndElementType(o, out count, out formalElementType))
+			{
+				WriteEnumerable(formalElementType, count, (IEnumerable)o);
 				return true;
 			}
 			return false;
@@ -378,12 +379,12 @@ namespace AntMicro.Migrant
 			}
 		}
 
-		private void WriteDictionary(CollectionMetaToken collectionToken, int count, object dictionary)
+		private void WriteDictionary(Type formalKeyType, Type formalValueType, int count, object dictionary, bool isGenericDictionary)
 		{
 			writer.Write(count);
-			if(collectionToken.IsGeneric)
+			if(isGenericDictionary)
 			{
-				var enumeratorMethod = typeof(IEnumerable<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(collectionToken.FormalKeyType, collectionToken.FormalValueType)).GetMethod("GetEnumerator");
+				var enumeratorMethod = typeof(IEnumerable<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(formalKeyType, formalValueType)).GetMethod("GetEnumerator");
 				var enumerator = enumeratorMethod.Invoke(dictionary, null);
 				var enumeratorType = enumeratorMethod.ReturnType;
 
@@ -398,8 +399,8 @@ namespace AntMicro.Migrant
 					var currentValue = current.Invoke(enumerator, null);
 					var keyValue = key.Invoke(currentValue, null);
 					var valueValue = value.Invoke(currentValue, null);
-					WriteField(collectionToken.FormalKeyType, keyValue);
-					WriteField(collectionToken.FormalValueType, valueValue);
+					WriteField(formalKeyType, keyValue);
+					WriteField(formalValueType, valueValue);
 				}
 			}
 			else
