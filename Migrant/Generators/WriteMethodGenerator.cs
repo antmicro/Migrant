@@ -187,11 +187,10 @@ namespace AntMicro.Migrant.Generators
 				});
 				return true;
 			}
-			bool isGeneric, isGenericallyIterable, isDictionary;
-			Type elementType;
-			if(Helpers.IsCollection(actualType, out elementType, out isGeneric, out isGenericallyIterable, out isDictionary))
+			var collectionToken = Helpers.ExamineCollection(actualType);
+			if(collectionToken.IsCollection)
 			{
-				GenerateWriteCollection(elementType, isGeneric, isGenericallyIterable, isDictionary);
+				GenerateWriteCollection(collectionToken);
 				return true;
 			}
 			return false;
@@ -330,28 +329,31 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Blt, loopBegin);
 		}
 
-		private void GenerateWriteCollection(Type formalElementType, bool isGeneric, bool isGenericallyIterable, bool isIDictionary)
+		private void GenerateWriteCollection(CollectionMetaToken token)
 		{
-			var genericTypes = new [] { formalElementType };
-			var ifaceType = isGeneric ? typeof(ICollection<>).MakeGenericType(genericTypes) : typeof(ICollection);
+			Type formalElementType = token.FormalElementType;
+
+			MethodInfo countMethod;
 			Type enumerableType;
-			if(isIDictionary)
+			Type enumeratorType;
+			if(token.IsDictionary)
 			{
 				formalElementType = typeof(object); // convenient in our case
 				enumerableType = typeof(IDictionary);
-			}
-			else
-			{
-				enumerableType = isGenericallyIterable ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
-			}
-			Type enumeratorType;
-			if(isIDictionary)
-			{
 				enumeratorType = typeof(IDictionaryEnumerator);
+
+				var ifaceType = token.IsGeneric ? typeof(ICollection<>).MakeGenericType(new [] { formalElementType }) : typeof(ICollection);
+				countMethod = ifaceType.GetProperty("Count").GetGetMethod();
 			}
 			else
 			{
-				enumeratorType = isGenericallyIterable ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
+				var genericTypes = new [] { formalElementType };
+
+				enumerableType = token.IsGenericallyIterable ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
+				enumeratorType = token.IsGenericallyIterable ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
+
+				var ifaceType = token.IsGeneric ? typeof(ICollection<>).MakeGenericType(genericTypes) : typeof(ICollection);
+				countMethod = ifaceType.GetProperty("Count").GetGetMethod();
 			}
 
 			generator.DeclareLocal(enumeratorType); // iterator
@@ -360,7 +362,6 @@ namespace AntMicro.Migrant.Generators
 			// length of the collection
 			generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
 			generator.Emit(OpCodes.Ldarg_2); // collection to serialize
-			var countMethod = ifaceType.GetProperty("Count").GetGetMethod();
 			generator.Emit(OpCodes.Call, countMethod);
 			generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
 
@@ -376,7 +377,7 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IEnumerator>(x => x.MoveNext()));
 			generator.Emit(OpCodes.Brfalse, finish);
 			generator.Emit(OpCodes.Ldloc_0);
-			if(isIDictionary)
+			if(token.IsDictionary)
 			{
 				// key
 				generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Key").GetGetMethod());
