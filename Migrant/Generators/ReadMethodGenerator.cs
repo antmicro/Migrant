@@ -236,18 +236,18 @@ namespace Migrant.Generators
 				return;
 			}
 
-			var collectionToken = Helpers.ExamineCollection(formalType);
+            var collectionToken = new CollectionMetaToken(formalType);
 			if(collectionToken.IsDictionary)
 			{
 				GenerateFillDictionary(collectionToken, formalType, objectIdLocal);
 				return;
 			}
-			else if(!collectionToken.IsLinearCollection)
+            else if(!collectionToken.IsCollection)
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}
 
-			GenerateFillCollection(collectionToken.FormalElementType ?? typeof(object), formalType, objectIdLocal);
+			GenerateFillCollection(collectionToken.FormalElementType, formalType, objectIdLocal);
 		}
 
 		#region Collections generators
@@ -260,8 +260,8 @@ namespace Migrant.Generators
 			generator.Emit(OpCodes.Stloc, countLocal); // read dictionary elements count
 
 			var addMethodArgumentTypes = new [] {
-				collectionToken.FormalKeyType ?? typeof(object),
-				collectionToken.FormalValueType ?? typeof(object)
+				collectionToken.FormalKeyType,
+				collectionToken.FormalValueType
 			};
 			var addMethod = dictionaryType.GetMethod("Add", addMethodArgumentTypes) ??
 				dictionaryType.GetMethod("TryAdd", addMethodArgumentTypes);
@@ -274,8 +274,9 @@ namespace Migrant.Generators
 				PushDeserializedObjectOntoStack(objectIdLocal);
 				generator.Emit(OpCodes.Castclass, dictionaryType);
 
-				GenerateReadField(collectionToken.FormalKeyType ?? typeof(object), false);
-				GenerateReadField(collectionToken.FormalValueType ?? typeof(object), false);
+				GenerateReadField(collectionToken.FormalKeyType, false);
+				GenerateReadField(collectionToken.FormalValueType, false);
+
 				generator.Emit(OpCodes.Callvirt, addMethod);
 				if(addMethod.ReturnType != typeof(void))
 				{
@@ -324,7 +325,7 @@ namespace Migrant.Generators
 				collectionType.GetMethod("Push", new [] { elementFormalType });
 			if(addMethod == null)
 			{
-				throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage, collectionType));
+                throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage, collectionType));
 			}
 			
 			if(collectionType == typeof(Stack) || 

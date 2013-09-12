@@ -352,17 +352,17 @@ namespace AntMicro.Migrant
 				return true;
 			}
 
-			var collectionToken = Helpers.ExamineCollection(o.GetType());
+            var collectionToken = new CollectionMetaToken(o.GetType());
 			if(collectionToken.IsCollection)
 			{
-				var count = (int)o.GetType().GetProperty("Count").GetValue(o, null);
+                var count =  (int)collectionToken.CountMethod.Invoke(o, null);
 				if(collectionToken.IsDictionary)
 				{
 					WriteDictionary(collectionToken, count, o);
 				}
-				else if(collectionToken.IsLinearCollection)
+                else
 				{
-					WriteEnumerable(collectionToken.FormalElementType ?? typeof(object), count, (IEnumerable)o);
+					WriteEnumerable(collectionToken.FormalElementType, count, (IEnumerable)o);
 				}
 				return true;
 			}

@@ -34,7 +34,7 @@ namespace AntMicro.Migrant.VersionTolerance
 	{
 		public static bool IsStampNeeded(Type type)
 		{
-			return !Helpers.IsWriteableByPrimitiveWriter(type) || !Helpers.ExamineCollection(type).IsCollection;
+            return !Helpers.IsWriteableByPrimitiveWriter(type) || !new CollectionMetaToken(type).IsCollection;
 		}
 
 		// TODO: find all the usages and use verify or sth there

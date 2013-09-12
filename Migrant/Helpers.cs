@@ -27,7 +27,6 @@
 */
 using System;
 using System.Collections.Generic;
-using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -41,42 +40,6 @@ namespace AntMicro.Migrant
 		internal static bool CheckTransientNoCache(Type type)
 		{
 			return type.IsDefined(typeof(TransientAttribute), true);
-		}
-
-		public static CollectionMetaToken ExamineCollection(Type actualType) 
-		{
-			var result = new CollectionMetaToken();
-
-			var ifaces = actualType.GetInterfaces();
-			foreach(var iface in ifaces)
-			{
-				if(iface.IsGenericType)
-				{
-					if(iface.GetGenericTypeDefinition() == typeof(ICollection<>)
-					   || iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-					{
-						result.SetLinearGenericCollection(iface.GetGenericArguments()[0]);
-					}
-					else if(iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
-					{
-						var arguments = iface.GetGenericArguments();
-						result.SetDictionaryGenericCollection(arguments[0], arguments[1]);
-					}
-				}
-				else
-				{
-					if(iface == typeof(ICollection))
-					{
-						result.SetLinearCollection();
-					}
-					else if(iface == typeof(IDictionary))
-					{
-						result.SetDictionaryCollection();
-					}
-				}
-			}
-
-			return result;
 		}
 
 		public static bool CanBeCreatedWithDataOnly(Type actualType)

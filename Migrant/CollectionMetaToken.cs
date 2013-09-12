@@ -24,22 +24,22 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Linq;
+using System.Collections;
 
 namespace AntMicro.Migrant
 {
 	public class CollectionMetaToken
 	{
-		public bool IsCollection { get { return IsLinearCollection || IsDictionary; } }
+        public bool IsCollection { get; private set; }
 
-		public bool IsGeneric { get { return FormalElementType != null || FormalKeyType != null; } }
+        public bool IsDictionary { get; private set; }
+
+        public bool IsGeneric { get; private set; }
 
 		public bool IsGenericallyIterable { get; private set; }
-
-		private bool _isLinearCollection;
-		public bool IsLinearCollection { get { return _isLinearCollection || FormalElementType != null; } }
-
-		private bool _isDictionaryCollection;
-		public bool IsDictionary { get { return _isDictionaryCollection || FormalKeyType != null; } }
 
 		public Type FormalElementType { get; private set; }
 
@@ -47,27 +47,68 @@ namespace AntMicro.Migrant
 
 		public Type FormalValueType { get; private set; }
 
-		public void SetLinearGenericCollection(Type formalElementType)
-		{
-			FormalElementType = formalElementType;
-			IsGenericallyIterable = true;
-		}
+        public MethodInfo CountMethod { get; set; }
 
-		public void SetLinearCollection()
-		{
-			_isLinearCollection = true;
-		}
+        public Type ActualType { get; private set; }
 
-		public void SetDictionaryGenericCollection(Type formalKeyType, Type formalValueType)
-		{
-			FormalKeyType = formalKeyType;
-			FormalValueType = formalValueType;
-		}
+        public CollectionMetaToken(Type actualType) 
+        {
+            ActualType = actualType;
+            FormalElementType = typeof(object);
+            FormalKeyType = typeof(object);
+            FormalValueType = typeof(object);
 
-		public void SetDictionaryCollection()
-		{
-			_isDictionaryCollection = true;
-		}
+            var ifaces = actualType.GetInterfaces();
+            foreach(var iface in ifaces)
+            {
+                if(iface.IsGenericType)
+                {
+                    if(iface.GetGenericTypeDefinition() == typeof(ICollection<>))
+                    {
+                        IsCollection = true;
+                        IsGeneric = true;
+                        IsGenericallyIterable = true;
+
+                        FormalElementType = iface.GetGenericArguments()[0];
+
+                        CountMethod = iface.GetProperty("Count").GetGetMethod();
+                    }
+                    else if (iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    {
+                        IsGenericallyIterable = true;
+
+                        FormalElementType = iface.GetGenericArguments()[0];
+
+                        CountMethod = typeof(Enumerable).GetMethods().Single(m => m.GetParameters().Length == 1 && m.Name == "Count").MakeGenericMethod(iface.GetGenericArguments()[0]);
+                    }
+                    else if(iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                    {
+                        IsCollection = true;
+                        IsDictionary = true;
+                        IsGeneric = true;
+
+                        var arguments = iface.GetGenericArguments();
+                        FormalKeyType = arguments[0];
+                        FormalValueType = arguments[1];
+
+                        CountMethod = typeof(ICollection<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(arguments[0], arguments[1])).GetProperty("Count").GetGetMethod();
+                    }
+                }
+                else if(iface == typeof(ICollection))
+                {
+                    IsCollection = true;
+
+                    CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
+                }
+                else if(iface == typeof(IDictionary))
+                {
+                    IsCollection = true;
+                    IsDictionary = true;
+
+                    CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
+                }
+            }
+        }
 	}
 }
 

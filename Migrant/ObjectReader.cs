@@ -275,20 +275,20 @@ namespace AntMicro.Migrant
 				LoadAndVerifySpeciallySerializableAndVerify(speciallyDeserializable, reader);
 				return;
 			}
-			var collectionMetaToken = Helpers.ExamineCollection(type);
+            var collectionMetaToken = new CollectionMetaToken(type);
 			if(collectionMetaToken.IsDictionary)
 			{
 				FillDictionary(collectionMetaToken, obj);
 				return;
 			}
 
-			if(!collectionMetaToken.IsLinearCollection)
+            if(!collectionMetaToken.IsCollection)
 			{
 				throw new InvalidOperationException(InternalErrorMessage);
 			}
 
 			// so we can assume it is ICollection<T> or ICollection
-			FillCollection(collectionMetaToken.FormalElementType ?? typeof(object), obj);
+			FillCollection(collectionMetaToken.FormalElementType, obj);
 		}
 
 		private object ReadField(Type formalType)
@@ -390,8 +390,8 @@ namespace AntMicro.Migrant
 			var dictionaryType = obj.GetType();
 			var count = reader.ReadInt32();
 			var addMethodArgumentTypes = new [] {
-				token.FormalKeyType ?? typeof(object),
-				token.FormalValueType ?? typeof(object)
+				token.FormalKeyType,
+				token.FormalValueType
 			};
 			var addMethod = dictionaryType.GetMethod("Add", addMethodArgumentTypes) ??
 				dictionaryType.GetMethod("TryAdd", addMethodArgumentTypes);
@@ -579,7 +579,7 @@ namespace AntMicro.Migrant
 			{
 				return CreationWay.Null;
 			}
-			if(Helpers.ExamineCollection(actualType).IsCollection)
+            if((new CollectionMetaToken(actualType)).IsCollection)
 			{
 				return CreationWay.DefaultCtor;
 			}
