@@ -38,7 +38,6 @@ namespace AntMicro.Migrant.ResultBrowser
 			var options = new Options();
 			if(!new CommandLineParser(new CommandLineParserSettings(Console.Out)).ParseArguments(args, options))
 			{
-				// TODO: some kind of help
 				Console.Error.WriteLine("Wrong options.");
 				return 1;
 			}

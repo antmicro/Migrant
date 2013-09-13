@@ -29,7 +29,6 @@ using System.Collections;
 
 namespace AntMicro.Migrant.Utilities
 {
-	// TODO: implement and use IList, IDictionary
 	internal class ListWithHash<T> : IEnumerable<T>
 	{
 		public ListWithHash()

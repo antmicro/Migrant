@@ -559,9 +559,8 @@ namespace AntMicro.Migrant.Generators
 			generator.Emit(OpCodes.Br, finish);
 			generator.MarkLabel(isNotNull);
 
-			var formalTypeIsActualType = (formalType.Attributes & TypeAttributes.Sealed) != 0; // TODO: more optimizations?
+			var formalTypeIsActualType = (formalType.Attributes & TypeAttributes.Sealed) != 0;
 
-			// TODO: other opts here?
 			// if there is possibity that the target object is transient, we have to check that
 			var skipGetId = false;
 			var skipTransientCheck = false;

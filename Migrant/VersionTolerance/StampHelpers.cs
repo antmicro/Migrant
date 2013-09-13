@@ -37,7 +37,6 @@ namespace AntMicro.Migrant.VersionTolerance
 			return !Helpers.IsWriteableByPrimitiveWriter(type) || !Helpers.IsCollection(type);
 		}
 
-		// TODO: find all the usages and use verify or sth there
 		public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)
 		{
 			return type.GetAllFields().Where(x => withTransient || Helpers.IsNotTransient(x)).OrderBy(x => x.Name);
