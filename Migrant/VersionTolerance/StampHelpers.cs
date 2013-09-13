@@ -34,7 +34,7 @@ namespace AntMicro.Migrant.VersionTolerance
 	{
 		public static bool IsStampNeeded(Type type)
 		{
-			return !Helpers.IsWriteableByPrimitiveWriter(type) || !Helpers.IsCollection(type);
+            return !Helpers.IsWriteableByPrimitiveWriter(type) || !new CollectionMetaToken(type).IsCollection;
 		}
 
 		public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)

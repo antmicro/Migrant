@@ -1,9 +1,10 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012-2013 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -26,7 +27,6 @@
 */
 using System;
 using System.Collections.Generic;
-using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -37,114 +37,9 @@ namespace AntMicro.Migrant
 {
 	internal static class Helpers
 	{
-		internal static bool TryGetCollectionCountAndElementType(object o, out int count, out Type formalElementType)
-		{
-			if(IsCollection(o.GetType(), out formalElementType))
-			{
-                count = (int)o.GetType().GetProperty("Count").GetValue(o, null);
-				return true;
-			}
-			count = -1;
-			return false;
-		}
-
 		internal static bool CheckTransientNoCache(Type type)
 		{
 			return type.IsDefined(typeof(TransientAttribute), true);
-		}
-
-		public static bool TryGetDictionaryCountAndElementTypes(object o, out int count, out Type formalKeyType, out Type formalValueType, out bool isGenericDictionary)
-		{
-			if(IsDictionary(o.GetType(), out formalKeyType, out formalValueType, out isGenericDictionary))
-			{
-				count = (int)o.GetType().GetProperty("Count").GetValue(o, null);
-				return true;
-			}
-			count = -1;
-			return false;
-		}
-
-		public static bool IsCollection(Type actualType)
-		{
-			Type fake;
-			return IsCollection(actualType, out fake);
-		}
-
-		public static bool IsCollection(Type actualType, out Type formalElementType)
-		{
-			bool fake1, fake2, fake3;
-			return IsCollection(actualType, out formalElementType, out fake1, out fake2, out fake3);
-		}
-
-		// TODO: refactor with enum as a result instead of isGeneric etc
-		// and join with IsDictionary
-		public static bool IsCollection(Type actualType, out Type formalElementType, out bool isGeneric, out bool isGenericallyIterable, out bool isDictionary)
-		{
-			formalElementType = typeof(object);
-			var ifaces = actualType.GetInterfaces();
-			var result = false;
-			isGeneric = false;
-			isGenericallyIterable = false;
-			isDictionary = false;
-			var isGenericDictionary = false;
-			foreach(var iface in ifaces)
-			{
-				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICollection<>))
-				{
-					formalElementType = iface.GetGenericArguments()[0];
-					isGeneric = true;
-					isGenericallyIterable = true;
-					result = true;
-				}
-				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
-				{
-					isGenericDictionary = true;
-				}
-				if(iface == typeof(ICollection))
-				{
-					result = true;
-				}
-				if(iface == typeof(IDictionary))
-				{
-					isDictionary = true;
-				}
-				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-				{
-					formalElementType = iface.GetGenericArguments()[0];
-					isGenericallyIterable = true;
-				}
-			}
-			if(isGenericDictionary)
-			{
-				// we favour treating as a generic dictionary if the collection implements both
-				isDictionary = false;
-			}
-			return result;
-		}
-
-		public static bool IsDictionary(Type actualType, out Type formalKeyType, out Type formalValueType, out bool isGenericDictionary)
-		{
-			formalKeyType = typeof(object);
-			formalValueType = typeof(object);
-			var ifaces = actualType.GetInterfaces();
-			var result = false;
-			isGenericDictionary = false;
-			foreach(var iface in ifaces)
-			{
-				if(iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
-				{
-					var arguments = iface.GetGenericArguments();
-					formalKeyType = arguments[0];
-					formalValueType = arguments[1];
-					isGenericDictionary = true;
-					return true;
-				}
-				if(iface == typeof(IDictionary))
-				{
-					result = true;
-				}
-			}
-			return result;
 		}
 
 		public static bool CanBeCreatedWithDataOnly(Type actualType)
@@ -352,7 +247,7 @@ namespace AntMicro.Migrant
 		public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
 		private static readonly Type[] TypesWriteableByPrimitiveWriter;
-		private static readonly int[] PaddingBoundaries = new [] {
+		private static readonly int[] PaddingBoundaries = {
 				128,
 				1024,
 				4096
