@@ -564,23 +564,7 @@ namespace AntMicro.Migrant.Generators
             generator.MarkLabel(isNotNull);
 
             var formalTypeIsActualType = (formalType.Attributes & TypeAttributes.Sealed) != 0;
-
-            // if there is possibity that the target object is transient, we have to check that
-            var skipGetId = false;
-            var skipTransientCheck = false;
-            if(formalTypeIsActualType)
-            {
-                if(Helpers.CheckTransientNoCache(formalType))
-                {
-                    skipGetId = true;
-                }
-                else
-                {
-                    skipTransientCheck = true;
-                }
-            }
-
-            if(!skipTransientCheck)
+            if (!formalTypeIsActualType)
             {
                 generator.Emit(OpCodes.Ldarg_0); // objectWriter
                 putValueToWriteOnTop(generator); // value to serialize
@@ -592,14 +576,27 @@ namespace AntMicro.Migrant.Generators
                 generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
                 generator.Emit(OpCodes.Br, finish);
                 generator.MarkLabel(isNotTransient);
-            }
 
-            if(!skipGetId)
-            {
                 generator.Emit(OpCodes.Ldarg_0); // objectWriter
                 putValueToWriteOnTop(generator);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteObjectIdPossiblyInline(null)));
             }
+            else
+            {
+                if (Helpers.CheckTransientNoCache(formalType))
+                {
+                    generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+                    generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);
+                    generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Ldarg_0); // objectWriter
+                    putValueToWriteOnTop(generator);
+                    generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteObjectIdPossiblyInline(null)));
+                }
+            }
+
             generator.MarkLabel(finish);
         }
 
