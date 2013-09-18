@@ -355,7 +355,11 @@ namespace AntMicro.Migrant
             var collectionToken = new CollectionMetaToken(o.GetType());
 			if(collectionToken.IsCollection)
 			{
-                var count =  (int)collectionToken.CountMethod.Invoke(o, null);
+                // here we can have normal or extension method that needs to be treated differently
+                int count = collectionToken.CountMethod.IsStatic ? 
+                            (int)collectionToken.CountMethod.Invoke(null, new[] { o }) : 
+                            (int)collectionToken.CountMethod.Invoke(o, null); 
+
 				if(collectionToken.IsDictionary)
 				{
 					WriteDictionary(collectionToken, count, o);
