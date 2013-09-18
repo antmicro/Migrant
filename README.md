@@ -8,9 +8,10 @@ This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and fle
 2.  Directory organization
 3.  Usage
 4.  Features
-5.  Compilation
-6.  More information
-7.  Licence
+6.  Download
+7.  Compilation
+8.  More information
+9.  Licence
 
 ## Introduction
 
@@ -114,6 +115,10 @@ Serialization and deserialization is done using on-line generated methods for pe
 Migrant can also be configured to replace objects of given type with user provided objects during serialization or deserialization. The feature is known as **Surrogates**.
 
 Performance benchmarks against other popular serialization frameworks are yet to be run, but initial testing is quite promising.
+
+## Download
+
+To download a precompiled version of Migrant, use [NuGet Package Manager](http://www.nuget.org/packages/Migrant/).
 
 ## Compilation
 
