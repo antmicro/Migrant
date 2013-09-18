@@ -26,10 +26,11 @@
 
 using System.Collections.Generic;
 using System.Collections;
+using System;
 
 namespace AntMicro.Migrant.Utilities
 {
-	internal class ListWithHash<T> : IEnumerable<T>
+    internal class ListWithHash<T> : IEnumerable<T>, IList<T>, ISet<T>
 	{
 		public ListWithHash()
 		{
@@ -61,6 +62,11 @@ namespace AntMicro.Migrant.Utilities
 			{
 				return list[index];
 			}
+
+            set
+            {
+                throw new NotSupportedException();
+            }
 		}
 
 		public IEnumerator<T> GetEnumerator()
@@ -75,6 +81,118 @@ namespace AntMicro.Migrant.Utilities
 
 		private readonly List<T> list;
 		private readonly HashSet<T> set;
+
+        #region IList implementation
+
+        public int IndexOf(T item)
+        {
+            return list.IndexOf(item);
+        }
+
+        public void Insert(int index, T item)
+        {
+            if(!set.Add(item))
+            {
+                return;
+            }
+            list.Insert(index, item);
+        }
+
+        public void RemoveAt(int index)
+        {
+            var item = list[index];
+            list.RemoveAt(index);
+            set.Remove(item);
+        }
+
+        #endregion
+
+        #region ICollection implementation
+
+        void ICollection<T>.Add(T item)
+        {
+            Add(item);
+        }
+
+        public void Clear()
+        {
+            list.Clear();
+            set.Clear();
+        }
+
+        public bool Contains(T item)
+        {
+            return set.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            list.CopyTo(array, arrayIndex);
+        }
+
+        public bool Remove(T item)
+        {
+            list.Remove(item);
+            return set.Remove(item);
+        }
+
+        public bool IsReadOnly { get { return true; } }
+
+        #endregion
+
+        #region ISet implementation
+
+        public void ExceptWith(IEnumerable<T> other)
+        {
+            set.ExceptWith(other);
+        }
+
+        public void IntersectWith(IEnumerable<T> other)
+        {
+            set.IntersectWith(other);
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<T> other)
+        {
+            return set.IsProperSubsetOf(other);
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<T> other)
+        {
+            return set.IsProperSupersetOf(other);
+        }
+
+        public bool IsSubsetOf(IEnumerable<T> other)
+        {
+            return set.IsSubsetOf(other);
+        }
+
+        public bool IsSupersetOf(IEnumerable<T> other)
+        {
+            return set.IsSupersetOf(other);
+        }
+
+        public bool Overlaps(IEnumerable<T> other)
+        {
+            return set.Overlaps(other);
+        }
+
+        public bool SetEquals(IEnumerable<T> other)
+        {
+            return set.SetEquals(other);
+        }
+
+        public void SymmetricExceptWith(IEnumerable<T> other)
+        {
+            set.SymmetricExceptWith(other);
+        }
+
+        public void UnionWith(IEnumerable<T> other)
+        {
+            set.UnionWith(other);
+        }
+
+        #endregion
 	}
 }
 
