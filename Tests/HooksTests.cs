@@ -192,6 +192,14 @@ namespace AntMicro.Migrant.Tests
 			ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization(new LatePrePostSerializationMock());
 		}
 
+        [Test]
+        public void ShouldInvokeHooksOnDerivedClassesInCorrectOrder()
+        {
+            var obj = new DerivedFromClassB();
+            var copy = SerializerClone(obj);
+            Assert.IsTrue(copy.FlagC);
+        }
+
 		private void ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization<T>(T prePostMock) where T : IPrePostMock
 		{
 			try
@@ -520,5 +528,44 @@ namespace AntMicro.Migrant.Tests
 		private ClassSendingExcetpionDuringSerialization sendingException;
 		#pragma warning restore 0414
 	}
+
+    public class BaseClassA
+    {
+        [Transient]
+        protected bool FlagA;
+
+        [PostDeserialization]
+        private void AfterDeserialization()
+        {
+            FlagA = true;
+        }
+    }
+
+    public class DerivedFromBaseClassA : BaseClassA
+    {
+        [Transient]
+        protected bool FlagB;
+
+        [PostDeserialization]
+        private void AfterDeserialization()
+        {
+            Assert.IsTrue(FlagA);
+            FlagB = true;
+        }
+    }
+
+    public class DerivedFromClassB : DerivedFromBaseClassA
+    {
+        [Transient]
+        public bool FlagC;
+
+        [PostDeserialization]
+        private void AfterDeserialization()
+        {
+            Assert.IsTrue(FlagA);
+            Assert.IsTrue(FlagB);
+            FlagC = true;
+        }
+    }
 }
 
