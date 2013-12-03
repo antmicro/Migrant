@@ -25,6 +25,8 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
+using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -406,6 +408,28 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreSame(copy[10], copy[30]);
 			Assert.AreNotSame(copy[10], copy[20]);
 		}
+
+        [Test]
+        public void ShouldSerializeRegex()
+        {
+            var regex = new Regex(".*");
+
+            var copy = SerializerClone(regex) as Regex;
+
+            // TODO: Not sure how to test for equality once serialization succeeds
+            Assert.AreEqual(regex, copy);
+        }
+
+        [Test]
+        public void ShouldSerializeCustomCollection()
+        {
+            var collection = new CustomCollectionClass<int>(Enumerable.Range(1, 10), "some string value");
+
+            var copy = SerializerClone(collection);
+
+            CollectionAssert.AreEquivalent(collection, copy);
+            Assert.AreEqual(collection.OtherValue, copy.OtherValue);
+        }
 
 		[Test]
 		public void ShouldSerializeSimpleEnum()
@@ -1285,6 +1309,45 @@ namespace AntMicro.Migrant.Tests
 
 			#endregion
 		}
+
+        [Serializable]
+        public class CustomCollectionClass<T> : ICollection
+        {
+            private readonly T[] _array;
+
+            public object OtherValue { get; set; }
+
+            public CustomCollectionClass(IEnumerable<T> source, object otherValue)
+            {
+                OtherValue = otherValue;
+                _array = source.ToArray();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                _array.CopyTo(array, index);
+            }
+
+            int ICollection.Count
+            {
+                get { return _array.Length; }
+            }
+
+            public bool IsSynchronized
+            {
+                get { return true; }
+            }
+
+            public object SyncRoot
+            {
+                get { return null; }
+            }
+
+            public IEnumerator GetEnumerator()
+            {
+                return _array.GetEnumerator();
+            }
+        }
 	}
 
 	public static class CompanionExtensions
