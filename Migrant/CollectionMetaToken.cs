@@ -58,57 +58,56 @@ namespace AntMicro.Migrant
             FormalKeyType = typeof(object);
             FormalValueType = typeof(object);
 
-            var ifaces = actualType.GetInterfaces();
-            foreach(var iface in ifaces)
+            var ifaces = actualType.GetInterfaces().ToList();
+            foreach (var prior in CollectionPriorities)
             {
-                if(iface.IsGenericType)
+                var iface = ifaces.FirstOrDefault(x => (x.IsGenericType ? x.GetGenericTypeDefinition() : x) == prior.Item1);
+                if (iface != null)
                 {
-                    if(iface.GetGenericTypeDefinition() == typeof(ICollection<>))
-                    {
-                        IsCollection = true;
-                        IsGeneric = true;
-                        IsGenericallyIterable = true;
-
-                        FormalElementType = iface.GetGenericArguments()[0];
-
-                        CountMethod = iface.GetProperty("Count").GetGetMethod();
-                    }
-                    else if (iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
-                    {
-                        IsGenericallyIterable = true;
-
-                        FormalElementType = iface.GetGenericArguments()[0];
-
-                        CountMethod = typeof(Enumerable).GetMethods().Single(m => m.GetParameters().Length == 1 && m.Name == "Count").MakeGenericMethod(iface.GetGenericArguments()[0]);
-                    }
-                    else if(iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
-                    {
-                        IsCollection = true;
-                        IsDictionary = true;
-                        IsGeneric = true;
-
-                        var arguments = iface.GetGenericArguments();
-                        FormalKeyType = arguments[0];
-                        FormalValueType = arguments[1];
-
-                        CountMethod = typeof(ICollection<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(arguments[0], arguments[1])).GetProperty("Count").GetGetMethod();
-                    }
-                }
-                else if(iface == typeof(ICollection))
-                {
-                    IsCollection = true;
-
-                    CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
-                }
-                else if(iface == typeof(IDictionary))
-                {
-                    IsCollection = true;
-                    IsDictionary = true;
-
-                    CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
+                    prior.Item2(iface, this);
+                    return;
                 }
             }
         }
+
+        private static readonly Tuple<Type, Action<Type, CollectionMetaToken>>[] CollectionPriorities = 
+        {
+            Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IDictionary<,>), 
+                (iface, cmt) => {
+                    cmt.IsCollection = true;
+                    cmt.IsDictionary = true;
+                    cmt.IsGeneric = true;
+                    var arguments = iface.GetGenericArguments();
+                    cmt.FormalKeyType = arguments[0];
+                    cmt.FormalValueType = arguments[1];
+                    cmt.CountMethod = typeof(ICollection<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(arguments[0], arguments[1])).GetProperty("Count").GetGetMethod();
+                }),
+            Tuple.Create<Type, Action<Type, CollectionMetaToken>>( typeof(ICollection<>),
+                (iface, cmt) => {
+                    cmt.IsCollection = true;
+                    cmt.IsGeneric = true;
+                    cmt.IsGenericallyIterable = true;
+                    cmt.FormalElementType = iface.GetGenericArguments()[0];
+                    cmt.CountMethod = iface.GetProperty("Count").GetGetMethod();
+                }),
+            Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IEnumerable<>),
+                (iface, cmt) => {
+                    cmt.IsGenericallyIterable = true;
+                    cmt.FormalElementType = iface.GetGenericArguments()[0];
+                    cmt.CountMethod = typeof(Enumerable).GetMethods().Single(m => m.GetParameters().Length == 1 && m.Name == "Count").MakeGenericMethod(iface.GetGenericArguments()[0]);
+                }),
+            Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IDictionary),
+                (iface, cmt) => {
+                    cmt.IsCollection = true;
+                    cmt.IsDictionary = true;
+                    cmt.CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
+                }),
+            Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(ICollection),                 
+                (iface, cmt) => {
+                    cmt.IsCollection = true;
+                    cmt.CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
+                })
+        };
 	}
 }
 
