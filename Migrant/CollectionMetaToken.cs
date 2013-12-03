@@ -72,7 +72,6 @@ namespace AntMicro.Migrant
                         FormalElementType = iface.GetGenericArguments()[0];
 
                         CountMethod = iface.GetProperty("Count").GetGetMethod();
-                        return;
                     }
                     else if (iface.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     {
@@ -81,7 +80,6 @@ namespace AntMicro.Migrant
                         FormalElementType = iface.GetGenericArguments()[0];
 
                         CountMethod = typeof(Enumerable).GetMethods().Single(m => m.GetParameters().Length == 1 && m.Name == "Count").MakeGenericMethod(iface.GetGenericArguments()[0]);
-                        return;
                     }
                     else if(iface.GetGenericTypeDefinition() == typeof(IDictionary<,>))
                     {
@@ -94,7 +92,6 @@ namespace AntMicro.Migrant
                         FormalValueType = arguments[1];
 
                         CountMethod = typeof(ICollection<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(arguments[0], arguments[1])).GetProperty("Count").GetGetMethod();
-                        return;
                     }
                 }
                 else if(iface == typeof(ICollection))
@@ -102,7 +99,6 @@ namespace AntMicro.Migrant
                     IsCollection = true;
 
                     CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
-                    return;
                 }
                 else if(iface == typeof(IDictionary))
                 {
@@ -110,7 +106,6 @@ namespace AntMicro.Migrant
                     IsDictionary = true;
 
                     CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
-                    return;
                 }
             }
         }
