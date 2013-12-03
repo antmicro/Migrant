@@ -360,7 +360,7 @@ namespace AntMicro.Migrant.Generators
             // length of the collection
             generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
             generator.Emit(OpCodes.Ldarg_2); // collection to serialize
-            if (token.CountMethod.IsStatic)
+            if(token.CountMethod.IsStatic)
             {
                 generator.Emit(OpCodes.Call, token.CountMethod);
             }
