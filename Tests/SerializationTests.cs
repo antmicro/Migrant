@@ -25,6 +25,8 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
+using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -406,6 +408,118 @@ namespace AntMicro.Migrant.Tests
 			Assert.AreSame(copy[10], copy[30]);
 			Assert.AreNotSame(copy[10], copy[20]);
 		}
+
+        [Test]
+        public void ShouldSerializeRegex()
+        {
+            var regex = new Regex(".*");
+
+            var copy = SerializerClone(regex) as Regex;
+
+            // TODO: Not sure how to test for equality once serialization succeeds
+            Assert.AreEqual(regex, copy);
+        }
+
+        [Test]
+        public void ShouldSerializeEnumerableWithoutDefaultConstructor()
+        {
+            var collection = new EnumerableWithoutDefaultConstructor(Enumerable.Range(1, 10));
+
+            var copy = SerializerClone(collection);
+
+            CollectionAssert.AreEquivalent(collection, copy);
+        }
+
+        [Test]
+        public void ShouldSerializeGenericEnumerableWithoutDefaultConstructor()
+        {
+            var collection = new GenericEnumerableWithoutDefaultConstructor<int>(Enumerable.Range(1, 10));
+
+            var copy = SerializerClone(collection);
+
+            CollectionAssert.AreEquivalent(collection, copy);
+        }
+
+        [Test]
+        public void ShouldSerializeCustomCollectionWithoutDefaultConstructor()
+        {
+            var collection = new SerializableCollectionWithoutDefaultConstructor(Enumerable.Range(1, 10));
+
+            var copy = SerializerClone(collection);
+
+            CollectionAssert.AreEquivalent(collection, copy);
+        }
+
+        [Test]
+        public void ShouldSerializeCustomGenericCollectionWithoutDefaultConstructor()
+        {
+            var collection = new SerializableGenericCollectionWithoutDefaultConstructor<int>(Enumerable.Range(1, 10));
+
+            var copy = SerializerClone(collection);
+
+            CollectionAssert.AreEquivalent(collection, copy);
+        }
+
+        [Test]
+        public void ShouldSerializeCustomCollection()
+        {
+            var collection = new CustomCollectionClass<int>(Enumerable.Range(1, 10), "non-element value");
+
+            var copy = SerializerClone(collection);
+
+            CollectionAssert.AreEquivalent(collection, copy);
+            Assert.AreEqual(collection.OtherValue, copy.OtherValue);
+        }
+
+        [Test]
+        public void ShouldSerializeCustomGenericList()
+        {
+            var list = new CustomGenericListClass<int>(Enumerable.Range(1, 10), "non-element value");
+
+            var copy = SerializerClone(list);
+
+            CollectionAssert.AreEquivalent(list, copy);
+            Assert.AreEqual(list.OtherValue, copy.OtherValue);
+        }
+
+        [Test]
+        public void ShouldSerializeCustomGenericEnumerable()
+        {
+            var enumerable = new CustomGenericEnumerableClass<int>(Enumerable.Range(1, 10), "non-element value");
+
+            var copy = SerializerClone(enumerable);
+
+            CollectionAssert.AreEquivalent(enumerable, copy);
+            Assert.AreEqual(enumerable.OtherValue, copy.OtherValue);
+        }
+
+        [Test]
+        public void ShouldSerializeCustomSerializableEnumerableClass()
+        {
+            var enumerable = new CustomSerializableEnumerableClass(Enumerable.Range(1, 10));
+
+            var copy = SerializerClone(enumerable);
+
+            CollectionAssert.AreEquivalent(enumerable, copy);
+            Assert.True(enumerable.DeserializedUsingSerializationConstructor, "Custom class was not deserialized using it's serialization constructor");
+            Assert.AreNotEqual(enumerable.NonSerializedValue, copy.NonSerializedValue);
+        }
+
+        [Test]
+        public void ShouldMaintainReferenceIntegrityWhenSerializingCustomSerializableType()
+        {
+            var box1 = new Box() { Element = 1 };
+            var box2 = box1;
+            var box3 = new Box() { Element = 3 };
+
+            var enumerable = new CustomSerializableEnumerableClass(new [] { box1, box2, box3});
+
+            var copy = SerializerClone(enumerable);
+
+            var copiedElements = copy.Cast<object>().ToArray();
+            Assert.AreSame(copiedElements[0], copiedElements[1]);
+            Assert.AreNotSame(copiedElements[0], copiedElements[2]);
+        }
 
 		[Test]
 		public void ShouldSerializeSimpleEnum()
@@ -1285,6 +1399,343 @@ namespace AntMicro.Migrant.Tests
 
 			#endregion
 		}
+
+	    public class EnumerableWithoutDefaultConstructor : IEnumerable
+	    {
+            private readonly object[] _array;
+
+            public EnumerableWithoutDefaultConstructor(IEnumerable source)
+            {
+                _array = source.Cast<object>().ToArray();
+            }
+
+            public IEnumerator GetEnumerator()
+            {
+                return _array.GetEnumerator();
+            }
+        }
+
+        public class GenericEnumerableWithoutDefaultConstructor<T> : IEnumerable<T>
+        {
+            private readonly T[] _array;
+
+            public GenericEnumerableWithoutDefaultConstructor(IEnumerable<T> source)
+            {
+                _array = source.ToArray();
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return ((IEnumerable<T>)_array).GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
+
+        [Serializable]
+        public class SerializableGenericCollectionWithoutDefaultConstructor<T> : ICollection<T>
+        {
+            private readonly List<T> _list;
+
+            public SerializableGenericCollectionWithoutDefaultConstructor(IEnumerable<T> source)
+            {
+                _list = source.ToList();
+            }
+
+
+
+            public void Add(T item)
+            {
+                _list.Add(item);
+            }
+
+            public void Clear()
+            {
+                _list.Clear();
+            }
+
+            public bool Contains(T item)
+            {
+                return _list.Contains(item);
+            }
+
+            public void CopyTo(T[] array, int arrayIndex)
+            {
+                _list.CopyTo(array, arrayIndex);
+            }
+
+            int ICollection<T>.Count
+            {
+                get { return _list.Count; }
+            }
+
+            public bool IsReadOnly
+            {
+                get { return IsReadOnly; }
+            }
+
+            public bool Remove(T item)
+            {
+                return _list.Remove(item);
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return _list.GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
+
+        [Serializable]
+        public class SerializableCollectionWithoutDefaultConstructor : ICollection
+        {
+            private readonly object[] _array;
+
+            public SerializableCollectionWithoutDefaultConstructor(IEnumerable source)
+            {
+                _array = source.Cast<object>().ToArray();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                _array.CopyTo(array, index);
+            }
+
+            int ICollection.Count
+            {
+                get { return _array.Length; }
+            }
+
+            public bool IsSynchronized
+            {
+                get { return true; }
+            }
+
+            public object SyncRoot
+            {
+                get { return null; }
+            }
+
+            public IEnumerator GetEnumerator()
+            {
+                return _array.GetEnumerator();
+            }
+        }
+
+        [Serializable]
+        public class CustomCollectionClass<T> : ICollection
+        {
+            private readonly ICollection _innerCollection;
+
+            public object OtherValue { get; set; }
+
+            public CustomCollectionClass()
+            {
+                _innerCollection = new List<T>();
+            }
+
+            public CustomCollectionClass(IEnumerable<T> source, object otherValue)
+            {
+                OtherValue = otherValue;
+                _innerCollection = source.ToList();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                _innerCollection.CopyTo(array, index);
+            }
+
+            int ICollection.Count
+            {
+                get { return _innerCollection.Count; }
+            }
+
+            public bool IsSynchronized
+            {
+                get { return true; }
+            }
+
+            public object SyncRoot
+            {
+                get { return null; }
+            }
+
+            public IEnumerator GetEnumerator()
+            {
+                return _innerCollection.GetEnumerator();
+            }
+        }
+
+        [Serializable]
+        public class CustomGenericListClass<T> : IList<T>
+        {
+            private readonly IList<T> _innerCollection;
+
+            public object OtherValue { get; set; }
+
+            public CustomGenericListClass()
+            {
+                _innerCollection = new List<T>();
+            }
+
+            public CustomGenericListClass(IEnumerable<T> source, object otherValue)
+            {
+                OtherValue = otherValue;
+                _innerCollection = source.ToList();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public int IndexOf(T item)
+            {
+                return _innerCollection.IndexOf(item);
+            }
+
+            public void Insert(int index, T item)
+            {
+                _innerCollection.Insert(index, item);
+            }
+
+            public void RemoveAt(int index)
+            {
+                _innerCollection.RemoveAt(index);
+            }
+
+            public T this[int index]
+            {
+                get
+                {
+                    return _innerCollection[index];
+                }
+                set
+                {
+                    _innerCollection[index] = value;
+                }
+            }
+
+            public void Add(T item)
+            {
+                _innerCollection.Add(item);
+            }
+
+            public void Clear()
+            {
+                _innerCollection.Clear();
+            }
+
+            public bool Contains(T item)
+            {
+                return _innerCollection.Contains(item);
+            }
+
+            public void CopyTo(T[] array, int arrayIndex)
+            {
+                _innerCollection.CopyTo(array, arrayIndex);
+            }
+
+            int ICollection<T>.Count
+            {
+                get { return _innerCollection.Count; }
+            }
+
+            public bool IsReadOnly
+            {
+                get { return _innerCollection.IsReadOnly; }
+            }
+
+            public bool Remove(T item)
+            {
+                return _innerCollection.Remove(item);
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return _innerCollection.GetEnumerator();
+            }
+        }
+
+        [Serializable]
+        public class CustomGenericEnumerableClass<T> : IEnumerable<T>
+        {
+            private readonly IList<T> _innerCollection;
+
+            public object OtherValue { get; set; }
+
+            public CustomGenericEnumerableClass()
+            {
+                _innerCollection = new List<T>();
+            }
+
+            public CustomGenericEnumerableClass(IEnumerable<T> source, object otherValue)
+            {
+                OtherValue = otherValue;
+                _innerCollection = source.ToList();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                return _innerCollection.GetEnumerator();
+            }
+        }
+
+        //[Serializable]
+	    public class CustomSerializableEnumerableClass : ISerializable, IEnumerable
+	    {
+	        private object[] _array;
+            //[field:NonSerialized]
+            private int _nonSerializedField;
+
+            public int NonSerializedValue { get { return _nonSerializedField; } }
+
+            public bool DeserializedUsingSerializationConstructor { get; private set; }
+
+	        public CustomSerializableEnumerableClass(IEnumerable source)
+            {
+                var sourceArray = source.Cast<object>().Take(3).ToArray();
+
+                _array = new object[3];
+                sourceArray.CopyTo(_array, 0);
+
+                _nonSerializedField = 12345;
+            }
+
+            private CustomSerializableEnumerableClass(SerializationInfo info, StreamingContext context)
+            {
+                _array = new object[3];
+                _array[0] = info.GetValue("element1", typeof(object));
+                _array[1] = info.GetValue("element2", typeof(object));
+                _array[3] = info.GetValue("element3", typeof(object));
+
+                DeserializedUsingSerializationConstructor = true;
+            }
+
+            public void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("element1", _array[0]);
+                info.AddValue("element2", _array[1]);
+                info.AddValue("element3", _array[2]);
+            }
+
+            public IEnumerator GetEnumerator()
+            {
+                return _array.GetEnumerator();
+            }
+        }
 	}
 
 	public static class CompanionExtensions
