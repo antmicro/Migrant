@@ -32,6 +32,7 @@ using System.Linq;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Collections.ObjectModel;
+using AntMicro.Migrant.Utilities;
 
 namespace AntMicro.Migrant
 {
@@ -221,10 +222,10 @@ namespace AntMicro.Migrant
 			return SerializationType.Reference;
 		}
 
-		internal static void SwapObjectWithSurrogate(ref object o, IDictionary<Type, Delegate> swapDictionary)
+        internal static void SwapObjectWithSurrogate(ref object o, InheritanceAwareList<Delegate> swapList)
 		{
 			var type = o.GetType();
-			foreach(var swapCandidate in swapDictionary)
+			foreach(var swapCandidate in swapList)
 			{
 				if(swapCandidate.Key.IsAssignableFrom(type))
 				{

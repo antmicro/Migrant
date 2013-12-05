@@ -71,12 +71,12 @@ namespace AntMicro.Migrant
 		/// <param name="versionToleranceLevel"> 
 		/// Describes the tolerance level of this reader when handling discrepancies in type description (new or missing fields, etc.).
 		/// </param> 
-		public ObjectReader(Stream stream, IDictionary<Type, Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
+        public ObjectReader(Stream stream, InheritanceAwareList<Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
 		                    IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, VersionToleranceLevel versionToleranceLevel = 0)
 		{
 			if(objectsForSurrogates == null)
 			{
-				objectsForSurrogates = new Dictionary<Type, Delegate>();
+                objectsForSurrogates = new InheritanceAwareList<Delegate>();
 			}
 			this.objectsForSurrogates = objectsForSurrogates;
 			this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
@@ -602,7 +602,7 @@ namespace AntMicro.Migrant
 		private readonly Stream stream;
 		internal readonly Action<object> postDeserializationCallback;
 		internal readonly List<Action> postDeserializationHooks;
-		internal readonly IDictionary<Type, Delegate> objectsForSurrogates;
+        internal readonly InheritanceAwareList<Delegate> objectsForSurrogates;
 		private const int InitialCapacity = 128;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
 		private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";

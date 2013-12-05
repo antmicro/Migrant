@@ -37,6 +37,7 @@ using System.Reflection.Emit;
 using System.Threading;
 using System.Diagnostics;
 using AntMicro.Migrant.VersionTolerance;
+using AntMicro.Migrant.Utilities;
 
 namespace AntMicro.Migrant
 {
@@ -70,11 +71,11 @@ namespace AntMicro.Migrant
 		/// </param>
 		public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null, 
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
-		                    IDictionary<Type, Delegate> surrogatesForObjects = null, bool isGenerating = true)
+                            InheritanceAwareList<Delegate> surrogatesForObjects = null, bool isGenerating = true)
 		{
 			if(surrogatesForObjects == null)
 			{
-				surrogatesForObjects = new Dictionary<Type, Delegate>();
+                surrogatesForObjects = new InheritanceAwareList<Delegate>();
 			}
 			currentlyWrittenTypes = new Stack<Type>();
 			transientTypeCache = new Dictionary<Type, bool>();
@@ -620,7 +621,7 @@ namespace AntMicro.Migrant
 		private readonly Dictionary<MethodInfo, int> methodIndices;
 		private readonly Dictionary<Type, bool> transientTypeCache;
 		private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
-		private readonly IDictionary<Type, Delegate> surrogatesForObjects;
+        private readonly InheritanceAwareList<Delegate> surrogatesForObjects;
 		private readonly List<Action<PrimitiveWriter, object>> writeMethods;
 		private readonly Stack<Type> currentlyWrittenTypes;
 	}

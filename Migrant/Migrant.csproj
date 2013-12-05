@@ -66,6 +66,7 @@
     <Compile Include="Generators\GeneratorHelper.cs" />
     <Compile Include="Customization\VersionToleranceLevel.cs" />
     <Compile Include="CollectionMetaToken.cs" />
+    <Compile Include="Utilities\InheritanceAwareList.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
