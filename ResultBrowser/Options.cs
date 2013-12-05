@@ -25,13 +25,33 @@
 */
 using System;
 using CommandLine;
+using CommandLine.Text;
+using System.Collections.Generic;
 
 namespace AntMicro.Migrant.ResultBrowser
 {
-	internal class Options
-	{
-		[Option("c", "contains", HelpText = "Filter tests containg given string.")]
-		public string Contains { get; set; }
-	}
+    internal class Options : CommandLineOptionsBase
+    {
+        [Option("c", "contains", HelpText = "Filter tests containg given string.")]
+        public string Contains { get; set; }
+
+        [Option("f", "fileName", HelpText = "Tests database.", Required = true)]
+        public string FileName { get; set; }
+
+        [HelpOption]
+        public string GetUsage()
+        {
+            var help = new HelpText 
+            {
+                Heading = new HeadingInfo("ResultBrowser"),
+                Copyright = new CopyrightInfo("Antmicro Ltd", 2013),
+                AdditionalNewLineAfterOption = true,
+                AddDashesToOption = true
+            };
+            help.AddPreOptionsLine("Usage: ResultBrowser [-c string] -f fileName");
+            help.AddOptions(this);
+            return help;
+        }
+    }
 }
 
