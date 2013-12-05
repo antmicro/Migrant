@@ -177,6 +177,19 @@ namespace AntMicro.Migrant.Tests
 			Assert.IsNotNull(b);
 		}
 
+        [Test]
+        public void ShouldUseMoreSpecificSurrogateIfPossible()
+        {
+            var mock = new SurrogateMockD();
+            var pseudocopy = PseudoClone(mock, serializer =>
+            {
+                serializer.ForObject<SurrogateMockC>().SetSurrogate(x => new SurrogateMockA(1));
+                serializer.ForObject<SurrogateMockD>().SetSurrogate(x => new SurrogateMockB());
+            });
+            var b = pseudocopy as SurrogateMockB;
+            Assert.IsNotNull(b);
+        }
+
 		[Test]
 		public void ShouldThrowWhenSettingSurrogatesAfterSerialization()
 		{
