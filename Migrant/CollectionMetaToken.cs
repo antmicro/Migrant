@@ -58,9 +58,10 @@ namespace AntMicro.Migrant
             FormalKeyType = typeof(object);
             FormalValueType = typeof(object);
 
-            var ifaces = actualType.GetInterfaces().ToList();
+            var ifaces = actualType.GetInterfaces();
             foreach (var prior in CollectionPriorities)
             {
+                // there is really no access to modified closure as NRefactory suggests
                 var iface = ifaces.FirstOrDefault(x => (x.IsGenericType ? x.GetGenericTypeDefinition() : x) == prior.Item1);
                 if (iface != null)
                 {
