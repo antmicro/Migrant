@@ -55,10 +55,11 @@ namespace AntMicro.Migrant.Tests
 		[SetUp]
 		public void SetUp()
 		{
-			domain1 = AppDomain.CreateDomain("domain1");
-			domain2 = AppDomain.CreateDomain("domain2");
-			testsOnDomain1 = (VersionToleranceTests)domain1.CreateInstanceAndUnwrap(typeof(VersionToleranceTests).Assembly.FullName, typeof(VersionToleranceTests).FullName);
-			testsOnDomain2 = (VersionToleranceTests)domain2.CreateInstanceAndUnwrap(typeof(VersionToleranceTests).Assembly.FullName, typeof(VersionToleranceTests).FullName);
+            domain1 = AppDomain.CreateDomain("domain1", null, Environment.CurrentDirectory, string.Empty, true);
+            domain2 = AppDomain.CreateDomain("domain2", null, Environment.CurrentDirectory, string.Empty, true);
+
+            testsOnDomain1 = (VersionToleranceTests)domain1.CreateInstanceAndUnwrap(typeof(VersionToleranceTests).Assembly.FullName, typeof(VersionToleranceTests).FullName);
+            testsOnDomain2 = (VersionToleranceTests)domain2.CreateInstanceAndUnwrap(typeof(VersionToleranceTests).Assembly.FullName, typeof(VersionToleranceTests).FullName);
 		}
 
 		[TearDown]
