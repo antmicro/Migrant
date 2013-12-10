@@ -857,6 +857,22 @@ namespace AntMicro.Migrant.Tests
 			Assert.IsTrue(exception.Message.Contains(toClone.Element.WithIntPtr.GetType().Name));
 		}
 
+        [Test]
+        public void GithubIssue60()
+        {
+            object instance = new Issue60OuterClass()
+            {
+                Field1 = 0,
+                Inner = new Issue60InnerClass()
+                {
+                    Field2 = 1,
+                    Field3 = 2,
+                }
+            };
+
+            var copy = SerializerClone(instance);
+        }
+
 		public class SimpleClass
 		{
 			public int Value { get; set; }
@@ -1195,6 +1211,19 @@ namespace AntMicro.Migrant.Tests
 
 			private int a;
 		}
+
+        public class Issue60OuterClass
+        {
+            public decimal Field1;
+
+            public Issue60InnerClass Inner { get; set; }
+        }
+
+        public class Issue60InnerClass
+        {
+            public decimal? Field2;
+            public decimal? Field3;
+        }
 
 		public class ClassWithGuid
 		{
