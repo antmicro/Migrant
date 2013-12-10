@@ -31,6 +31,7 @@ using System.IO;
 using AntMicro.Migrant.Customization;
 using System.Reflection.Emit;
 using AntMicro.Migrant.Utilities;
+using Migrant.BultinSurrogates;
 
 namespace AntMicro.Migrant
 {
@@ -61,6 +62,8 @@ namespace AntMicro.Migrant
             objectsForSurrogates = new InheritanceAwareList<Delegate>();
             surrogatesForObjects = new InheritanceAwareList<Delegate>();
 			readMethodCache = new Dictionary<Type, DynamicMethod>();
+            ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
+            ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
 		}
 
 		/// <summary>
