@@ -48,7 +48,7 @@ namespace AntMicro.Migrant.Tests
         {
             var regex = new Regex("[0-9]");
             var copy = SerializerClone(regex);
-            Assert.AreEqual(regex, copy);
+            Assert.AreEqual(regex.ToString(), copy.ToString());
         }
 
         [Test]
