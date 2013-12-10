@@ -1,6 +1,8 @@
 ﻿// *******************************************************************
 //
-//  Copyright (c) 2012-2013, Antmicro Ltd
+//  Copyright (c) 2013, Antmicro Ltd
+//  Author:
+//    Konrad Kruczyński (kkruczynski@antmicro.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
