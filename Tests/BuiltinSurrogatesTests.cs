@@ -60,6 +60,7 @@ namespace AntMicro.Migrant.Tests
             Assert.AreEqual(customSerializable, copy);
         }
 
+        [Serializable]
         public sealed class CustomISerializable : ISerializable
         {
             public CustomISerializable(long value)
