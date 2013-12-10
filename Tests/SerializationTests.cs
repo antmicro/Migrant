@@ -870,7 +870,7 @@ namespace AntMicro.Migrant.Tests
                 }
             };
 
-            var copy = SerializerClone(instance);
+            SerializerClone(instance);
         }
 
 		public class SimpleClass
