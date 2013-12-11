@@ -27,6 +27,11 @@
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using System;
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Migrant.BultinSurrogates
 {
@@ -34,20 +39,51 @@ namespace Migrant.BultinSurrogates
     {
         public SurrogateForISerializable(ISerializable serializable)
         {
-            var binaryFormatter = new BinaryFormatter();
-            var memoryStream = new MemoryStream();
-            binaryFormatter.Serialize(memoryStream, serializable);
-            blob = memoryStream.ToArray();
+            var serializationInfo = new SerializationInfo(serializable.GetType(), new FormatterConverter());
+            var streamingContext = new StreamingContext(StreamingContextStates.Clone);
+            serializable.GetObjectData(serializationInfo, streamingContext);
+            keys = new string[serializationInfo.MemberCount];
+            values = new object[serializationInfo.MemberCount];
+            var i = 0;
+            foreach(var entry in serializationInfo)
+            {
+                keys[i] = entry.Name;
+                values[i] = entry.Value;
+                i++;
+            }
+            assemblyQualifiedName = serializable.GetType().AssemblyQualifiedName;
         }
 
         public object Restore()
         {
-            var binaryFormatter = new BinaryFormatter();
-            var memoryStream = new MemoryStream(blob);
-            return binaryFormatter.Deserialize(memoryStream);
+            var type = Type.GetType(assemblyQualifiedName);
+
+            var ctor = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new [] {
+                typeof(SerializationInfo),
+                typeof(StreamingContext)
+            }, null);
+
+            var serializationInfo = new SerializationInfo(type, new FormatterConverter());
+            serializationInfo.SetType(type);
+            for(var i = 0; i < keys.Length; i++)
+            {
+                serializationInfo.AddValue(keys[i], values[i]);
+            }
+            var streamingContext = new StreamingContext(StreamingContextStates.Clone);
+            var result = ctor.Invoke(new object[] { serializationInfo, streamingContext });
+            var onDeserialization = result as IDeserializationCallback;
+            if(onDeserialization != null)
+            {
+                onDeserialization.OnDeserialization(this);
+            }
+
+            return result;
         }
 
-        private readonly byte[] blob;
+        private readonly string[] keys;
+        private readonly object[] values;
+        private readonly string assemblyQualifiedName;
     }
 }
+
 
