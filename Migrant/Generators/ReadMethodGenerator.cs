@@ -596,7 +596,7 @@ namespace Migrant.Generators
 			{
 				// here we have struct
 				generator.Emit(OpCodes.Ldarg_0);
-				generator.Emit(OpCodes.Ldtoken, formalType);
+                generator.Emit(OpCodes.Ldtoken, nullableActualType ?? formalType);
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, Type>((reader, type) => reader.ReadStamp(type)));
 				var structLocal = generator.DeclareLocal(forcedFormalType);
