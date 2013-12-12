@@ -835,6 +835,7 @@ namespace Migrant.Generators
 		}
 
 		private ILGenerator generator;
+        private readonly bool treatCollectionAsUserObject;
 		private readonly DynamicMethod dynamicMethod;
 		private readonly TypeStampReader stampReader;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";
