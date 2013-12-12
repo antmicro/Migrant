@@ -41,8 +41,9 @@ namespace Migrant.Generators
 {
 	internal sealed class ReadMethodGenerator
 	{
-		public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader)
+        public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader, bool treatCollectionAsUserObject)
 		{
+            this.treatCollectionAsUserObject = treatCollectionAsUserObject;
 			this.stampReader = stampReader;
 			if (typeToGenerate.IsArray)
 			{
@@ -154,7 +155,7 @@ namespace Migrant.Generators
 
 			GenerateTouchObject(formalType);
 			
-			switch(ObjectReader.GetCreationWay(formalType))
+            switch(ObjectReader.GetCreationWay(formalType, treatCollectionAsUserObject))
 			{
 			case ObjectReader.CreationWay.Null:
 				GenerateReadNotPrecreated(formalType, objectIdLocal);
@@ -781,7 +782,7 @@ namespace Migrant.Generators
 			PushTypeOntoStack(formalType);
 			generator.Emit(OpCodes.Stloc, objectTypeLocal);
 
-			switch(ObjectReader.GetCreationWay(formalType))
+            switch(ObjectReader.GetCreationWay(formalType, treatCollectionAsUserObject))
 			{
 			case ObjectReader.CreationWay.Null:
 				break;

@@ -43,10 +43,10 @@ namespace AntMicro.Migrant
 			return type.IsDefined(typeof(TransientAttribute), true);
 		}
 
-		public static bool CanBeCreatedWithDataOnly(Type actualType)
+        public static bool CanBeCreatedWithDataOnly(Type actualType, bool treatCollectionAsUserObject = false)
 		{
 			return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType)
-				|| (actualType.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(actualType.GetGenericTypeDefinition()));
+                || (!treatCollectionAsUserObject && (actualType.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(actualType.GetGenericTypeDefinition())));
 		}
 
 		private static int GetBoundary(long currentPosition)

@@ -4,6 +4,7 @@
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -53,6 +54,11 @@ namespace AntMicro.Migrant.Customization
 		/// </summary>
 		public VersionToleranceLevel VersionTolerance { get; private set; }
 
+        /// <summary>
+        /// Gets the value of flag specifing if collection objects are to be deserialized without optimization (treated as normal user objects).
+        /// </summary>
+        public bool TreatCollectionAsUserObject { get; private set; }
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Customization.Settings"/> class.
 		/// </summary>
@@ -66,11 +72,15 @@ namespace AntMicro.Migrant.Customization
 		/// Specifies the possible level of difference between class layout when it was serialized and in the
 		/// moment of deserialization.
 		/// </param>
-		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0)
+        /// <param name = "treatCollectionAsUserObject">
+        /// Specifies if collection objects are to be deserialized without optimization (treated as normal user objects).
+        /// </param>
+        public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0, bool treatCollectionAsUserObject = false)
 		{
 			SerializationMethod = serializationMethod;
 			DeserializationMethod = deserializationMethod;
 			VersionTolerance = versionTolerance;
+            TreatCollectionAsUserObject = treatCollectionAsUserObject;
 		}
 	}
 }
