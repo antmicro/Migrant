@@ -873,6 +873,16 @@ namespace AntMicro.Migrant.Tests
             SerializerClone(instance);
         }
 
+        [Test]
+        public void ShouldSerializeKeyValuePair()
+        {
+            var src = new KeyValuePair<int, int>(12, 34);
+            var dst = SerializerClone(src);
+
+            Assert.AreEqual(src.Key, dst.Key);
+            Assert.AreEqual(src.Value, dst.Value);
+        }
+
 		public class SimpleClass
 		{
 			public int Value { get; set; }
