@@ -40,9 +40,9 @@ namespace AntMicro.Migrant.VersionTolerance
 			stampCache = new Dictionary<Type, List<FieldInfoOrEntryToOmit>>();
 		}
 
-		public void ReadStamp(Type type)
+        public void ReadStamp(Type type, bool treatCollectionAsUserObject)
 		{
-			if(!StampHelpers.IsStampNeeded(type))
+            if(!StampHelpers.IsStampNeeded(type, treatCollectionAsUserObject))
 			{
 				return;
 			}

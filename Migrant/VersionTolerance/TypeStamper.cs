@@ -32,15 +32,16 @@ namespace AntMicro.Migrant.VersionTolerance
 {
 	internal sealed class TypeStamper
 	{
-		public TypeStamper(PrimitiveWriter writer)
+        public TypeStamper(PrimitiveWriter writer, bool treatCollectionAsUserObject)
 		{
 			this.writer = writer;
+            this.treatCollectionAsUserObject = treatCollectionAsUserObject;
 			alreadyWritten = new HashSet<Type>();
 		}
 
 		public void Stamp(Type type)
 		{
-			if(!StampHelpers.IsStampNeeded(type))
+            if(!StampHelpers.IsStampNeeded(type, treatCollectionAsUserObject))
 			{
 				return;
 			}
@@ -61,6 +62,7 @@ namespace AntMicro.Migrant.VersionTolerance
 			}
 		}
 
+        private readonly bool treatCollectionAsUserObject;
 		private readonly PrimitiveWriter writer;
 		private readonly HashSet<Type> alreadyWritten;
 	}

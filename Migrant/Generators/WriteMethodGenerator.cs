@@ -39,7 +39,7 @@ namespace AntMicro.Migrant.Generators
 {
     internal class WriteMethodGenerator
     {
-        internal WriteMethodGenerator(Type typeToGenerate)
+        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject)
         {
             typeWeAreGeneratingFor = typeToGenerate;
             ObjectWriter.CheckLegality(typeToGenerate);
@@ -65,7 +65,7 @@ namespace AntMicro.Migrant.Generators
                 generator.BeginExceptionBlock();
             }
 
-            if(!GenerateSpecialWrite(typeToGenerate))
+            if(!GenerateSpecialWrite(typeToGenerate, treatCollectionAsUserObject))
             {
                 GenerateWriteFields(gen =>
                 {
@@ -161,7 +161,7 @@ namespace AntMicro.Migrant.Generators
             }
         }
 
-        private bool GenerateSpecialWrite(Type actualType)
+        private bool GenerateSpecialWrite(Type actualType, bool treatCollectionAsUserObject)
         {
             if(actualType.IsValueType)
             {
@@ -187,11 +187,14 @@ namespace AntMicro.Migrant.Generators
                 });
                 return true;
             }
-            var collectionToken = new CollectionMetaToken(actualType);
-            if(collectionToken.IsCollection)
+            if (!treatCollectionAsUserObject)
             {
-                GenerateWriteCollection(collectionToken);
-                return true;
+                var collectionToken = new CollectionMetaToken(actualType);
+                if(collectionToken.IsCollection)
+                {
+                    GenerateWriteCollection(collectionToken);
+                    return true;
+                }
             }
             return false;
         }
@@ -522,6 +525,12 @@ namespace AntMicro.Migrant.Generators
                 generator.MarkLabel(finish);
                 return;
             }
+
+            generator.Emit(OpCodes.Ldarg_0); // objectWriter
+            generator.Emit(OpCodes.Ldtoken, formalType);
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.Stamp(type)));
+
             if(formalType.IsGenericType && formalType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
             {
                 var keyValueTypes = formalType.GetGenericArguments();
@@ -548,13 +557,11 @@ namespace AntMicro.Migrant.Generators
                     gen.Emit(OpCodes.Ldloca_S, localIndex);
                     gen.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
                 }, keyValueTypes[1]);
-                return;
+            } 
+            else 
+            {
+                GenerateWriteFields(putValueToWriteOnTop, formalType);
             }
-            generator.Emit(OpCodes.Ldarg_0); // objectWriter
-            generator.Emit(OpCodes.Ldtoken, formalType);
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.Stamp(type)));
-            GenerateWriteFields(putValueToWriteOnTop, formalType);
         }
 
         private void GenerateWriteReference(Action<ILGenerator> putValueToWriteOnTop, Type formalType)

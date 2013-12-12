@@ -32,9 +32,9 @@ namespace AntMicro.Migrant.VersionTolerance
 {
 	internal static class StampHelpers
 	{
-		public static bool IsStampNeeded(Type type)
+        public static bool IsStampNeeded(Type type, bool treatCollectionAsUserObject)
 		{
-            return !Helpers.IsWriteableByPrimitiveWriter(type) || !new CollectionMetaToken(type).IsCollection;
+            return !Helpers.IsWriteableByPrimitiveWriter(type) && (!new CollectionMetaToken(type).IsCollection || treatCollectionAsUserObject);
 		}
 
 		public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)
