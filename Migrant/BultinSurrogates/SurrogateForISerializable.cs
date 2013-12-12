@@ -30,7 +30,7 @@ using System.Reflection;
 
 namespace Migrant.BultinSurrogates
 {
-    public sealed class SurrogateForISerializable
+    internal sealed class SurrogateForISerializable
     {
         public SurrogateForISerializable(ISerializable serializable)
         {
