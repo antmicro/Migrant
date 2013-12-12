@@ -64,6 +64,7 @@ namespace AntMicro.Migrant
 			readMethodCache = new Dictionary<Type, DynamicMethod>();
             ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
             ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
+            ForObject<Delegate>().SetSurrogate(x => x);
 		}
 
 		/// <summary>
