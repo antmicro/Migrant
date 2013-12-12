@@ -25,13 +25,8 @@
 //
 // *******************************************************************
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
 using System;
 using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Migrant.BultinSurrogates
 {
