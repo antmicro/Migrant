@@ -36,14 +36,19 @@ using System.Collections.ObjectModel;
 
 namespace AntMicro.Migrant.Tests
 {
-	[TestFixture(false, false)]
-	[TestFixture(true, false)]
-	[TestFixture(false, true)]
-	[TestFixture(true, true)]
+    [TestFixture(false, false, false)]
+    [TestFixture(true, false, false)]
+    [TestFixture(false, true, false)]
+    [TestFixture(true, true, false)]
+    [TestFixture(false, false, true)]
+    [TestFixture(true, false, true)]
+    [TestFixture(false, true, true)]
+    [TestFixture(true, true, true)]
 	public class SerializationTests : BaseTestWithSettings
 	{
 
-		public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer) : base(useGeneratedSerializer, useGeneratedDeserializer)
+        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool supportForISerializable)
+            : base(useGeneratedSerializer, useGeneratedDeserializer, supportForISerializable)
 		{
 		}
 
