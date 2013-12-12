@@ -62,9 +62,13 @@ namespace AntMicro.Migrant
             objectsForSurrogates = new InheritanceAwareList<Delegate>();
             surrogatesForObjects = new InheritanceAwareList<Delegate>();
 			readMethodCache = new Dictionary<Type, DynamicMethod>();
-            ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
-            ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
-            ForObject<Delegate>().SetSurrogate(x => x);
+
+            if(settings.SupportForISerializable)
+            {
+                ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
+                ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
+                ForObject<Delegate>().SetSurrogate(x => x);
+            }
 		}
 
 		/// <summary>

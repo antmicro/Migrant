@@ -53,6 +53,12 @@ namespace AntMicro.Migrant.Customization
 		/// </summary>
 		public VersionToleranceLevel VersionTolerance { get; private set; }
 
+        /// <summary>
+        /// Specifies whether Migrant should use GetObjectData approach for serialization.
+        /// </summary>
+        /// <value><c>true</c> if support for ISerializable is active; otherwise, <c>false</c>.</value>
+        public bool SupportForISerializable { get; private set; }
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Customization.Settings"/> class.
 		/// </summary>
@@ -66,11 +72,16 @@ namespace AntMicro.Migrant.Customization
 		/// Specifies the possible level of difference between class layout when it was serialized and in the
 		/// moment of deserialization.
 		/// </param>
-		public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0)
+        /// <param name = "supportForISerializable">
+        /// Specifies whether Migrant should use GetObjectData approach for serialization.
+        /// </param>
+        public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
+            bool supportForISerializable = false)
 		{
 			SerializationMethod = serializationMethod;
 			DeserializationMethod = deserializationMethod;
 			VersionTolerance = versionTolerance;
+            SupportForISerializable = supportForISerializable;
 		}
 	}
 }
