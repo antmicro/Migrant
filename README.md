@@ -96,6 +96,30 @@ What if some changes are made to the layout of the class between serialization a
 - ``FieldRemoval`` - new version of the type can contain less fields than it contained during serialization.
 - ``FieldAdditionAndRemoval`` - combination of these two above.
 
+### Collections handling
+
+By default Migrant tries to handle standard collection types serialization in a special
+way. Instead of writing to the stream all of private meta fields describing collection
+object, only items are serialized - in a simillar way to arrays. During
+deserialization collection is recreated by calling proper adders methods.
+
+Using this approach limits stream size and allows to easily migrate between versions 
+of .NET framework, as internal collection implementation may differ between them.
+
+Described mechanisms works for the following collections:
+
+- ``List<>``
+- ``ReadOnlyCollection<>``
+- ``Dictionary<,>``
+- ``HashSet<>``
+- ``Queue<>``
+- ``Stack<>``
+- ``BlockingCollection<>``
+- ``Hashtable``
+
+There is, however, an option to disable this feature and treat collections as
+normal user objects. To do this a flag ``treatCollectionAsUserObject`` in the ``Settings`` object must be set to ``true``.
+
 ## Features
 
 Migrant is designed to be easy to use. For most cases, the scenario consists of calling one method to serialize, and another to deserialize a whole set of interconnected objects. It's not necessary to provide any information about serialized types, only the root object to save. All of the other objects referenced by the root are serialized automatically. It works out of the box for value and reference types, complex collections etc. While serialization of certain objects (e.g. pointers) is meaningless and may lead to hard-to-trace problems, Migrant will gracefully fail to serialize such objects, providing the programmer with full information on what caused the problem and where is it located.
