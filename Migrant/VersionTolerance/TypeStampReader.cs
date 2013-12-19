@@ -27,9 +27,9 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
-using AntMicro.Migrant.Customization;
+using Antmicro.Migrant.Customization;
 
-namespace AntMicro.Migrant.VersionTolerance
+namespace Antmicro.Migrant.VersionTolerance
 {
 	internal sealed class TypeStampReader
 	{

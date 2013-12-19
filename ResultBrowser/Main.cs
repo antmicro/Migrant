@@ -26,11 +26,11 @@
 using System;
 using System.Linq;
 using CommandLine;
-using AntMicro.Migrant.PerformanceTests;
+using Antmicro.Migrant.PerformanceTests;
 using System.Collections.Generic;
 using System.IO;
 
-namespace AntMicro.Migrant.ResultBrowser
+namespace Antmicro.Migrant.ResultBrowser
 {
     public class MainClass
     {

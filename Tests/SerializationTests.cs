@@ -34,7 +34,7 @@ using System.Linq;
 using System.IO;
 using System.Collections.ObjectModel;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	[TestFixture(false, false)]
 	[TestFixture(true, false)]

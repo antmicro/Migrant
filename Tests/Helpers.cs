@@ -29,7 +29,7 @@ using System.Text;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	public static class Helpers
 	{

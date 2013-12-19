@@ -28,7 +28,7 @@ using CommandLine;
 using CommandLine.Text;
 using System.Collections.Generic;
 
-namespace AntMicro.Migrant.ResultBrowser
+namespace Antmicro.Migrant.ResultBrowser
 {
     internal class Options : CommandLineOptionsBase
     {

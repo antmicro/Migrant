@@ -28,7 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AntMicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTests
 {
 	public static class Helpers
 	{

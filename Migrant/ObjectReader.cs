@@ -32,23 +32,23 @@ using System.Reflection;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
-using AntMicro.Migrant.Hooks;
-using AntMicro.Migrant.Utilities;
+using Antmicro.Migrant.Hooks;
+using Antmicro.Migrant.Utilities;
 using System.Collections.ObjectModel;
 using System.Reflection.Emit;
-using Migrant.Generators;
-using AntMicro.Migrant.VersionTolerance;
-using AntMicro.Migrant.Customization;
+using Antmicro.Migrant.Generators;
+using Antmicro.Migrant.VersionTolerance;
+using Antmicro.Migrant.Customization;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	/// <summary>
-	/// Reads the object previously written by <see cref="AntMicro.Migrant.ObjectWriter" />.
+	/// Reads the object previously written by <see cref="Antmicro.Migrant.ObjectWriter" />.
 	/// </summary>
 	public class ObjectReader
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="AntMicro.Migrant.ObjectReader" /> class.
+		/// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectReader" /> class.
 		/// </summary>
 		/// <param name='stream'>
 		/// Stream from which objects will be read.
@@ -62,7 +62,7 @@ namespace AntMicro.Migrant
 		/// object is given in the callback's only parameter.
 		/// </param>
 		/// <param name='readMethods'>
-		/// Cache in which generated read methods are stored and reused between instances of <see cref="AntMicro.Migrant.ObjectReader" />.
+		/// Cache in which generated read methods are stored and reused between instances of <see cref="Antmicro.Migrant.ObjectReader" />.
 		/// Can be null if one does not want to use the cache.
 		/// </param>
 		/// <param name='isGenerating'>
@@ -94,7 +94,7 @@ namespace AntMicro.Migrant
 		/// Reads the object with the expected formal type <typeparam name='T'/>.
 		/// </summary>
 		/// <returns>
-		/// The object, previously written by the <see cref="AntMicro.Migrant.ObjectWriter" />.
+		/// The object, previously written by the <see cref="Antmicro.Migrant.ObjectWriter" />.
 		/// </returns>
 		/// <typeparam name='T'>
 		/// The expected formal type of object, that is the type of the reference returned

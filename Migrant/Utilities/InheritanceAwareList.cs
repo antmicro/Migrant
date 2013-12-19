@@ -24,7 +24,7 @@
 // *******************************************************************
 using System;
 using System.Collections.Generic;
-namespace AntMicro.Migrant.Utilities
+namespace Antmicro.Migrant.Utilities
 {
     /// <summary>
     /// Key/value pair list in which more generic types are always inserted after their
@@ -33,7 +33,7 @@ namespace AntMicro.Migrant.Utilities
     public sealed class InheritanceAwareList<T> : IEnumerable<KeyValuePair<Type, T>>
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="AntMicro.Migrant.Utilities.InheritanceAwareList{T}"/> class.
+        /// Initializes a new instance of the <see cref="Antmicro.Migrant.Utilities.InheritanceAwareList{T}"/> class.
         /// </summary>
         public InheritanceAwareList()
         {

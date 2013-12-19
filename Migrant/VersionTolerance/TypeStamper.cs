@@ -28,7 +28,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 
-namespace AntMicro.Migrant.VersionTolerance
+namespace Antmicro.Migrant.VersionTolerance
 {
 	internal sealed class TypeStamper
 	{

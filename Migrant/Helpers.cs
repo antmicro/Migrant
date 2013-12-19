@@ -32,9 +32,9 @@ using System.Linq;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Collections.ObjectModel;
-using AntMicro.Migrant.Utilities;
+using Antmicro.Migrant.Utilities;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	internal static class Helpers
 	{

@@ -29,7 +29,7 @@ using System.Reflection;
 using System.Linq;
 using System.Collections;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	internal class CollectionMetaToken
 	{

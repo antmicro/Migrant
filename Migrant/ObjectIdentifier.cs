@@ -28,7 +28,7 @@ using System;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	//TODO: Update documentation when the first returned value changes to 1!
 	/// <summary>
@@ -44,7 +44,7 @@ namespace AntMicro.Migrant
 	public class ObjectIdentifier
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="AntMicro.Migrant.ObjectIdentifier"/> class.
+		/// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectIdentifier"/> class.
 		/// </summary>
 		public ObjectIdentifier()
 		{
@@ -78,14 +78,14 @@ namespace AntMicro.Migrant
 		}
 
 		/// <summary>
-		/// For an ID which was previously returned by the <see cref="AntMicro.Migrant.ObjectIdentifier.GetId(object)" /> method,
+		/// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object)" /> method,
 		/// returns an object for which this ID was generated.
 		/// </summary>
 		/// <returns>
 		/// The object for which given ID was returned.
 		/// </returns>
 		/// <param name='id'>
-		/// The unique ID, previously returned by the <see cref="AntMicro.Migrant.ObjectIdentifier.GetId(object)" /> method.
+		/// The unique ID, previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object)" /> method.
 		/// </param>
 		public object GetObject(int id)
 		{
@@ -97,11 +97,11 @@ namespace AntMicro.Migrant
 		}
 
 		/// <summary>
-		/// For an ID which was previously returned by the <see cref="AntMicro.Migrant.ObjectIdentifier.GetId(object)" /> method,
+		/// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object)" /> method,
 		/// returns an object for which this ID was generated.
 		/// </summary>
 		/// <param name='id'>
-		/// The unique ID, previously returned by the <see cref="AntMicro.Migrant.ObjectIdentifier.GetId(object)" /> method.
+		/// The unique ID, previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object)" /> method.
 		/// </param>
 		public object this[int id]
 		{

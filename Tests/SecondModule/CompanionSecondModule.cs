@@ -25,7 +25,7 @@
 */
 using System;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	public class CompanionSecondModule
 	{

@@ -28,7 +28,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	/// <summary>
 	/// Provides the mechanism for reading primitive values from a stream.
@@ -37,14 +37,14 @@ namespace AntMicro.Migrant
 	/// Can be used as a replacement for the <see cref="System.IO.BinaryReader" /> . Provides
 	/// more compact output and reads no more data from the stream than requested. Although
 	/// the underlying format is not specified at this point, it is guaranteed to be consistent with
-	/// <see cref="AntMicro.Migrant.PrimitiveWriter" />. Reader has to be disposed after used,
+	/// <see cref="Antmicro.Migrant.PrimitiveWriter" />. Reader has to be disposed after used,
 	/// otherwise stream position corruption can occur. Reader does not possess the stream
 	/// and does not close it after dispose.
 	/// </remarks>
 	public sealed class PrimitiveReader : IDisposable
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="AntMicro.Migrant.PrimitiveReader" /> class.
+		/// Initializes a new instance of the <see cref="Antmicro.Migrant.PrimitiveReader" /> class.
 		/// </summary>
 		/// <param name='stream'>
 		/// The underlying stream which will be used to read data. Has to be readable.
@@ -286,15 +286,15 @@ namespace AntMicro.Migrant
 		}
 
 		/// <summary>
-		/// After this call stream's position is updated to match the padding used by <see cref="AntMicro.Migrant.PrimitiveWriter"/>.
+		/// After this call stream's position is updated to match the padding used by <see cref="Antmicro.Migrant.PrimitiveWriter"/>.
 		/// It is needed to be called if one expects consecutive reads (of data written previously by consecutive writes).
 		/// </summary>
 		/// <remarks>
-		/// Call <see cref="Dispose"/> when you are finished using the <see cref="AntMicro.Migrant.PrimitiveReader"/>. The
-		/// <see cref="Dispose"/> method leaves the <see cref="AntMicro.Migrant.PrimitiveReader"/> in an unusable state. After
+		/// Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.PrimitiveReader"/>. The
+		/// <see cref="Dispose"/> method leaves the <see cref="Antmicro.Migrant.PrimitiveReader"/> in an unusable state. After
 		/// calling <see cref="Dispose"/>, you must release all references to the
-		/// <see cref="AntMicro.Migrant.PrimitiveReader"/> so the garbage collector can reclaim the memory that the
-		/// <see cref="AntMicro.Migrant.PrimitiveReader"/> was occupying.
+		/// <see cref="Antmicro.Migrant.PrimitiveReader"/> so the garbage collector can reclaim the memory that the
+		/// <see cref="Antmicro.Migrant.PrimitiveReader"/> was occupying.
 		/// </remarks>
 		public void Dispose()
 		{

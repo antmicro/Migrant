@@ -27,7 +27,7 @@
 using NUnit.Framework;
 using System.Collections.Generic;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	[TestFixture]
 	public class IdGeneratorTests

@@ -30,14 +30,14 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization;
-using AntMicro.Migrant;
-using AntMicro.Migrant.Hooks;
-using AntMicro.Migrant.Utilities;
+using Antmicro.Migrant;
+using Antmicro.Migrant.Hooks;
+using Antmicro.Migrant.Utilities;
 using System.Collections;
-using AntMicro.Migrant.VersionTolerance;
-using AntMicro.Migrant.Generators;
+using Antmicro.Migrant.VersionTolerance;
+using Antmicro.Migrant.Generators;
 
-namespace Migrant.Generators
+namespace Antmicro.Migrant.Generators
 {
 	internal sealed class ReadMethodGenerator
 	{
@@ -521,7 +521,7 @@ namespace Migrant.Generators
 				GenerateReadPrimitive(typeof(Int32)); // read object reference
 				generator.Emit(OpCodes.Stloc, objectIdLocal);
 				
-				generator.Emit(OpCodes.Ldc_I4, AntMicro.Migrant.Consts.NullObjectId);
+				generator.Emit(OpCodes.Ldc_I4, Antmicro.Migrant.Consts.NullObjectId);
 				generator.Emit(OpCodes.Ldloc, objectIdLocal); 
 				generator.Emit(OpCodes.Beq, returnNullLabel); // check if object reference is not <<NULL>>
 				

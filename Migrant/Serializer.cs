@@ -28,11 +28,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using AntMicro.Migrant.Customization;
+using Antmicro.Migrant.Customization;
 using System.Reflection.Emit;
-using AntMicro.Migrant.Utilities;
+using Antmicro.Migrant.Utilities;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	/// <summary>
 	/// Provides the mechanism for binary serialization and deserialization of objects.
@@ -44,7 +44,7 @@ namespace AntMicro.Migrant
 	public class Serializer
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Serializer"/> class.
+		/// Initializes a new instance of the <see cref="Antmicro.Migrant.Serializer"/> class.
 		/// </summary>
 		/// <param name='settings'>
 		/// Serializer's settings, can be null or not given, in that case default settings are

@@ -31,7 +31,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.IO;
 
-namespace AntMicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTests
 {
 	public abstract class BaseFixture
 	{

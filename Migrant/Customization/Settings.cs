@@ -27,7 +27,7 @@
 using System;
 
 
-namespace AntMicro.Migrant.Customization
+namespace Antmicro.Migrant.Customization
 {
 	/// <summary>
 	/// Contains serialization settings.
@@ -54,7 +54,7 @@ namespace AntMicro.Migrant.Customization
 		public VersionToleranceLevel VersionTolerance { get; private set; }
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Customization.Settings"/> class.
+		/// Initializes a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class.
 		/// </summary>
 		/// <param name='serializationMethod'>
 		/// Method used for serialization.

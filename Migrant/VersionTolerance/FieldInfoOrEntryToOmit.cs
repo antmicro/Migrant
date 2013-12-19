@@ -26,7 +26,7 @@
 using System;
 using System.Reflection;
 
-namespace AntMicro.Migrant.VersionTolerance
+namespace Antmicro.Migrant.VersionTolerance
 {
 	internal sealed class FieldInfoOrEntryToOmit
 	{

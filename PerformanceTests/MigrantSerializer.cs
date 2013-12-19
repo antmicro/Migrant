@@ -26,9 +26,9 @@
 */
 using System;
 using System.IO;
-using AntMicro.Migrant.Customization;
+using Antmicro.Migrant.Customization;
 
-namespace AntMicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTests
 {
 	public sealed class MigrantSerializer : ISerializer
 	{

@@ -24,7 +24,7 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-namespace AntMicro.Migrant.Customization
+namespace Antmicro.Migrant.Customization
 {
 	/// <summary>
 	/// Level of the version tolerance, that is how much layout of the deserialized type can differ

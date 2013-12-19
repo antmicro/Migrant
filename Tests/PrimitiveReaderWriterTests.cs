@@ -29,7 +29,7 @@ using System.IO;
 using System;
 using System.Linq;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	[TestFixture]
 	public class PrimitiveReaderWriterTests

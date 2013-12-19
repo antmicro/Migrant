@@ -31,23 +31,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Collections;
-using AntMicro.Migrant.Hooks;
-using AntMicro.Migrant.Generators;
+using Antmicro.Migrant.Hooks;
+using Antmicro.Migrant.Generators;
 using System.Reflection.Emit;
 using System.Threading;
 using System.Diagnostics;
-using AntMicro.Migrant.VersionTolerance;
-using AntMicro.Migrant.Utilities;
+using Antmicro.Migrant.VersionTolerance;
+using Antmicro.Migrant.Utilities;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	/// <summary>
-	/// Writes the object in a format that can be later read by <see cref="AntMicro.Migrant.ObjectReader"/>.
+	/// Writes the object in a format that can be later read by <see cref="Antmicro.Migrant.ObjectReader"/>.
 	/// </summary>
 	public class ObjectWriter
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="AntMicro.Migrant.ObjectWriter" /> class.
+		/// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectWriter" /> class.
 		/// </summary>
 		/// <param name='stream'>
 		/// Stream to which data will be written.
@@ -59,7 +59,7 @@ namespace AntMicro.Migrant
 		/// Callback which is called once on every unique object after its serialization. Contains this object in its only parameter.
 		/// </param>
 		/// <param name='writeMethodCache'>
-		/// Cache in which generated write methods are stored and reused between instances of <see cref="AntMicro.Migrant.ObjectWriter" />.
+		/// Cache in which generated write methods are stored and reused between instances of <see cref="Antmicro.Migrant.ObjectWriter" />.
 		/// Can be null if one does not want to use the cache.
 		/// </param>
 		/// <param name='surrogatesForObjects'>

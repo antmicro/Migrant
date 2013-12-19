@@ -28,7 +28,7 @@ using System;
 using NUnit.Framework;
 using System.IO;
 
-namespace AntMicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTests
 {
 	[SetUpFixture]
 	public class SetUp

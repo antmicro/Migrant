@@ -26,7 +26,7 @@
 */
 using System;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	internal enum SerializationType
 	{

@@ -27,7 +27,7 @@
 using System;
 using System.Reflection.Emit;
 
-namespace AntMicro.Migrant.Generators
+namespace Antmicro.Migrant.Generators
 {
 	internal class GeneratorHelper
 	{

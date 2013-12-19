@@ -30,9 +30,9 @@ using System.IO;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
-using AntMicro.Migrant.Customization;
+using Antmicro.Migrant.Customization;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	[Serializable]
 	[TestFixture(false, false)]

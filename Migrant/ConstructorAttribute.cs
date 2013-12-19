@@ -26,7 +26,7 @@
 */
 using System;
 
-namespace AntMicro.Migrant
+namespace Antmicro.Migrant
 {
 	/// <summary>
 	/// When this attribute is placed on a field, such field is filled with

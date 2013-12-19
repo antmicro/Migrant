@@ -7,7 +7,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{5F87C357-09FB-4F53-BE37-41FE5BD88957}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Migrant</RootNamespace>
+    <RootNamespace>Antmicro.Migrant</RootNamespace>
     <AssemblyName>Migrant</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

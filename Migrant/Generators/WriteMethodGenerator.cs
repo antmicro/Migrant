@@ -31,11 +31,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
-using AntMicro.Migrant.Hooks;
+using Antmicro.Migrant.Hooks;
 using System.Linq;
-using AntMicro.Migrant.VersionTolerance;
+using Antmicro.Migrant.VersionTolerance;
 
-namespace AntMicro.Migrant.Generators
+namespace Antmicro.Migrant.Generators
 {
     internal class WriteMethodGenerator
     {

@@ -27,7 +27,7 @@
 using System;
 using System.IO;
 
-namespace AntMicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTests
 {
 	public sealed class ProtobufSerializer : ISerializer
 	{

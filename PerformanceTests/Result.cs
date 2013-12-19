@@ -26,7 +26,7 @@
 */
 using System;
 
-namespace AntMicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTests
 {
 	public sealed class Result
 	{

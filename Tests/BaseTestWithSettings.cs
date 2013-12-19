@@ -24,9 +24,9 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
-using AntMicro.Migrant.Customization;
+using Antmicro.Migrant.Customization;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	public abstract class BaseTestWithSettings
 	{

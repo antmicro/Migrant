@@ -24,13 +24,13 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-using AntMicro.Migrant.Hooks;
+using Antmicro.Migrant.Hooks;
 using NUnit.Framework;
 using System.IO;
 using System;
 using System.Threading;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	[TestFixture(false, false)]
 	[TestFixture(true, false)]

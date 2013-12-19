@@ -28,7 +28,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
-namespace AntMicro.Migrant.Utilities
+namespace Antmicro.Migrant.Utilities
 {
     internal class ListWithHash<T> : IEnumerable<T>, IList<T>, ISet<T>
 	{

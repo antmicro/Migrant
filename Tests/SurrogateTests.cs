@@ -27,10 +27,10 @@
 using System;
 using NUnit.Framework;
 using System.IO;
-using AntMicro.Migrant;
+using Antmicro.Migrant;
 using System.Collections.Generic;
 
-namespace AntMicro.Migrant.Tests
+namespace Antmicro.Migrant.Tests
 {
 	[TestFixture(false, false)]
 	[TestFixture(true, false)]
