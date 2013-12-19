@@ -39,7 +39,7 @@ namespace AntMicro.Migrant.Tests
     public class BuiltinSurrogatesTests : BaseTestWithSettings
     {
         public BuiltinSurrogatesTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
-            : base(useGeneratedSerializer, useGeneratedDeserializer, true)
+            : base(useGeneratedSerializer, useGeneratedDeserializer, false, true)
         {
 
         }   

@@ -41,9 +41,10 @@ namespace AntMicro.Migrant.Tests
 		protected Settings GetSettings(VersionToleranceLevel level = 0)
 		{
 			return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
+                                useGeneratedDeserializer ? Method.Generated : Method.Reflection,    
                                 level,
-                                treatCollectionsAsUserObjects,
-                                supportForISerializable);
+                                supportForISerializable,
+                                treatCollectionsAsUserObjects);
 		}
 
 		protected T SerializerClone<T>(T toClone)
