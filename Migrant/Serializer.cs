@@ -75,8 +75,8 @@ namespace AntMicro.Migrant
 		public void Serialize(object obj, Stream stream)
 		{
 			WriteHeader(stream);
-			var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, writeMethodCache, 
-			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated);
+            var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
+                writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, settings.TreatCollectionAsUserObject);
 			writer.WriteObject(obj);
 			serializationDone = true;
 		}
