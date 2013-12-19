@@ -120,6 +120,28 @@ Described mechanisms works for the following collections:
 There is, however, an option to disable this feature and treat collections as
 normal user objects. To do this a flag ``treatCollectionAsUserObject`` in the ``Settings`` object must be set to ``true``.
 
+### `ISerializable` support
+
+By default Migrant does not use special serialization means for classes or
+structs that implement `ISerializable`. If you have already prepared your code
+for e.g. `BinaryFormatter`, then you can turn on `ISerializable` support in
+settings. Note that this is suboptimal compared to normal Migrant's approach
+and is only thought as a compatibilty layer which may be useful for the
+plug-in serialization framework substitution. Also note that it will also
+affect framework classes, resulting in a suboptimal performance. For example:
+
+  `Dictionary`, one million elements.
+  Without ISerializable support: 0.30s,  13.25MB
+  With ISeriazilable support:    6.94s, 13.25MB
+
+  `Dictionary`, 10000 instances with one element each.
+  Without ISerializable support: 44.79ms, 184.01KB
+  With ISeriazilable support:    0.91s,   6.36MB
+
+To sum it up, such support is meant to be phased out during time in your
+project.
+
+
 ## Features
 
 Migrant is designed to be easy to use. For most cases, the scenario consists of calling one method to serialize, and another to deserialize a whole set of interconnected objects. It's not necessary to provide any information about serialized types, only the root object to save. All of the other objects referenced by the root are serialized automatically. It works out of the box for value and reference types, complex collections etc. While serialization of certain objects (e.g. pointers) is meaningless and may lead to hard-to-trace problems, Migrant will gracefully fail to serialize such objects, providing the programmer with full information on what caused the problem and where is it located.
