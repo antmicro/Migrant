@@ -30,19 +30,20 @@ namespace AntMicro.Migrant.Tests
 {
 	public abstract class BaseTestWithSettings
 	{
-        protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects)
+    protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable)
 		{
-			this.useGeneratedSerializer = useGeneratedSerializer;
-			this.useGeneratedDeserializer = useGeneratedDeserializer;
-            this.treatCollectionsAsUserObjects = treatCollectionsAsUserObjects;
+			this.useGeneratedSerializer        = useGeneratedSerializer;
+			this.useGeneratedDeserializer      = useGeneratedDeserializer;
+      this.treatCollectionsAsUserObjects = treatCollectionsAsUserObjects;
+      this.supportForISerializable       = supportForISerializable;
 		}
 
 		protected Settings GetSettings(VersionToleranceLevel level = 0)
 		{
 			return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
-			                    useGeneratedDeserializer ? Method.Generated : Method.Reflection,					
                                 level,
-                                treatCollectionsAsUserObjects);
+                                treatCollectionsAsUserObjects,
+                                supportForISerializable);
 		}
 
 		protected T SerializerClone<T>(T toClone)
@@ -52,6 +53,7 @@ namespace AntMicro.Migrant.Tests
 
 		private readonly bool useGeneratedSerializer;
 		private readonly bool useGeneratedDeserializer;
-        private readonly bool treatCollectionsAsUserObjects;
+    private readonly bool treatCollectionsAsUserObjects;
+    private readonly bool supportForISerializable;
 	}
 }

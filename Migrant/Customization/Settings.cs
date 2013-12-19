@@ -55,9 +55,16 @@ namespace AntMicro.Migrant.Customization
 		public VersionToleranceLevel VersionTolerance { get; private set; }
 
         /// <summary>
+        /// Specifies whether Migrant should use GetObjectData approach for serialization.
+        /// </summary>
+        /// <value><c>true</c> if support for ISerializable is active; otherwise, <c>false</c>.</value>
+        public bool SupportForISerializable { get; private set; }
+
+        /// <summary>>
         /// Gets the value of flag specifing if collection objects are to be deserialized without optimization (treated as normal user objects).
         /// </summary>
         public bool TreatCollectionAsUserObject { get; private set; }
+
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AntMicro.Migrant.Customization.Settings"/> class.
@@ -75,11 +82,16 @@ namespace AntMicro.Migrant.Customization
         /// <param name = "treatCollectionAsUserObject">
         /// Specifies if collection objects are to be deserialized without optimization (treated as normal user objects).
         /// </param>
-        public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0, bool treatCollectionAsUserObject = false)
+        /// <param name = "supportForISerializable">
+        /// Specifies whether Migrant should use GetObjectData approach for serialization.
+        /// </param>
+        public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
+            bool supportForISerializable = false, bool treatCollectionAsUserObject = false)
 		{
 			SerializationMethod = serializationMethod;
 			DeserializationMethod = deserializationMethod;
 			VersionTolerance = versionTolerance;
+            SupportForISerializable = supportForISerializable;
             TreatCollectionAsUserObject = treatCollectionAsUserObject;
 		}
 	}

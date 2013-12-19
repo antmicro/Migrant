@@ -32,10 +32,10 @@ using System.Threading;
 
 namespace AntMicro.Migrant.Tests
 {
-	[TestFixture(false, false)]
-	[TestFixture(true, false)]
-	[TestFixture(false, true)]
-	[TestFixture(true, true)]
+    [TestFixture(false, false)]
+    [TestFixture(true, false)]
+    [TestFixture(false, true)]
+    [TestFixture(true, true)]
 	public class HooksTests : BaseTestWithSettings
 	{
         public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer) : base(useGeneratedSerializer, useGeneratedDeserializer, false)

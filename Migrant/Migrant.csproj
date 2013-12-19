@@ -67,6 +67,7 @@
     <Compile Include="Customization\VersionToleranceLevel.cs" />
     <Compile Include="CollectionMetaToken.cs" />
     <Compile Include="Utilities\InheritanceAwareList.cs" />
+    <Compile Include="BultinSurrogates\SurrogateForISerializable.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -75,6 +76,7 @@
     <Folder Include="Customization\" />
     <Folder Include="Generators\" />
     <Folder Include="VersionTolerance\" />
+    <Folder Include="BultinSurrogates\" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
