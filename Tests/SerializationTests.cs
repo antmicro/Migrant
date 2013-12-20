@@ -56,7 +56,6 @@ namespace Antmicro.Migrant.Tests
     {
       public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, supportForISerializable)
       {
-        this.treatCollectionsAsUserObjects = treatCollectionsAsUserObjects;
       }
 
       [Test]
@@ -894,8 +893,6 @@ namespace Antmicro.Migrant.Tests
           Assert.AreEqual(src.Key, dst.Key);
           Assert.AreEqual(src.Value, dst.Value);
         }
-
-      private bool treatCollectionsAsUserObjects;
 
       public class SimpleClass
       {
