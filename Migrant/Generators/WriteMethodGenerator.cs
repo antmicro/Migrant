@@ -39,7 +39,7 @@ namespace Antmicro.Migrant.Generators
 {
     internal class WriteMethodGenerator
     {
-        internal WriteMethodGenerator(Type typeToGenerate)
+        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject)
         {
             typeWeAreGeneratingFor = typeToGenerate;
             ObjectWriter.CheckLegality(typeToGenerate);
@@ -65,7 +65,7 @@ namespace Antmicro.Migrant.Generators
                 generator.BeginExceptionBlock();
             }
 
-            if(!GenerateSpecialWrite(typeToGenerate))
+            if(!GenerateSpecialWrite(typeToGenerate, treatCollectionAsUserObject))
             {
                 GenerateWriteFields(gen =>
                 {
@@ -161,7 +161,7 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private bool GenerateSpecialWrite(Type actualType)
+        private bool GenerateSpecialWrite(Type actualType, bool treatCollectionAsUserObject)
         {
             if(actualType.IsValueType)
             {
@@ -187,11 +187,14 @@ namespace Antmicro.Migrant.Generators
                 });
                 return true;
             }
-            var collectionToken = new CollectionMetaToken(actualType);
-            if(collectionToken.IsCollection)
+            if (!treatCollectionAsUserObject)
             {
-                GenerateWriteCollection(collectionToken);
-                return true;
+                var collectionToken = new CollectionMetaToken(actualType);
+                if(collectionToken.IsCollection)
+                {
+                    GenerateWriteCollection(collectionToken);
+                    return true;
+                }
             }
             return false;
         }

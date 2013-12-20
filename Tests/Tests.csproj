@@ -45,6 +45,7 @@
     <Compile Include="SurrogateTests.cs" />
     <Compile Include="VersionToleranceTests.cs" />
     <Compile Include="BaseTestWithSettings.cs" />
+    <Compile Include="BuiltinSurrogatesTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

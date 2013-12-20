@@ -69,9 +69,12 @@ namespace Antmicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if write methods are to be generated, false if one wants to use reflection.
 		/// </param>
+        /// <param name = "treatCollectionAsUserObject">
+        /// True if collection objects are to be serialized without optimization (treated as normal user objects).
+        /// </param>
 		public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null, 
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
-                            InheritanceAwareList<Delegate> surrogatesForObjects = null, bool isGenerating = true)
+            InheritanceAwareList<Delegate> surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false)
 		{
 			if(surrogatesForObjects == null)
 			{
@@ -83,6 +86,7 @@ namespace Antmicro.Migrant
 			postSerializationHooks = new List<Action>();
 			this.writeMethodCache = writeMethodCache;
 			this.isGenerating = isGenerating;
+            this.treatCollectionAsUserObject = treatCollectionAsUserObject;
 			this.surrogatesForObjects = surrogatesForObjects;
 			typeIndices = new Dictionary<Type, int>();
 			methodIndices = new Dictionary<MethodInfo, int>();
@@ -242,7 +246,7 @@ namespace Antmicro.Migrant
 			}
 			identifier = new ObjectIdentifier();
 			writer = new PrimitiveWriter(stream);
-			typeStamper = new TypeStamper(writer);
+            typeStamper = new TypeStamper(writer, treatCollectionAsUserObject);
 			inlineWritten = new HashSet<int>();
 		}
 
@@ -353,24 +357,27 @@ namespace Antmicro.Migrant
 				return true;
 			}
 
-            var collectionToken = new CollectionMetaToken(o.GetType());
-			if(collectionToken.IsCollection)
-			{
-                // here we can have normal or extension method that needs to be treated differently
-                int count = collectionToken.CountMethod.IsStatic ? 
-                            (int)collectionToken.CountMethod.Invoke(null, new[] { o }) : 
-                            (int)collectionToken.CountMethod.Invoke(o, null); 
+            if (!treatCollectionAsUserObject)
+            {
+                var collectionToken = new CollectionMetaToken(o.GetType());
+    			if(collectionToken.IsCollection)
+    			{
+                    // here we can have normal or extension method that needs to be treated differently
+                    int count = collectionToken.CountMethod.IsStatic ? 
+                                (int)collectionToken.CountMethod.Invoke(null, new[] { o }) : 
+                                (int)collectionToken.CountMethod.Invoke(o, null); 
 
-				if(collectionToken.IsDictionary)
-				{
-					WriteDictionary(collectionToken, count, o);
-				}
-                else
-				{
-					WriteEnumerable(collectionToken.FormalElementType, count, (IEnumerable)o);
-				}
-				return true;
-			}
+    				if(collectionToken.IsDictionary)
+    				{
+    					WriteDictionary(collectionToken, count, o);
+    				}
+                    else
+    				{
+    					WriteEnumerable(collectionToken.FormalElementType, count, (IEnumerable)o);
+    				}
+    				return true;
+    			}
+            }
 			return false;
 		}
 
@@ -569,7 +576,7 @@ namespace Antmicro.Migrant
 				return WriteObjectUsingReflection;
 			}
 
-			var method = new WriteMethodGenerator(actualType).Method;
+            var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject).Method;
 			var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
 			if(writeMethodCache != null)
 			{
@@ -613,6 +620,7 @@ namespace Antmicro.Migrant
 		private TypeStamper typeStamper;
 		private HashSet<int> inlineWritten;
 		private readonly bool isGenerating;
+        private readonly bool treatCollectionAsUserObject;
 		private readonly Stream stream;
 		private readonly Action<object> preSerializationCallback;
 		private readonly Action<object> postSerializationCallback;

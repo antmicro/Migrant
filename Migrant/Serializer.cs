@@ -31,6 +31,7 @@ using System.IO;
 using Antmicro.Migrant.Customization;
 using System.Reflection.Emit;
 using Antmicro.Migrant.Utilities;
+using Migrant.BultinSurrogates;
 
 namespace Antmicro.Migrant
 {
@@ -61,6 +62,13 @@ namespace Antmicro.Migrant
             objectsForSurrogates = new InheritanceAwareList<Delegate>();
             surrogatesForObjects = new InheritanceAwareList<Delegate>();
 			readMethodCache = new Dictionary<Type, DynamicMethod>();
+
+            if(settings.SupportForISerializable)
+            {
+                ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
+                ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
+                ForObject<Delegate>().SetSurrogate(x => x);
+            }
 		}
 
 		/// <summary>
@@ -75,8 +83,8 @@ namespace Antmicro.Migrant
 		public void Serialize(object obj, Stream stream)
 		{
 			WriteHeader(stream);
-			var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, writeMethodCache, 
-			                              surrogatesForObjects, settings.SerializationMethod == Method.Generated);
+            var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
+                writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, settings.TreatCollectionAsUserObject);
 			writer.WriteObject(obj);
 			serializationDone = true;
 		}
@@ -141,7 +149,7 @@ namespace Antmicro.Migrant
 			}
 
 			var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
-			                                    settings.DeserializationMethod == Method.Generated, settings.VersionTolerance);
+                settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject, settings.VersionTolerance);
 			var result = objectReader.ReadObject<T>();
 			deserializationDone = true;
 			return result;

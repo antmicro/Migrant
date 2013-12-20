@@ -5,13 +5,13 @@ This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and fle
 ## Table of Contents
 
 1.  Introduction
-2.  Directory organization
-3.  Usage
-4.  Features
-6.  Download
-7.  Compilation
-8.  More information
-9.  Licence
+1.  Directory organization
+1.  Usage
+1.  Features
+1.  Download
+1.  Compilation
+1.  More information
+1.  Licence
 
 ## Introduction
 
@@ -90,11 +90,57 @@ Here we present some simple use cases of Migrant. They are written in pseudo-C\#
 
 What if some changes are made to the layout of the class between serialization and deserialization? Migrant can cope with that up to some extent. During creation of serializer you can specify settings, among which there is a version tolerance level. This is an enumeration with five possible values:
 
-- ``GUID`` - the most restrictive option. Deserialization is possible if module ID (which is GUID generated when module is compiled) is the same as it was during serialization. In other words it deserialization must be done using the same assembly as serialization used.
+- ``GUID`` - the most restrictive option. Deserialization is possible if module ID (which is GUID generated when module is compiled) is the same as it was during serialization. In other words, serialization and deserialization must be done with the same assembly.
 - ``Exact`` - this is a default value. Deserialization is possible if no fields are added or removed and no type changes were done.
 - ``FieldAddition`` - new version of the type can contain more fields than it contained during serialization. They are initialized with their default values.
 - ``FieldRemoval`` - new version of the type can contain less fields than it contained during serialization.
 - ``FieldAdditionAndRemoval`` - combination of these two above.
+
+### Collections handling
+
+By default Migrant tries to handle standard collection types serialization in a special
+way. Instead of writing to the stream all of private meta fields describing collection
+object, only items are serialized - in a similar way to arrays. During
+deserialization a collection is recreated by calling proper adders methods.
+
+This approach limits stream size and allows to easily migrate between versions 
+of .NET framework, as internal collection implementation may differ between them.
+
+Described mechanisms works for the following collections:
+
+- ``List<>``
+- ``ReadOnlyCollection<>``
+- ``Dictionary<,>``
+- ``HashSet<>``
+- ``Queue<>``
+- ``Stack<>``
+- ``BlockingCollection<>``
+- ``Hashtable``
+
+There is, however, an option to disable this feature and treat collections as
+normal user objects. To do this a flag ``treatCollectionAsUserObject`` in the ``Settings`` object must be set to ``true``.
+
+### `ISerializable` support
+
+By default Migrant does not use special serialization means for classes or
+structs that implement `ISerializable`. If you have already prepared your code
+for e.g. `BinaryFormatter`, then you can turn on `ISerializable` support in
+`Settings`. Note that this is suboptimal compared to normal Migrant's approach
+and is only thought as a compatibility layer which may be useful for the
+plug-in serialization framework substitution. Also note that it will also
+affect framework classes, resulting in a suboptimal performance. For example:
+
+  `Dictionary`, one million elements.
+  Without ISerializable support: 0.30s,  13.25MB
+  With ISeriazilable support:    6.94s, 13.25MB
+
+  `Dictionary`, 10000 instances with one element each.
+  Without ISerializable support: 44.79ms, 184.01KB
+  With ISeriazilable support:    0.91s,   6.36MB
+
+To sum it up, such a support is meant to be phased out during time in your
+project.
+
 
 ## Features
 
@@ -110,7 +156,8 @@ Apart from the main serialization framework, we provide a mechanism to translate
 
 Another extra feature, unavailable in convenient form in CLI, is an ability to deep clone given objects. With just one method invocation, Migrant will return an object copy, using the same mechanisms as the rest of the serialization framework.
 
-Serialization and deserialization is done using on-line generated methods for performance (the user can also use the reflection instead if he wishes).
+Serialization and deserialization is done using on-line generated methods for
+performance (a user can also use reflection instead if he wishes).
 
 Migrant can also be configured to replace objects of given type with user provided objects during serialization or deserialization. The feature is known as **Surrogates**.
 

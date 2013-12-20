@@ -68,11 +68,14 @@ namespace Antmicro.Migrant
 		/// <param name='isGenerating'>
 		/// True if read methods are to be generated, false if one wants to use reflection.
 		/// </param>
+        /// <param name = "treatCollectionAsUserObject">
+        /// True if collection objects are to be deserialized without optimization (treated as normal user objects).
+        /// </param>
 		/// <param name="versionToleranceLevel"> 
 		/// Describes the tolerance level of this reader when handling discrepancies in type description (new or missing fields, etc.).
 		/// </param> 
         public ObjectReader(Stream stream, InheritanceAwareList<Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
-		                    IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, VersionToleranceLevel versionToleranceLevel = 0)
+            IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, VersionToleranceLevel versionToleranceLevel = 0)
 		{
 			if(objectsForSurrogates == null)
 			{
@@ -87,6 +90,7 @@ namespace Antmicro.Migrant
 			this.stream = stream;
 			this.postDeserializationCallback = postDeserializationCallback;
 			this.versionToleranceLevel = versionToleranceLevel;
+            this.treatCollectionAsUserObject = treatCollectionAsUserObject;
 			PrepareForTheRead();
 		}
 
@@ -137,7 +141,7 @@ namespace Antmicro.Migrant
 		{
 			if(!readMethodsCache.ContainsKey(type))
 			{
-				var rmg = new ReadMethodGenerator(type, stamper);
+                var rmg = new ReadMethodGenerator(type, stamper, treatCollectionAsUserObject);
 				readMethodsCache.Add(type, rmg.Method);
 			}
 		}
@@ -176,7 +180,7 @@ namespace Antmicro.Migrant
 		private void ReadObjectInner(Type actualType, int objectId)
 		{
 			TouchObject(actualType, objectId);
-			switch(GetCreationWay(actualType))
+            switch(GetCreationWay(actualType, treatCollectionAsUserObject))
 			{
 			case CreationWay.Null:
 				ReadNotPrecreated(actualType, objectId);
@@ -547,7 +551,7 @@ namespace Antmicro.Migrant
 
 		internal void ReadStamp(Type type)
 		{
-			stamper.ReadStamp(type);
+            stamper.ReadStamp(type, treatCollectionAsUserObject);
 		}
 
 		private object TouchObject(Type actualType, int refId)
@@ -558,7 +562,7 @@ namespace Antmicro.Migrant
 			}
 
 			object created = null;
-			switch(GetCreationWay(actualType))
+            switch(GetCreationWay(actualType, treatCollectionAsUserObject))
 			{
 			case CreationWay.Null:
 				break;
@@ -573,13 +577,13 @@ namespace Antmicro.Migrant
 			return created;
 		}
 
-		internal static CreationWay GetCreationWay(Type actualType)
+        internal static CreationWay GetCreationWay(Type actualType, bool treatCollectionAsUserObject)
 		{
-			if(Helpers.CanBeCreatedWithDataOnly(actualType))
+            if(Helpers.CanBeCreatedWithDataOnly(actualType, treatCollectionAsUserObject))
 			{
 				return CreationWay.Null;
 			}
-            if((new CollectionMetaToken(actualType)).IsCollection)
+            if(!treatCollectionAsUserObject && (new CollectionMetaToken(actualType)).IsCollection)
 			{
 				return CreationWay.DefaultCtor;
 			}
@@ -590,7 +594,8 @@ namespace Antmicro.Migrant
 			return CreationWay.Uninitialized;
 		}
 
-		private bool useGeneratedDeserialization;
+        private readonly bool useGeneratedDeserialization;
+        private readonly bool treatCollectionAsUserObject;
 		internal AutoResizingList<object> deserializedObjects;
 		private IDictionary<Type, DynamicMethod> readMethodsCache;
 		private Dictionary<Type, Func<Int32, object>> delegatesCache;

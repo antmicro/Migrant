@@ -41,8 +41,9 @@ namespace Antmicro.Migrant.Generators
 {
 	internal sealed class ReadMethodGenerator
 	{
-		public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader)
+        public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader, bool treatCollectionAsUserObject)
 		{
+            this.treatCollectionAsUserObject = treatCollectionAsUserObject;
 			this.stampReader = stampReader;
 			if (typeToGenerate.IsArray)
 			{
@@ -154,7 +155,7 @@ namespace Antmicro.Migrant.Generators
 
 			GenerateTouchObject(formalType);
 			
-			switch(ObjectReader.GetCreationWay(formalType))
+            switch(ObjectReader.GetCreationWay(formalType, treatCollectionAsUserObject))
 			{
 			case ObjectReader.CreationWay.Null:
 				GenerateReadNotPrecreated(formalType, objectIdLocal);
@@ -781,7 +782,7 @@ namespace Antmicro.Migrant.Generators
 			PushTypeOntoStack(formalType);
 			generator.Emit(OpCodes.Stloc, objectTypeLocal);
 
-			switch(ObjectReader.GetCreationWay(formalType))
+            switch(ObjectReader.GetCreationWay(formalType, treatCollectionAsUserObject))
 			{
 			case ObjectReader.CreationWay.Null:
 				break;
@@ -834,6 +835,7 @@ namespace Antmicro.Migrant.Generators
 		}
 
 		private ILGenerator generator;
+        private readonly bool treatCollectionAsUserObject;
 		private readonly DynamicMethod dynamicMethod;
 		private readonly TypeStampReader stampReader;
 		private const string InternalErrorMessage = "Internal error: should not reach here.";

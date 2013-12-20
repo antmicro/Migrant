@@ -24,7 +24,9 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Linq;
 using System.Collections;
@@ -53,6 +55,12 @@ namespace Antmicro.Migrant
 
         public CollectionMetaToken(Type actualType) 
         {
+            if (!SpeciallySerializedCollections.Any(type => (actualType.IsGenericType && type == actualType.GetGenericTypeDefinition()) || type == actualType))
+            {
+                IsCollection = false;
+                return;
+            }
+
             ActualType = actualType;
             FormalElementType = typeof(object);
             FormalKeyType = typeof(object);
@@ -71,6 +79,18 @@ namespace Antmicro.Migrant
             }
         }
 
+        private static readonly Type[] SpeciallySerializedCollections =
+        {
+            typeof(List<>),
+            typeof(ReadOnlyCollection<>),
+            typeof(Dictionary<,>),
+            typeof(HashSet<>),
+            typeof(Queue<>),
+            typeof(Stack<>),
+            typeof(BlockingCollection<>),
+            typeof(Hashtable)
+        };
+
         private static readonly Tuple<Type, Action<Type, CollectionMetaToken>>[] CollectionPriorities = 
         {
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IDictionary<,>), 
@@ -83,7 +103,7 @@ namespace Antmicro.Migrant
                     cmt.FormalValueType = arguments[1];
                     cmt.CountMethod = typeof(ICollection<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(arguments[0], arguments[1])).GetProperty("Count").GetGetMethod();
                 }),
-            Tuple.Create<Type, Action<Type, CollectionMetaToken>>( typeof(ICollection<>),
+            Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(ICollection<>),
                 (iface, cmt) => {
                     cmt.IsCollection = true;
                     cmt.IsGeneric = true;

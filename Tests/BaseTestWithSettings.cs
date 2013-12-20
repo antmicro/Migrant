@@ -3,6 +3,7 @@
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -30,17 +31,21 @@ namespace Antmicro.Migrant.Tests
 {
 	public abstract class BaseTestWithSettings
 	{
-		protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+    protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable)
 		{
-			this.useGeneratedSerializer = useGeneratedSerializer;
-			this.useGeneratedDeserializer = useGeneratedDeserializer;
+			this.useGeneratedSerializer        = useGeneratedSerializer;
+			this.useGeneratedDeserializer      = useGeneratedDeserializer;
+      this.treatCollectionsAsUserObjects = treatCollectionsAsUserObjects;
+      this.supportForISerializable       = supportForISerializable;
 		}
 
 		protected Settings GetSettings(VersionToleranceLevel level = 0)
 		{
 			return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
-			                    useGeneratedDeserializer ? Method.Generated : Method.Reflection,					
-			                    level);
+                                useGeneratedDeserializer ? Method.Generated : Method.Reflection,    
+                                level,
+                                supportForISerializable,
+                                treatCollectionsAsUserObjects);
 		}
 
 		protected T SerializerClone<T>(T toClone)
@@ -48,8 +53,9 @@ namespace Antmicro.Migrant.Tests
 			return Serializer.DeepClone(toClone, GetSettings());
 		}
 
-		private bool useGeneratedSerializer;
-		private bool useGeneratedDeserializer;
+		private readonly bool useGeneratedSerializer;
+		private readonly bool useGeneratedDeserializer;
+    private readonly bool treatCollectionsAsUserObjects;
+    private readonly bool supportForISerializable;
 	}
 }
-
