@@ -67,7 +67,7 @@ namespace Antmicro.Migrant
             {
                 ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
                 ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
-                ForObject<Delegate>().SetSurrogate(x => x);
+                ForObject<Delegate>().SetSurrogate(x => x); //because Delegate implements ISerializable but we support it directly.
             }
 		}
 
