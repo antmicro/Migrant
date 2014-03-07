@@ -131,29 +131,66 @@ namespace Antmicro.Migrant
 		/// </typeparam>
 		public T Deserialize<T>(Stream stream)
 		{
-			// Read header
-			var magic1 = stream.ReadByte();
-			var magic2 = stream.ReadByte();
-			var magic3 = stream.ReadByte();
-			if(magic1 != Magic1 || magic2 != Magic2 || magic3 != Magic3)
-			{
-				throw new InvalidOperationException(string.Format(
-					"Cound not find proper magic {0}, {1}, {2}, instead {3}, {4}, {5} was read.", Magic1, Magic2, Magic3,
-					magic1, magic2, magic3));
-			}
-			var version = stream.ReadByte();
-			if(version != VersionNumber)
-			{
-				throw new InvalidOperationException(string.Format(
-					"Could not deserialize data serialized with another version of serializer, namely {0}. Current is {1}.", version, VersionNumber));
-			}
-
-			var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
-                settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject, settings.VersionTolerance);
-			var result = objectReader.ReadObject<T>();
-			deserializationDone = true;
-			return result;
+            T result;
+            switch (TryDeserialize(stream, out result))
+            {
+            case DeserializationResult.OK:
+                return result;
+            case DeserializationResult.WrongMagic:
+                throw new InvalidOperationException("Cound not find proper magic.");
+            case DeserializationResult.WrongVersion:
+                throw new InvalidOperationException("Could not deserialize data serialized with another version of serializer.");
+            case DeserializationResult.StreamCorrupted:
+                throw lastException;
+            default:
+                throw new ArgumentOutOfRangeException();
+            }
 		}
+
+        /// <summary>
+        /// Tries to deserialize object from specified stream.
+        /// </summary>
+        /// <returns>Operation result status.</returns>
+        /// <param name="stream">
+        /// The stream to read data from. Must be readable.
+        /// </param>
+        /// <param name="obj">Deserialized object.</param>
+        /// <typeparam name="T">
+        /// The expected type of the deserialized object. The deserialized object must be
+        /// convertible to this type.
+        /// </typeparam>
+        public DeserializationResult TryDeserialize<T>(Stream stream, out T obj)
+        {
+            obj = default(T);
+
+            // Read header
+            var magic1 = stream.ReadByte();
+            var magic2 = stream.ReadByte();
+            var magic3 = stream.ReadByte();
+            if(magic1 != Magic1 || magic2 != Magic2 || magic3 != Magic3)
+            {
+                return DeserializationResult.WrongMagic;
+            }
+            var version = stream.ReadByte();
+            if(version != VersionNumber)
+            {
+                return DeserializationResult.WrongVersion;
+            }
+
+            var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
+                settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject, settings.VersionTolerance);
+
+            try {
+                obj = objectReader.ReadObject<T>();
+                deserializationDone = true;
+                return DeserializationResult.OK;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+                return DeserializationResult.StreamCorrupted;
+            }
+        }
 
 		/// <summary>
 		/// Is invoked before serialization, once for every unique, serialized object. Provides this
@@ -210,6 +247,7 @@ namespace Antmicro.Migrant
 			stream.WriteByte(VersionNumber);
 		}
 
+        private Exception lastException;
 		private bool serializationDone;
 		private bool deserializationDone;
 		private readonly Settings settings;

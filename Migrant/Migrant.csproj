@@ -68,6 +68,7 @@
     <Compile Include="CollectionMetaToken.cs" />
     <Compile Include="Utilities\InheritanceAwareList.cs" />
     <Compile Include="BultinSurrogates\SurrogateForISerializable.cs" />
+    <Compile Include="DeserializationResult.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
