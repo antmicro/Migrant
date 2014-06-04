@@ -3,8 +3,6 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{560B93C1-E336-47DA-A879-4E9C5B75A927}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>TestsSecondModule</RootNamespace>
@@ -33,6 +31,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompanionSecondModule.cs" />
+    <Compile Include="ISerializationDriverInterface.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ProjectExtensions>
