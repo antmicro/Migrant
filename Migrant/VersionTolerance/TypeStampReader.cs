@@ -57,13 +57,13 @@ namespace Antmicro.Migrant.VersionTolerance
 				// short path, nothing to check
                 for(var i = 0; i < classNo; i++)
 				{
-                    var s = reader.ReadString(); // class type (AQN)
+                    reader.ReadString(); // class type (AQN)
                     var fieldNo = reader.ReadInt32(); // # of fields in the class
 
                     for(var j = 0; j < fieldNo; j++)
                     {
-                        var fn = reader.ReadString(); // field name
-                        var ft = reader.ReadString(); // field type (AQN)
+                        reader.ReadString(); // field name
+                        reader.ReadString(); // field type (AQN)
                     }
 				}
 				stampCache.Add(type, StampHelpers.GetFieldsInSerializationOrder(type, true).Select(x => new FieldInfoOrEntryToOmit(x)).ToList());
