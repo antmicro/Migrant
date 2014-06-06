@@ -260,6 +260,7 @@ namespace Antmicro.Migrant.Tests
                 var driver = (ISerializationDriverInterface)domain.CreateInstanceFromAndUnwrap(Path.Combine(baseDir, dir, "dcc.dll"), "Antmicro.Migrant.Tests.TestDriver");
 
                 driver.RunAction(action[dir]);
+                AppDomain.Unload(domain);
             }
         }
 
