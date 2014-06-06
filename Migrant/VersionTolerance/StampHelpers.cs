@@ -39,8 +39,13 @@ namespace Antmicro.Migrant.VersionTolerance
 
 		public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)
 		{
-			return type.GetAllFields().Where(x => withTransient || Helpers.IsNotTransient(x)).OrderBy(x => x.Name);
+            return GetFieldsStructureInSerializationOrder(type, withTransient).SelectMany(x => x.Item2);
 		}
+
+        public static IEnumerable<Tuple<Type, IEnumerable<FieldInfo>>> GetFieldsStructureInSerializationOrder(Type type, bool withTransient = false)
+        {
+            return type.GetAllFieldsStructurized().Select(x => Tuple.Create(x.Item1, x.Item2.Where(y => withTransient || Helpers.IsNotTransient(y)).OrderBy(y => y.Name).AsEnumerable()));
+        }
 	}
 }
 

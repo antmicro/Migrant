@@ -50,16 +50,23 @@ namespace Antmicro.Migrant.VersionTolerance
 				return;
 			}
 			alreadyWritten.Add(type);
-			var fields = StampHelpers.GetFieldsInSerializationOrder(type).ToArray();
-			writer.Write(fields.Length);
-			var moduleGuid = type.Module.ModuleVersionId;
-			writer.Write(moduleGuid);
-			foreach(var field in fields)
-			{
-				var fieldType = field.FieldType;
-				writer.Write(field.Name);
-				writer.Write(fieldType.AssemblyQualifiedName);
-			}
+
+            var classes = StampHelpers.GetFieldsStructureInSerializationOrder(type);
+
+            writer.Write(type.Module.ModuleVersionId); // module GUID
+            writer.Write(classes.Count()); // # of classes
+
+            foreach(var cl in classes)
+            {
+                writer.Write(cl.Item1.AssemblyQualifiedName); // class type (AQN)
+                writer.Write(cl.Item2.Count()); // # of fields in the class
+
+                foreach(var field in cl.Item2)
+                {
+                    writer.Write(field.Name); // field name
+                    writer.Write(field.FieldType.AssemblyQualifiedName); // field type (AQN)
+                }
+            }
 		}
 
         private readonly bool treatCollectionAsUserObject;

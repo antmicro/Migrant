@@ -152,6 +152,28 @@ namespace Antmicro.Migrant
 			return t.GetFields(DefaultBindingFlags);
 		}
 
+        public static IEnumerable<Tuple<Type, IEnumerable<FieldInfo>>> GetAllFieldsStructurized(this Type t)
+        {
+            if(t == null)
+            {
+                throw new ArgumentNullException("t");
+            }  
+
+            var typesToScan = new List<Type>() { t };
+            while(t.BaseType != null)
+            {
+                typesToScan.Insert(0, t.BaseType);
+                t = t.BaseType;
+            }
+
+            var result = new List<Tuple<Type, IEnumerable<FieldInfo>>>();
+            foreach(var type in typesToScan)
+            {
+                result.Add(Tuple.Create(type, GetAllFields(type, false)));
+            }
+            return result;
+        }
+
 		public static FieldInfo GetFieldInfo<T, TResult>(Expression<Func<T, TResult>> expression)
 		{
 			var mexpr = expression.Body as MemberExpression;
