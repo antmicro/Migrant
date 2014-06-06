@@ -117,8 +117,12 @@ namespace Antmicro.Migrant.Tests
                         method.Invoke(s, new [] { fs });
                         Assert.Fail();
                     } 
-                    catch (InvalidOperationException ex)
+                    catch (TargetInvocationException ex)
                     {
+                        if (!(ex.InnerException is InvalidOperationException))
+                        {
+                            Assert.Fail();
+                        }
                     }
                 }
             });
@@ -168,8 +172,12 @@ namespace Antmicro.Migrant.Tests
                         method.Invoke(s, new [] { fs });
                         Assert.Fail();
                     } 
-                    catch (InvalidOperationException ex)
+                    catch (TargetInvocationException ex)
                     {
+                        if (!(ex.InnerException is InvalidOperationException))
+                        {
+                            Assert.Fail();
+                        }
                     }
                 }
             } );
@@ -216,8 +224,12 @@ namespace Antmicro.Migrant.Tests
                         method.Invoke(s, new [] { fs });
                         Assert.Fail();
                     } 
-                    catch (InvalidOperationException ex)
+                    catch (TargetInvocationException ex)
                     {
+                        if (!(ex.InnerException is InvalidOperationException))
+                        {
+                            Assert.Fail();
+                        }
                     }
                 }
             } );
