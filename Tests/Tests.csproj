@@ -47,6 +47,9 @@
     <Compile Include="BaseTestWithSettings.cs" />
     <Compile Include="BuiltinSurrogatesTests.cs" />
     <Compile Include="DynamicClass.cs" />
+    <Compile Include="TypeStampTests.cs" />
+    <Compile Include="TwoDomainsDriver.cs" />
+    <Compile Include="TwoDomainTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
