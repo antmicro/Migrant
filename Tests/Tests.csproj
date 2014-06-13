@@ -46,6 +46,7 @@
     <Compile Include="VersionToleranceTests.cs" />
     <Compile Include="BaseTestWithSettings.cs" />
     <Compile Include="BuiltinSurrogatesTests.cs" />
+    <Compile Include="DynamicClass.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
