@@ -3,6 +3,7 @@
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -23,6 +24,7 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+using System;
 
 namespace Antmicro.Migrant.Customization
 {
@@ -30,35 +32,46 @@ namespace Antmicro.Migrant.Customization
 	/// Level of the version tolerance, that is how much layout of the deserialized type can differ
 	/// from the (original) layout of the serialized type.
 	/// </summary>
+    [Flags]
 	public enum VersionToleranceLevel
 	{
 		/// <summary>
-		/// Both new and old layout have to have the same number of fields, with the same names and types.
+        /// Both new and old layout have to have the same base classes, number of fields, with the same names and types.
 		/// </summary>
-		Exact = 0,
+        ExactLayout = 0,
 
 		/// <summary>
 		/// Both serialized and serialized classes must have identical module ID (which is GUID). In other words
 		/// that means these assemblies are from one and the same compilation.
 		/// </summary>
-		Guid,
+        Guid = 0x1,
 
 		/// <summary>
 		/// The new layout can have more fields that the old one. They are initialized to their default values.
 		/// </summary>
-		FieldAddition,
+        FieldAddition = 0x2,
 
 		/// <summary>
 		/// The new layout can have less fields that the old one. Values of the missing one are ignored.
 		/// </summary>
-		FieldRemoval,
+        FieldRemoval = 0x4,
 
-		/// <summary>
-		/// The new layout can have some fields that are missing in the old one and vice versa. Additional
-		/// fields are initialized to their default values, and serialized values of the missing fields are
-		/// ignored.
-		/// </summary>
-		FieldAdditionAndRemoval
+        /// <summary>
+        /// In the new layout fields can be moved to another classes in the inheritance hierarchy. 
+        /// Fields will be matched by names, therefore this flag cannot be used in classes with multiple fields with the same name.
+        /// </summary>
+        FieldMove = 0x8,
+
+        /// <summary>
+        /// Classes inheritance hirarchy can vary between new and old layout, e.g., base class can be removed.
+        /// </summary>
+        InheritanceChainChange = 0x10,
+
+        /// <summary>
+        /// Classes names can vary between new and old layout.
+        /// Fields will be matched by names, therefore this flag cannot be used in classes with multiple fields with the same name.
+        /// </summary>
+        TypeNameChanged = 0x20,
 	}
 }
 

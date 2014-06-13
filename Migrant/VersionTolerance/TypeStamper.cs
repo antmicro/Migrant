@@ -51,22 +51,8 @@ namespace Antmicro.Migrant.VersionTolerance
 			}
 			alreadyWritten.Add(type);
 
-            var classes = StampHelpers.GetFieldsStructureInSerializationOrder(type);
-
-            writer.Write(type.Module.ModuleVersionId); // module GUID
-            writer.Write(classes.Count()); // # of classes
-
-            foreach(var cl in classes)
-            {
-                writer.Write(cl.Item1.AssemblyQualifiedName); // class type (AQN)
-                writer.Write(cl.Item2.Count()); // # of fields in the class
-
-                foreach(var field in cl.Item2)
-                {
-                    writer.Write(field.Name); // field name
-                    writer.Write(field.FieldType.AssemblyQualifiedName); // field type (AQN)
-                }
-            }
+			var ts = new TypeStamp (type);
+			ts.WriteTo (writer);
 		}
 
         private readonly bool treatCollectionAsUserObject;
