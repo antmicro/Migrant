@@ -512,7 +512,12 @@ namespace Antmicro.Migrant
 			if(typeList.Count <= typeId)
 			{
 				var typeName = reader.ReadString();
-				typeList.Add(Type.GetType(typeName));
+                var type = Type.GetType(typeName);
+                if(type == null)
+                {
+                    throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", typeName));
+                }
+				typeList.Add(type);
 			}
 			else
 			{
