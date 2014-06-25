@@ -31,6 +31,12 @@ namespace Antmicro.Migrant.Tests
     [TestFixture]
     public class TypeStampTests
     {
+        [SetUp]
+        public void SetUp()
+        {
+            DynamicClass.prefix = null;
+        }
+
         [Test]
         public void ShouldFindNoDifferences()
         {

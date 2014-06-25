@@ -39,12 +39,22 @@ namespace Antmicro.Migrant.Tests
 
         public TwoDomainsDriver()
         {
+            DynamicClass.prefix = AppDomain.CurrentDomain.FriendlyName;
         }
 
         public void PrepareDomains()
         {
-            domain1 = AppDomain.CreateDomain("domain1", null, Environment.CurrentDirectory, string.Empty, true);
-            domain2 = AppDomain.CreateDomain("domain2", null, Environment.CurrentDirectory, string.Empty, true);
+            foreach(var domain in new [] { "domain1", "domain2" })
+            {
+                Directory.CreateDirectory(domain);
+                foreach(var file in new[] { "Tests.dll", "Migrant.dll" })
+                {
+                    File.Copy(file, Path.Combine(domain, file), true);
+                }
+            }
+
+            domain1 = AppDomain.CreateDomain("domain1", null, Path.Combine(Environment.CurrentDirectory, "domain1"), string.Empty, true);
+            domain2 = AppDomain.CreateDomain("domain2", null, Path.Combine(Environment.CurrentDirectory, "domain2"), string.Empty, true);
 
             testsOnDomain1 = (TwoDomainsDriver)domain1.CreateInstanceAndUnwrap(typeof(TwoDomainsDriver).Assembly.FullName, typeof(TwoDomainsDriver).FullName);
             testsOnDomain2 = (TwoDomainsDriver)domain2.CreateInstanceAndUnwrap(typeof(TwoDomainsDriver).Assembly.FullName, typeof(TwoDomainsDriver).FullName);
@@ -56,7 +66,11 @@ namespace Antmicro.Migrant.Tests
             testsOnDomain2 = null;
             AppDomain.Unload(domain1);
             AppDomain.Unload(domain2);
-            File.Delete(AssemblyName.Name + ".dll");
+            domain1 = null;
+            domain2 = null;
+
+            Directory.Delete("domain1", true);
+            Directory.Delete("domain2", true);
         }
 
         public void CreateInstanceOnAppDomain(DynamicClass type)
@@ -152,8 +166,6 @@ namespace Antmicro.Migrant.Tests
         private bool useGeneratedDeserializer;
 
         protected object obj;
-
-        private static readonly AssemblyName AssemblyName = new AssemblyName("TestAssembly");
     }
 }
 

@@ -27,6 +27,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -58,9 +59,9 @@ namespace Antmicro.Migrant.Tests
             return this;
         }
 
-        public Type CreateType(AssemblyBuilder assemblyBuilder)
+        public Type CreateType(AssemblyBuilder assemblyBuilder, string moduleName)
         {
-            var moduleBuilder = assemblyBuilder.DefineDynamicModule(AssemblyName.Name + ".dll");
+            var moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName);
             return InnerCreateType(moduleBuilder);
         }
 
@@ -87,9 +88,16 @@ namespace Antmicro.Migrant.Tests
 
         public object Instantiate()
         {
-            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(AssemblyName, /*persistent ?*/ AssemblyBuilderAccess.RunAndSave /*: AssemblyBuilderAccess.Run*/);
-            var builtType = CreateType(assemblyBuilder);
-            assemblyBuilder.Save(AssemblyName.Name + ".dll");
+            var dllName = string.Format("{0}-{1}-{2}.dll", AssemblyName.Name, "xxx", counter);
+
+            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(string.Format("{0}-{1}-{2}", AssemblyName.Name, "xxx", counter/*++*/)), /*persistent ?*/ AssemblyBuilderAccess.RunAndSave /*: AssemblyBuilderAccess.Run*/);
+            var builtType = CreateType(assemblyBuilder, dllName);
+            assemblyBuilder.Save(dllName);
+            if(!string.IsNullOrWhiteSpace(prefix))
+            {
+                File.Delete(Path.Combine(prefix, dllName));
+                File.Move(dllName, Path.Combine(prefix, dllName));
+            }
             return Activator.CreateInstance(builtType);
         }
 
@@ -102,5 +110,7 @@ namespace Antmicro.Migrant.Tests
         private DynamicClass baseClass;
 
         private static readonly AssemblyName AssemblyName = new AssemblyName("TestAssembly");
+        private static int counter = 0;
+        public static string prefix;
     }
 }
