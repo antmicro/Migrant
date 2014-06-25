@@ -26,6 +26,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using System.Text;
 
 namespace Antmicro.Migrant
 {
@@ -66,6 +67,17 @@ namespace Antmicro.Migrant
         Fields.Add(field);
       }
     }
+
+        public override string ToString()
+        {
+            var bldr = new StringBuilder();
+            bldr.AppendFormat("Type name: {0}\n", AssemblyQualifiedName);
+            foreach(var f in Fields)
+            {
+                bldr.Append(f);
+            }
+            return bldr.ToString();
+        }
 
     public TypeDescriptorCompareResult CompareWith(TypeDescriptor previous)
     {

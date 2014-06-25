@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using Antmicro.Migrant.VersionTolerance;
 using System.Linq;
 using System.Diagnostics;
+using System.Text;
 
 namespace Antmicro.Migrant
 {
@@ -134,6 +135,19 @@ namespace Antmicro.Migrant
     public IEnumerable<FieldDescriptor> GetFieldsInAlphabeticalOrder()
     {
       return Classes.SelectMany(x => x.Fields.OrderBy(y => y.Name));
+    }
+
+    public override string ToString()
+    {
+            var bldr = new StringBuilder();
+            bldr.AppendLine("-----------------");
+            bldr.AppendFormat("GUID: {0}\n", ModuleGUID);
+            foreach(var c in Classes)
+            {
+                bldr.Append(c).AppendLine();
+            }
+            bldr.AppendLine("-----------------");
+            return bldr.ToString();
     }
 
     public Guid ModuleGUID { get; private set; }

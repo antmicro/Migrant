@@ -26,6 +26,7 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace Antmicro.Migrant
 {
@@ -104,7 +105,11 @@ namespace Antmicro.Migrant
 
     public override string ToString()
     {
-      return string.Format("[FieldDescriptor: IsTransient={0}, Name={1}, TypeAQN={2}, OwningTypeAQN={3}]", IsTransient, Name, TypeAQN, OwningTypeAQN);
+            var bldr = new StringBuilder();
+            bldr.AppendFormat("Name: {0}\n", Name);
+            bldr.AppendFormat("Type: {0}\n", TypeAQN);
+            bldr.AppendFormat("Owned by: {0}\n", OwningTypeAQN);
+            return bldr.ToString();
     }
 
     public bool IsTransient { get; private set; }
