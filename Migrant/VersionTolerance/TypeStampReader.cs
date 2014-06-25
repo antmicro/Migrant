@@ -101,15 +101,13 @@ namespace Antmicro.Migrant.VersionTolerance
         }
         else if (cmpResult.FieldsMoved.ContainsKey(field))
         {
-          var mvd = cmpResult.FieldsMoved[field];
-          var ttt = Type.GetType(mvd.OwningTypeAQN);
-          var finfo = ttt.GetField(mvd.Name);
+          var moved = cmpResult.FieldsMoved[field];
+          var finfo = Type.GetType(moved.OwningTypeAQN).GetField(moved.Name);
           result.Add(new FieldInfoOrEntryToOmit(finfo));
         }
         else
         {
-          var ttt = Type.GetType(field.OwningTypeAQN);
-          var finfo = ttt.GetField(field.Name);
+          var finfo = Type.GetType(field.OwningTypeAQN).GetField(field.Name);
           result.Add(new FieldInfoOrEntryToOmit(finfo));
         }
       }
