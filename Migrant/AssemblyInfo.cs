@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 - 2013 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012 - 2014 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -30,6 +30,6 @@ using System.Reflection;
 [assembly: AssemblyTitle("Migrant")]
 [assembly: AssemblyDescription("Fast and flexible serialization framework usable on undecorated classes.")]
 [assembly: AssemblyCompany("Antmicro")]
-[assembly: AssemblyCopyright("Copyright by Antmicro 2012 - 2013")]
+[assembly: AssemblyCopyright("Copyright by Antmicro 2012 - 2014")]
 
-[assembly: AssemblyVersion("0.5")]
+[assembly: AssemblyVersion("0.6")]
