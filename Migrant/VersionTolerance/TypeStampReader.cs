@@ -102,12 +102,12 @@ namespace Antmicro.Migrant.VersionTolerance
         else if (cmpResult.FieldsMoved.ContainsKey(field))
         {
           var moved = cmpResult.FieldsMoved[field];
-          var finfo = Type.GetType(moved.OwningTypeAQN).GetField(moved.Name);
+          var finfo = Type.GetType(moved.OwningTypeAQN).GetField(moved.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
           result.Add(new FieldInfoOrEntryToOmit(finfo));
         }
         else
         {
-          var finfo = Type.GetType(field.OwningTypeAQN).GetField(field.Name);
+                    var finfo = Type.GetType(field.OwningTypeAQN).GetField(field.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
           result.Add(new FieldInfoOrEntryToOmit(finfo));
         }
       }

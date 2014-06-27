@@ -32,11 +32,19 @@ namespace Antmicro.Migrant.VersionTolerance
 	{
 		public FieldInfoOrEntryToOmit(Type typeToOmit)
 		{
+            if(typeToOmit == null)
+            {
+                throw new ArgumentNullException();
+            }
 			this.TypeToOmit = typeToOmit;
 		}
 
 		public FieldInfoOrEntryToOmit(FieldInfo field)
 		{
+            if(field == null)
+            {
+                throw new ArgumentNullException();
+            }
 			this.Field = field;
 		}		
 
