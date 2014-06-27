@@ -894,6 +894,20 @@ namespace Antmicro.Migrant.Tests
           Assert.AreEqual(src.Value, dst.Value);
         }
 
+        [Test]
+        public void ShouldSerializeNullableEnum()
+        {
+            var src = new ClassWithNullableEnum() { e = SimpleEnum.Two };
+            var dst = SerializerClone(src);
+
+            Assert.AreEqual(SimpleEnum.Two, dst.e);
+        }
+
+        public class ClassWithNullableEnum
+        {
+            public SimpleEnum? e { get; set; }
+        }
+
       public class SimpleClass
       {
         public int Value { get; set; }

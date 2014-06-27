@@ -513,7 +513,6 @@ namespace Antmicro.Migrant.Generators
 			var objectActualTypeLocal = generator.DeclareLocal(typeof(Type));
 			var metaResultLocal = generator.DeclareLocal(typeof(Int32));
 
-			var isBoxed = false;
 			var forcedFormalType = formalType;
 			var forcedBoxIfValueType = boxIfValueType;
 
@@ -549,23 +548,6 @@ namespace Antmicro.Migrant.Generators
 				generator.MarkLabel(finishLabel);
 				return;
 			}
-			if(formalType.IsEnum)
-			{
-				var actualType = Enum.GetUnderlyingType(forcedFormalType);
-				
-				PushTypeOntoStack(forcedFormalType);
-				GenerateReadPrimitive(actualType);
-				generator.Emit(OpCodes.Call, typeof(Enum).GetMethod("ToObject", BindingFlags.Static | BindingFlags.Public, null, new[] {
-					typeof(Type),
-					actualType
-				}, null));
-				
-				if(!forcedBoxIfValueType)
-				{
-					generator.Emit(OpCodes.Unbox_Any, forcedFormalType);
-				}
-				return;
-			}
 
 			var nullableActualType = Nullable.GetUnderlyingType(formalType);
 			if(nullableActualType != null)
@@ -582,7 +564,23 @@ namespace Antmicro.Migrant.Generators
 				generator.MarkLabel(continueWithNullableLabel);
 			}
 
-			if(Helpers.IsWriteableByPrimitiveWriter(forcedFormalType))
+            if(forcedFormalType.IsEnum)
+            {
+                var actualType = Enum.GetUnderlyingType(forcedFormalType);
+                
+                PushTypeOntoStack(forcedFormalType);
+                GenerateReadPrimitive(actualType);
+                generator.Emit(OpCodes.Call, typeof(Enum).GetMethod("ToObject", BindingFlags.Static | BindingFlags.Public, null, new[] {
+                    typeof(Type),
+                    actualType
+                }, null));
+
+                if(!forcedBoxIfValueType)
+                {
+                    generator.Emit(OpCodes.Unbox_Any, forcedFormalType);
+                }
+            }
+            else if(Helpers.IsWriteableByPrimitiveWriter(forcedFormalType))
 			{
 				// value type
 				GenerateReadPrimitive(forcedFormalType);
@@ -590,7 +588,6 @@ namespace Antmicro.Migrant.Generators
 				if(forcedBoxIfValueType)
 				{
 					generator.Emit(OpCodes.Box, forcedFormalType);
-					isBoxed = true;
 				}
 			}
 			else
@@ -607,7 +604,6 @@ namespace Antmicro.Migrant.Generators
 				if(forcedBoxIfValueType)
 				{
 					generator.Emit(OpCodes.Box, forcedFormalType);
-					isBoxed = true;
 				}
 			}
 
@@ -623,7 +619,7 @@ namespace Antmicro.Migrant.Generators
 				generator.Emit(OpCodes.Dup);
 				generator.Emit(OpCodes.Brfalse, returnNullNullableLabel);
 
-				if(isBoxed)
+                if(forcedBoxIfValueType)
 				{
 					generator.Emit(OpCodes.Unbox_Any, nullableActualType);
 				}
