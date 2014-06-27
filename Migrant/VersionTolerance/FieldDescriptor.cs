@@ -103,15 +103,6 @@ namespace Antmicro.Migrant
       return hash;
     }
 
-    public override string ToString()
-    {
-            var bldr = new StringBuilder();
-            bldr.AppendFormat("Name: {0}\n", Name);
-            bldr.AppendFormat("Type: {0}\n", TypeAQN);
-            bldr.AppendFormat("Owned by: {0}\n", OwningTypeAQN);
-            return bldr.ToString();
-    }
-
     public bool IsTransient { get; private set; }
     public string Name { get; private set; }
     public string TypeAQN { get; private set; }

@@ -68,17 +68,6 @@ namespace Antmicro.Migrant
       }
     }
 
-        public override string ToString()
-        {
-            var bldr = new StringBuilder();
-            bldr.AppendFormat("Type name: {0}\n", AssemblyQualifiedName);
-            foreach(var f in Fields)
-            {
-                bldr.Append(f);
-            }
-            return bldr.ToString();
-        }
-
     public TypeDescriptorCompareResult CompareWith(TypeDescriptor previous)
     {
       var result = new TypeDescriptorCompareResult();

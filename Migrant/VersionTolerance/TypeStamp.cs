@@ -137,19 +137,6 @@ namespace Antmicro.Migrant
       return Classes.SelectMany(x => x.Fields.OrderBy(y => y.Name));
     }
 
-    public override string ToString()
-    {
-            var bldr = new StringBuilder();
-            bldr.AppendLine("-----------------");
-            bldr.AppendFormat("GUID: {0}\n", ModuleGUID);
-            foreach(var c in Classes)
-            {
-                bldr.Append(c).AppendLine();
-            }
-            bldr.AppendLine("-----------------");
-            return bldr.ToString();
-    }
-
     public Guid ModuleGUID { get; private set; }
     public List<TypeDescriptor> Classes { get; private set; }
 
@@ -198,31 +185,6 @@ namespace Antmicro.Migrant
           FieldsMoved.Add(fRemoved, fAdded);
           FieldsAdded.Remove(fAdded);
           FieldsRemoved.Remove(fRemoved);
-        }
-      }
-
-      [Conditional("DEBUG")]
-      public void PrintSummary()
-      {
-        Console.WriteLine("Fields added:");
-        foreach (var f in FieldsAdded)
-        {
-          Console.WriteLine("\t" + f.Name);
-        }
-        Console.WriteLine("Fields removed:");
-        foreach (var f in FieldsRemoved)
-        {
-          Console.WriteLine("\t" + f.Name);
-        }
-        Console.WriteLine("Fields moved:");
-        foreach (var f in FieldsMoved)
-        {
-          Console.WriteLine("\t" + f.Key.Name + " " + f.Key.OwningTypeAQN + " => " + f.Value.OwningTypeAQN);
-        }
-        Console.WriteLine("Fields changed:");
-        foreach (var f in FieldsChanged)
-        {
-          Console.WriteLine("\t" + f.Name);
         }
       }
     }
