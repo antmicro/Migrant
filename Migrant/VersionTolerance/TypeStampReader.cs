@@ -92,7 +92,6 @@ namespace Antmicro.Migrant.VersionTolerance
         throw new InvalidOperationException(string.Format("Field moved: {0}.", cmpResult.FieldsMoved.ElementAt(0).Key.Name));
       }
 
-      cmpResult.PrintSummary();
       foreach (var field in streamTypeStamp.GetFieldsInAlphabeticalOrder()) 
       {
         if (cmpResult.FieldsRemoved.Contains(field))
