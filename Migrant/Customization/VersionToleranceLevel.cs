@@ -72,6 +72,11 @@ namespace Antmicro.Migrant.Customization
         /// Fields will be matched by names, therefore this flag cannot be used in classes with multiple fields with the same name.
         /// </summary>
         TypeNameChanged = 0x20,
+
+        /// <summary>
+        /// Assemblies version can very between new and old layout.
+        /// </summary>
+        AssemblyVersionChanged = 0x40
 	}
 }
 

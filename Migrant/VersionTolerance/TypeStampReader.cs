@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using Antmicro.Migrant.Customization;
+using System.Text.RegularExpressions;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
@@ -77,7 +78,23 @@ namespace Antmicro.Migrant.VersionTolerance
 
       if (cmpResult.ClassesRenamed.Any() && !versionToleranceLevel.HasFlag(VersionToleranceLevel.TypeNameChanged))
       {
-        throw new InvalidOperationException(string.Format("Class name changed from {0} to {1}", cmpResult.ClassesRenamed[0].Item1, cmpResult.ClassesRenamed[0].Item2));
+                if (versionToleranceLevel.HasFlag(VersionToleranceLevel.AssemblyVersionChanged))
+                {
+                    foreach(var renamed in cmpResult.ClassesRenamed)
+                    {
+                        var beforeStrippedVersion = Regex.Replace(renamed.Item1, "Version=[0-9.]*", string.Empty);
+                        var afterStrippedVersion = Regex.Replace(renamed.Item2, "Version=[0-9.]*", string.Empty);
+
+                        if(beforeStrippedVersion != afterStrippedVersion)
+                        {
+                            throw new InvalidOperationException(string.Format("Class name changed from {0} to {1}", cmpResult.ClassesRenamed[0].Item1, cmpResult.ClassesRenamed[0].Item2));
+                        }
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException(string.Format("Class name changed from {0} to {1}", cmpResult.ClassesRenamed[0].Item1, cmpResult.ClassesRenamed[0].Item2));
+                }
       }
       if (cmpResult.FieldsAdded.Any() && !versionToleranceLevel.HasFlag(VersionToleranceLevel.FieldAddition))
       {
