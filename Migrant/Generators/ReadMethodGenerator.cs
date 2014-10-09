@@ -203,8 +203,19 @@ namespace Antmicro.Migrant.Generators
 					PushDeserializedObjectOntoStack(objectIdLocal);
 					generator.Emit(OpCodes.Castclass, method.ReflectedType);
 				}
-				generator.Emit(OpCodes.Ldtoken, method);
-				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, MethodBase>(x => MethodBase.GetMethodFromHandle(new RuntimeMethodHandle())));
+
+                generator.Emit(OpCodes.Ldtoken, method);
+                if(method.DeclaringType.IsGenericType)
+                {
+                    generator.Emit(OpCodes.Ldtoken, method.DeclaringType);
+
+                    generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, MethodBase>(x => MethodBase.GetMethodFromHandle(new RuntimeMethodHandle(), new RuntimeTypeHandle())));
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, MethodBase>(x => MethodBase.GetMethodFromHandle(new RuntimeMethodHandle())));
+                }
+
 				generator.Emit(OpCodes.Castclass, typeof(MethodInfo));
 				generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, Delegate>(x => Delegate.CreateDelegate(null, null, method)));
 
