@@ -25,7 +25,6 @@
 using System;
 using System.Reflection.Emit;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Collections.Generic;
 using System.IO;
 
@@ -44,7 +43,7 @@ namespace Antmicro.Migrant.Tests
 
         public DynamicClass WithField(string name, Type type)
         {
-            fields.Add(name, Tuple.Create(type, false));
+            fields.Add(name, new FieldDescriptor { Type = type });
             return this;
         }
 
@@ -55,7 +54,18 @@ namespace Antmicro.Migrant.Tests
 
         public DynamicClass WithTransientField(string name, Type type)
         {
-            fields.Add(name, Tuple.Create(type, true));
+            fields.Add(name, new FieldDescriptor { Type = type, IsTransient = true });
+            return this;
+        }
+
+        public DynamicClass WithConstructorField<T>(string name)
+        {
+            return WithConstructorField(name, typeof(T));
+        }
+
+        public DynamicClass WithConstructorField(string name, Type type)
+        {
+            fields.Add(name, new FieldDescriptor { Type = type, IsConstructor = true });
             return this;
         }
 
@@ -75,11 +85,16 @@ namespace Antmicro.Migrant.Tests
 
             foreach(var field in fields)
             {
-                var fBldr = typeBuilder.DefineField(field.Key, field.Value.Item1, FieldAttributes.Public);
-                if (field.Value.Item2)
+                var fBldr = typeBuilder.DefineField(field.Key, field.Value.Type, FieldAttributes.Public);
+                if (field.Value.IsTransient)
                 {
                     var taC = typeof(TransientAttribute).GetConstructor(Type.EmptyTypes);
                     fBldr.SetCustomAttribute(new CustomAttributeBuilder(taC, new object[0]));
+                }
+                if(field.Value.IsConstructor)
+                {
+                    var taC = typeof(ConstructorAttribute).GetConstructors()[0];
+                    fBldr.SetCustomAttribute(new CustomAttributeBuilder(taC, new object[] { new object[0] }));
                 }
             }
 
@@ -106,11 +121,19 @@ namespace Antmicro.Migrant.Tests
         }
 
         private string name;
-        private Dictionary<string, Tuple<Type, bool>> fields = new Dictionary<string, Tuple<Type, bool>>();
+        private Dictionary<string, FieldDescriptor> fields = new Dictionary<string, FieldDescriptor>();
         private DynamicClass baseClass;
 
         private static readonly AssemblyName AssemblyName = new AssemblyName("TestAssembly");
-        private static int counter = 0;
+        private const int counter = 0;
         public static string prefix;
+
+        [Serializable]
+        private class FieldDescriptor
+        {
+            public Type Type { get; set; }
+            public bool IsTransient { get; set; }
+            public bool IsConstructor { get; set; }
+        }
     }
 }
