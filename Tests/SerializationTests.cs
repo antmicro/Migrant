@@ -33,6 +33,8 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.IO;
 using System.Collections.ObjectModel;
+using Antmicro.Migrant.Hooks;
+using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -903,6 +905,33 @@ namespace Antmicro.Migrant.Tests
             Assert.AreEqual(SimpleEnum.Two, dst.e);
         }
 
+        [Test]
+        public void ShouldSerializeGenericClassWithLatePostDeserializationHook()
+        {
+            var src = new GenericClassWithLatePostDeserializationHook { x = 150 };
+            var dst = SerializerClone(src);
+
+            Assert.AreEqual(147, dst.x);
+        }
+
+        public class GenericClass<T> 
+        {
+            [Transient]
+            public T x;
+        }
+
+        public class GenericClassWithLatePostDeserializationHook : GenericClass<int>
+        {
+            [LatePostDeserialization]
+            public void LatePostDeserialization()
+            {
+                if(x == 0)
+                {
+                    x = 147;
+                }
+            }
+        }
+
         public class ClassWithNullableEnum
         {
             public SimpleEnum? e { get; set; }
@@ -1359,4 +1388,3 @@ namespace Antmicro.Migrant.Tests
       }
     }
 }
-
