@@ -43,6 +43,7 @@ namespace Antmicro.Migrant
       Name = finfo.Name;
       TypeAQN = finfo.FieldType.AssemblyQualifiedName;
       IsTransient = finfo.GetCustomAttributes(false).Any(a => a is TransientAttribute);
+      IsConstructor = finfo.GetCustomAttributes(false).Any(a => a is ConstructorAttribute);
     }
 
     public void WriteTo(PrimitiveWriter writer)
@@ -103,6 +104,7 @@ namespace Antmicro.Migrant
       return hash;
     }
 
+    public bool IsConstructor { get; private set; }
     public bool IsTransient { get; private set; }
     public string Name { get; private set; }
     public string TypeAQN { get; private set; }

@@ -1,5 +1,5 @@
 /*
-   Copyright (c) 2013 Ant Micro <www.antmicro.com>
+   Copyright (c) 2014 Ant Micro <www.antmicro.com>
 
  Authors:
   * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -126,6 +126,12 @@ namespace Antmicro.Migrant.VersionTolerance
                     var finfo = Type.GetType(field.OwningTypeAQN).GetField(field.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
           result.Add(new FieldInfoOrEntryToOmit(finfo));
         }
+      }
+
+      foreach(var field in assemblyTypeStamp.GetFieldsInAlphabeticalOrder().Where(x => x.IsConstructor))
+      {
+          var finfo = Type.GetType(field.OwningTypeAQN).GetField(field.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+          result.Add(new FieldInfoOrEntryToOmit(finfo));
       }
 
       stampCache.Add(type, result);
