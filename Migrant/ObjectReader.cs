@@ -74,8 +74,12 @@ namespace Antmicro.Migrant
 		/// <param name="versionToleranceLevel"> 
 		/// Describes the tolerance level of this reader when handling discrepancies in type description (new or missing fields, etc.).
 		/// </param> 
+        /// <param name="useBuffering"> 
+        /// True if buffering was used with the corresponding ObjectWriter or false otherwise - i.e. when no padding and buffering is used.
+        /// </param>
         public ObjectReader(Stream stream, InheritanceAwareList<Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
-            IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, VersionToleranceLevel versionToleranceLevel = 0)
+            IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
+            VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true)
 		{
 			if(objectsForSurrogates == null)
 			{
@@ -91,7 +95,7 @@ namespace Antmicro.Migrant
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             delegatesCache = new Dictionary<Type, Func<int, object>>();
             deserializedObjects = new AutoResizingList<object>(InitialCapacity);
-            reader = new PrimitiveReader(stream);
+            reader = new PrimitiveReader(stream, useBuffering);
             stamper = new TypeStampReader(reader, versionToleranceLevel);
 		}
 

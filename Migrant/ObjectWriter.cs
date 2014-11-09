@@ -72,9 +72,13 @@ namespace Antmicro.Migrant
         /// <param name = "treatCollectionAsUserObject">
         /// True if collection objects are to be serialized without optimization (treated as normal user objects).
         /// </param>
+        /// <param name="useBuffering"> 
+        /// True if buffering is used. False if all writes should directly go to the stream and no padding should be used.
+        /// </param>
 		public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null, 
 		                    Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
-            InheritanceAwareList<Delegate> surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false)
+            InheritanceAwareList<Delegate> surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false,
+            bool useBuffering = true)
 		{
 			if(surrogatesForObjects == null)
 			{
@@ -92,7 +96,7 @@ namespace Antmicro.Migrant
 			methodIndices = new Dictionary<MethodInfo, int>();
 			this.preSerializationCallback = preSerializationCallback;
 			this.postSerializationCallback = postSerializationCallback;
-            writer = new PrimitiveWriter(stream);
+            writer = new PrimitiveWriter(stream, useBuffering);
             typeStamper = new TypeStamper(writer, treatCollectionAsUserObject);
             inlineWritten = new HashSet<int>();
             objectsWritten = 0;
