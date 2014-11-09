@@ -72,6 +72,8 @@
     <Compile Include="VersionTolerance\TypeStamp.cs" />
     <Compile Include="VersionTolerance\TypeDescriptor.cs" />
     <Compile Include="VersionTolerance\FieldDescriptor.cs" />
+    <Compile Include="ObjectIdentifierContext.cs" />
+    <Compile Include="Box.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

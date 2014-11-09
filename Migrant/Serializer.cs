@@ -83,11 +83,24 @@ namespace Antmicro.Migrant
 		public void Serialize(object obj, Stream stream)
 		{
 			WriteHeader(stream);
-            var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
-                writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, settings.TreatCollectionAsUserObject);
-			writer.WriteObject(obj);
+            using(var writer = ObtainWriter(stream))
+            {
+                writer.WriteObject(obj);
+            }
 			serializationDone = true;
 		}
+
+        /// <summary>
+        /// Returns the open stream serializer, which can be used to do consecutive serializations
+        /// </summary>
+        /// <returns>The open stream serializer.</returns>
+        /// <param name="stream">Stream.</param>
+        public OpenStreamSerializer ObtainOpenStreamSerializer(Stream stream)
+        {
+            WriteHeader(stream);
+            serializationDone = true;
+            return new OpenStreamSerializer(ObtainWriter(stream));
+        }
 
 		/// <summary>
 		/// Gives the ability to set callback providing object for surrogate of given type. The object will be provided instead of such
@@ -247,6 +260,13 @@ namespace Antmicro.Migrant
 			stream.WriteByte(VersionNumber);
 		}
 
+        private ObjectWriter ObtainWriter(Stream stream)
+        {
+            var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
+                             writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, settings.TreatCollectionAsUserObject);
+            return writer;
+        }
+
         private Exception lastException;
 		private bool serializationDone;
 		private bool deserializationDone;
@@ -323,6 +343,26 @@ namespace Antmicro.Migrant
 
 			private readonly Serializer serializer;
 		}
+
+        public class OpenStreamSerializer : IDisposable
+        {
+            internal OpenStreamSerializer(ObjectWriter writer)
+            {
+                this.writer = writer;
+            }
+
+            public void Serialize(object obj)
+            {
+                writer.WriteObject(new Box(obj));
+            }
+
+            public void Dispose()
+            {
+                writer.Dispose();
+            }
+
+            private readonly ObjectWriter writer;
+        }
 	}
 }
 
