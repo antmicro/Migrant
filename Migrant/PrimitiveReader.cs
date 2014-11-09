@@ -49,11 +49,20 @@ namespace Antmicro.Migrant
 		/// <param name='stream'>
 		/// The underlying stream which will be used to read data. Has to be readable.
 		/// </param>
-		public PrimitiveReader(Stream stream)
+        /// <param name='buffered'> 
+        /// True if reads should assume that corresponding PrimitiveWriter used buffering. False otherwise,
+        /// then no read prefetching or padding is used. Note that corresponding PrimitiveWriter always have
+        /// to have the same value for this parameter.
+        /// </param>
+        public PrimitiveReader(Stream stream, bool buffered = true)
 		{
 			this.stream = stream;
-			// buffer size is the size of the maximal padding
-			buffer = new byte[Helpers.MaximalPadding];
+            if(buffered)
+            {
+                // buffer size is the size of the maximal padding
+                buffer = new byte[Helpers.MaximalPadding];
+            }
+            this.buffered = buffered;
 		}
 
 		/// <summary>
@@ -116,8 +125,12 @@ namespace Antmicro.Migrant
 		/// </summary>
 		public byte ReadByte()
 		{
-			CheckBuffer();
-			return buffer[currentBufferPosition++];
+            if(buffered)
+            {
+                CheckBuffer();
+                return buffer[currentBufferPosition++];
+            }
+            return stream.ReadByteOrThrow();
 		}
 
 		/// <summary>
@@ -287,7 +300,8 @@ namespace Antmicro.Migrant
 
 		/// <summary>
 		/// After this call stream's position is updated to match the padding used by <see cref="Antmicro.Migrant.PrimitiveWriter"/>.
-		/// It is needed to be called if one expects consecutive reads (of data written previously by consecutive writes).
+		/// It is needed to be called if one expects consecutive reads (of data written previously by consecutive writes). It is not necessary
+        /// to call this method when buffering is not used.
 		/// </summary>
 		/// <remarks>
 		/// Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.PrimitiveReader"/>. The
@@ -298,6 +312,10 @@ namespace Antmicro.Migrant
 		/// </remarks>
 		public void Dispose()
 		{
+            if(!buffered)
+            {
+                return;
+            }
 			// we have to leave the stream in aligned position
 			var toRead = Helpers.GetCurrentPaddingValue(currentPosition);
 			stream.ReadOrThrow(buffer, 0, toRead);
@@ -341,7 +359,7 @@ namespace Antmicro.Migrant
 		private void ReloadBuffer()
 		{
 			// how much can we read?
-			var toRead = Helpers.GetNextBytesToRead(currentPosition);
+            var toRead = Helpers.GetNextBytesToRead(currentPosition);
 			stream.ReadOrThrow(buffer, 0, toRead);
 			currentPosition += toRead;
 			currentBufferSize = toRead;
@@ -350,6 +368,13 @@ namespace Antmicro.Migrant
 
 		private ArraySegment<byte> InnerChunkRead(int byteNumber, out bool bufferCreated)
 		{
+            if(!buffered)
+            {
+                bufferCreated = true;
+                var data = new byte[byteNumber];
+                stream.ReadOrThrow(data, 0, byteNumber);
+                return new ArraySegment<byte>(data);
+            }
 			bufferCreated = false;
 			var dataLeft = currentBufferSize - currentBufferPosition;
 			if(byteNumber > dataLeft)
@@ -381,6 +406,7 @@ namespace Antmicro.Migrant
 		private int currentBufferSize;
 		private int currentBufferPosition;
 		private readonly Stream stream;
+        private readonly bool buffered;
 	}
 }
 
