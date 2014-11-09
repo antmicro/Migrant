@@ -45,7 +45,7 @@ namespace Antmicro.Migrant
 	/// <summary>
 	/// Reads the object previously written by <see cref="Antmicro.Migrant.ObjectWriter" />.
 	/// </summary>
-	public class ObjectReader
+    public class ObjectReader : IDisposable
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectReader" /> class.
@@ -87,11 +87,12 @@ namespace Antmicro.Migrant
 			typeList = new List<Type>();
 			methodList = new List<MethodInfo>();
 			postDeserializationHooks = new List<Action>();
-			this.stream = stream;
 			this.postDeserializationCallback = postDeserializationCallback;
-			this.versionToleranceLevel = versionToleranceLevel;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
-			PrepareForTheRead();
+            delegatesCache = new Dictionary<Type, Func<int, object>>();
+            deserializedObjects = new AutoResizingList<object>(InitialCapacity);
+            reader = new PrimitiveReader(stream);
+            stamper = new TypeStampReader(reader, versionToleranceLevel);
 		}
 
 		/// <summary>
@@ -111,17 +112,26 @@ namespace Antmicro.Migrant
 		/// </remarks>
 		public T ReadObject<T>()
 		{
+            if(soFarDeserialized != null)
+            {
+                deserializedObjects = new AutoResizingList<object>(soFarDeserialized.Length);
+                for(var i = 0; i < soFarDeserialized.Length; i++)
+                {
+                    deserializedObjects[i] = soFarDeserialized[i].Target;
+                }
+            }
+            var firstObjectId = deserializedObjects.Count;
 			var type = ReadType();
 			if(useGeneratedDeserialization)
 			{
-				ReadObjectInnerGenerated(type, 0);
+                ReadObjectInnerGenerated(type, firstObjectId);
 			}
 			else
 			{
-				ReadObjectInner(type, 0);
+                ReadObjectInner(type, firstObjectId);
 			}
 
-			var obj = deserializedObjects[0];
+            var obj = deserializedObjects[firstObjectId];
 			if(!(obj is T))
 			{
 				throw new InvalidDataException(
@@ -129,13 +139,27 @@ namespace Antmicro.Migrant
 				              typeof(T), obj.GetType()));
 			}
 			
-			PrepareForTheRead();
+			PrepareForNextRead();
 			foreach(var hook in postDeserializationHooks)
 			{
 				hook();
 			}
 			return (T)obj;
 		}
+
+        /// <summary>
+        /// Releases all resource used by the <see cref="Antmicro.Migrant.ObjectReader"/> object. Note that this is not necessary
+        /// if buffering is not used.
+        /// </summary>
+        /// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.ObjectReader"/>. The
+        /// <see cref="Dispose"/> method leaves the <see cref="Antmicro.Migrant.ObjectReader"/> in an unusable state.
+        /// After calling <see cref="Dispose"/>, you must release all references to the
+        /// <see cref="Antmicro.Migrant.ObjectReader"/> so the garbage collector can reclaim the memory that the
+        /// <see cref="Antmicro.Migrant.ObjectReader"/> was occupying.</remarks>
+        public void Dispose()
+        {
+            reader.Dispose();
+        }
 
 		private void EnsureReadMethod(Type type)
 		{
@@ -146,17 +170,14 @@ namespace Antmicro.Migrant
 			}
 		}
 
-		private void PrepareForTheRead()
+		private void PrepareForNextRead()
 		{
-			if(reader != null)
-			{
-				reader.Dispose();
-			}
-
-			delegatesCache = new Dictionary<Type, Func<int, object>>();
-			deserializedObjects = new AutoResizingList<object>(InitialCapacity);
-			reader = new PrimitiveReader(stream);
-			stamper = new TypeStampReader(reader, versionToleranceLevel);
+            soFarDeserialized = new WeakReference[deserializedObjects.Count];
+            for(var i = 0; i < soFarDeserialized.Length; i++)
+            {
+                soFarDeserialized[i] = new WeakReference(deserializedObjects[i]);
+            }
+            deserializedObjects = null;
 		}
 
 		internal static bool HasSpecialReadMethod(Type type)
@@ -599,17 +620,16 @@ namespace Antmicro.Migrant
 			return CreationWay.Uninitialized;
 		}
 
+        private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;
         private readonly bool treatCollectionAsUserObject;
 		internal AutoResizingList<object> deserializedObjects;
 		private IDictionary<Type, DynamicMethod> readMethodsCache;
-		private Dictionary<Type, Func<Int32, object>> delegatesCache;
-		internal PrimitiveReader reader;
-		private TypeStampReader stamper;
-		private readonly VersionToleranceLevel versionToleranceLevel;
+		private readonly Dictionary<Type, Func<Int32, object>> delegatesCache;
+		internal readonly PrimitiveReader reader;
+		private readonly TypeStampReader stamper;
 		private readonly List<Type> typeList;
 		private readonly List<MethodInfo> methodList;
-		private readonly Stream stream;
 		internal readonly Action<object> postDeserializationCallback;
 		internal readonly List<Action> postDeserializationHooks;
         internal readonly InheritanceAwareList<Delegate> objectsForSurrogates;

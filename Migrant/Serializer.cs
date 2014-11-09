@@ -102,6 +102,11 @@ namespace Antmicro.Migrant
             return new OpenStreamSerializer(ObtainWriter(stream));
         }
 
+        public OpenStreamDeserializer ObtainOpenStreamDeserializer(Stream stream)
+        {
+            throw new NotImplementedException();
+        }
+
 		/// <summary>
 		/// Gives the ability to set callback providing object for surrogate of given type. The object will be provided instead of such
 		/// surrogate in the effect of deserialization.
@@ -190,18 +195,20 @@ namespace Antmicro.Migrant
                 return DeserializationResult.WrongVersion;
             }
 
-            var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
-                settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject, settings.VersionTolerance);
-
-            try {
-                obj = objectReader.ReadObject<T>();
-                deserializationDone = true;
-                return DeserializationResult.OK;
-            }
-            catch (Exception ex)
+            using(var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
+                                         settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject, settings.VersionTolerance))
             {
-                lastException = ex;
-                return DeserializationResult.StreamCorrupted;
+                try
+                {
+                    obj = objectReader.ReadObject<T>();
+                    deserializationDone = true;
+                    return DeserializationResult.OK;
+                }
+                catch(Exception ex)
+                {
+                    lastException = ex;
+                    return DeserializationResult.StreamCorrupted;
+                }
             }
         }
 
@@ -362,6 +369,27 @@ namespace Antmicro.Migrant
             }
 
             private readonly ObjectWriter writer;
+        }
+
+        public class OpenStreamDeserializer : IDisposable
+        {
+            internal OpenStreamDeserializer(ObjectReader reader)
+            {
+                this.reader = reader;
+            }
+
+            public T Deserialize<T>()
+            {
+                var box = reader.ReadObject<Box>();
+                return (T)box.Value;
+            }
+
+            public void Dispose()
+            {
+                reader.Dispose();
+            }
+
+            private readonly ObjectReader reader;
         }
 	}
 }
