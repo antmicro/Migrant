@@ -44,7 +44,7 @@ namespace Antmicro.Migrant
 	/// <summary>
 	/// Writes the object in a format that can be later read by <see cref="Antmicro.Migrant.ObjectReader"/>.
 	/// </summary>
-	public class ObjectWriter
+    public class ObjectWriter : IDisposable
 	{
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectWriter" /> class.
@@ -90,10 +90,12 @@ namespace Antmicro.Migrant
 			this.surrogatesForObjects = surrogatesForObjects;
 			typeIndices = new Dictionary<Type, int>();
 			methodIndices = new Dictionary<MethodInfo, int>();
-			this.stream = stream;
 			this.preSerializationCallback = preSerializationCallback;
 			this.postSerializationCallback = postSerializationCallback;
-			PrepareForNextWrite();
+            writer = new PrimitiveWriter(stream);
+            typeStamper = new TypeStamper(writer, treatCollectionAsUserObject);
+            inlineWritten = new HashSet<int>();
+            objectsWritten = 0;
 		}
 
 		/// <summary>
@@ -104,17 +106,30 @@ namespace Antmicro.Migrant
 		/// </param>
 		public void WriteObject(object o)
 		{
-			objectsWritten = 0;
+            objectsWrittenThisSession = 0;
+            identifier = identifierContext == null ? new ObjectIdentifier() : new ObjectIdentifier(identifierContext);
+            identifierContext = null;
+            var identifiersCount = identifier.Count;
 			identifier.GetId(o);
+            var firstObjectIsNew = identifiersCount != identifier.Count;
+
 			try
 			{
-				while(identifier.Count > objectsWritten)
+                // first object is always written
+                InvokeCallbacksAndWriteObject(o);
+                if(firstObjectIsNew)
+                {
+                    objectsWritten++;
+                    objectsWrittenThisSession++;
+                }
+                while(identifier.Count - identifierCountPreviousSession > objectsWrittenThisSession)
 				{
 					if(!inlineWritten.Contains(objectsWritten))
 					{
 						InvokeCallbacksAndWriteObject(identifier[objectsWritten]);
 					}
 					objectsWritten++;
+                    objectsWrittenThisSession++;
 				}
 			}
 			finally
@@ -126,6 +141,21 @@ namespace Antmicro.Migrant
 				PrepareForNextWrite();
 			}
 		}
+
+        /// <summary>
+        /// Releases all resource used by the <see cref="Antmicro.Migrant.ObjectWriter"/> object. Note that this is not necessary
+        /// if buffering is not used.
+        /// </summary>
+        /// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.ObjectWriter"/>. The
+        /// <see cref="Dispose"/> method leaves the <see cref="Antmicro.Migrant.ObjectWriter"/> in an unusable state.
+        /// After calling <see cref="Dispose"/>, you must release all references to the
+        /// <see cref="Antmicro.Migrant.ObjectWriter"/> so the garbage collector can reclaim the memory that the
+        /// <see cref="Antmicro.Migrant.ObjectWriter"/> was occupying.</remarks>
+        public void Dispose()
+        {
+            writer.Dispose();
+            writer = null;
+        }
 
 		internal void WriteObjectIdPossiblyInline(object o)
 		{
@@ -240,14 +270,10 @@ namespace Antmicro.Migrant
 
 		private void PrepareForNextWrite()
 		{
-			if(writer != null)
-			{
-				writer.Dispose();
-			}
-			identifier = new ObjectIdentifier();
-			writer = new PrimitiveWriter(stream);
-            typeStamper = new TypeStamper(writer, treatCollectionAsUserObject);
-			inlineWritten = new HashSet<int>();
+            identifierCountPreviousSession = identifier.Count;
+            currentlyWrittenTypes.Clear();
+            identifierContext = identifier.GetContext();
+            identifier = null;
 		}
 
 		private void InvokeCallbacksAndWriteObject(object o)
@@ -613,15 +639,17 @@ namespace Antmicro.Migrant
 		}
 
 		private ObjectIdentifier identifier;
+        private ObjectIdentifierContext identifierContext;
 		private int objectsWritten;
+        private int objectsWrittenThisSession;
+        private int identifierCountPreviousSession;
 		private int nextTypeId;
 		private int nextMethodId;
 		private PrimitiveWriter writer;
-		private TypeStamper typeStamper;
-		private HashSet<int> inlineWritten;
+		private readonly TypeStamper typeStamper;
+		private readonly HashSet<int> inlineWritten;
 		private readonly bool isGenerating;
         private readonly bool treatCollectionAsUserObject;
-		private readonly Stream stream;
 		private readonly Action<object> preSerializationCallback;
 		private readonly Action<object> postSerializationCallback;
 		private readonly List<Action> postSerializationHooks;
