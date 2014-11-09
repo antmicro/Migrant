@@ -65,6 +65,13 @@ namespace Antmicro.Migrant.Customization
         /// </summary>
         public bool TreatCollectionAsUserObject { get; private set; }
 
+        /// <summary>
+        /// Gets a value indicating whether buffering is used. Without buffering, all writes are going
+        /// directly to underlying and stream and no padding is used. Reads behave accordingly.
+        /// </summary>
+        /// <value><c>true</c> if buffering is used; otherwise, <c>false</c>.</value>
+        public bool UseBuffering { get; private set; }
+
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class.
@@ -86,13 +93,14 @@ namespace Antmicro.Migrant.Customization
         /// Specifies whether Migrant should use GetObjectData approach for serialization.
         /// </param>
         public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
-            bool supportForISerializable = false, bool treatCollectionAsUserObject = false)
+            bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true)
 		{
 			SerializationMethod = serializationMethod;
 			DeserializationMethod = deserializationMethod;
 			VersionTolerance = versionTolerance;
             SupportForISerializable = supportForISerializable;
             TreatCollectionAsUserObject = treatCollectionAsUserObject;
+            UseBuffering = useBuffering;
 		}
 	}
 }
