@@ -102,9 +102,16 @@ namespace Antmicro.Migrant
             return new OpenStreamSerializer(ObtainWriter(stream));
         }
 
+        /// <summary>
+        /// Returns the open stream serializer, which can be used to do consecutive deserializations when
+        /// same technique was used to serialize data.
+        /// </summary>
+        /// <returns>The open stream deserializer.</returns>
+        /// <param name="stream">Stream.</param>
         public OpenStreamDeserializer ObtainOpenStreamDeserializer(Stream stream)
         {
-            throw new NotImplementedException();
+            ThrowOnWrongResult(TryReadHeader(stream));
+            return new OpenStreamDeserializer(ObtainReader(stream));
         }
 
 		/// <summary>
@@ -150,19 +157,8 @@ namespace Antmicro.Migrant
 		public T Deserialize<T>(Stream stream)
 		{
             T result;
-            switch (TryDeserialize(stream, out result))
-            {
-            case DeserializationResult.OK:
-                return result;
-            case DeserializationResult.WrongMagic:
-                throw new InvalidOperationException("Cound not find proper magic.");
-            case DeserializationResult.WrongVersion:
-                throw new InvalidOperationException("Could not deserialize data serialized with another version of serializer.");
-            case DeserializationResult.StreamCorrupted:
-                throw lastException;
-            default:
-                throw new ArgumentOutOfRangeException();
-            }
+            ThrowOnWrongResult(TryDeserialize(stream, out result));
+            return result;
 		}
 
         /// <summary>
@@ -181,22 +177,13 @@ namespace Antmicro.Migrant
         {
             obj = default(T);
 
-            // Read header
-            var magic1 = stream.ReadByte();
-            var magic2 = stream.ReadByte();
-            var magic3 = stream.ReadByte();
-            if(magic1 != Magic1 || magic2 != Magic2 || magic3 != Magic3)
+            var headerResult = TryReadHeader(stream);
+            if(headerResult != DeserializationResult.OK)
             {
-                return DeserializationResult.WrongMagic;
-            }
-            var version = stream.ReadByte();
-            if(version != VersionNumber)
-            {
-                return DeserializationResult.WrongVersion;
+                return headerResult;
             }
 
-            using(var objectReader = new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
-                                         settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject, settings.VersionTolerance))
+            using(var objectReader = ObtainReader(stream))
             {
                 try
                 {
@@ -272,6 +259,47 @@ namespace Antmicro.Migrant
             var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
                              writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, settings.TreatCollectionAsUserObject);
             return writer;
+        }
+
+        private DeserializationResult TryReadHeader(Stream stream)
+        {
+            // Read header
+            var magic1 = stream.ReadByte();
+            var magic2 = stream.ReadByte();
+            var magic3 = stream.ReadByte();
+            if(magic1 != Magic1 || magic2 != Magic2 || magic3 != Magic3)
+            {
+                return DeserializationResult.WrongMagic;
+            }
+            var version = stream.ReadByte();
+            if(version != VersionNumber)
+            {
+                return DeserializationResult.WrongVersion;
+            }
+            return DeserializationResult.OK;
+        }
+
+        private void ThrowOnWrongResult(DeserializationResult result)
+        {
+            switch (result)
+            {
+            case DeserializationResult.OK:
+                return;
+            case DeserializationResult.WrongMagic:
+                throw new InvalidOperationException("Cound not find proper magic.");
+            case DeserializationResult.WrongVersion:
+                throw new InvalidOperationException("Could not deserialize data serialized with another version of serializer.");
+            case DeserializationResult.StreamCorrupted:
+                throw lastException;
+            default:
+                throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private ObjectReader ObtainReader(Stream stream)
+        {
+            return new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
+                settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject, settings.VersionTolerance);
         }
 
         private Exception lastException;
@@ -351,6 +379,10 @@ namespace Antmicro.Migrant
 			private readonly Serializer serializer;
 		}
 
+        /// <summary>
+        /// Serializer that is attached to one stream and can do consecutive serializations that are aware of the data written
+        /// by previous ones.
+        /// </summary>
         public class OpenStreamSerializer : IDisposable
         {
             internal OpenStreamSerializer(ObjectWriter writer)
@@ -358,11 +390,18 @@ namespace Antmicro.Migrant
                 this.writer = writer;
             }
 
+            /// <summary>
+            /// Serialize the specified object.
+            /// </summary>
+            /// <param name="obj">Object.</param>
             public void Serialize(object obj)
             {
                 writer.WriteObject(new Box(obj));
             }
 
+            /// <summary>
+            /// Flushes the buffer and necessary padding. Not necessary when buffering is not used.
+            /// </summary>
             public void Dispose()
             {
                 writer.Dispose();
@@ -371,6 +410,10 @@ namespace Antmicro.Migrant
             private readonly ObjectWriter writer;
         }
 
+        /// <summary>
+        /// Deserializer that is attached to one stream and can do consecutive deserializations that are aware of the data written
+        /// by previous ones.
+        /// </summary>
         public class OpenStreamDeserializer : IDisposable
         {
             internal OpenStreamDeserializer(ObjectReader reader)
@@ -378,12 +421,19 @@ namespace Antmicro.Migrant
                 this.reader = reader;
             }
 
+            /// <summary>
+            /// Deserializes next object waiting in the stream.
+            /// </summary>
+            /// <typeparam name="T">The expected formal type of object to deserialize.</typeparam>
             public T Deserialize<T>()
             {
                 var box = reader.ReadObject<Box>();
                 return (T)box.Value;
             }
 
+            /// <summary>
+            /// Reads leftover padding. Not necessary if buffering is not used.
+            /// </summary>
             public void Dispose()
             {
                 reader.Dispose();
