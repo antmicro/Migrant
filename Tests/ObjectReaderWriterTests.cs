@@ -39,16 +39,20 @@ namespace Antmicro.Migrant.Tests
 			var strings = new [] { "One", "Two" };
 
 			var stream = new MemoryStream();
-			var writer = new ObjectWriter(stream);
-			writer.WriteObject(strings[0]);
-			writer.WriteObject(strings[1]);
-			var position = stream.Position;
+            using(var writer = new ObjectWriter(stream))
+            {
+                writer.WriteObject(strings[0]);
+                writer.WriteObject(strings[1]);
+            }
+            var position = stream.Position;
 
 			stream.Seek(0, SeekOrigin.Begin);
-			var reader = new ObjectReader(stream);
-			Assert.AreEqual(strings[0], reader.ReadObject<string>());
-			Assert.AreEqual(strings[1], reader.ReadObject<string>());
-			Assert.AreEqual(position, stream.Position);
+            using(var reader = new ObjectReader(stream))
+            {
+                Assert.AreEqual(strings[0], reader.ReadObject<string>());
+                Assert.AreEqual(strings[1], reader.ReadObject<string>());
+                Assert.AreEqual(position, stream.Position);
+            }
 		}
 	}
 }
