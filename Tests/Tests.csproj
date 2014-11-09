@@ -50,6 +50,7 @@
     <Compile Include="TypeStampTests.cs" />
     <Compile Include="TwoDomainsDriver.cs" />
     <Compile Include="TwoDomainTests.cs" />
+    <Compile Include="OpenStreamSerializationTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
