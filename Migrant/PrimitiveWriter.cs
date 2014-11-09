@@ -49,10 +49,19 @@ namespace Antmicro.Migrant
 		/// <param name='stream'>
 		/// The underlying stream which will be used to write data. Has to be writeable.
 		/// </param>
-		public PrimitiveWriter(Stream stream)
+        /// <param name='buffered'>
+        /// True if writes should be buffered, false when they should be immediately passed to
+        /// the stream. With false also no final padding is used. Note that corresponding
+        /// PrimitiveReader has to use the same value for this parameter.
+        /// </param>
+        public PrimitiveWriter(Stream stream, bool buffered = true)
 		{
 			this.stream = stream;
-			buffer = new byte[BufferSize];
+            if(buffered)
+            {
+                buffer = new byte[BufferSize];
+            }
+            this.buffered = buffered;
 		}
 
 		/// <summary>
@@ -117,8 +126,15 @@ namespace Antmicro.Migrant
 		/// </summary>
 		public void Write(byte value)
 		{
-			CheckBuffer(1);
-			buffer[currentBufferPosition++] = value;
+            if(buffered)
+            {
+                CheckBuffer(1);
+                buffer[currentBufferPosition++] = value;
+            }
+            else
+            {
+                stream.WriteByte(value);
+            }
 		}
 
 		/// <summary>
@@ -282,7 +298,8 @@ namespace Antmicro.Migrant
 
 		/// <summary>
 		/// Flushes the buffer and pads the stream with sufficient amount of data to be compatible 
-		/// with the <see cref="Antmicro.Migrant.PrimitiveReader" />.
+		/// with the <see cref="Antmicro.Migrant.PrimitiveReader" />. It is not necessary to call this method
+        /// when buffering is not used.
 		/// </summary>
 		/// <remarks>
 		/// Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.PrimitiveWriter"/>. The
@@ -299,29 +316,63 @@ namespace Antmicro.Migrant
 
 		private void InnerWriteInteger(ulong value, int sizeInBytes)
 		{
+            byte valueToWrite;
 #if DEBUG
 			if(DontUseIntegerCompression)
 			{
-				CheckBuffer(sizeof(ulong));
+                if(buffered)
+                {
+				    CheckBuffer(sizeof(ulong));
+                }
 				ulong current = 0;
 				for(int i = 0; i < sizeof(ulong); ++i)
 				{
 					current = value & 255;
-					buffer[currentBufferPosition + sizeof(ulong) - i - 1] = (byte)current;
+                    valueToWrite = (byte)current;
+                    if(buffered)
+                    {
+                        buffer[currentBufferPosition + sizeof(ulong) - i - 1] = valueToWrite;
+                    }
+                    else
+                    {
+                        stream.WriteByte(valueToWrite);
+                    }
 					value >>= 8;
 				}
 
-				currentBufferPosition += sizeof(ulong);
+                if(buffered)
+                {
+				    currentBufferPosition += sizeof(ulong);
+                }
 				return;
 			}
 #endif
-			CheckBuffer(sizeInBytes);
+            if(buffered)
+            {
+                CheckBuffer(sizeInBytes);
+            }
 			while(value > 127)
 			{
-				buffer[currentBufferPosition++] = (byte)(value | 128);
+                valueToWrite = (byte)(value | 128);
+                if(buffered)
+                {
+                    buffer[currentBufferPosition++] = valueToWrite;
+                }
+                else
+                {
+                    stream.WriteByte(valueToWrite);
+                }
 				value >>= 7;
 			}
-			buffer[currentBufferPosition++] = (byte)(value & 127);
+            valueToWrite = (byte)(value & 127);
+            if(buffered)
+            {
+                buffer[currentBufferPosition++] = valueToWrite;
+            }
+            else
+            {
+                stream.WriteByte(valueToWrite);
+            }
 		}
 
 		private void InnerChunkWrite(byte[] data)
@@ -331,7 +382,15 @@ namespace Antmicro.Migrant
 
 		private void InnerChunkWrite(byte[] data, int offset, int length)
 		{
-			CheckBuffer(length);
+            if(buffered)
+            {
+                CheckBuffer(length);
+            }
+            else
+            {
+                stream.Write(data, offset, length);
+                return;
+            }
 			if(length > BufferSize)
 			{
 				stream.Write(data, offset, length);
@@ -356,6 +415,10 @@ namespace Antmicro.Migrant
 
 		private void Flush()
 		{
+            if(!buffered)
+            {
+                return;
+            }           
 			stream.Write(buffer, 0, currentBufferPosition);
 			currentPosition += currentBufferPosition;
 			currentBufferPosition = 0;
@@ -363,6 +426,10 @@ namespace Antmicro.Migrant
 
 		private void Pad()
 		{
+            if(!buffered)
+            {
+                return;
+            }
 			var bytesToPad = Helpers.GetCurrentPaddingValue(currentPosition);
 			var pad = new byte[bytesToPad];
 			stream.Write(pad, 0, pad.Length);
@@ -372,6 +439,7 @@ namespace Antmicro.Migrant
 		private int currentBufferPosition;
 		private long currentPosition;
 		private readonly Stream stream;
+        private readonly bool buffered;
 		private const int BufferSize = 4 * 1024;
 
 #if DEBUG

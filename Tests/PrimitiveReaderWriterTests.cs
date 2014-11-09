@@ -31,9 +31,15 @@ using System.Linq;
 
 namespace Antmicro.Migrant.Tests
 {
-	[TestFixture]
+    [TestFixture(true)]
+    [TestFixture(false)]
 	public class PrimitiveReaderWriterTests
 	{
+        public PrimitiveReaderWriterTests(bool buffered)
+        {
+            this.buffered = buffered;
+        }
+
 		[Test]
 		public void ShouldWriteAndReadInts(
 			[Values(1, 10, 100, 10000, 1000*1000)]
@@ -42,7 +48,7 @@ namespace Antmicro.Migrant.Tests
 			var randomInts = Helpers.GetRandomIntegers(numberOfInts);
 
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				for(var i = 0; i < randomInts.Length; i++)
 				{
@@ -52,7 +58,7 @@ namespace Antmicro.Migrant.Tests
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
 
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				for(var i = 0; i < randomInts.Length; i++)
 				{
@@ -69,7 +75,7 @@ namespace Antmicro.Migrant.Tests
 		{
 			var randomLongs = Helpers.GetRandomLongs(numberOfLongs);
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				for(var i = 0; i < randomLongs.Length; i++)
 				{
@@ -79,7 +85,7 @@ namespace Antmicro.Migrant.Tests
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
 
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				for(var i = 0; i < randomLongs.Length; i++)
 				{
@@ -119,7 +125,7 @@ namespace Antmicro.Migrant.Tests
 			}
 
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				for(var i = 0; i < strings.Length; i++)
 				{
@@ -129,7 +135,7 @@ namespace Antmicro.Migrant.Tests
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
 
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				for(var i = 0; i < strings.Length; i++)
 				{
@@ -144,14 +150,14 @@ namespace Antmicro.Migrant.Tests
 		{
 			var value = -Helpers.Random.Next();
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				writer.Write(value);
 			}
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
 
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				Assert.AreEqual(value, reader.ReadInt32());
 			}
@@ -166,7 +172,7 @@ namespace Antmicro.Migrant.Tests
 			var randomDoubles = Helpers.GetRandomDoubles(numberOfDoubles);
 		
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				for(var i = 0; i < randomDoubles.Length; i++)
 				{
@@ -176,7 +182,7 @@ namespace Antmicro.Migrant.Tests
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
 
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				for(var i = 0; i < randomDoubles.Length; i++)
 				{
@@ -196,7 +202,7 @@ namespace Antmicro.Migrant.Tests
 			var randomDateTimes = Helpers.GetRandomDateTimes(numberOfEntries);
 		
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				for(var i = 0; i < randomDateTimes.Length; i++)
 				{
@@ -206,7 +212,7 @@ namespace Antmicro.Migrant.Tests
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
 
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				for(var i = 0; i < randomDateTimes.Length; i++)
 				{
@@ -224,7 +230,7 @@ namespace Antmicro.Migrant.Tests
 			var randomDateTimes = Helpers.GetRandomDateTimes(numberOfEntries);
 		
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				for(var i = 0; i < randomDateTimes.Length; i++)
 				{
@@ -234,7 +240,7 @@ namespace Antmicro.Migrant.Tests
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
 
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				for(var i = 0; i < randomDateTimes.Length; i++)
 				{
@@ -252,7 +258,7 @@ namespace Antmicro.Migrant.Tests
 		{
 			var stream = new MemoryStream();
 			byte[] array;
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				array = new byte[count];
 				Helpers.Random.NextBytes(array);
@@ -262,7 +268,7 @@ namespace Antmicro.Migrant.Tests
 			stream.Seek(0, SeekOrigin.Begin);
 
 			byte[] copy;
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				copy = reader.ReadBytes(count);
 			}
@@ -278,7 +284,7 @@ namespace Antmicro.Migrant.Tests
 		{
 			var stream = new MemoryStream();
 			var array = new Guid[count];
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				for(var i = 0; i < count; i++)
 				{
@@ -290,7 +296,7 @@ namespace Antmicro.Migrant.Tests
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
 
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				for(var i = 0; i < count; i++)
 				{
@@ -310,7 +316,7 @@ namespace Antmicro.Migrant.Tests
 			}
 
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				for(var i = 0; i < arrays.Length; i++)
 				{
@@ -320,7 +326,7 @@ namespace Antmicro.Migrant.Tests
 
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				for(var i = 0; i < arrays.Length; i++)
 				{
@@ -338,7 +344,7 @@ namespace Antmicro.Migrant.Tests
 		public void ShouldReadAndWriteLimits()
 		{
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				writer.Write(byte.MinValue);
 				writer.Write(byte.MaxValue);
@@ -359,7 +365,7 @@ namespace Antmicro.Migrant.Tests
 			}
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				Assert.AreEqual(byte.MinValue, reader.ReadByte());
 				Assert.AreEqual(byte.MaxValue, reader.ReadByte());
@@ -386,7 +392,7 @@ namespace Antmicro.Migrant.Tests
 		{
 			const int iterationCount = 80000;
 			var stream = new MemoryStream();
-			using(var writer = new PrimitiveWriter(stream))
+            using(var writer = new PrimitiveWriter(stream, buffered))
 			{
 				writer.Write((byte)1);
 				for(var i = 0; i < iterationCount; i++)
@@ -396,7 +402,7 @@ namespace Antmicro.Migrant.Tests
 			}
 			var position = stream.Position;
 			stream.Seek(0, SeekOrigin.Begin);
-			using(var reader = new PrimitiveReader(stream))
+            using(var reader = new PrimitiveReader(stream, buffered))
 			{
 				Assert.AreEqual((byte)1, reader.ReadByte());
 				for(var i = 0; i < iterationCount; i++)
@@ -406,6 +412,8 @@ namespace Antmicro.Migrant.Tests
 			}
 			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
+
+        private readonly bool buffered;
 
 		private const string StreamCorruptedMessage = "Stream was corrupted during read (in terms of position).";
 	}

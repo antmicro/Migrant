@@ -93,6 +93,16 @@ namespace Antmicro.Migrant
 			}
 		}
 
+        public static byte ReadByteOrThrow(this Stream @this)
+        {
+            var result = @this.ReadByte();
+            if(result < 0)
+            {
+                throw new EndOfStreamException("End of stream reached.");
+            }
+            return (byte)result;
+        }
+
 		public static object GetDefaultValue(Type type)
 		{
 			return type.IsValueType ? Activator.CreateInstance(type) : null;
