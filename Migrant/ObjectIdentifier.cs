@@ -47,10 +47,35 @@ namespace Antmicro.Migrant
 		/// </summary>
 		public ObjectIdentifier()
 		{
-			generator = new ObjectIDGenerator();
-			consecutiveIds = new Dictionary<long, int>();
-			objects = new List<object>();
+            objectToId = new Dictionary<object, int>();
+            idToObject = new List<object>();
 		}
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectIdentifier"/> class, reusing given context.
+        /// </summary>
+        /// <param name="context">Context to reuse.</param>
+        public ObjectIdentifier(ObjectIdentifierContext context)
+        {
+            objectToId = new Dictionary<object, int>();
+            idToObject = context.GetObjects();
+            for(var i = 0; i < idToObject.Count; i++)
+            {
+                var objectToAdd = idToObject[i];
+                if(objectToAdd != null)
+                {
+                    objectToId.Add(idToObject[i], i);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the context of object identifier that can be used for open stream serialization.
+        /// </summary>
+        public ObjectIdentifierContext GetContext()
+        {
+            return new ObjectIdentifierContext(idToObject);
+        }
 
 		/// <summary>
 		/// For a given object, returns its unique ID. The new ID is used if object was
@@ -64,16 +89,15 @@ namespace Antmicro.Migrant
 		/// </param>
 		public int GetId(object o)
 		{
-			bool isNew;
-			var id = generator.GetId(o, out isNew);
-			if(isNew)
-			{
-				var localId = objects.Count;
-				objects.Add(o);
-				consecutiveIds.Add(id, localId);
-				return localId;
-			}
-			return consecutiveIds[id];
+            if(objectToId.ContainsKey(o))
+            {
+                return objectToId[o];
+            }
+
+            var id = idToObject.Count;
+            objectToId.Add(o, id);
+            idToObject.Add(o);
+            return id;
 		}
 
 		/// <summary>
@@ -88,11 +112,11 @@ namespace Antmicro.Migrant
 		/// </param>
 		public object GetObject(int id)
 		{
-			if(objects.Count <= id || id < 0)
+			if(idToObject.Count <= id || id < 0)
 			{
 				throw new ArgumentOutOfRangeException("id");
 			}
-			return objects[id];
+			return idToObject[id];
 		}
 
 		/// <summary>
@@ -118,13 +142,12 @@ namespace Antmicro.Migrant
 		{
 			get
 			{
-				return objects.Count;
+				return idToObject.Count;
 			}
 		}
 
-		private readonly ObjectIDGenerator generator;
-		private readonly Dictionary<long, int> consecutiveIds;
-		private readonly List<object> objects;
+		private readonly Dictionary<object, int> objectToId;
+		private readonly List<object> idToObject;
 	}
 }
 
