@@ -106,6 +106,44 @@ namespace Antmicro.Migrant.Customization
             TreatCollectionAsUserObject = treatCollectionAsUserObject;
             UseBuffering = useBuffering;
         }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class, based on a given instance with chosen settings chaned.
+        /// </summary>
+        /// <param name='serializationMethod'>
+        /// Method used for serialization.
+        /// </param>
+        /// <param name='deserializationMethod'>
+        /// Method used for deserialization.
+        /// </param>
+        /// <param name='versionTolerance'>
+        /// Specifies the possible level of difference between class layout when it was serialized and in the
+        /// moment of deserialization.
+        /// </param>
+        /// <param name = "treatCollectionAsUserObject">
+        /// Specifies if collection objects are to be deserialized without optimization (treated as normal user objects).
+        /// </param>
+        /// <param name = "supportForISerializable">
+        /// Specifies whether Migrant should use GetObjectData approach for serialization.
+        /// </param>
+        /// <param name="useBuffering"> 
+        /// True if buffering should be used, false if writes should directly go to the stream and reads should never read
+        /// data in advance. Disabling buffering also disables padding.
+        /// </param>
+        public Settings With(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
+            bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true)
+        {
+            var result = new Settings
+            {
+                SerializationMethod = serializationMethod,
+                DeserializationMethod = deserializationMethod,
+                VersionTolerance = versionTolerance,
+                SupportForISerializable = supportForISerializable,
+                TreatCollectionAsUserObject = treatCollectionAsUserObject,
+                UseBuffering = useBuffering
+            };
+            return result;
+        }
     }
 }
 
