@@ -200,6 +200,19 @@ namespace Antmicro.Migrant.Tests
             Assert.IsTrue(copy.FlagC);
         }
 
+        [Test]
+        public void ShouldProperlyExecuteHooksOnVirtualMethod()
+        {
+            var mockWithVirtual = new MockWithVirtualDerived();
+            var copy = SerializerClone(mockWithVirtual);
+            Assert.AreEqual(1, mockWithVirtual.BasePreSerializationCounter);
+            Assert.AreEqual(2, mockWithVirtual.DerivedPreSerializationCounter);
+            Assert.AreEqual(3, mockWithVirtual.BasePostSerializationCounter);
+            Assert.AreEqual(4, mockWithVirtual.DerivedPostSerializationCounter);
+            Assert.AreEqual(3, copy.BasePostDeserializationCounter);
+            Assert.AreEqual(4, copy.DerivedPostDeserializationCounter);
+        }
+
         private void ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization<T>(T prePostMock) where T : IPrePostMock
         {
             try
@@ -568,6 +581,66 @@ namespace Antmicro.Migrant.Tests
             Assert.IsTrue(FlagA);
             Assert.IsTrue(FlagB);
             FlagC = true;
+        }
+    }
+
+    public class MockWithVirtualBase
+    {
+        public int BasePreSerializationCounter { get; private set; }
+        public int BasePostSerializationCounter { get; private set; }
+        public int BasePostDeserializationCounter { get; private set; }
+
+        [PreSerialization]
+        protected virtual void BeforeSerialization()
+        {
+            BasePreSerializationCounter = Counter;
+        }
+
+        [PostSerialization]
+        protected virtual void AfterSerialization()
+        {
+            BasePostSerializationCounter = Counter;
+        }
+
+        [PostDeserialization]
+        protected virtual void AfterDeserialization()
+        {
+            BasePostDeserializationCounter = Counter;
+        }
+
+        protected int Counter
+        {
+            get
+            {
+                return ++counterValue;
+            }
+        }
+
+        private int counterValue;
+    }
+
+    public class MockWithVirtualDerived : MockWithVirtualBase
+    {
+        public int DerivedPreSerializationCounter { get; private set; }
+        public int DerivedPostSerializationCounter { get; private set; }
+        public int DerivedPostDeserializationCounter { get; private set; }
+
+        protected override void BeforeSerialization()
+        {
+            base.BeforeSerialization();
+            DerivedPreSerializationCounter = Counter;
+        }
+
+        protected override void AfterSerialization()
+        {
+            base.AfterSerialization();
+            DerivedPostSerializationCounter = Counter;
+        }
+
+        protected override void AfterDeserialization()
+        {
+            base.AfterDeserialization();
+            DerivedPostDeserializationCounter = Counter;
         }
     }
 }
