@@ -1361,14 +1361,10 @@ namespace Antmicro.Migrant.Tests
         {
             public bool Invoked { get; private set; }
 
-            #region InterfaceForDelegate implementation
-
             public void Method(IInterfaceForDelegate arg)
             {
                 Invoked = true;
             }
-
-            #endregion
         }
     }
 
