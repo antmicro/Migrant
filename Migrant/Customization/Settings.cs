@@ -92,6 +92,10 @@ namespace Antmicro.Migrant.Customization
         /// <param name = "supportForISerializable">
         /// Specifies whether Migrant should use GetObjectData approach for serialization.
         /// </param>
+        /// <param name="useBuffering"> 
+        /// True if buffering should be used, false if writes should directly go to the stream and reads should never read
+        /// data in advance. Disabling buffering also disables padding.
+        /// </param>
         public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
             bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true)
 		{
