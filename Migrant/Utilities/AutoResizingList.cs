@@ -163,7 +163,7 @@ namespace Antmicro.Migrant.Utilities
 			{
 				return;
 			}
-			var newData = new T[data.Length * 2];
+            var newData = new T[Math.Max(data.Length * 2, neededSize)];
 			data.CopyTo(newData, 0);
 			data = newData;
 		}
