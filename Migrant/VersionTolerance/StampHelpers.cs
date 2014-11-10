@@ -31,17 +31,17 @@ using System.Text;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
-	internal static class StampHelpers
-	{
+    internal static class StampHelpers
+    {
         public static bool IsStampNeeded(Type type, bool treatCollectionAsUserObject)
-		{
+        {
             return !Helpers.IsWriteableByPrimitiveWriter(type) && (!new CollectionMetaToken(type).IsCollection || treatCollectionAsUserObject);
-		}
+        }
 
-		public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)
-		{
+        public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)
+        {
             return GetFieldsStructureInSerializationOrder(type, withTransient).SelectMany(x => x.Item2);
-		}
+        }
 
         public static IEnumerable<Tuple<Type, IEnumerable<FieldInfo>>> GetFieldsStructureInSerializationOrder(Type type, bool withTransient = false)
         {
@@ -51,24 +51,24 @@ namespace Antmicro.Migrant.VersionTolerance
         public static void ToPrettyString(this TypeStamp.TypeStampCompareResult results)
         {
             Console.WriteLine("Fields added:");
-            foreach (var f in results.FieldsAdded)
+            foreach(var f in results.FieldsAdded)
             {
-              Console.WriteLine("\t" + f.Name);
+                Console.WriteLine("\t" + f.Name);
             }
             Console.WriteLine("Fields removed:");
-            foreach (var f in results.FieldsRemoved)
+            foreach(var f in results.FieldsRemoved)
             {
-              Console.WriteLine("\t" + f.Name);
+                Console.WriteLine("\t" + f.Name);
             }
             Console.WriteLine("Fields moved:");
-            foreach (var f in results.FieldsMoved)
+            foreach(var f in results.FieldsMoved)
             {
-              Console.WriteLine("\t" + f.Key.Name + " " + f.Key.OwningTypeAQN + " => " + f.Value.OwningTypeAQN);
+                Console.WriteLine("\t" + f.Key.Name + " " + f.Key.OwningTypeAQN + " => " + f.Value.OwningTypeAQN);
             }
             Console.WriteLine("Fields changed:");
-            foreach (var f in results.FieldsChanged)
+            foreach(var f in results.FieldsChanged)
             {
-              Console.WriteLine("\t" + f.Name);
+                Console.WriteLine("\t" + f.Name);
             }
         }
 
@@ -104,6 +104,6 @@ namespace Antmicro.Migrant.VersionTolerance
             bldr.AppendFormat("Owned by: {0}\n", field.OwningTypeAQN);
             return bldr.ToString();
         }
-	}
+    }
 }
 

@@ -30,102 +30,102 @@ using System.Text;
 
 namespace Antmicro.Migrant
 {
-	/// <summary>
-	/// Provides the mechanism for writing primitive values into a stream.
-	/// </summary>
-	/// <remarks>
-	/// Can be used as a replacement for the <see cref="System.IO.BinaryWriter" /> . Provides
-	/// more compact output and reads no more data from the stream than requested. Although
-	/// the underlying format is not specified at this point, it is guaranteed to be consistent with
-	/// <see cref="Antmicro.Migrant.PrimitiveReader" />. Writer has to be disposed after used,
-	/// otherwise stream position corruption and data loss can occur. Writer does not possess the
-	/// stream and does not close it after dispose.
-	/// </remarks>
-	public sealed class PrimitiveWriter : IDisposable
-	{
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Antmicro.Migrant.PrimitiveWriter" /> class.
-		/// </summary>
-		/// <param name='stream'>
-		/// The underlying stream which will be used to write data. Has to be writeable.
-		/// </param>
+    /// <summary>
+    /// Provides the mechanism for writing primitive values into a stream.
+    /// </summary>
+    /// <remarks>
+    /// Can be used as a replacement for the <see cref="System.IO.BinaryWriter" /> . Provides
+    /// more compact output and reads no more data from the stream than requested. Although
+    /// the underlying format is not specified at this point, it is guaranteed to be consistent with
+    /// <see cref="Antmicro.Migrant.PrimitiveReader" />. Writer has to be disposed after used,
+    /// otherwise stream position corruption and data loss can occur. Writer does not possess the
+    /// stream and does not close it after dispose.
+    /// </remarks>
+    public sealed class PrimitiveWriter : IDisposable
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Antmicro.Migrant.PrimitiveWriter" /> class.
+        /// </summary>
+        /// <param name='stream'>
+        /// The underlying stream which will be used to write data. Has to be writeable.
+        /// </param>
         /// <param name='buffered'>
         /// True if writes should be buffered, false when they should be immediately passed to
         /// the stream. With false also no final padding is used. Note that corresponding
         /// PrimitiveReader has to use the same value for this parameter.
         /// </param>
         public PrimitiveWriter(Stream stream, bool buffered = true)
-		{
-			this.stream = stream;
+        {
+            this.stream = stream;
             if(buffered)
             {
                 buffer = new byte[BufferSize];
             }
             this.buffered = buffered;
-		}
+        }
 
-		/// <summary>
-		/// Gets the current position.
-		/// </summary>
-		/// <value>
-		/// The position, which is the number of bytes written after this object was
-		/// constructed.
-		/// </value>
-		public long Position
-		{
-			get
-			{
-				return currentPosition + currentBufferPosition;
-			}
-		}
+        /// <summary>
+        /// Gets the current position.
+        /// </summary>
+        /// <value>
+        /// The position, which is the number of bytes written after this object was
+        /// constructed.
+        /// </value>
+        public long Position
+        {
+            get
+            {
+                return currentPosition + currentBufferPosition;
+            }
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Double" />.
-		/// </summary>
-		public void Write(double value)
-		{
-			Write(BitConverter.DoubleToInt64Bits(value));
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Double" />.
+        /// </summary>
+        public void Write(double value)
+        {
+            Write(BitConverter.DoubleToInt64Bits(value));
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Single" />.
-		/// </summary>
-		public void Write(float value)
-		{
-			Write(BitConverter.DoubleToInt64Bits(value));
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Single" />.
+        /// </summary>
+        public void Write(float value)
+        {
+            Write(BitConverter.DoubleToInt64Bits(value));
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.DateTime" />.
-		/// </summary>
-		public void Write(DateTime value)
-		{
-			Write(value - Helpers.DateTimeEpoch);
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.DateTime" />.
+        /// </summary>
+        public void Write(DateTime value)
+        {
+            Write(value - Helpers.DateTimeEpoch);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.TimeSpan" />.
-		/// </summary>
-		public void Write(TimeSpan value)
-		{
-			// first unit, then value in this unit
-			if(value.Ticks % TimeSpan.TicksPerSecond != 0)
-			{
-				Write((byte)Helpers.TickIndicator);
-				Write(value.Ticks);
-				return;
-			}
-			var type = (byte)(value.Hours);
-			Write(type);
-			Write((ushort)(value.Seconds + 60*value.Minutes));
-			Write(value.Days);
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.TimeSpan" />.
+        /// </summary>
+        public void Write(TimeSpan value)
+        {
+            // first unit, then value in this unit
+            if(value.Ticks % TimeSpan.TicksPerSecond != 0)
+            {
+                Write((byte)Helpers.TickIndicator);
+                Write(value.Ticks);
+                return;
+            }
+            var type = (byte)(value.Hours);
+            Write(type);
+            Write((ushort)(value.Seconds + 60 * value.Minutes));
+            Write(value.Days);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Byte" />.
-		/// </summary>
-		public void Write(byte value)
-		{
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Byte" />.
+        /// </summary>
+        public void Write(byte value)
+        {
             if(buffered)
             {
                 CheckBuffer(1);
@@ -135,199 +135,199 @@ namespace Antmicro.Migrant
             {
                 stream.WriteByte(value);
             }
-		}
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.SByte" />.
-		/// </summary>
-		public void Write(sbyte value)
-		{
-			Write((byte)value);
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.SByte" />.
+        /// </summary>
+        public void Write(sbyte value)
+        {
+            Write((byte)value);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Int16" />.
-		/// </summary>
-		public void Write(short value)
-		{
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Int16" />.
+        /// </summary>
+        public void Write(short value)
+        {
 #if DEBUG
-			if(PrimitiveWriter.DontUseIntegerCompression)
-			{
-				InnerWriteInteger((ushort)value, sizeof(short) + 1);
-				return;
-			}
+            if(PrimitiveWriter.DontUseIntegerCompression)
+            {
+                InnerWriteInteger((ushort)value, sizeof(short) + 1);
+                return;
+            }
 #endif
-			var valueToWrite = (value << 1) ^ (value >> 15);
-			InnerWriteInteger((ushort)valueToWrite, sizeof(short) + 1);
-		}
+            var valueToWrite = (value << 1) ^ (value >> 15);
+            InnerWriteInteger((ushort)valueToWrite, sizeof(short) + 1);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.UInt16" />.
-		/// </summary>
-		public void Write(ushort value)
-		{
-			InnerWriteInteger(value, sizeof(ushort) + 1);
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.UInt16" />.
+        /// </summary>
+        public void Write(ushort value)
+        {
+            InnerWriteInteger(value, sizeof(ushort) + 1);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Int32" />.
-		/// </summary>
-		public void Write(int value)
-		{
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Int32" />.
+        /// </summary>
+        public void Write(int value)
+        {
 #if DEBUG
-			if(PrimitiveWriter.DontUseIntegerCompression)
-			{
-				InnerWriteInteger((uint)value, sizeof(int) + 1);
-				return;
-			}
+            if(PrimitiveWriter.DontUseIntegerCompression)
+            {
+                InnerWriteInteger((uint)value, sizeof(int) + 1);
+                return;
+            }
 #endif
-			var valueToWrite = (value << 1) ^ (value >> 31);
-			InnerWriteInteger((uint)valueToWrite, sizeof(int) + 1);
-		}
+            var valueToWrite = (value << 1) ^ (value >> 31);
+            InnerWriteInteger((uint)valueToWrite, sizeof(int) + 1);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.UInt32" />.
-		/// </summary>
-		public void Write(uint value)
-		{
-			InnerWriteInteger(value, sizeof(uint) + 1);
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.UInt32" />.
+        /// </summary>
+        public void Write(uint value)
+        {
+            InnerWriteInteger(value, sizeof(uint) + 1);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Int64" />.
-		/// </summary>
-		public void Write(long value)
-		{
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Int64" />.
+        /// </summary>
+        public void Write(long value)
+        {
 #if DEBUG
-			if(PrimitiveWriter.DontUseIntegerCompression)
-			{
-				Write((ulong)value);
-				return;
-			}
+            if(PrimitiveWriter.DontUseIntegerCompression)
+            {
+                Write((ulong)value);
+                return;
+            }
 #endif
-			var valueToWrite = (value << 1) ^ (value >> 63);
-			InnerWriteInteger((ulong)valueToWrite, sizeof(long) + 2);
-		}
+            var valueToWrite = (value << 1) ^ (value >> 63);
+            InnerWriteInteger((ulong)valueToWrite, sizeof(long) + 2);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.UInt64" />.
-		/// </summary>
-		public void Write(ulong value)
-		{
-			InnerWriteInteger(value, sizeof(ulong) + 2);
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.UInt64" />.
+        /// </summary>
+        public void Write(ulong value)
+        {
+            InnerWriteInteger(value, sizeof(ulong) + 2);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Char" />.
-		/// </summary>
-		public void Write(char value)
-		{
-			Write((ushort)value);
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Char" />.
+        /// </summary>
+        public void Write(char value)
+        {
+            Write((ushort)value);
+        }
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Boolean" />.
-		/// </summary>
-		public void Write(bool value)
-		{
-			Write((byte)(value ? 1 : 0));
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Boolean" />.
+        /// </summary>
+        public void Write(bool value)
+        {
+            Write((byte)(value ? 1 : 0));
+        }
 
 
-		/// <summary>
-		/// Writes the specified value of type <see cref="System.Guid" />.
-		/// </summary>
-		public void Write(Guid guid)
-		{
-			InnerChunkWrite(guid.ToByteArray());
-		}
+        /// <summary>
+        /// Writes the specified value of type <see cref="System.Guid" />.
+        /// </summary>
+        public void Write(Guid guid)
+        {
+            InnerChunkWrite(guid.ToByteArray());
+        }
 
-		/// <summary>
-		/// Writes the specified string.
-		/// </summary>
-		public void Write(string str)
-		{
-			var bytes = Encoding.UTF8.GetBytes(str);
-			Write(bytes.Length);
-			InnerChunkWrite(bytes);
-		}
+        /// <summary>
+        /// Writes the specified string.
+        /// </summary>
+        public void Write(string str)
+        {
+            var bytes = Encoding.UTF8.GetBytes(str);
+            Write(bytes.Length);
+            InnerChunkWrite(bytes);
+        }
 
-		/// <summary>
-		/// Writes the specified bytes array.
-		/// </summary>
-		/// <param name='bytes'>
-		/// The array which content will be written.
-		/// </param>
-		public void Write(byte[] bytes)
-		{
-			InnerChunkWrite(bytes);
-		}
+        /// <summary>
+        /// Writes the specified bytes array.
+        /// </summary>
+        /// <param name='bytes'>
+        /// The array which content will be written.
+        /// </param>
+        public void Write(byte[] bytes)
+        {
+            InnerChunkWrite(bytes);
+        }
 
-		/// <summary>
-		/// Write the specified bytes array, starting at offset and writing count from it.
-		/// </summary>
-		/// <param name="bytes">The array which is a source to write.</param>
-		/// <param name="offset">Index of the array to start writing at.</param>
-		/// <param name="count">Total bytes to write.</param>
-		public void Write(byte[] bytes, int offset, int count)
-		{
-			InnerChunkWrite(bytes, offset, count);
-		}
+        /// <summary>
+        /// Write the specified bytes array, starting at offset and writing count from it.
+        /// </summary>
+        /// <param name="bytes">The array which is a source to write.</param>
+        /// <param name="offset">Index of the array to start writing at.</param>
+        /// <param name="count">Total bytes to write.</param>
+        public void Write(byte[] bytes, int offset, int count)
+        {
+            InnerChunkWrite(bytes, offset, count);
+        }
 
-		/// <summary>
-		/// Copies given number of bytes from the source stream to the underlying stream.
-		/// </summary>
-		/// <param name='source'>
-		/// Readable stream, from which data will be copied.
-		/// </param>
-		/// <param name='howMuch'>
-		/// The amount of a data to copy in bytes.
-		/// </param>
-		public void CopyFrom(Stream source, long howMuch)
-		{
-			Flush();
-			// we can reuse the regular buffer since it is flushed at this point anyway
-			int read;
-			while((read = source.Read(buffer, 0, (int)Math.Min(buffer.Length, howMuch))) > 0)
-			{
-				howMuch -= read;
-				currentPosition += read;
-				stream.Write(buffer, 0, read);
-			}
-		}
+        /// <summary>
+        /// Copies given number of bytes from the source stream to the underlying stream.
+        /// </summary>
+        /// <param name='source'>
+        /// Readable stream, from which data will be copied.
+        /// </param>
+        /// <param name='howMuch'>
+        /// The amount of a data to copy in bytes.
+        /// </param>
+        public void CopyFrom(Stream source, long howMuch)
+        {
+            Flush();
+            // we can reuse the regular buffer since it is flushed at this point anyway
+            int read;
+            while((read = source.Read(buffer, 0, (int)Math.Min(buffer.Length, howMuch))) > 0)
+            {
+                howMuch -= read;
+                currentPosition += read;
+                stream.Write(buffer, 0, read);
+            }
+        }
 
-		/// <summary>
-		/// Flushes the buffer and pads the stream with sufficient amount of data to be compatible 
-		/// with the <see cref="Antmicro.Migrant.PrimitiveReader" />. It is not necessary to call this method
+        /// <summary>
+        /// Flushes the buffer and pads the stream with sufficient amount of data to be compatible 
+        /// with the <see cref="Antmicro.Migrant.PrimitiveReader" />. It is not necessary to call this method
         /// when buffering is not used.
-		/// </summary>
-		/// <remarks>
-		/// Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.PrimitiveWriter"/>. The
-		/// <see cref="Dispose"/> method leaves the <see cref="Antmicro.Migrant.PrimitiveWriter"/> in an unusable state. After
-		/// calling <see cref="Dispose"/>, you must release all references to the
-		/// <see cref="Antmicro.Migrant.PrimitiveWriter"/> so the garbage collector can reclaim the memory that the
-		/// <see cref="Antmicro.Migrant.PrimitiveWriter"/> was occupying.
-		/// </remarks>
-		public void Dispose()
-		{
-			Flush();
-			Pad();
-		}
+        /// </summary>
+        /// <remarks>
+        /// Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.PrimitiveWriter"/>. The
+        /// <see cref="Dispose"/> method leaves the <see cref="Antmicro.Migrant.PrimitiveWriter"/> in an unusable state. After
+        /// calling <see cref="Dispose"/>, you must release all references to the
+        /// <see cref="Antmicro.Migrant.PrimitiveWriter"/> so the garbage collector can reclaim the memory that the
+        /// <see cref="Antmicro.Migrant.PrimitiveWriter"/> was occupying.
+        /// </remarks>
+        public void Dispose()
+        {
+            Flush();
+            Pad();
+        }
 
-		private void InnerWriteInteger(ulong value, int sizeInBytes)
-		{
+        private void InnerWriteInteger(ulong value, int sizeInBytes)
+        {
             byte valueToWrite;
 #if DEBUG
-			if(DontUseIntegerCompression)
-			{
+            if(DontUseIntegerCompression)
+            {
                 if(buffered)
                 {
-				    CheckBuffer(sizeof(ulong));
+                    CheckBuffer(sizeof(ulong));
                 }
-				ulong current = 0;
-				for(int i = 0; i < sizeof(ulong); ++i)
-				{
-					current = value & 255;
+                ulong current = 0;
+                for(int i = 0; i < sizeof(ulong); ++i)
+                {
+                    current = value & 255;
                     valueToWrite = (byte)current;
                     if(buffered)
                     {
@@ -337,22 +337,22 @@ namespace Antmicro.Migrant
                     {
                         stream.WriteByte(valueToWrite);
                     }
-					value >>= 8;
-				}
+                    value >>= 8;
+                }
 
                 if(buffered)
                 {
-				    currentBufferPosition += sizeof(ulong);
+                    currentBufferPosition += sizeof(ulong);
                 }
-				return;
-			}
+                return;
+            }
 #endif
             if(buffered)
             {
                 CheckBuffer(sizeInBytes);
             }
-			while(value > 127)
-			{
+            while(value > 127)
+            {
                 valueToWrite = (byte)(value | 128);
                 if(buffered)
                 {
@@ -362,8 +362,8 @@ namespace Antmicro.Migrant
                 {
                     stream.WriteByte(valueToWrite);
                 }
-				value >>= 7;
-			}
+                value >>= 7;
+            }
             valueToWrite = (byte)(value & 127);
             if(buffered)
             {
@@ -373,15 +373,15 @@ namespace Antmicro.Migrant
             {
                 stream.WriteByte(valueToWrite);
             }
-		}
+        }
 
-		private void InnerChunkWrite(byte[] data)
-		{
-			InnerChunkWrite(data, 0, data.Length);
-		}
+        private void InnerChunkWrite(byte[] data)
+        {
+            InnerChunkWrite(data, 0, data.Length);
+        }
 
-		private void InnerChunkWrite(byte[] data, int offset, int length)
-		{
+        private void InnerChunkWrite(byte[] data, int offset, int length)
+        {
             if(buffered)
             {
                 CheckBuffer(length);
@@ -391,60 +391,60 @@ namespace Antmicro.Migrant
                 stream.Write(data, offset, length);
                 return;
             }
-			if(length > BufferSize)
-			{
-				stream.Write(data, offset, length);
-				currentPosition += length;
-			}
-			else
-			{
-				Array.Copy(data, offset, buffer, currentBufferPosition, length);
-				currentBufferPosition += length;
-			}
-		}
+            if(length > BufferSize)
+            {
+                stream.Write(data, offset, length);
+                currentPosition += length;
+            }
+            else
+            {
+                Array.Copy(data, offset, buffer, currentBufferPosition, length);
+                currentBufferPosition += length;
+            }
+        }
 
-		private void CheckBuffer(int maxBytesToWrite)
-		{
-			if(buffer.Length - currentBufferPosition >= maxBytesToWrite)
-			{
-				return;
-			}
-			// we need to flush the buffer
-			Flush();
-		}
+        private void CheckBuffer(int maxBytesToWrite)
+        {
+            if(buffer.Length - currentBufferPosition >= maxBytesToWrite)
+            {
+                return;
+            }
+            // we need to flush the buffer
+            Flush();
+        }
 
-		private void Flush()
-		{
+        private void Flush()
+        {
             if(!buffered)
             {
                 return;
             }           
-			stream.Write(buffer, 0, currentBufferPosition);
-			currentPosition += currentBufferPosition;
-			currentBufferPosition = 0;
-		}
+            stream.Write(buffer, 0, currentBufferPosition);
+            currentPosition += currentBufferPosition;
+            currentBufferPosition = 0;
+        }
 
-		private void Pad()
-		{
+        private void Pad()
+        {
             if(!buffered)
             {
                 return;
             }
-			var bytesToPad = Helpers.GetCurrentPaddingValue(currentPosition);
-			var pad = new byte[bytesToPad];
-			stream.Write(pad, 0, pad.Length);
-		}
+            var bytesToPad = Helpers.GetCurrentPaddingValue(currentPosition);
+            var pad = new byte[bytesToPad];
+            stream.Write(pad, 0, pad.Length);
+        }
 
-		private readonly byte[] buffer;
-		private int currentBufferPosition;
-		private long currentPosition;
-		private readonly Stream stream;
+        private readonly byte[] buffer;
+        private int currentBufferPosition;
+        private long currentPosition;
+        private readonly Stream stream;
         private readonly bool buffered;
-		private const int BufferSize = 4 * 1024;
+        private const int BufferSize = 4 * 1024;
 
-#if DEBUG
-		internal static readonly bool DontUseIntegerCompression = false;
-#endif
-	}
+        #if DEBUG
+        internal static readonly bool DontUseIntegerCompression = false;
+        #endif
+    }
 }
 

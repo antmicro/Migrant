@@ -59,7 +59,7 @@ namespace Antmicro.Migrant.Generators
             // preserialization callbacks
             GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));
             var exceptionBlockNeeded = Helpers.GetMethodsWithAttribute(typeof(PostSerializationAttribute), typeToGenerate).Any() ||
-                              Helpers.GetMethodsWithAttribute(typeof(LatePostSerializationAttribute), typeToGenerate).Any();
+                                       Helpers.GetMethodsWithAttribute(typeof(LatePostSerializationAttribute), typeToGenerate).Any();
             if(exceptionBlockNeeded)
             {
                 generator.BeginExceptionBlock();
@@ -187,7 +187,7 @@ namespace Antmicro.Migrant.Generators
                 });
                 return true;
             }
-            if (!treatCollectionAsUserObject)
+            if(!treatCollectionAsUserObject)
             {
                 var collectionToken = new CollectionMetaToken(actualType);
                 if(collectionToken.IsCollection)
@@ -557,8 +557,8 @@ namespace Antmicro.Migrant.Generators
                     gen.Emit(OpCodes.Ldloca_S, localIndex);
                     gen.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
                 }, keyValueTypes[1]);
-            } 
-            else 
+            }
+            else
             {
                 GenerateWriteFields(putValueToWriteOnTop, formalType);
             }
@@ -578,7 +578,7 @@ namespace Antmicro.Migrant.Generators
             generator.MarkLabel(isNotNull);
 
             var formalTypeIsActualType = (formalType.Attributes & TypeAttributes.Sealed) != 0;
-            if (!formalTypeIsActualType)
+            if(!formalTypeIsActualType)
             {
                 generator.Emit(OpCodes.Ldarg_0); // objectWriter
                 putValueToWriteOnTop(generator); // value to serialize
@@ -597,7 +597,7 @@ namespace Antmicro.Migrant.Generators
             }
             else
             {
-                if (Helpers.CheckTransientNoCache(formalType))
+                if(Helpers.CheckTransientNoCache(formalType))
                 {
                     generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
                     generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);

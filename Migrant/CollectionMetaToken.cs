@@ -33,29 +33,29 @@ using System.Collections;
 
 namespace Antmicro.Migrant
 {
-	internal class CollectionMetaToken
-	{
+    internal class CollectionMetaToken
+    {
         public bool IsCollection { get; private set; }
 
         public bool IsDictionary { get; private set; }
 
         public bool IsGeneric { get; private set; }
 
-		public bool IsGenericallyIterable { get; private set; }
+        public bool IsGenericallyIterable { get; private set; }
 
-		public Type FormalElementType { get; private set; }
+        public Type FormalElementType { get; private set; }
 
-		public Type FormalKeyType { get; private set; }
+        public Type FormalKeyType { get; private set; }
 
-		public Type FormalValueType { get; private set; }
+        public Type FormalValueType { get; private set; }
 
         public MethodInfo CountMethod { get; set; }
 
         public Type ActualType { get; private set; }
 
-        public CollectionMetaToken(Type actualType) 
+        public CollectionMetaToken(Type actualType)
         {
-            if (!SpeciallySerializedCollections.Any(type => (actualType.IsGenericType && type == actualType.GetGenericTypeDefinition()) || type == actualType))
+            if(!SpeciallySerializedCollections.Any(type => (actualType.IsGenericType && type == actualType.GetGenericTypeDefinition()) || type == actualType))
             {
                 IsCollection = false;
                 return;
@@ -67,11 +67,11 @@ namespace Antmicro.Migrant
             FormalValueType = typeof(object);
 
             var ifaces = actualType.GetInterfaces();
-            foreach (var prior in CollectionPriorities)
+            foreach(var prior in CollectionPriorities)
             {
                 // there is really no access to modified closure as NRefactory suggests
                 var iface = ifaces.FirstOrDefault(x => (x.IsGenericType ? x.GetGenericTypeDefinition() : x) == prior.Item1);
-                if (iface != null)
+                if(iface != null)
                 {
                     prior.Item2(iface, this);
                     return;
@@ -79,8 +79,7 @@ namespace Antmicro.Migrant
             }
         }
 
-        private static readonly Type[] SpeciallySerializedCollections =
-        {
+        private static readonly Type[] SpeciallySerializedCollections = {
             typeof(List<>),
             typeof(ReadOnlyCollection<>),
             typeof(Dictionary<,>),

@@ -43,7 +43,7 @@ namespace Antmicro.Migrant.Tests
             : base(useGeneratedSerializer, useGeneratedDeserializer, false, true)
         {
 
-        }   
+        }
 
         [Test]
         public void ShouldSerializeRegex()
@@ -98,7 +98,7 @@ namespace Antmicro.Migrant.Tests
                     return false;
                 CustomISerializable other = (CustomISerializable)obj;
                 return fakeIntPtr == other.fakeIntPtr;
-            }            
+            }
 
             public override int GetHashCode()
             {
@@ -106,7 +106,7 @@ namespace Antmicro.Migrant.Tests
                 {
                     return fakeIntPtr.GetHashCode();
                 }
-            }            
+            }
 
             private IntPtr fakeIntPtr;
         }

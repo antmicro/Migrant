@@ -86,7 +86,7 @@ namespace Antmicro.Migrant.Tests
             foreach(var field in fields)
             {
                 var fBldr = typeBuilder.DefineField(field.Key, field.Value.Type, FieldAttributes.Public);
-                if (field.Value.IsTransient)
+                if(field.Value.IsTransient)
                 {
                     var taC = typeof(TransientAttribute).GetConstructor(Type.EmptyTypes);
                     fBldr.SetCustomAttribute(new CustomAttributeBuilder(taC, new object[0]));
@@ -105,7 +105,7 @@ namespace Antmicro.Migrant.Tests
         {
             var dllName = string.Format("{0}-{1}-{2}.dll", AssemblyName.Name, "xxx", counter);
 
-            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(string.Format("{0}-{1}-{2}", AssemblyName.Name, "xxx", counter/*++*/)), /*persistent ?*/ AssemblyBuilderAccess.RunAndSave /*: AssemblyBuilderAccess.Run*/);
+            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(string.Format("{0}-{1}-{2}", AssemblyName.Name, "xxx", counter/*++*/)), /*persistent ?*/AssemblyBuilderAccess.RunAndSave /*: AssemblyBuilderAccess.Run*/);
             var builtType = CreateType(assemblyBuilder, dllName);
             assemblyBuilder.Save(dllName);
             if(!string.IsNullOrWhiteSpace(prefix))
@@ -132,7 +132,9 @@ namespace Antmicro.Migrant.Tests
         private class FieldDescriptor
         {
             public Type Type { get; set; }
+
             public bool IsTransient { get; set; }
+
             public bool IsConstructor { get; set; }
         }
     }

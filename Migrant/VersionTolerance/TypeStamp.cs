@@ -31,162 +31,169 @@ using System.Text;
 
 namespace Antmicro.Migrant
 {
-  internal class TypeStamp
-  {
-    public TypeStamp()
+    internal class TypeStamp
     {
-      Classes = new List<TypeDescriptor>();
-    }
-
-    public TypeStamp(Type type, bool withTransient = false) : this()
-    {
-      var structure = StampHelpers.GetFieldsStructureInSerializationOrder(type, withTransient);
-      ModuleGUID = type.Module.ModuleVersionId;
-
-      foreach(var cl in structure)
-      {
-        Classes.Add(new TypeDescriptor(cl));
-      }
-    }
-
-    public void WriteTo(PrimitiveWriter writer)
-    {
-      writer.Write(ModuleGUID); 
-      writer.Write(Classes.Count); 
-      foreach(var cl in Classes)
-      {
-        cl.WriteTo(writer);
-      }
-    }
-
-    public void ReadFrom(PrimitiveReader reader)
-    {
-      ModuleGUID = reader.ReadGuid();
-      var classNo = reader.ReadInt32();
-      for(var j = 0; j < classNo; j++)
-      {
-        var td = new TypeDescriptor();
-        td.ReadFrom(reader);
-        Classes.Add(td);
-      }
-    }
-
-    public TypeStampCompareResult CompareWith(TypeStamp previous)
-    {
-      var result = new TypeStampCompareResult();
-
-      var lastMatchedIndex = -1;
-      var currOffset = 0;
-      foreach (var cl in Classes)
-      {
-        // try find class with the same name 
-        var matchedIndex = previous.IndexOfClass(c => c.AssemblyQualifiedName == cl.AssemblyQualifiedName);
-        if (matchedIndex == -1)
+        public TypeStamp()
         {
-          // class was not found
-          // we can try to find class with exact same layout and assume that it was renamed
-          matchedIndex = previous.IndexOfClass(c => c.HasSameLayout(cl) && !Classes.Any(x => x.AssemblyQualifiedName == c.AssemblyQualifiedName));
-          if (matchedIndex == -1) 
-          {
-            // we assume that this class is removed base one
-            //result.Add (new TypeStampDiff (TypeStampDiffKind.BaseClassAdded, cl));
-            result.ClassesAdded.Add(cl.AssemblyQualifiedName);
-            currOffset++;
-            continue;
-          }
-
-          result.ClassesRenamed.Add(Tuple.Create(previous.Classes[matchedIndex].AssemblyQualifiedName, cl.AssemblyQualifiedName));
+            Classes = new List<TypeDescriptor>();
         }
 
-        if (matchedIndex == Classes.IndexOf(cl)) {
-          var compareResult = cl.CompareWith(previous.Classes [matchedIndex]);
-          result.FieldsAdded.AddRange(compareResult.FieldsAdded);
-          result.FieldsRemoved.AddRange(compareResult.FieldsRemoved);
-          result.FieldsChanged.AddRange(compareResult.FieldsChanged);
-          lastMatchedIndex = matchedIndex;
-        }
-        else if (matchedIndex > Classes.IndexOf(cl) + currOffset)
+        public TypeStamp(Type type, bool withTransient = false) : this()
         {
-          // the new base class has been introduced
-          for (var i = lastMatchedIndex + 1; i < matchedIndex; i++)
-          {
-            result.ClassesRemoved.Add(previous.Classes[i].AssemblyQualifiedName);
-          }
-          lastMatchedIndex = matchedIndex;
+            var structure = StampHelpers.GetFieldsStructureInSerializationOrder(type, withTransient);
+            ModuleGUID = type.Module.ModuleVersionId;
+
+            foreach(var cl in structure)
+            {
+                Classes.Add(new TypeDescriptor(cl));
+            }
         }
-      }
 
-      result.CheckFieldMove();
-      return result;
-    }
-
-    public int IndexOfClass(Func<TypeDescriptor, bool> selector)
-    {
-      for (var i = 0; i < Classes.Count; i++) 
-      {
-        if (selector(Classes[i]))
+        public void WriteTo(PrimitiveWriter writer)
         {
-          return i;
+            writer.Write(ModuleGUID); 
+            writer.Write(Classes.Count); 
+            foreach(var cl in Classes)
+            {
+                cl.WriteTo(writer);
+            }
         }
-      }
-      return -1;
-    }
 
-    public IEnumerable<FieldDescriptor> GetFieldsInAlphabeticalOrder()
-    {
-      return Classes.SelectMany(x => x.Fields.OrderBy(y => y.Name));
-    }
-
-    public Guid ModuleGUID { get; private set; }
-    public List<TypeDescriptor> Classes { get; private set; }
-
-    public class TypeStampCompareResult
-    {
-      public List<FieldDescriptor> FieldsAdded   { get; private set; }
-      public List<FieldDescriptor> FieldsRemoved { get; private set; }
-      public Dictionary<FieldDescriptor, FieldDescriptor> FieldsMoved { get; private set; }
-      public List<FieldDescriptor> FieldsChanged { get; private set; }
-
-      public List<Tuple<string, string>> ClassesRenamed { get; private set; }
-      public List<string> ClassesAdded { get; private set; }
-      public List<string> ClassesRemoved { get; private set; }
-
-      public bool Empty 
-      {
-        get
+        public void ReadFrom(PrimitiveReader reader)
         {
-          return FieldsChanged.Count == 0 && FieldsAdded.Count == 0 
-            && FieldsRemoved.Count == 0 && FieldsMoved.Count == 0 
-            && ClassesRemoved.Count == 0 && ClassesAdded.Count == 0 
-            && ClassesRenamed.Count == 0;
+            ModuleGUID = reader.ReadGuid();
+            var classNo = reader.ReadInt32();
+            for(var j = 0; j < classNo; j++)
+            {
+                var td = new TypeDescriptor();
+                td.ReadFrom(reader);
+                Classes.Add(td);
+            }
         }
-      }
 
-      public TypeStampCompareResult()
-      {
-        FieldsAdded = new List<FieldDescriptor>();
-        FieldsRemoved = new List<FieldDescriptor>();
-        FieldsMoved = new Dictionary<FieldDescriptor, FieldDescriptor>();
-        FieldsChanged = new List<FieldDescriptor>();
-
-        ClassesRenamed = new List<Tuple<string, string>>();
-        ClassesAdded = new List<string>();
-        ClassesRemoved = new List<string>();
-      }
-
-      public void CheckFieldMove()
-      {
-        var comparer = new FieldDescriptor.MoveFieldComparer();
-        var moved = FieldsAdded.Intersect(FieldsRemoved, comparer).ToList();
-        foreach (var m in moved)
+        public TypeStampCompareResult CompareWith(TypeStamp previous)
         {
-          var fAdded = FieldsAdded.Single(x => comparer.Equals(x, m));
-          var fRemoved = FieldsRemoved.Single(x => comparer.Equals(x, m));
-          FieldsMoved.Add(fRemoved, fAdded);
-          FieldsAdded.Remove(fAdded);
-          FieldsRemoved.Remove(fRemoved);
+            var result = new TypeStampCompareResult();
+
+            var lastMatchedIndex = -1;
+            var currOffset = 0;
+            foreach(var cl in Classes)
+            {
+                // try find class with the same name 
+                var matchedIndex = previous.IndexOfClass(c => c.AssemblyQualifiedName == cl.AssemblyQualifiedName);
+                if(matchedIndex == -1)
+                {
+                    // class was not found
+                    // we can try to find class with exact same layout and assume that it was renamed
+                    matchedIndex = previous.IndexOfClass(c => c.HasSameLayout(cl) && !Classes.Any(x => x.AssemblyQualifiedName == c.AssemblyQualifiedName));
+                    if(matchedIndex == -1)
+                    {
+                        // we assume that this class is removed base one
+                        //result.Add (new TypeStampDiff (TypeStampDiffKind.BaseClassAdded, cl));
+                        result.ClassesAdded.Add(cl.AssemblyQualifiedName);
+                        currOffset++;
+                        continue;
+                    }
+
+                    result.ClassesRenamed.Add(Tuple.Create(previous.Classes[matchedIndex].AssemblyQualifiedName, cl.AssemblyQualifiedName));
+                }
+
+                if(matchedIndex == Classes.IndexOf(cl))
+                {
+                    var compareResult = cl.CompareWith(previous.Classes[matchedIndex]);
+                    result.FieldsAdded.AddRange(compareResult.FieldsAdded);
+                    result.FieldsRemoved.AddRange(compareResult.FieldsRemoved);
+                    result.FieldsChanged.AddRange(compareResult.FieldsChanged);
+                    lastMatchedIndex = matchedIndex;
+                }
+                else if(matchedIndex > Classes.IndexOf(cl) + currOffset)
+                {
+                    // the new base class has been introduced
+                    for(var i = lastMatchedIndex + 1; i < matchedIndex; i++)
+                    {
+                        result.ClassesRemoved.Add(previous.Classes[i].AssemblyQualifiedName);
+                    }
+                    lastMatchedIndex = matchedIndex;
+                }
+            }
+
+            result.CheckFieldMove();
+            return result;
         }
-      }
+
+        public int IndexOfClass(Func<TypeDescriptor, bool> selector)
+        {
+            for(var i = 0; i < Classes.Count; i++)
+            {
+                if(selector(Classes[i]))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public IEnumerable<FieldDescriptor> GetFieldsInAlphabeticalOrder()
+        {
+            return Classes.SelectMany(x => x.Fields.OrderBy(y => y.Name));
+        }
+
+        public Guid ModuleGUID { get; private set; }
+
+        public List<TypeDescriptor> Classes { get; private set; }
+
+        public class TypeStampCompareResult
+        {
+            public List<FieldDescriptor> FieldsAdded   { get; private set; }
+
+            public List<FieldDescriptor> FieldsRemoved { get; private set; }
+
+            public Dictionary<FieldDescriptor, FieldDescriptor> FieldsMoved { get; private set; }
+
+            public List<FieldDescriptor> FieldsChanged { get; private set; }
+
+            public List<Tuple<string, string>> ClassesRenamed { get; private set; }
+
+            public List<string> ClassesAdded { get; private set; }
+
+            public List<string> ClassesRemoved { get; private set; }
+
+            public bool Empty
+            {
+                get
+                {
+                    return FieldsChanged.Count == 0 && FieldsAdded.Count == 0
+                    && FieldsRemoved.Count == 0 && FieldsMoved.Count == 0
+                    && ClassesRemoved.Count == 0 && ClassesAdded.Count == 0
+                    && ClassesRenamed.Count == 0;
+                }
+            }
+
+            public TypeStampCompareResult()
+            {
+                FieldsAdded = new List<FieldDescriptor>();
+                FieldsRemoved = new List<FieldDescriptor>();
+                FieldsMoved = new Dictionary<FieldDescriptor, FieldDescriptor>();
+                FieldsChanged = new List<FieldDescriptor>();
+
+                ClassesRenamed = new List<Tuple<string, string>>();
+                ClassesAdded = new List<string>();
+                ClassesRemoved = new List<string>();
+            }
+
+            public void CheckFieldMove()
+            {
+                var comparer = new FieldDescriptor.MoveFieldComparer();
+                var moved = FieldsAdded.Intersect(FieldsRemoved, comparer).ToList();
+                foreach(var m in moved)
+                {
+                    var fAdded = FieldsAdded.Single(x => comparer.Equals(x, m));
+                    var fRemoved = FieldsRemoved.Single(x => comparer.Equals(x, m));
+                    FieldsMoved.Add(fRemoved, fAdded);
+                    FieldsAdded.Remove(fAdded);
+                    FieldsRemoved.Remove(fRemoved);
+                }
+            }
+        }
     }
-  }
 }

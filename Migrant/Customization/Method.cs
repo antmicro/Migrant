@@ -26,21 +26,21 @@
 */
 namespace Antmicro.Migrant.Customization
 {
-	/// <summary>
-	/// Method of serialization or deserialization.
-	/// </summary>
-	public enum Method
-	{
-		/// <summary>
-		/// (De)Serialization is done using write method generator. For any type which encountered for the first time, the methods to serialize it are
-		/// generated.
-		/// </summary>
-		Generated,
+    /// <summary>
+    /// Method of serialization or deserialization.
+    /// </summary>
+    public enum Method
+    {
+        /// <summary>
+        /// (De)Serialization is done using write method generator. For any type which encountered for the first time, the methods to serialize it are
+        /// generated.
+        /// </summary>
+        Generated,
 
-		/// <summary>
-		/// (De)Serialization is done directly using reflection.
-		/// </summary>
-		Reflection
-	}
+        /// <summary>
+        /// (De)Serialization is done directly using reflection.
+        /// </summary>
+        Reflection
+    }
 }
 

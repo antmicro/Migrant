@@ -28,15 +28,15 @@ using System;
 
 namespace Antmicro.Migrant.Hooks
 {
-	/// <summary>
-	/// Method decorated with this attribute will be invoked after the whole
-	/// serialization has been finished in the opposite order they were encountered
-	/// during serialization.
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method)]
-	public class LatePostSerializationAttribute : Attribute
-	{
+    /// <summary>
+    /// Method decorated with this attribute will be invoked after the whole
+    /// serialization has been finished in the opposite order they were encountered
+    /// during serialization.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public class LatePostSerializationAttribute : Attribute
+    {
 
-	}
+    }
 }
 

@@ -30,111 +30,115 @@ using System.Text;
 
 namespace Antmicro.Migrant
 {
-  internal class FieldDescriptor
-  {
-    public FieldDescriptor(string owningTypeAQN) 
-    { 
-      OwningTypeAQN = owningTypeAQN;
-    }
-
-    public FieldDescriptor (FieldInfo finfo)
+    internal class FieldDescriptor
     {
-      OwningTypeAQN = finfo.DeclaringType.AssemblyQualifiedName;
-      Name = finfo.Name;
-      TypeAQN = finfo.FieldType.AssemblyQualifiedName;
-      IsTransient = finfo.GetCustomAttributes(false).Any(a => a is TransientAttribute);
-      IsConstructor = finfo.GetCustomAttributes(false).Any(a => a is ConstructorAttribute);
-    }
-
-    public void WriteTo(PrimitiveWriter writer)
-    {
-      writer.Write(Name);
-      writer.Write(TypeAQN);
-    }
-
-    public void ReadFrom(PrimitiveReader reader)
-    {
-      Name = reader.ReadString();
-      TypeAQN = reader.ReadString();
-    }
-
-    public CompareResult CompareWith(FieldDescriptor fd)
-    {
-      if (fd.Name == Name) 
-      {
-        if (fd.TypeAQN != TypeAQN) 
-        {
-          return CompareResult.FieldTypeChanged;
+        public FieldDescriptor(string owningTypeAQN)
+        { 
+            OwningTypeAQN = owningTypeAQN;
         }
-      } 
-      else if (fd.TypeAQN == TypeAQN) 
-      {
-        if (fd.Name != Name) 
+
+        public FieldDescriptor(FieldInfo finfo)
         {
-          return CompareResult.FieldRenamed;
+            OwningTypeAQN = finfo.DeclaringType.AssemblyQualifiedName;
+            Name = finfo.Name;
+            TypeAQN = finfo.FieldType.AssemblyQualifiedName;
+            IsTransient = finfo.GetCustomAttributes(false).Any(a => a is TransientAttribute);
+            IsConstructor = finfo.GetCustomAttributes(false).Any(a => a is ConstructorAttribute);
         }
-      }
-      else 
-      {
-        return CompareResult.NotMatch;
-      }
 
-      return CompareResult.Match;
+        public void WriteTo(PrimitiveWriter writer)
+        {
+            writer.Write(Name);
+            writer.Write(TypeAQN);
+        }
+
+        public void ReadFrom(PrimitiveReader reader)
+        {
+            Name = reader.ReadString();
+            TypeAQN = reader.ReadString();
+        }
+
+        public CompareResult CompareWith(FieldDescriptor fd)
+        {
+            if(fd.Name == Name)
+            {
+                if(fd.TypeAQN != TypeAQN)
+                {
+                    return CompareResult.FieldTypeChanged;
+                }
+            }
+            else if(fd.TypeAQN == TypeAQN)
+            {
+                if(fd.Name != Name)
+                {
+                    return CompareResult.FieldRenamed;
+                }
+            }
+            else
+            {
+                return CompareResult.NotMatch;
+            }
+
+            return CompareResult.Match;
+        }
+
+        public override bool Equals(object obj)
+        {
+            var fd = obj as FieldDescriptor;
+            if(fd != null)
+            {
+                return fd.Name == Name && fd.TypeAQN == TypeAQN && fd.IsTransient == IsTransient && fd.OwningTypeAQN == OwningTypeAQN;
+            }
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            var hash = 17;
+
+            hash = hash * 23 + (Name != null ? Name.GetHashCode() : 0);
+            hash = hash * 23 + (TypeAQN != null ? TypeAQN.GetHashCode() : 0);
+            hash = hash * 23 + IsTransient.GetHashCode();
+            hash = hash * 23 + (OwningTypeAQN != null ? OwningTypeAQN.GetHashCode() : 0);
+
+            return hash;
+        }
+
+        public bool IsConstructor { get; private set; }
+
+        public bool IsTransient { get; private set; }
+
+        public string Name { get; private set; }
+
+        public string TypeAQN { get; private set; }
+
+        public string OwningTypeAQN { get; set; }
+
+        public enum CompareResult
+        {
+            Match,
+            NotMatch,
+            FieldRenamed,
+            FieldTypeChanged
+        }
+
+        public class MoveFieldComparer : IEqualityComparer<FieldDescriptor>
+        {
+            public bool Equals(FieldDescriptor x, FieldDescriptor y)
+            {
+                return x.Name == y.Name && x.TypeAQN == y.TypeAQN;
+            }
+
+            public int GetHashCode(FieldDescriptor obj)
+            {
+                var hash = 17;
+
+                hash = hash * 23 + (obj.Name != null ? obj.Name.GetHashCode() : 0);
+                hash = hash * 23 + (obj.TypeAQN != null ? obj.TypeAQN.GetHashCode() : 0);
+
+                return hash;
+            }
+        }
     }
-
-    public override bool Equals(object obj)
-    {
-      var fd = obj as FieldDescriptor;
-      if (fd != null)
-      {
-        return fd.Name == Name && fd.TypeAQN == TypeAQN && fd.IsTransient == IsTransient && fd.OwningTypeAQN == OwningTypeAQN;
-      }
-      return base.Equals(obj);
-    }
-
-    public override int GetHashCode()
-    {
-      var hash = 17;
-
-      hash = hash * 23 + (Name != null ? Name.GetHashCode() : 0);
-      hash = hash * 23 + (TypeAQN != null ? TypeAQN.GetHashCode() : 0);
-      hash = hash * 23 + IsTransient.GetHashCode();
-      hash = hash * 23 + (OwningTypeAQN != null ? OwningTypeAQN.GetHashCode() : 0);
-
-      return hash;
-    }
-
-    public bool IsConstructor { get; private set; }
-    public bool IsTransient { get; private set; }
-    public string Name { get; private set; }
-    public string TypeAQN { get; private set; }
-    public string OwningTypeAQN { get; set; }
-
-    public enum CompareResult
-    {
-      Match,
-      NotMatch,
-      FieldRenamed,
-      FieldTypeChanged
-    }
-
-    public class MoveFieldComparer : IEqualityComparer<FieldDescriptor>
-    {
-      public bool Equals(FieldDescriptor x, FieldDescriptor y)
-      {
-        return x.Name == y.Name && x.TypeAQN == y.TypeAQN;
-      }
-
-      public int GetHashCode(FieldDescriptor obj)
-      {
-        var hash = 17;
-
-        hash = hash * 23 + (obj.Name != null ? obj.Name.GetHashCode() : 0);
-        hash = hash * 23 + (obj.TypeAQN != null ? obj.TypeAQN.GetHashCode() : 0);
-
-        return hash;
-      }
-    }
-  }
 }
 

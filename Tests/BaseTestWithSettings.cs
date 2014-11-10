@@ -29,33 +29,33 @@ using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant.Tests
 {
-	public abstract class BaseTestWithSettings
-	{
-    protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable)
-		{
-			this.useGeneratedSerializer        = useGeneratedSerializer;
-			this.useGeneratedDeserializer      = useGeneratedDeserializer;
-      this.treatCollectionsAsUserObjects = treatCollectionsAsUserObjects;
-      this.supportForISerializable       = supportForISerializable;
-		}
+    public abstract class BaseTestWithSettings
+    {
+        protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable)
+        {
+            this.useGeneratedSerializer = useGeneratedSerializer;
+            this.useGeneratedDeserializer = useGeneratedDeserializer;
+            this.treatCollectionsAsUserObjects = treatCollectionsAsUserObjects;
+            this.supportForISerializable = supportForISerializable;
+        }
 
-		protected Settings GetSettings(VersionToleranceLevel level = 0)
-		{
-			return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
-                                useGeneratedDeserializer ? Method.Generated : Method.Reflection,    
-                                level,
-                                supportForISerializable,
-                                treatCollectionsAsUserObjects);
-		}
+        protected Settings GetSettings(VersionToleranceLevel level = 0)
+        {
+            return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
+                useGeneratedDeserializer ? Method.Generated : Method.Reflection,    
+                level,
+                supportForISerializable,
+                treatCollectionsAsUserObjects);
+        }
 
-		protected T SerializerClone<T>(T toClone)
-		{
-			return Serializer.DeepClone(toClone, GetSettings());
-		}
+        protected T SerializerClone<T>(T toClone)
+        {
+            return Serializer.DeepClone(toClone, GetSettings());
+        }
 
-		private readonly bool useGeneratedSerializer;
-		private readonly bool useGeneratedDeserializer;
-    private readonly bool treatCollectionsAsUserObjects;
-    private readonly bool supportForISerializable;
-	}
+        private readonly bool useGeneratedSerializer;
+        private readonly bool useGeneratedDeserializer;
+        private readonly bool treatCollectionsAsUserObjects;
+        private readonly bool supportForISerializable;
+    }
 }

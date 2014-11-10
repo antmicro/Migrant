@@ -30,29 +30,29 @@ using System;
 
 namespace Antmicro.Migrant.Customization
 {
-	/// <summary>
-	/// Contains serialization settings.
-	/// </summary>
-	/// 	
-	// The reason settings are serializable is to enable tests regarding version tolerant serialization
-	[Serializable]
-	public sealed class Settings
-	{
-		/// <summary>
-		/// Gets the method used for serialization.
-		/// </summary>
-		public Method SerializationMethod { get; private set; }
+    /// <summary>
+    /// Contains serialization settings.
+    /// </summary>
+    /// 	
+    // The reason settings are serializable is to enable tests regarding version tolerant serialization
+    [Serializable]
+    public sealed class Settings
+    {
+        /// <summary>
+        /// Gets the method used for serialization.
+        /// </summary>
+        public Method SerializationMethod { get; private set; }
 
-		/// <summary>
-		/// Gets the method used for deserialization.
-		/// </summary>
-		public Method DeserializationMethod { get; private set; }
+        /// <summary>
+        /// Gets the method used for deserialization.
+        /// </summary>
+        public Method DeserializationMethod { get; private set; }
 
-		/// <summary>
-		/// Specifies how much the layout of the serialized class can differ from the version
-		/// that is available when that data is deserialized.
-		/// </summary>
-		public VersionToleranceLevel VersionTolerance { get; private set; }
+        /// <summary>
+        /// Specifies how much the layout of the serialized class can differ from the version
+        /// that is available when that data is deserialized.
+        /// </summary>
+        public VersionToleranceLevel VersionTolerance { get; private set; }
 
         /// <summary>
         /// Specifies whether Migrant should use GetObjectData approach for serialization.
@@ -73,19 +73,19 @@ namespace Antmicro.Migrant.Customization
         public bool UseBuffering { get; private set; }
 
 
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class.
-		/// </summary>
-		/// <param name='serializationMethod'>
-		/// Method used for serialization.
-		/// </param>
-		/// <param name='deserializationMethod'>
-		/// Method used for deserialization.
-		/// </param>
-		/// <param name='versionTolerance'>
-		/// Specifies the possible level of difference between class layout when it was serialized and in the
-		/// moment of deserialization.
-		/// </param>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class.
+        /// </summary>
+        /// <param name='serializationMethod'>
+        /// Method used for serialization.
+        /// </param>
+        /// <param name='deserializationMethod'>
+        /// Method used for deserialization.
+        /// </param>
+        /// <param name='versionTolerance'>
+        /// Specifies the possible level of difference between class layout when it was serialized and in the
+        /// moment of deserialization.
+        /// </param>
         /// <param name = "treatCollectionAsUserObject">
         /// Specifies if collection objects are to be deserialized without optimization (treated as normal user objects).
         /// </param>
@@ -97,15 +97,15 @@ namespace Antmicro.Migrant.Customization
         /// data in advance. Disabling buffering also disables padding.
         /// </param>
         public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
-            bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true)
-		{
-			SerializationMethod = serializationMethod;
-			DeserializationMethod = deserializationMethod;
-			VersionTolerance = versionTolerance;
+                        bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true)
+        {
+            SerializationMethod = serializationMethod;
+            DeserializationMethod = deserializationMethod;
+            VersionTolerance = versionTolerance;
             SupportForISerializable = supportForISerializable;
             TreatCollectionAsUserObject = treatCollectionAsUserObject;
             UseBuffering = useBuffering;
-		}
-	}
+        }
+    }
 }
 

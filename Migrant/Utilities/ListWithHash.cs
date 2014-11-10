@@ -31,56 +31,56 @@ using System;
 namespace Antmicro.Migrant.Utilities
 {
     internal class ListWithHash<T> : IEnumerable<T>, IList<T>, ISet<T>
-	{
-		public ListWithHash()
-		{
-			list = new List<T>();
-			set = new HashSet<T>();
-		}
+    {
+        public ListWithHash()
+        {
+            list = new List<T>();
+            set = new HashSet<T>();
+        }
 
-		public bool Add(T element)
-		{
-			if(!set.Add(element))
-			{
-				return false;
-			}
-			list.Add(element);
-			return true;
-		}
+        public bool Add(T element)
+        {
+            if(!set.Add(element))
+            {
+                return false;
+            }
+            list.Add(element);
+            return true;
+        }
 
-		public int Count
-		{
-			get
-			{
-				return list.Count;
-			}
-		}
+        public int Count
+        {
+            get
+            {
+                return list.Count;
+            }
+        }
 
-		public T this[int index]
-		{
-			get
-			{
-				return list[index];
-			}
+        public T this[int index]
+        {
+            get
+            {
+                return list[index];
+            }
 
             set
             {
                 throw new NotSupportedException();
             }
-		}
+        }
 
-		public IEnumerator<T> GetEnumerator()
-		{
-			return list.GetEnumerator();
-		}
+        public IEnumerator<T> GetEnumerator()
+        {
+            return list.GetEnumerator();
+        }
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return ((IEnumerable)list).GetEnumerator();
-		}
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return ((IEnumerable)list).GetEnumerator();
+        }
 
-		private readonly List<T> list;
-		private readonly HashSet<T> set;
+        private readonly List<T> list;
+        private readonly HashSet<T> set;
 
         #region IList implementation
 
@@ -193,6 +193,6 @@ namespace Antmicro.Migrant.Utilities
         }
 
         #endregion
-	}
+    }
 }
 

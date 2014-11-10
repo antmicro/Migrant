@@ -30,34 +30,34 @@ using System.Linq;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
-	internal sealed class TypeStamper
-	{
+    internal sealed class TypeStamper
+    {
         public TypeStamper(PrimitiveWriter writer, bool treatCollectionAsUserObject)
-		{
-			this.writer = writer;
+        {
+            this.writer = writer;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
-			alreadyWritten = new HashSet<Type>();
-		}
+            alreadyWritten = new HashSet<Type>();
+        }
 
-		public void Stamp(Type type)
-		{
+        public void Stamp(Type type)
+        {
             if(!StampHelpers.IsStampNeeded(type, treatCollectionAsUserObject))
-			{
-				return;
-			}
-			if(alreadyWritten.Contains(type))
-			{
-				return;
-			}
-			alreadyWritten.Add(type);
+            {
+                return;
+            }
+            if(alreadyWritten.Contains(type))
+            {
+                return;
+            }
+            alreadyWritten.Add(type);
 
-			var ts = new TypeStamp (type);
-			ts.WriteTo (writer);
-		}
+            var ts = new TypeStamp(type);
+            ts.WriteTo(writer);
+        }
 
         private readonly bool treatCollectionAsUserObject;
-		private readonly PrimitiveWriter writer;
-		private readonly HashSet<Type> alreadyWritten;
-	}
+        private readonly PrimitiveWriter writer;
+        private readonly HashSet<Type> alreadyWritten;
+    }
 }
 

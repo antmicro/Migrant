@@ -28,14 +28,14 @@ using System;
 
 namespace Antmicro.Migrant.Hooks
 {
-	/// <summary>
-	/// Method decorated with this attribute will be invoked after deserialization
-	/// of given object and all objects referenced by this object.
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method)]
-	public class PostDeserializationAttribute : Attribute
-	{
+    /// <summary>
+    /// Method decorated with this attribute will be invoked after deserialization
+    /// of given object and all objects referenced by this object.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public class PostDeserializationAttribute : Attribute
+    {
 
-	}
+    }
 }
 

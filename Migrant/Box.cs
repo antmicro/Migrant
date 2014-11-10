@@ -31,7 +31,7 @@ namespace Antmicro.Migrant
         public Box(object value)
         {
             this.Value = value;
-        }            
+        }
 
         public readonly object Value;
     }
