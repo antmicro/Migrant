@@ -1,4 +1,4 @@
-# Migrant 0.6
+# Migrant 0.7
 
 This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
 
