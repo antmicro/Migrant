@@ -37,7 +37,7 @@ namespace Antmicro.Migrant.ResultBrowser
         public static int Main(string[] args)
         {
             var options = new Options();
-            if(!new CommandLineParser(new CommandLineParserSettings(Console.Out)).ParseArguments(args, options))
+            if(!Parser.Default.ParseArguments(args, options))
             {
                 return 1;
             }

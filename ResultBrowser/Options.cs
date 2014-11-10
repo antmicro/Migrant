@@ -30,12 +30,12 @@ using System.Collections.Generic;
 
 namespace Antmicro.Migrant.ResultBrowser
 {
-    internal class Options : CommandLineOptionsBase
+    internal class Options
     {
-        [Option("c", "contains", HelpText = "Filter tests containg given string.")]
+        [Option('c', "contains", HelpText = "Filter tests containg given string.")]
         public string Contains { get; set; }
 
-        [Option("f", "fileName", HelpText = "Tests database.", Required = true)]
+        [Option('f', "fileName", HelpText = "Tests database.", Required = true)]
         public string FileName { get; set; }
 
         [HelpOption]
