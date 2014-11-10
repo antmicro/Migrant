@@ -65,7 +65,7 @@ Here's deserialization:
         var secondObject = osSerializer.Deserialize<MyObject>();
     }
 
-As default, all writes to the stream are buffered, i.e. one can be only sure that they are in the stream after calling `Dispose()` on open stream (de)serializer. This is, however, not useful when underlying stream is buffered independently or it is a network stream attached to a socket. In such cases one can disable buffering in `Settings`.
+As default, all writes to the stream are buffered, i.e. one can be only sure that they are in the stream after calling `Dispose()` on open stream (de)serializer. This is, however, not useful when underlying stream is buffered independently or it is a network stream attached to a socket. In such cases one can disable buffering in `Settings`. Note that buffering also disables padding which is normally used to allow speculative reads. Therefore data written with buffered and unbuffered mode are not compatible.
 
 ### Deep clone
 
