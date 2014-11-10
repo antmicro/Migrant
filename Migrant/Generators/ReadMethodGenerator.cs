@@ -183,7 +183,14 @@ namespace Antmicro.Migrant.Generators
             {
                 PushDeserializedObjectOntoStack(objectIdLocal);
                 generator.Emit(OpCodes.Castclass, method.ReflectedType);
-                generator.Emit(OpCodes.Call, method);
+                if(method.IsVirtual)
+                {
+                    generator.Emit(OpCodes.Callvirt, method);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Call, method);
+                }
             }
 			
             methods = Helpers.GetMethodsWithAttribute(typeof(LatePostDeserializationAttribute), formalType);

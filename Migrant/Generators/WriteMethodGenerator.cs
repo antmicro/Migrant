@@ -109,7 +109,14 @@ namespace Antmicro.Migrant.Generators
                 {
                     generator.Emit(OpCodes.Ldarg_2); // object to serialize
                 }
-                generator.Emit(OpCodes.Call, method);
+                if(method.IsVirtual)
+                {
+                    generator.Emit(OpCodes.Callvirt, method);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Call, method);
+                }
             }
         }
 
