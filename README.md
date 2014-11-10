@@ -45,6 +45,28 @@ Here we present some simple use cases of Migrant. They are written in pseudo-C\#
 
     var myDeserializedObject = serializer.Deserialize<MyComplexType>(stream);
 
+### Open stream serialization
+
+Normally each serialization data contains everything necessary for serialization like type descriptions. Those data, however, consume space and sometimes one would like to do consecutive serializations where each next one would reuse context just as if they happen as one. In other words, serializing one object and then another would be like serializing tuple of them. This also means that if there is a reference to an old object, it will be used instead of a new object serialized second time. Given open stream serialization session is tied to the stream. API is simple:
+
+    var serializer = new Serializer();
+    using(var osSerializer = serializer.ObtainOpenStreamSerializer(stream))
+    {
+        osSerializer.Serialize(firstObject);
+        osSerializer.Serialize(secondObject);
+    }
+
+Here's deserialization:
+
+    var serializer = new Serializer();
+    using(var osSerializer = serializer.ObtainOpenStreamDeserializer(stream))
+    {
+        var firstObject = osSerializer.Deserialize<MyObject>();
+        var secondObject = osSerializer.Deserialize<MyObject>();
+    }
+
+As default, all writes to the stream are buffered, i.e. one can be only sure that they are in the stream after calling `Dispose()` on open stream (de)serializer. This is, however, not useful when underlying stream is buffered independently or it is a network stream attached to a socket. In such cases one can disable buffering in `Settings`.
+
 ### Deep clone
 
     var myComplexObject = new MyComplexType(complexParameters);
