@@ -110,8 +110,9 @@ namespace Antmicro.Migrant
         /// <param name="stream">Stream.</param>
         public OpenStreamDeserializer ObtainOpenStreamDeserializer(Stream stream)
         {
-            ThrowOnWrongResult(TryReadHeader(stream));
-            return new OpenStreamDeserializer(ObtainReader(stream));
+            bool preserveReferences;
+            ThrowOnWrongResult(TryReadHeader(stream, out preserveReferences));
+            return new OpenStreamDeserializer(ObtainReader(stream, preserveReferences));
         }
 
 		/// <summary>
@@ -175,15 +176,16 @@ namespace Antmicro.Migrant
         /// </typeparam>
         public DeserializationResult TryDeserialize<T>(Stream stream, out T obj)
         {
+            bool unused;
             obj = default(T);
 
-            var headerResult = TryReadHeader(stream);
+            var headerResult = TryReadHeader(stream, out unused);
             if(headerResult != DeserializationResult.OK)
             {
                 return headerResult;
             }
 
-            using(var objectReader = ObtainReader(stream))
+            using(var objectReader = ObtainReader(stream, unused))
             {
                 try
                 {
@@ -252,18 +254,21 @@ namespace Antmicro.Migrant
 			stream.WriteByte(Magic2);
 			stream.WriteByte(Magic3);
 			stream.WriteByte(VersionNumber);
+            stream.WriteByte(settings.ReferencePreservation == ReferencePreservation.DoNotPreserve ? (byte)0 : (byte)1);
 		}
 
         private ObjectWriter ObtainWriter(Stream stream)
         {
             var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
                              writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, 
-                settings.TreatCollectionAsUserObject, settings.UseBuffering);
+                settings.TreatCollectionAsUserObject, settings.UseBuffering, settings.ReferencePreservation);
             return writer;
         }
 
-        private DeserializationResult TryReadHeader(Stream stream)
+        private DeserializationResult TryReadHeader(Stream stream, out bool preserveReferences)
         {
+            preserveReferences = false;
+
             // Read header
             var magic1 = stream.ReadByte();
             var magic2 = stream.ReadByte();
@@ -277,6 +282,7 @@ namespace Antmicro.Migrant
             {
                 return DeserializationResult.WrongVersion;
             }
+            preserveReferences = stream.ReadByteOrThrow() != 0;
             return DeserializationResult.OK;
         }
 
@@ -297,11 +303,23 @@ namespace Antmicro.Migrant
             }
         }
 
-        private ObjectReader ObtainReader(Stream stream)
+        private ObjectReader ObtainReader(Stream stream, bool preserveReferences)
         {
+            // user can only tell whether to use weak or strong reference preservation
+            ReferencePreservation eventualPreservation;
+            if(!preserveReferences)
+            {
+                eventualPreservation = ReferencePreservation.DoNotPreserve;
+            }
+            else
+            {
+                eventualPreservation = settings.ReferencePreservation == ReferencePreservation.UseWeakReference ? 
+                    ReferencePreservation.UseWeakReference : ReferencePreservation.Preserve;
+            }
+
             return new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
                 settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject,
-                settings.VersionTolerance, settings.UseBuffering);
+                settings.VersionTolerance, settings.UseBuffering, eventualPreservation);
         }
 
         private Exception lastException;
@@ -312,7 +330,7 @@ namespace Antmicro.Migrant
 		private readonly Dictionary<Type, DynamicMethod> readMethodCache;
         private readonly InheritanceAwareList<Delegate> surrogatesForObjects;
         private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
-		private const byte VersionNumber = 3;
+		private const byte VersionNumber = 4;
 		private const byte Magic1 = 0x32;
 		private const byte Magic2 = 0x66;
 		private const byte Magic3 = 0x34;

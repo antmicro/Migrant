@@ -77,9 +77,14 @@ namespace Antmicro.Migrant
         /// <param name="useBuffering"> 
         /// True if buffering was used with the corresponding ObjectWriter or false otherwise - i.e. when no padding and buffering is used.
         /// </param>
+        /// <param name="referencePreservation"> 
+        /// Tells deserializer whether open stream serialization preserved objects identieties between serialization. Note that this option should
+        /// be consistent with what was used during serialization.
+        /// </param>
         public ObjectReader(Stream stream, InheritanceAwareList<Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
                             IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
-                            VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true)
+                            VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, 
+                            ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             if(objectsForSurrogates == null)
             {
@@ -94,9 +99,9 @@ namespace Antmicro.Migrant
             this.postDeserializationCallback = postDeserializationCallback;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             delegatesCache = new Dictionary<Type, Func<int, object>>();
-            deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             reader = new PrimitiveReader(stream, useBuffering);
             stamper = new TypeStampReader(reader, versionToleranceLevel);
+            this.referencePreservation = referencePreservation;
         }
 
         /// <summary>
@@ -123,6 +128,10 @@ namespace Antmicro.Migrant
                 {
                     deserializedObjects[i] = soFarDeserialized[i].Target;
                 }
+            }
+            if(deserializedObjects == null)
+            {
+                deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             }
             var firstObjectId = deserializedObjects.Count;
             var type = ReadType();
@@ -176,12 +185,18 @@ namespace Antmicro.Migrant
 
         private void PrepareForNextRead()
         {
-            soFarDeserialized = new WeakReference[deserializedObjects.Count];
-            for(var i = 0; i < soFarDeserialized.Length; i++)
+            if(referencePreservation == ReferencePreservation.UseWeakReference)
             {
-                soFarDeserialized[i] = new WeakReference(deserializedObjects[i]);
+                soFarDeserialized = new WeakReference[deserializedObjects.Count];
+                for(var i = 0; i < soFarDeserialized.Length; i++)
+                {
+                    soFarDeserialized[i] = new WeakReference(deserializedObjects[i]);
+                }
             }
-            deserializedObjects = null;
+            if(referencePreservation != ReferencePreservation.Preserve)
+            {
+                deserializedObjects = null;
+            }
         }
 
         internal static bool HasSpecialReadMethod(Type type)
@@ -624,6 +639,7 @@ namespace Antmicro.Migrant
         private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;
         private readonly bool treatCollectionAsUserObject;
+        private ReferencePreservation referencePreservation;
         internal AutoResizingList<object> deserializedObjects;
         private IDictionary<Type, DynamicMethod> readMethodsCache;
         private readonly Dictionary<Type, Func<Int32, object>> delegatesCache;

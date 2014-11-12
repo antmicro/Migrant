@@ -72,6 +72,12 @@ namespace Antmicro.Migrant.Customization
         /// <value><c>true</c> if buffering is used; otherwise, <c>false</c>.</value>
         public bool UseBuffering { get; private set; }
 
+        /// <summary>
+        /// Tells serializer how to treat identity of objects between sessions of open
+        /// stream serialization.
+        /// </summary>
+        public ReferencePreservation ReferencePreservation { get; private set; }
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class.
@@ -96,8 +102,12 @@ namespace Antmicro.Migrant.Customization
         /// True if buffering should be used, false if writes should directly go to the stream and reads should never read
         /// data in advance. Disabling buffering also disables padding.
         /// </param>
+        /// <param name="referencePreservation"> 
+        /// Tells serializer how to treat references between sessions of open stream serialization.
+        /// </param>
         public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
-                        bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true)
+                        bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true,
+            ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             SerializationMethod = serializationMethod;
             DeserializationMethod = deserializationMethod;
@@ -105,10 +115,11 @@ namespace Antmicro.Migrant.Customization
             SupportForISerializable = supportForISerializable;
             TreatCollectionAsUserObject = treatCollectionAsUserObject;
             UseBuffering = useBuffering;
+            ReferencePreservation = referencePreservation;
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class, based on a given instance with chosen settings chaned.
+        /// Initializes a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class.
         /// </summary>
         /// <param name='serializationMethod'>
         /// Method used for serialization.
@@ -130,17 +141,21 @@ namespace Antmicro.Migrant.Customization
         /// True if buffering should be used, false if writes should directly go to the stream and reads should never read
         /// data in advance. Disabling buffering also disables padding.
         /// </param>
+        /// <param name="referencePreservation"> 
+        /// Tells serializer how to treat references between sessions of open stream serialization.
+        /// </param>
         public Settings With(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
-            bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true)
+                             bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true,
+                             ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
-            var result = new Settings
-            {
+            var result = new Settings {
                 SerializationMethod = serializationMethod,
                 DeserializationMethod = deserializationMethod,
                 VersionTolerance = versionTolerance,
                 SupportForISerializable = supportForISerializable,
                 TreatCollectionAsUserObject = treatCollectionAsUserObject,
-                UseBuffering = useBuffering
+                UseBuffering = useBuffering,
+                ReferencePreservation = referencePreservation
             };
             return result;
         }

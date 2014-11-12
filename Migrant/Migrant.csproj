@@ -74,6 +74,7 @@
     <Compile Include="VersionTolerance\FieldDescriptor.cs" />
     <Compile Include="ObjectIdentifierContext.cs" />
     <Compile Include="Box.cs" />
+    <Compile Include="Customization\ReferencePreservation.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

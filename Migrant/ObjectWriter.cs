@@ -38,6 +38,7 @@ using System.Threading;
 using System.Diagnostics;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Utilities;
+using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant
 {
@@ -75,10 +76,13 @@ namespace Antmicro.Migrant
         /// <param name="useBuffering"> 
         /// True if buffering is used. False if all writes should directly go to the stream and no padding should be used.
         /// </param>
+        /// <param name="referencePreservation"> 
+        /// Tells serializer how to treat object identity between the calls to <see cref="Antmicro.Migrant.ObjectWriter.WriteObject" />.
+        /// </param>
         public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null, 
                       Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
                       InheritanceAwareList<Delegate> surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false,
-                      bool useBuffering = true)
+                      bool useBuffering = true, ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             if(surrogatesForObjects == null)
             {
@@ -99,7 +103,11 @@ namespace Antmicro.Migrant
             writer = new PrimitiveWriter(stream, useBuffering);
             typeStamper = new TypeStamper(writer, treatCollectionAsUserObject);
             inlineWritten = new HashSet<int>();
-            objectsWritten = 0;
+            this.referencePreservation = referencePreservation;
+            if(referencePreservation == ReferencePreservation.Preserve)
+            {
+                identifier = new ObjectIdentifier();
+            }
         }
 
         /// <summary>
@@ -111,8 +119,11 @@ namespace Antmicro.Migrant
         public void WriteObject(object o)
         {
             objectsWrittenThisSession = 0;
-            identifier = identifierContext == null ? new ObjectIdentifier() : new ObjectIdentifier(identifierContext);
-            identifierContext = null;
+            if(referencePreservation != ReferencePreservation.Preserve)
+            {
+                identifier = identifierContext == null ? new ObjectIdentifier() : new ObjectIdentifier(identifierContext);
+                identifierContext = null;
+            }
             var identifiersCount = identifier.Count;
             identifier.GetId(o);
             var firstObjectIsNew = identifiersCount != identifier.Count;
@@ -123,16 +134,14 @@ namespace Antmicro.Migrant
                 InvokeCallbacksAndWriteObject(o);
                 if(firstObjectIsNew)
                 {
-                    objectsWritten++;
                     objectsWrittenThisSession++;
                 }
                 while(identifier.Count - identifierCountPreviousSession > objectsWrittenThisSession)
                 {
-                    if(!inlineWritten.Contains(objectsWritten))
+                    if(!inlineWritten.Contains(/*objectsWritten*/identifierCountPreviousSession + objectsWrittenThisSession))
                     {
-                        InvokeCallbacksAndWriteObject(identifier[objectsWritten]);
+                        InvokeCallbacksAndWriteObject(identifier[identifierCountPreviousSession + objectsWrittenThisSession]);
                     }
-                    objectsWritten++;
                     objectsWrittenThisSession++;
                 }
             }
@@ -274,10 +283,23 @@ namespace Antmicro.Migrant
 
         private void PrepareForNextWrite()
         {
-            identifierCountPreviousSession = identifier.Count;
+            if(referencePreservation != ReferencePreservation.DoNotPreserve)
+            {
+                identifierCountPreviousSession = identifier.Count;
+            }
+            else
+            {
+                inlineWritten.Clear();
+            }
             currentlyWrittenTypes.Clear();
-            identifierContext = identifier.GetContext();
-            identifier = null;
+            if(referencePreservation == ReferencePreservation.UseWeakReference)
+            {
+                identifierContext = identifier.GetContext();
+            }
+            if(referencePreservation != ReferencePreservation.Preserve)
+            {
+                identifier = null;
+            }
         }
 
         private void InvokeCallbacksAndWriteObject(object o)
@@ -527,7 +549,7 @@ namespace Antmicro.Migrant
 
         private bool WasNotWrittenYet(int referenceId)
         {
-            return referenceId > objectsWritten && !inlineWritten.Contains(referenceId);
+            return referenceId > (identifierCountPreviousSession + objectsWrittenThisSession) && !inlineWritten.Contains(referenceId);
         }
 
         private void WriteValueType(Type formalType, object value)
@@ -645,7 +667,6 @@ namespace Antmicro.Migrant
 
         private ObjectIdentifier identifier;
         private ObjectIdentifierContext identifierContext;
-        private int objectsWritten;
         private int objectsWrittenThisSession;
         private int identifierCountPreviousSession;
         private int nextTypeId;
@@ -655,6 +676,7 @@ namespace Antmicro.Migrant
         private readonly HashSet<int> inlineWritten;
         private readonly bool isGenerating;
         private readonly bool treatCollectionAsUserObject;
+        private readonly ReferencePreservation referencePreservation;
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
         private readonly List<Action> postSerializationHooks;
