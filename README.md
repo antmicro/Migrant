@@ -1,4 +1,4 @@
-# Migrant 0.7
+# Migrant 0.7.1
 
 This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
 
@@ -66,6 +66,15 @@ Here's deserialization:
     }
 
 As default, all writes to the stream are buffered, i.e. one can be only sure that they are in the stream after calling `Dispose()` on open stream (de)serializer. This is, however, not useful when underlying stream is buffered independently or it is a network stream attached to a socket. In such cases one can disable buffering in `Settings`. Note that buffering also disables padding which is normally used to allow speculative reads. Therefore data written with buffered and unbuffered mode are not compatible.
+
+#### Reference preservation
+
+Let's assume you do open stream serialization. In first session, some object, let's name it A, is serialized. In the second session, among others, A is serialized again - the same exact instance. What should happen? We prefer when reference is preserved, so that when A is serialized in second session, actually only its id goes to the second session - pointing to the object from the first session. However, to provide such feature we have to keep reference to A between sessions - to check whether it is the same instance as previously serialized. This means that until open stream serializer is disposed, a reference to A is held, hence it won't be collected by GC. To prevent this unpleasant situation we could use weak references. Unfortunately, as it turned out, with frequent serialization of small objects this can completely kill Migrant's performance - which is a core value in our library. So, to sum it up we offer user to choose from three mentioned options with the help of `Settings` class. The possible values of an enum `ReferencePreservation` are:
+- `DoNotPreserve` - each session is treated as separate serialization considering references;
+- `Preserve` - object identity is preserved but they are strongly referenced between sessions;
+- `UseWeakReference` - best of both worlds conceptually, but can completely kill your performance.
+
+Choose wisely.
 
 ### Deep clone
 
