@@ -31,7 +31,7 @@ using System.Text;
 
 namespace Antmicro.Migrant
 {
-  public class TypeStamp
+  internal class TypeStamp
   {
     public TypeStamp()
     {

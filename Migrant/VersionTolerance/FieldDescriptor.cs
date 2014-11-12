@@ -30,7 +30,7 @@ using System.Text;
 
 namespace Antmicro.Migrant
 {
-  public class FieldDescriptor
+  internal class FieldDescriptor
   {
     public FieldDescriptor(string owningTypeAQN) 
     { 

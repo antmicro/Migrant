@@ -30,7 +30,7 @@ using System.Text;
 
 namespace Antmicro.Migrant
 {
-  public class TypeDescriptor
+  internal class TypeDescriptor
   {
     public TypeDescriptor() 
     {
