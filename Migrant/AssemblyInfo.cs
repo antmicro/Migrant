@@ -26,6 +26,7 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 [assembly: AssemblyTitle("Migrant")]
 [assembly: AssemblyDescription("Fast and flexible serialization framework usable on undecorated classes.")]
@@ -33,3 +34,5 @@ using System.Reflection;
 [assembly: AssemblyCopyright("Copyright by Antmicro 2012 - 2014")]
 
 [assembly: AssemblyVersion("0.6")]
+
+[assembly: InternalsVisibleTo("Tests")]
