@@ -75,6 +75,7 @@
     <Compile Include="ObjectIdentifierContext.cs" />
     <Compile Include="Box.cs" />
     <Compile Include="Customization\ReferencePreservation.cs" />
+    <Compile Include="Utilities\PeekableStream.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

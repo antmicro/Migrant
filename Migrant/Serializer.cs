@@ -112,7 +112,11 @@ namespace Antmicro.Migrant
         {
             bool preserveReferences;
             ThrowOnWrongResult(TryReadHeader(stream, out preserveReferences));
-            return new OpenStreamDeserializer(ObtainReader(stream, preserveReferences));
+            if(!settings.UseBuffering)
+            {
+                stream = new PeekableStream(stream);
+            }
+            return new OpenStreamDeserializer(ObtainReader(stream, preserveReferences), settings, stream);
         }
 
 		/// <summary>
@@ -436,9 +440,11 @@ namespace Antmicro.Migrant
         /// </summary>
         public class OpenStreamDeserializer : IDisposable
         {
-            internal OpenStreamDeserializer(ObjectReader reader)
+            internal OpenStreamDeserializer(ObjectReader reader, Settings settings, Stream stream)
             {
                 this.reader = reader;
+                this.settings = settings;
+                this.stream = stream;
             }
 
             /// <summary>
@@ -452,6 +458,29 @@ namespace Antmicro.Migrant
             }
 
             /// <summary>
+            /// Deserializes objects until end of the stream is reached. All objects have to be castable to T.
+            /// This method is only available when buffering is disabled.
+            /// </summary>
+            /// <returns>Lazy collection of deserialized objects.</returns>
+            /// <typeparam name="T">The expected type of object to deserialize.</typeparam>
+            public IEnumerable<T> DeserializeMany<T>()
+            {
+                if(settings.UseBuffering)
+                {
+                    throw new NotSupportedException("DeserializeMany can be only used if buffering is disabled.");
+                }
+                var peekableStream = stream as PeekableStream;
+                if(peekableStream == null)
+                {
+                    throw new NotSupportedException("Internal error: stream is not peekable.");
+                }
+                while(peekableStream.Peek() != -1)
+                {
+                    yield return Deserialize<T>();
+                }
+            }
+
+            /// <summary>
             /// Reads leftover padding. Not necessary if buffering is not used.
             /// </summary>
             public void Dispose()
@@ -460,6 +489,8 @@ namespace Antmicro.Migrant
             }
 
             private readonly ObjectReader reader;
+            private readonly Settings settings;
+            private readonly Stream stream;
         }
 	}
 }
