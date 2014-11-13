@@ -29,6 +29,8 @@ using System;
 using NUnit.Framework;
 using Antmicro.Migrant.Customization;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -163,6 +165,30 @@ namespace Antmicro.Migrant.Tests
                 var second = osDeserializer.Deserialize<object>();
                 Assert.AreEqual(first, second);
                 Assert.AreEqual(first, someObject);
+            }
+        }
+
+        [Test]
+        public void ShouldDeserializeMany()
+        {
+            var serializer = new Serializer(settings.With(useBuffering: false));
+            var stream = new MemoryStream();
+
+            var tuples = Enumerable.Range(1, 10).Select(x => Tuple.Create(x, x + 0.5)).ToList();
+            using(var osSerializer = serializer.ObtainOpenStreamSerializer(stream))
+            {
+                foreach(var tuple in tuples)
+                {
+                    osSerializer.Serialize(tuple);
+                }
+            }
+
+            stream.Seek(0, SeekOrigin.Begin);
+
+            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream))
+            {
+                var deserializedTuples = osDeserializer.DeserializeMany<Tuple<int, double>>();
+                CollectionAssert.AreEqual(tuples.ToList(), deserializedTuples.ToList());
             }
         }
 
