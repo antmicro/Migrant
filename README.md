@@ -1,4 +1,4 @@
-# Migrant 0.7.1
+# Migrant 0.7.2
 
 This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
 
@@ -64,6 +64,12 @@ Here's deserialization:
         var firstObject = osSerializer.Deserialize<MyObject>();
         var secondObject = osSerializer.Deserialize<MyObject>();
     }
+
+But what if you'd like to deserialize all object of a given type until the end of stream is reached? Here's the solution:
+
+    osDeserializer.DeserializeMany<T>()
+
+which returns lazy `IEnumerable<T>`.
 
 As default, all writes to the stream are buffered, i.e. one can be only sure that they are in the stream after calling `Dispose()` on open stream (de)serializer. This is, however, not useful when underlying stream is buffered independently or it is a network stream attached to a socket. In such cases one can disable buffering in `Settings`. Note that buffering also disables padding which is normally used to allow speculative reads. Therefore data written with buffered and unbuffered mode are not compatible.
 
