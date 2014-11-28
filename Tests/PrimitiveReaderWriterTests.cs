@@ -432,6 +432,17 @@ namespace Antmicro.Migrant.Tests
             CollectionAssert.AreEqual(testArray, secondStream.ToArray());
         }
 
+        [Test]
+        public void ShouldThrowIfStreamPrematurelyFinishes()
+        {
+            var streamToRead = new MemoryStream();
+            var streamToWrite = new MemoryStream();
+            using(var reader = new PrimitiveReader(streamToRead, buffered))
+            {
+                Assert.Throws<EndOfStreamException>(() => reader.CopyTo(streamToWrite, 100));
+            }
+        }
+
         private readonly bool buffered;
 
 		private const string StreamCorruptedMessage = "Stream was corrupted during read (in terms of position).";
