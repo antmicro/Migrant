@@ -285,14 +285,18 @@ namespace Antmicro.Migrant
         /// </param>
         public void CopyFrom(Stream source, long howMuch)
         {
+            var localBuffer = new byte[Helpers.MaximalPadding];
             Flush();
-            // we can reuse the regular buffer since it is flushed at this point anyway
             int read;
-            while((read = source.Read(buffer, 0, (int)Math.Min(buffer.Length, howMuch))) > 0)
+            while((read = source.Read(localBuffer, 0, (int)Math.Min(localBuffer.Length, howMuch))) > 0)
             {
                 howMuch -= read;
                 currentPosition += read;
-                stream.Write(buffer, 0, read);
+                stream.Write(localBuffer, 0, read);
+            }
+            if(howMuch > 0)
+            {
+                throw new EndOfStreamException(string.Format("End of stream reached while {0} more bytes expected.", howMuch));
             }
         }
 

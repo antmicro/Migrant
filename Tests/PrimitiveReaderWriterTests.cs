@@ -413,6 +413,25 @@ namespace Antmicro.Migrant.Tests
 			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
 
+        [Test]
+        public void ShouldCopyFromStream()
+        {
+            var stream = new MemoryStream();
+            var testArray = Enumerable.Range(0, 1000).Select(x => (byte)x).ToArray();
+            var testStream = new MemoryStream(testArray);
+            using(var writer = new PrimitiveWriter(stream, buffered))
+            {
+                writer.CopyFrom(testStream, testArray.Length);
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            var secondStream = new MemoryStream(testArray.Length);
+            using(var reader = new PrimitiveReader(stream, buffered))
+            {
+                reader.CopyTo(secondStream, testArray.Length);
+            }
+            CollectionAssert.AreEqual(testArray, secondStream.ToArray());
+        }
+
         private readonly bool buffered;
 
 		private const string StreamCorruptedMessage = "Stream was corrupted during read (in terms of position).";

@@ -278,23 +278,31 @@ namespace Antmicro.Migrant
         /// </param>
         public void CopyTo(Stream destination, long howMuch)
         {
-            // first we need to flush the inner buffer into a stream
-            var dataLeft = currentBufferSize - currentBufferPosition;
-            var toRead = (int)Math.Min(dataLeft, howMuch);
-            destination.Write(buffer, currentBufferPosition, toRead);
-            currentBufferPosition += toRead;
-            howMuch -= toRead;
-            if(howMuch <= 0)
+            var localBuffer = new byte[Helpers.MaximalPadding];
+            if(buffered)
             {
-                return;
+                // first we need to flush the inner buffer into a stream
+                var dataLeft = currentBufferSize - currentBufferPosition;
+                var toRead = (int)Math.Min(dataLeft, howMuch);
+                destination.Write(buffer, currentBufferPosition, toRead);
+                currentBufferPosition += toRead;
+                howMuch -= toRead;
+                if(howMuch <= 0)
+                {
+                    return;
+                }
             }
             // we can reuse the regular buffer since it is invalidated at this point anyway
             int read;
-            while((read = stream.Read(buffer, 0, (int)Math.Min(buffer.Length, howMuch))) > 0)
+            while((read = stream.Read(localBuffer, 0, (int)Math.Min(localBuffer.Length, howMuch))) > 0)
             {
                 howMuch -= read;
-                destination.Write(buffer, 0, read);
+                destination.Write(localBuffer, 0, read);
                 currentPosition += read;
+            }
+            if(howMuch > 0)
+            {
+                throw new EndOfStreamException(string.Format("End of stream reached while {0} more bytes expected.", howMuch));
             }
         }
 
