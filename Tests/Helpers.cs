@@ -28,6 +28,7 @@ using System;
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -113,11 +114,19 @@ namespace Antmicro.Migrant.Tests
             return Random.Next(every) == 0 ? 0 : 1;
         }
 
-        public static Random Random { get; private set; }
+        public static Random Random
+        {
+            get
+            {
+                return InnerRandom.Value;
+            }
+        }
 
         static Helpers()
         {
-            Random = new Random();
+            InnerRandom = new ThreadLocal<Random>(() => new Random());
         }
+
+        private static ThreadLocal<Random> InnerRandom;
     }
 }
