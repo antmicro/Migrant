@@ -23,10 +23,13 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
+using System.Threading;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
@@ -44,8 +47,12 @@ namespace Antmicro.Migrant.VersionTolerance
 
         public static IEnumerable<Tuple<Type, IEnumerable<FieldInfo>>> GetFieldsStructureInSerializationOrder(Type type, bool withTransient = false)
         {
-            return type.GetAllFieldsStructurized().Select(x => Tuple.Create(x.Item1, x.Item2.Where(y => withTransient || Helpers.IsNotTransient(y)).OrderBy(y => y.Name).AsEnumerable()));
+            return type.GetAllFieldsStructurized().Select(x => Tuple.Create(x.Item1, x.Item2.Where(y => (withTransient || Helpers.IsNotTransient(y))
+                    && x.Item1.FullName != "System.RuntimeType" 
+                    && x.Item1 != typeof(ReaderWriterLock) 
+                    && !y.GetCustomAttributes(typeof(NonSerializedAttribute), true).Any() 
+                    && !y.GetCustomAttributes(typeof(IgnoreDataMemberAttribute), true).Any())
+                .OrderBy(y => y.Name).AsEnumerable()));
         }
     }
 }
-
