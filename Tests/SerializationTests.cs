@@ -911,9 +911,19 @@ namespace Antmicro.Migrant.Tests
         public void ShouldSerializeDataTable()
         {
             var src = new DataTable();
+
+            src.Columns.Add("A");
+            src.Columns.Add("B");
+
+            for (int i = 0; i < 10; i++)
+            {
+                src.Rows.Add(i.ToString(), DateTime.Now);
+            }
+
             var dst = SerializerClone(src);
 
             Assert.IsNotNull(dst);
+            Assert.AreEqual(3.ToString(), dst.Rows[3]["A"]);
         }
 
         public class GenericClass<T>
