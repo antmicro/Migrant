@@ -33,6 +33,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.IO;
 using System.Collections.ObjectModel;
+using System.Data;
 using Antmicro.Migrant.Hooks;
 using Antmicro.Migrant.Customization;
 
@@ -904,6 +905,15 @@ namespace Antmicro.Migrant.Tests
             var dst = SerializerClone(src);
 
             Assert.AreEqual(147, dst.x);
+        }
+
+        [Test]
+        public void ShouldSerializeDataTable()
+        {
+            var src = new DataTable();
+            var dst = SerializerClone(src);
+
+            Assert.IsNotNull(dst);
         }
 
         public class GenericClass<T>
