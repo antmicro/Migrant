@@ -56,7 +56,7 @@ namespace Antmicro.Migrant.Tests
     [TestFixture(true, true, true, true)]
     public class SerializationTests : BaseTestWithSettings
     {
-        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, supportForISerializable)
+        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, supportForISerializable, false)
         {
         }
 

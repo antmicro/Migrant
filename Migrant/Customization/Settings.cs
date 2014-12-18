@@ -60,6 +60,12 @@ namespace Antmicro.Migrant.Customization
         /// <value><c>true</c> if support for ISerializable is active; otherwise, <c>false</c>.</value>
         public bool SupportForISerializable { get; private set; }
 
+        /// <summary>
+        /// Specifies whether Migrant should utilize IXmlSerializable interface.
+        /// </summary>
+        /// <value><c>true</c> if support for IXmlSserializable is active; otherwise, <c>false</c>.</value>
+        public bool SupportForIXmlSerializable { get; private set; }
+
         /// <summary>>
         /// Gets the value of flag specifing if collection objects are to be deserialized without optimization (treated as normal user objects).
         /// </summary>
@@ -98,6 +104,9 @@ namespace Antmicro.Migrant.Customization
         /// <param name = "supportForISerializable">
         /// Specifies whether Migrant should use GetObjectData approach for serialization.
         /// </param>
+        /// <param name="supportForIXmlSerializable"> 
+        /// Specifies whether Migrant should use xml serialization on objects implementing IXmlSerializable.
+        /// </param>
         /// <param name="useBuffering"> 
         /// True if buffering should be used, false if writes should directly go to the stream and reads should never read
         /// data in advance. Disabling buffering also disables padding.
@@ -106,13 +115,15 @@ namespace Antmicro.Migrant.Customization
         /// Tells serializer how to treat references between sessions of open stream serialization.
         /// </param>
         public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
-                        bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true,
+                        bool supportForISerializable = false, bool supportForIXmlSerializable = false, bool treatCollectionAsUserObject = false,
+                        bool useBuffering = true,
             ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             SerializationMethod = serializationMethod;
             DeserializationMethod = deserializationMethod;
             VersionTolerance = versionTolerance;
             SupportForISerializable = supportForISerializable;
+            SupportForIXmlSerializable = supportForIXmlSerializable;
             TreatCollectionAsUserObject = treatCollectionAsUserObject;
             UseBuffering = useBuffering;
             ReferencePreservation = referencePreservation;

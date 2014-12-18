@@ -31,7 +31,7 @@ using System.IO;
 using Antmicro.Migrant.Customization;
 using System.Reflection.Emit;
 using Antmicro.Migrant.Utilities;
-using Migrant.BultinSurrogates;
+using Antmicro.Migrant.BultinSurrogates;
 
 namespace Antmicro.Migrant
 {
@@ -68,6 +68,12 @@ namespace Antmicro.Migrant
                 ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
                 ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
                 ForObject<Delegate>().SetSurrogate(x => x); //because Delegate implements ISerializable but we support it directly.
+            }
+
+            if(settings.SupportForIXmlSerializable)
+            {
+                ForObject<System.Xml.Serialization.IXmlSerializable>().SetSurrogate(x => new SurrogateForIXmlSerializable(x));
+                ForSurrogate<SurrogateForIXmlSerializable>().SetObject(x => x.Restore());
             }
 		}
 
