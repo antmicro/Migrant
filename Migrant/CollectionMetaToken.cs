@@ -112,6 +112,7 @@ namespace Antmicro.Migrant
                 }),
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IEnumerable<>),
                 (iface, cmt) => {
+                    cmt.IsCollection = true;
                     cmt.IsGenericallyIterable = true;
                     cmt.FormalElementType = iface.GetGenericArguments()[0];
                     cmt.CountMethod = typeof(Enumerable).GetMethods().Single(m => m.GetParameters().Length == 1 && m.Name == "Count").MakeGenericMethod(iface.GetGenericArguments()[0]);
