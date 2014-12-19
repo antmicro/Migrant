@@ -35,7 +35,7 @@ namespace Antmicro.Migrant.PerformanceTester.Tests
         {
             get
             {
-                var classArray = new SimpleClass[300000];
+                var classArray = new SimpleClass[900000];
                 for(var i = 0; i < classArray.Length; i++)
                 {
                     var simpleClass = new SimpleClass { A = i, B = 1.0/i };
@@ -53,7 +53,7 @@ namespace Antmicro.Migrant.PerformanceTester.Tests
                 A;
             [ProtoBuf.ProtoMember(2)]
             public double
-                B;
+            B;
         }
     }
 }

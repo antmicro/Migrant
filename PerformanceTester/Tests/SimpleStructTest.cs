@@ -35,7 +35,7 @@ namespace Antmicro.Migrant.PerformanceTester.Tests
         {
             get
             {
-                var structArray = new SimpleStruct[300000];
+                var structArray = new SimpleStruct[900000];
                 for(var i = 0; i < structArray.Length; i++)
                 {
                     structArray[i].A = i;
