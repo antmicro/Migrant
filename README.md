@@ -180,6 +180,11 @@ affect framework classes, resulting in a suboptimal performance. For example:
 To sum it up, such a support is meant to be phased out during time in your
 project.
 
+### `IXmlSerializable` support
+
+As with `ISerializable` Migrant can also utilize implementation of
+`IXmlSerializable`. In that case data is written to memory stream using
+`XmlSerializer` and then taken as a binary blob (along with type name).
 
 ## Features
 
