@@ -30,7 +30,6 @@ namespace Antmicro.Migrant.PerformanceTester
 	public enum SerializerType
 	{
 		MigrantGenerated,
-		MigrantReflection,
 		ProtoBuf
 	}
 	

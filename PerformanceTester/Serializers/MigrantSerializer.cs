@@ -26,16 +26,14 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System.IO;
-using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant.PerformanceTester.Serializers
 {
 	public sealed class MigrantSerializer : ISerializer
 	{
-		public MigrantSerializer(bool generated)
+		public MigrantSerializer()
 		{
-			var method = generated ? Method.Generated : Method.Reflection;
-			serializer = new Serializer(new Settings(method, method));
+			serializer = new Serializer();
 		}
 
 		public void Serialize<T>(T what, Stream where)
