@@ -252,14 +252,6 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
-        public void ShouldSerializeBlockingCollectionWithPrimitives()
-        {
-            var collection = new BlockingCollection<int> { 1, 2, 3 };
-            var copy = SerializerClone(collection);
-            CollectionAssert.AreEquivalent(collection, copy);
-        }
-
-        [Test]
         public void ShouldSerializeReadOnlyCollection()
         {
             var list = new List<object> { "asdasd", 1, "cvzxcv" };
@@ -287,13 +279,7 @@ namespace Antmicro.Migrant.Tests
             Assert.AreSame(copy[0].Element, copy[1].Element);
         }
 
-        [Test]
-        public void ShouldSerializeCollectionWithStrings()
-        {
-            var collection = new BlockingCollection<string> { "One", "Two", "Three" };
-            var copy = SerializerClone(collection);
-            CollectionAssert.AreEquivalent(collection, copy);
-        }
+
 
         [Test]
         public void ShouldSerializeListWithNull()
@@ -301,14 +287,6 @@ namespace Antmicro.Migrant.Tests
             var list = new List<object> { "One", null, "Two" };
             var copy = SerializerClone(list);
             CollectionAssert.AreEqual(list, copy);
-        }
-
-        [Test]
-        public void ShouldSerializeCollectionWithNull()
-        {
-            var collection = new BlockingCollection<object> { 1, null, 3 };
-            var copy = SerializerClone(collection);
-            CollectionAssert.AreEquivalent(collection, copy);
         }
 
         [Test]

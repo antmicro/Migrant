@@ -53,6 +53,7 @@
     <Compile Include="TwoDomainsDriver.cs" />
     <Compile Include="TwoDomainTests.cs" />
     <Compile Include="OpenStreamSerializationTests.cs" />
+    <Compile Include="BlockingCollectionSerializationTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
