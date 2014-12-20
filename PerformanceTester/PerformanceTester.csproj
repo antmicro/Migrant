@@ -50,6 +50,8 @@
     <Compile Include="Tests\ITest.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="Serializers\SerializerFactory.cs" />
+    <Compile Include="Helpers.cs" />
+    <Compile Include="TestResult.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

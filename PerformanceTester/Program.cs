@@ -56,7 +56,7 @@ namespace Antmicro.Migrant.PerformanceTester
                     foreach(var test in new ITest<object>[] { new SimpleStructTest(), new SimpleClassTest() })
                     {
                         var runner = new TestRunner(testType, serializerType);
-                        Console.WriteLine("{0,20}: {1}s", test.GetType().Name, runner.Run((dynamic)test));
+                        Console.WriteLine("{0,20}: {1}", test.GetType().Name, runner.Run((dynamic)test));
                     }
                     Console.WriteLine("");
                 }

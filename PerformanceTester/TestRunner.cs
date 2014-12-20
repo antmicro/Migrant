@@ -27,9 +27,11 @@
 */
 using System;
 using System.IO;
+using System.Linq;
 using System.Diagnostics;
 using Antmicro.Migrant.PerformanceTester.Tests;
 using Antmicro.Migrant.PerformanceTester.Serializers;
+using System.Collections.Generic;
 
 namespace Antmicro.Migrant.PerformanceTester
 {
@@ -41,7 +43,7 @@ namespace Antmicro.Migrant.PerformanceTester
             serializer = SerializerFactory.Produce(serializerType);
         }
 
-        public double Run<T>(ITest<T> test)
+        public TestResult Run<T>(ITest<T> test)
         {
             var stream = new MemoryStream();
             if(testType == TestType.Serialization)
@@ -59,11 +61,12 @@ namespace Antmicro.Migrant.PerformanceTester
             }
         }
 
-        private static double Run(Action whatToRun, Action before = null, Action after = null)
+        private static TestResult Run(Action whatToRun, Action before = null, Action after = null)
         {
             before = before ?? new Action(() => {});
             after = after ?? new Action(() => {});
 
+            PrintProgress("warming up...");
             for(var i = 0; i < WarmUpRounds; i++)
             {
                 before();
@@ -71,11 +74,28 @@ namespace Antmicro.Migrant.PerformanceTester
                 after();
             }
 
-            before();
-            var result = Measure(whatToRun);
-            after();
-
-            return result;
+            var rounds = 0;
+            var results = new List<double>();
+            while(true)
+            {
+                before();
+                results.Add(Measure(whatToRun));
+                after();
+                rounds++;
+                if(rounds >= MinimalNumberOfRounds)
+                {
+                    var average = results.Skip(results.Count - MinimalNumberOfRounds).Average();
+                    var deviation = results.Skip(results.Count - MinimalNumberOfRounds).StandardDeviation();
+                    var percentDeviation = deviation/average;
+                    PrintProgress(string.Format("{0:#0.#}% deviation.", percentDeviation*100.0));
+                    if(percentDeviation < DesiredDeviation)
+                    {
+                        PrintProgress("done.");
+                        Console.WriteLine();
+                        return new TestResult(average, deviation);
+                    }
+                }
+            }
         }
 
         private static double Measure(Action whatToRun)
@@ -86,10 +106,20 @@ namespace Antmicro.Migrant.PerformanceTester
             return stopwatch.Elapsed.TotalSeconds;
         }
 
-        private const int WarmUpRounds = 5;
+        private static void PrintProgress(string what)
+        {
+            Console.CursorLeft = 0;
+            Console.Write(Enumerable.Repeat(" ", Console.BufferWidth - 1).Aggregate((x, y) => x + y));
+            Console.CursorLeft = 0;
+            Console.Write("Running... {0}", what);
+        }
 
         private readonly TestType testType;
         private readonly ISerializer serializer;
+
+        private const int WarmUpRounds = 2;
+        private const int MinimalNumberOfRounds = 7;
+        private const double DesiredDeviation = 0.05;
     }
 }
 
