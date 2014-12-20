@@ -27,6 +27,8 @@
 */
 using System;
 using Antmicro.Migrant.PerformanceTester.Tests;
+using CommandLine;
+using System.IO;
 
 namespace Antmicro.Migrant.PerformanceTester
 {
@@ -34,6 +36,17 @@ namespace Antmicro.Migrant.PerformanceTester
     {
         public static void Main(string[] args)
         {
+            var options = new Options();
+            if(!Parser.Default.ParseArguments(args, options))
+            {
+                Console.Error.WriteLine("Unsupported options provided.");
+                return;
+            }
+            if(options.Id == null)
+            {
+                options.Id = typeof(Serializer).Assembly.GetName().Version.ToString();
+            }
+
             Console.WriteLine("==========================");
             Console.WriteLine("Migrant performance tester");
             Console.WriteLine("==========================");
@@ -56,11 +69,16 @@ namespace Antmicro.Migrant.PerformanceTester
                     foreach(var test in new ITest<object>[] { new SimpleStructTest(), new SimpleClassTest() })
                     {
                         var runner = new TestRunner(testType, serializerType);
-                        Console.WriteLine("{0,20}: {1}", test.GetType().Name, runner.Run((dynamic)test));
+                        var result = runner.Run((dynamic)test);
+                        Console.WriteLine("{0,20}: {1}", test.GetType().Name, result);
+                        if(options.OutputFile != null)
+                        {
+                            File.AppendAllText(options.OutputFile, string.Format("{0}-{1}-{2},{3},{4}{5}", serializerType, test.GetType().Name, options.Id, result.Average, result.StandardDeviation, Environment.NewLine));
+                        }
                     }
                     Console.WriteLine("");
                 }
-            }
+            } 
         }
     }
 }
