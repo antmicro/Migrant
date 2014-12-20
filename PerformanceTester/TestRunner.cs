@@ -31,6 +31,7 @@ using System.Linq;
 using System.Diagnostics;
 using Antmicro.Migrant.PerformanceTester.Tests;
 using Antmicro.Migrant.PerformanceTester.Serializers;
+using Antmicro.Migrant;
 using System.Collections.Generic;
 
 namespace Antmicro.Migrant.PerformanceTester
