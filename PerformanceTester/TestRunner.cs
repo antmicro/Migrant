@@ -82,12 +82,16 @@ namespace Antmicro.Migrant.PerformanceTester
                 results.Add(Measure(whatToRun));
                 after();
                 rounds++;
-                if(rounds >= MinimalNumberOfRounds)
+                if(rounds < MinimalNumberOfRounds)
+                {
+                    PrintProgress(string.Format("Round {0}.", rounds));
+                }
+                else
                 {
                     var average = results.Skip(results.Count - MinimalNumberOfRounds).Average();
                     var deviation = results.Skip(results.Count - MinimalNumberOfRounds).StandardDeviation();
                     var percentDeviation = deviation/average;
-                    PrintProgress(string.Format("{0:#0.#}% deviation.", percentDeviation*100.0));
+                    PrintProgress(string.Format("Round {1}, {0:#0.#}% deviation.", percentDeviation*100.0, rounds));
                     if(percentDeviation < DesiredDeviation)
                     {
                         PrintProgress("done.");
