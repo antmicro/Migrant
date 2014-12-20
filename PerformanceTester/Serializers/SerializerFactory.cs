@@ -35,7 +35,7 @@ namespace Antmicro.Migrant.PerformanceTester.Serializers
 		{
 			switch(type)
 			{
-			case SerializerType.MigrantGenerated:
+			case SerializerType.Migrant:
 				return new MigrantSerializer();
 			case SerializerType.ProtoBuf:
 				return new ProtobufSerializer();
