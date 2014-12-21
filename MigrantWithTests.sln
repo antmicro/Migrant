@@ -7,9 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestsSecondModule", "Tests\SecondModule\TestsSecondModule.csproj", "{560B93C1-E336-47DA-A879-4E9C5B75A927}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTests", "PerformanceTests\PerformanceTests.csproj", "{9F40B7EA-5F38-402E-A918-2B05EBD52A82}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResultBrowser", "ResultBrowser\ResultBrowser.csproj", "{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTester", "PerformanceTester\PerformanceTester.csproj", "{72492444-329C-42B1-B1E7-7A9B3BCA0953}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,20 +27,16 @@ Global
 		{6109E322-4AC0-496C-89A2-012232A047E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6109E322-4AC0-496C-89A2-012232A047E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6109E322-4AC0-496C-89A2-012232A047E3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9F40B7EA-5F38-402E-A918-2B05EBD52A82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9F40B7EA-5F38-402E-A918-2B05EBD52A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9F40B7EA-5F38-402E-A918-2B05EBD52A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9F40B7EA-5F38-402E-A918-2B05EBD52A82}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F0D5D2BF-34AD-4FCE-A3C9-50206EBAA82C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72492444-329C-42B1-B1E7-7A9B3BCA0953}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72492444-329C-42B1-B1E7-7A9B3BCA0953}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72492444-329C-42B1-B1E7-7A9B3BCA0953}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72492444-329C-42B1-B1E7-7A9B3BCA0953}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = Migrant\Migrant.csproj
 		Policies = $0
 		$0.StandardHeader = $1
-		$1.Text = @*******************************************************************\n\n Copyright (c) 2012-2013, Antmicro Ltd\n\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\nNONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE\nLIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\nOF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\nWITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n*******************************************************************
+		$1.Text = @*******************************************************************\n\n Copyright (c) 2012-2014, Antmicro Ltd\n\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n"Software"), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\nNONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE\nLIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\nOF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\nWITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n*******************************************************************
 		$1.IncludeInNewFiles = True
 		$0.DotNetNamingPolicy = $2
 		$2.DirectoryNamespaceAssociation = PrefixedHierarchical

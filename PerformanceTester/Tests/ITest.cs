@@ -1,9 +1,8 @@
-/*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+﻿/*
+  Copyright (c) 2014 Antmicro <www.antmicro.com>
 
   Authors:
-   * Konrad Kruczynski (kkruczynski@antmicro.com)
-   * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -24,15 +23,12 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-using System;
-using System.IO;
 
-namespace Antmicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTester.Tests
 {
-	public interface ISerializer
-	{
-		void Serialize<T>(T what, Stream where);
-		T Deserialize<T>(Stream from);
-	}
+    public interface ITest<out T>
+    {
+        T Object { get; }
+    }
 }
 

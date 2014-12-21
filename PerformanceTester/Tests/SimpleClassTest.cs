@@ -1,9 +1,10 @@
-/*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+﻿/*
+  Copyright (c) 2014 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -24,14 +25,36 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-namespace Antmicro.Migrant.PerformanceTests
-{
+using System;
 
-	public enum SerializerType
-	{
-		MigrantGenerated,
-		MigrantReflection,
-		ProtoBuf
-	}
-	
+namespace Antmicro.Migrant.PerformanceTester.Tests
+{
+    public class SimpleClassTest : ITest<SimpleClassTest.SimpleClass[]>
+    {
+        public SimpleClass[] Object
+        {
+            get
+            {
+                var classArray = new SimpleClass[900000];
+                for(var i = 0; i < classArray.Length; i++)
+                {
+                    var simpleClass = new SimpleClass { A = i, B = 1.0/i };
+                    classArray[i] = simpleClass;
+                }
+                return classArray;
+            }
+        }
+
+        [ProtoBuf.ProtoContract]
+        public class SimpleClass
+        {
+            [ProtoBuf.ProtoMember(1)]
+            public int
+                A;
+            [ProtoBuf.ProtoMember(2)]
+            public double
+            B;
+        }
+    }
 }
+

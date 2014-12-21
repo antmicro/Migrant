@@ -1,9 +1,10 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2014 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -24,26 +25,12 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-using System;
-
-namespace Antmicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTester
 {
-	public class SerializerFactory
+	public enum SerializerType
 	{
-		public ISerializer Produce(SerializerType type)
-		{
-			switch(type)
-			{
-			case SerializerType.MigrantGenerated:
-				return new MigrantSerializer(true);
-			case SerializerType.MigrantReflection:
-				return new MigrantSerializer(false);
-			case SerializerType.ProtoBuf:
-				return new ProtobufSerializer();
-			default:
-				throw new ArgumentOutOfRangeException();
-			}
-		}
+		Migrant,
+		ProtoBuf
 	}
+	
 }
-

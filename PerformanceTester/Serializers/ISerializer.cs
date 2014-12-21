@@ -1,9 +1,10 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2014 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -24,24 +25,14 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-using System;
-using NUnit.Framework;
 using System.IO;
 
-namespace Antmicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTester.Serializers
 {
-	[SetUpFixture]
-	public class SetUp
+	public interface ISerializer
 	{
-		[SetUp]
-		public void Init()
-		{
-			File.Delete(TestLogFileName);
-			TestDate = DateTime.Now;
-		}
-
-		public const string TestLogFileName = "performance.log";
-		public static DateTime TestDate;
+		void Serialize<T>(T what, Stream where);
+		T Deserialize<T>(Stream from);
 	}
 }
 

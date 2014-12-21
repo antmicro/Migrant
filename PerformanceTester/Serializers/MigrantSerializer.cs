@@ -1,8 +1,10 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2014 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
+   * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -23,35 +25,28 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-using System;
-using CommandLine;
-using CommandLine.Text;
-using System.Collections.Generic;
+using System.IO;
 
-namespace Antmicro.Migrant.ResultBrowser
+namespace Antmicro.Migrant.PerformanceTester.Serializers
 {
-    internal class Options
-    {
-        [Option('c', "contains", HelpText = "Filter tests containg given string.")]
-        public string Contains { get; set; }
+	public sealed class MigrantSerializer : ISerializer
+	{
+		public MigrantSerializer()
+		{
+			serializer = new Serializer();
+		}
 
-        [Option('f', "fileName", HelpText = "Tests database.", Required = true)]
-        public string FileName { get; set; }
+		public void Serialize<T>(T what, Stream where)
+		{
+			serializer.Serialize(what, where);
+		}
 
-        [HelpOption]
-        public string GetUsage()
-        {
-            var help = new HelpText 
-            {
-                Heading = new HeadingInfo("ResultBrowser"),
-                Copyright = new CopyrightInfo("Antmicro Ltd", 2013),
-                AdditionalNewLineAfterOption = true,
-                AddDashesToOption = true
-            };
-            help.AddPreOptionsLine("Usage: ResultBrowser [-c string] -f fileName");
-            help.AddOptions(this);
-            return help;
-        }
-    }
+		public T Deserialize<T>(Stream from)
+		{
+			return serializer.Deserialize<T>(from);
+		}
+
+		private readonly Serializer serializer;
+	}
 }
 

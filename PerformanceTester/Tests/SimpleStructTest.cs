@@ -1,9 +1,10 @@
-/*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+﻿/*
+  Copyright (c) 2014 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -25,21 +26,35 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
-using System.IO;
 
-namespace Antmicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTester.Tests
 {
-	public sealed class ProtobufSerializer : ISerializer
-	{
-		public void Serialize<T>(T what, Stream where)
-		{
-			ProtoBuf.Serializer.Serialize(where, what);
-		}
-
-		public T Deserialize<T>(Stream from)
-		{
-			return ProtoBuf.Serializer.Deserialize<T>(from);
-		}
-	}
+    public class SimpleStructTest : ITest<SimpleStructTest.SimpleStruct[]>
+    {
+        public SimpleStruct[] Object
+        {
+            get
+            {
+                var structArray = new SimpleStruct[900000];
+                for(var i = 0; i < structArray.Length; i++)
+                {
+                    structArray[i].A = i;
+                    structArray[i].B = 1.0 / i;
+                }
+                return structArray;
+            }
+        }
+       
+        [ProtoBuf.ProtoContract]
+        public struct SimpleStruct
+        {
+            [ProtoBuf.ProtoMember(1)]
+            public int
+                A;
+            [ProtoBuf.ProtoMember(2)]
+            public double
+                B;
+        }
+    }
 }
 

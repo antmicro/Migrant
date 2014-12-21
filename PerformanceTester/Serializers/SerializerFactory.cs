@@ -1,9 +1,10 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2014 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -26,22 +27,22 @@
 */
 using System;
 
-namespace Antmicro.Migrant.PerformanceTests
+namespace Antmicro.Migrant.PerformanceTester.Serializers
 {
-	public sealed class Result
+	public static class SerializerFactory
 	{
-		public Result(string name, double average, double standardDeviation, DateTime date)
+		public static ISerializer Produce(SerializerType type)
 		{
-			this.Name = name;
-			this.Average = average;
-			this.StandardDeviation = standardDeviation;
-			this.Date = date;
-		}		
-
-		public string Name { get; private set; }
-		public double Average { get; private set; }
-		public double StandardDeviation { get; private set; }
-		public DateTime Date { get; private set; }
+			switch(type)
+			{
+			case SerializerType.Migrant:
+				return new MigrantSerializer();
+			case SerializerType.ProtoBuf:
+				return new ProtobufSerializer();
+			default:
+				throw new ArgumentOutOfRangeException();
+			}
+		}
 	}
 }
 
