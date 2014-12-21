@@ -55,7 +55,8 @@ namespace Antmicro.Migrant
 
         public CollectionMetaToken(Type actualType)
         {
-            if(!SpeciallySerializedCollections.Any(type => (actualType.IsGenericType && type == actualType.GetGenericTypeDefinition()) || type == actualType))
+            var typeToCheck = actualType.IsGenericType ? actualType.GetGenericTypeDefinition() : actualType;
+            if(!SpeciallySerializedCollections.Contains(typeToCheck))
             {
                 IsCollection = false;
                 return;
@@ -79,16 +80,22 @@ namespace Antmicro.Migrant
             }
         }
 
-        private static readonly Type[] SpeciallySerializedCollections = {
-            typeof(List<>),
-            typeof(ReadOnlyCollection<>),
-            typeof(Dictionary<,>),
-            typeof(HashSet<>),
-            typeof(Queue<>),
-            typeof(Stack<>),
-            typeof(BlockingCollection<>),
-            typeof(Hashtable)
-        };
+        static CollectionMetaToken()
+        {
+            SpeciallySerializedCollections = new HashSet<Type>(new [] {
+                typeof(List<>),
+                typeof(ReadOnlyCollection<>),
+                typeof(Dictionary<,>),
+                typeof(HashSet<>),
+                typeof(Queue<>),
+                typeof(Stack<>),
+                typeof(BlockingCollection<>),
+                typeof(Hashtable)
+            });
+            SpeciallySerializedCollections.TrimExcess();
+        }
+
+        private static readonly HashSet<Type> SpeciallySerializedCollections;
 
         private static readonly Tuple<Type, Action<Type, CollectionMetaToken>>[] CollectionPriorities = 
         {
