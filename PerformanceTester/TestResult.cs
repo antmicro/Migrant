@@ -28,7 +28,7 @@ namespace Antmicro.Migrant.PerformanceTester
 {
     public struct TestResult
     {
-        public TestResult(double average, double standardDeviation)
+        public TestResult(double average, double standardDeviation) : this()
         {
             Average = average;
             StandardDeviation = standardDeviation;
