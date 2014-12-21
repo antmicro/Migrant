@@ -274,12 +274,13 @@ namespace Antmicro.Migrant
 
         static Helpers()
         {
-            TypesWriteableByPrimitiveWriter = typeof(PrimitiveWriter).GetMethods().Where(x => x.Name == "Write").Select(x => x.GetParameters()[0].ParameterType).ToArray();
+            TypesWriteableByPrimitiveWriter = new HashSet<Type>(typeof(PrimitiveWriter).GetMethods().Where(x => x.Name == "Write").Select(x => x.GetParameters()[0].ParameterType));
+            TypesWriteableByPrimitiveWriter.TrimExcess();
         }
 
         public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
-        private static readonly Type[] TypesWriteableByPrimitiveWriter;
+        private static readonly HashSet<Type> TypesWriteableByPrimitiveWriter;
         private static readonly int[] PaddingBoundaries = {
             128,
             1024,
