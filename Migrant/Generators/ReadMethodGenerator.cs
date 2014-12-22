@@ -100,7 +100,7 @@ namespace Antmicro.Migrant.Generators
             }
             else if(formalType.IsArray)
             {
-                GenerateReadArray(formalType.GetElementType(), objectIdLocal);
+                GenerateReadArray(formalType, objectIdLocal);
             }
             else if(typeof(MulticastDelegate).IsAssignableFrom(formalType))
             {
@@ -396,12 +396,15 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private void GenerateReadArray(Type elementFormalType, LocalBuilder objectIdLocal)
+        private void GenerateReadArray(Type arrayType, LocalBuilder objectIdLocal)
         {
+            var isMultidimensional = arrayType.GetArrayRank() > 1;
+            var elementFormalType = arrayType.GetElementType();
+
             var rankLocal = generator.DeclareLocal(typeof(Int32));
-            var lengthsLocal = generator.DeclareLocal(typeof(Int32[]));
+            var lengthsLocal = isMultidimensional ? generator.DeclareLocal(typeof(Int32[])) : generator.DeclareLocal(typeof(Int32));
             var arrayLocal = generator.DeclareLocal(typeof(Array));
-            var positionLocal = generator.DeclareLocal(typeof(Int32[]));
+            var positionLocal = isMultidimensional ? generator.DeclareLocal(typeof(Int32[])) : generator.DeclareLocal(typeof(Int32));
             var loopControlLocal = generator.DeclareLocal(typeof(bool));
             var loopBeginLabel = generator.DefineLabel();
             var loopEndLabel = generator.DefineLabel();
@@ -412,73 +415,124 @@ namespace Antmicro.Migrant.Generators
             GenerateReadPrimitive(typeof(Int32));
             generator.Emit(OpCodes.Stloc, rankLocal); // read amount of dimensions of the array
 			
-            generator.Emit(OpCodes.Ldloc, rankLocal);
-            generator.Emit(OpCodes.Newarr, typeof(Int32));
-            generator.Emit(OpCodes.Stloc, lengthsLocal); // create an array for keeping the lengths of each dimension
-
-            GeneratorHelper.GenerateLoop(generator, rankLocal, i =>
+            if(isMultidimensional)
             {
-                generator.Emit(OpCodes.Ldloc, lengthsLocal);
-                generator.Emit(OpCodes.Ldloc, i);
+                generator.Emit(OpCodes.Ldloc, rankLocal);
+                generator.Emit(OpCodes.Newarr, typeof(Int32));
+                generator.Emit(OpCodes.Stloc, lengthsLocal); // create an array for keeping the lengths of each dimension
+
+                GeneratorHelper.GenerateLoop(generator, rankLocal, i =>
+                {
+                    generator.Emit(OpCodes.Ldloc, lengthsLocal);
+                    generator.Emit(OpCodes.Ldloc, i);
+                    GenerateReadPrimitive(typeof(Int32));
+                    generator.Emit(OpCodes.Dup);
+                    generator.Emit(OpCodes.Brfalse, lengthIsZeroLabel);
+
+                    generator.Emit(OpCodes.Ldc_I4_1);
+                    generator.Emit(OpCodes.Stloc, isNotEmptyArrayLocal);
+
+                    generator.MarkLabel(lengthIsZeroLabel);
+                    generator.Emit(OpCodes.Stelem, typeof(Int32)); // populate the lengths with values read from stream
+                });
+            }
+            else
+            {
                 GenerateReadPrimitive(typeof(Int32));
                 generator.Emit(OpCodes.Dup);
-                generator.Emit(OpCodes.Brfalse, lengthIsZeroLabel);
-
-                generator.Emit(OpCodes.Ldc_I4_1);
+                generator.Emit(OpCodes.Stloc, lengthsLocal);
                 generator.Emit(OpCodes.Stloc, isNotEmptyArrayLocal);
-
-                generator.MarkLabel(lengthIsZeroLabel);
-                generator.Emit(OpCodes.Stelem, typeof(Int32)); // populate the lengths with values read from stream
-            });
+            }
 			
             PushTypeOntoStack(elementFormalType);
-            generator.Emit(OpCodes.Ldloc, lengthsLocal);
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(x => Array.CreateInstance(null, new int[0])));
-            generator.Emit(OpCodes.Stloc, arrayLocal); // create an multidimensional array
+            if(isMultidimensional)
+            {
+                generator.Emit(OpCodes.Ldloc, lengthsLocal);
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(x => Array.CreateInstance(null, new int[0])));
+                generator.Emit(OpCodes.Stloc, arrayLocal); // create an multidimensional array
+            }
+            else
+            {
+                generator.Emit(OpCodes.Ldloc, lengthsLocal);
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(x => Array.CreateInstance(null, 0)));
+                generator.Emit(OpCodes.Stloc, arrayLocal); // create a one dimensional array
+            }
 			
             SaveNewDeserializedObject(objectIdLocal, () =>
             {
                 generator.Emit(OpCodes.Ldloc, arrayLocal);
             }); // store created array to deserialized obejcts collection
 
-            generator.Emit(OpCodes.Ldloc, rankLocal);
-            generator.Emit(OpCodes.Newarr, typeof(Int32));
-            generator.Emit(OpCodes.Stloc, positionLocal); // create an array for keeping the current position of each dimension
+            if(isMultidimensional)
+            {
+                generator.Emit(OpCodes.Ldloc, rankLocal);
+                generator.Emit(OpCodes.Newarr, typeof(Int32));
+                generator.Emit(OpCodes.Stloc, positionLocal); // create an array for keeping the current position of each dimension
+            }
+            else
+            {
+                generator.Emit(OpCodes.Ldc_I4_0);
+                generator.Emit(OpCodes.Stloc, positionLocal);
+            }
 
             generator.Emit(OpCodes.Ldloc, isNotEmptyArrayLocal);
             generator.Emit(OpCodes.Stloc, loopControlLocal); // initialize loop control variable
-
             generator.MarkLabel(loopBeginLabel);
             generator.Emit(OpCodes.Ldloc, loopControlLocal);
             generator.Emit(OpCodes.Brfalse, loopEndLabel);
 
             generator.Emit(OpCodes.Ldloc, arrayLocal);
-            GenerateReadField(elementFormalType, true);
-            generator.Emit(OpCodes.Ldloc, positionLocal);
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(a => a.SetValue(null, new int[0])));
-
-            generator.Emit(OpCodes.Ldloc, positionLocal);
-            generator.Emit(OpCodes.Ldloc, lengthsLocal);
-            generator.Emit(OpCodes.Ldloc, rankLocal);
-
-            GenerateCodeFCall<int[], int[], int, bool>((counter, sizes, ranks) =>
+            if(isMultidimensional)
             {
-                var currentRank = ranks - 1;
-				
-                while(currentRank >= 0)
+                GenerateReadField(elementFormalType, true);
+                generator.Emit(OpCodes.Ldloc, positionLocal);
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(a => a.SetValue(null, new int[0])));
+            }
+            else
+            {
+                generator.Emit(OpCodes.Ldloc, positionLocal);
+                generator.Emit(OpCodes.Ldelema, elementFormalType);
+
+                GenerateReadField(elementFormalType, true);
+                generator.Emit(OpCodes.Castclass, elementFormalType);
+                generator.Emit(OpCodes.Stobj, elementFormalType);
+            }
+                
+            if(isMultidimensional)
+            {
+                generator.Emit(OpCodes.Ldloc, positionLocal);
+                generator.Emit(OpCodes.Ldloc, lengthsLocal);
+                generator.Emit(OpCodes.Ldloc, rankLocal);
+
+                GenerateCodeFCall<int[], int[], int, bool>((counter, sizes, ranks) =>
                 {
-                    counter[currentRank]++;
-                    if(counter[currentRank] < sizes[currentRank])
+                    var currentRank = ranks - 1;
+    				
+                    while(currentRank >= 0)
                     {
-                        return true;
+                        counter[currentRank]++;
+                        if(counter[currentRank] < sizes[currentRank])
+                        {
+                            return true;
+                        }
+    					
+                        counter[currentRank] = 0;
+                        currentRank--;
                     }
-					
-                    counter[currentRank] = 0;
-                    currentRank--;
-                }
-				
-                return false;
-            });
+    				
+                    return false;
+                });
+            }
+            else
+            {
+                generator.Emit(OpCodes.Ldloc, positionLocal);
+                generator.Emit(OpCodes.Ldc_I4_1);
+                generator.Emit(OpCodes.Add);
+                generator.Emit(OpCodes.Dup);
+                generator.Emit(OpCodes.Stloc, positionLocal);
+                generator.Emit(OpCodes.Ldloc, lengthsLocal);
+                generator.Emit(OpCodes.Clt);
+            }
 
             generator.Emit(OpCodes.Stloc, loopControlLocal);
 
