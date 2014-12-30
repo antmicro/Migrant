@@ -192,7 +192,32 @@ namespace Antmicro.Migrant.Tests
 			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
 
-	
+        [Test]
+        public void ShouldWriteAndReadDecimal(
+            [Values(1, 10, 100, 10000, 1000*1000)]
+            int numberOfDecimals)
+        {
+            var randomDecimals = Helpers.GetRandomDecimals(numberOfDecimals);
+            var stream = new MemoryStream();
+            using(var writer = new PrimitiveWriter(stream, buffered))
+            {
+                for(var i = 0; i < randomDecimals.Length; i++)
+                {
+                    writer.Write(randomDecimals[i]);
+                }
+            }
+            var position = stream.Position;
+            stream.Seek(0, SeekOrigin.Begin);
+
+            using(var reader = new PrimitiveReader(stream, buffered))
+            {
+                for(var i = 0; i < randomDecimals.Length; i++)
+                {
+                    Assert.AreEqual(randomDecimals[i], reader.ReadDecimal());
+                }
+            }
+            Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
+        }
 
 		[Test]
 		public void ShouldSerializeDateTime(
