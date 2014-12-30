@@ -483,6 +483,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Brfalse, loopEndLabel);
 
             generator.Emit(OpCodes.Ldloc, arrayLocal);
+            generator.Emit(OpCodes.Castclass, arrayType);
             if(isMultidimensional)
             {
                 GenerateReadField(elementFormalType);
