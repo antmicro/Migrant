@@ -205,6 +205,7 @@ namespace Antmicro.Migrant
                 return;
             }
 #endif
+            //zig-zag notation
             var valueToWrite = (value << 1) ^ (value >> 63);
             InnerWriteInteger((ulong)valueToWrite, sizeof(long) + 2);
         }
@@ -250,6 +251,18 @@ namespace Antmicro.Migrant
             var bytes = Encoding.UTF8.GetBytes(str);
             Write(bytes.Length);
             InnerChunkWrite(bytes);
+        }
+
+        /// <summary>
+        /// Writes the specified <see cref="System.Decimal"/> .
+        /// </summary>
+        public void Write(decimal value)
+        {
+            var bytes = decimal.GetBits(value);
+            Write(bytes[0]);
+            Write(bytes[1]);
+            Write(bytes[2]);
+            Write(bytes[3]);
         }
 
         /// <summary>

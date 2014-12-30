@@ -90,6 +90,16 @@ namespace Antmicro.Migrant.Tests
             return randomDoubles;
         }
 
+        public static decimal[] GetRandomDecimals(int numberOfDecimals)
+        {
+            var randomDecimals = new decimal[numberOfDecimals];
+            for(var i = 0; i < randomDecimals.Length; i++)
+            {
+                randomDecimals[i] = NextDecimal();
+            }
+            return randomDecimals;
+        }
+
         public static TimeSpan[] GetRandomTimeSpans(int numberOfTimeSpans)
         {
             return GetRandomLongs(numberOfTimeSpans, TimeSpan.MaxValue.Ticks).Select(x => TimeSpan.FromTicks(x)).ToArray();
@@ -114,6 +124,22 @@ namespace Antmicro.Migrant.Tests
         }
 
         public static Random Random { get; private set; }
+
+        private static decimal NextDecimal()
+        {
+            byte scale = (byte) Random.Next(29);
+            bool sign = Random.Next(2) == 1;
+            return new decimal(NextInt(),
+                NextInt(),
+                NextInt(),
+                sign,
+                scale);
+        }
+
+        private static int NextInt()
+        {
+            return (((Random.Next(int.MinValue, int.MaxValue)) & 0xFFFF) << 16) | ((Random.Next(int.MinValue, int.MaxValue)) & 0xFFFF);
+        }
 
         static Helpers()
         {

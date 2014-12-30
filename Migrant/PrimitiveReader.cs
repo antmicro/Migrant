@@ -246,6 +246,19 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
+        /// Reads the <see cref="System.Decimal"/> .
+        /// </summary>
+        public decimal ReadDecimal()
+        {
+            var lo = ReadInt32();
+            var mid = ReadInt32();
+            var hi = ReadInt32();
+            var scale = ReadInt32();
+            return new Decimal(lo, mid, hi, 
+                (scale & DecimalSignMask) != 0,
+                (byte)((scale & DecimalScaleMask) >> DecimalScaleShift));
+        }
+        /// <summary>
         /// Reads the given number of bytes.
         /// </summary>
         /// <returns>
@@ -408,6 +421,10 @@ namespace Antmicro.Migrant
         private const int AllButMostSignificantShort = unchecked((short)~(1 << 15));
         private const int AllButMostSignificantInt = ~(1 << 31);
         private const long AllButMostSignificantLong = ~(1L << 63);
+
+        private const int DecimalScaleMask = 0x00FF0000;
+        private const int DecimalScaleShift = 16;
+        private const uint DecimalSignMask = 0x80000000;
 
         private long currentPosition;
         private readonly byte[] buffer;
