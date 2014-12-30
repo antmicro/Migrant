@@ -405,12 +405,10 @@ namespace Antmicro.Migrant.Generators
             var lengthsLocal = isMultidimensional ? generator.DeclareLocal(typeof(Int32[])) : generator.DeclareLocal(typeof(Int32));
             var arrayLocal = generator.DeclareLocal(typeof(Array));
             var positionLocal = isMultidimensional ? generator.DeclareLocal(typeof(Int32[])) : generator.DeclareLocal(typeof(Int32));
-            var loopControlLocal = generator.DeclareLocal(typeof(bool));
+            var loopControlLocal = generator.DeclareLocal(typeof(int)); // type is int not bool to reuse array length directly
             var loopBeginLabel = generator.DefineLabel();
             var loopEndLabel = generator.DefineLabel();
             var lengthIsZeroLabel = generator.DefineLabel();
-
-            var isNotEmptyArrayLocal = generator.DeclareLocal(typeof(int)); // type is int not bool to reuse array length directly
 						
             GenerateReadPrimitive(typeof(Int32));
             generator.Emit(OpCodes.Stloc, rankLocal); // read amount of dimensions of the array
@@ -430,7 +428,7 @@ namespace Antmicro.Migrant.Generators
                     generator.Emit(OpCodes.Brfalse, lengthIsZeroLabel);
 
                     generator.Emit(OpCodes.Ldc_I4_1);
-                    generator.Emit(OpCodes.Stloc, isNotEmptyArrayLocal);
+                    generator.Emit(OpCodes.Stloc, loopControlLocal);
 
                     generator.MarkLabel(lengthIsZeroLabel);
                     generator.Emit(OpCodes.Stelem, typeof(Int32)); // populate the lengths with values read from stream
@@ -441,7 +439,7 @@ namespace Antmicro.Migrant.Generators
                 GenerateReadPrimitive(typeof(Int32));
                 generator.Emit(OpCodes.Dup);
                 generator.Emit(OpCodes.Stloc, lengthsLocal);
-                generator.Emit(OpCodes.Stloc, isNotEmptyArrayLocal);
+                generator.Emit(OpCodes.Stloc, loopControlLocal);
             }
 			
             PushTypeOntoStack(elementFormalType);
@@ -470,8 +468,6 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Stloc, positionLocal); // create an array for keeping the current position of each dimension
             }
 
-            generator.Emit(OpCodes.Ldloc, isNotEmptyArrayLocal);
-            generator.Emit(OpCodes.Stloc, loopControlLocal); // initialize loop control variable
             generator.MarkLabel(loopBeginLabel);
             generator.Emit(OpCodes.Ldloc, loopControlLocal);
             generator.Emit(OpCodes.Brfalse, loopEndLabel);
