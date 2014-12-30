@@ -884,6 +884,22 @@ namespace Antmicro.Migrant.Tests
             Assert.AreEqual(147, dst.x);
         }
 
+        [Test]
+        public void ShouldSerialize2DArrayWithAllDimensionZero()
+        {
+            var array = new int[0, 0];
+            var copy = SerializerClone(array);
+            CollectionAssert.AreEqual(array, copy);
+        }
+
+        [Test]
+        public void ShouldSerialize3DArrayWithOneDimensionZero()
+        {
+            var array = new int[2, 0, 2];
+            var copy = SerializerClone(array);
+            CollectionAssert.AreEqual(array, copy);
+        }
+
         public class GenericClass<T>
         {
             [Transient]
