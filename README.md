@@ -231,4 +231,4 @@ If you have any questions, suggestions or requests regarding the Migrant library
 
 ## Licence
 
-Migrant is released on an MIT licence, which can be found in LICENCE file in this directory.
+Migrant is released on an MIT licence, which can be found in the LICENCE file in this directory.
