@@ -96,6 +96,33 @@ namespace Antmicro.Migrant.Tests
 			Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
 		}
 
+        [Test]
+        public void ShouldWriteAndReadULongs(
+            [Values(1, 10, 100, 10000, 1000*1000)]
+            int numberOfULongs)
+        {
+            var randomULongs = Helpers.GetRandomLongs(numberOfULongs).Select(x=>(ulong)x).ToArray();
+            var stream = new MemoryStream();
+            using(var writer = new PrimitiveWriter(stream, buffered))
+            {
+                for(var i = 0; i < randomULongs.Length; i++)
+                {
+                    writer.Write(randomULongs[i]);
+                }
+            }
+            var position = stream.Position;
+            stream.Seek(0, SeekOrigin.Begin);
+
+            using(var reader = new PrimitiveReader(stream, buffered))
+            {
+                for(var i = 0; i < randomULongs.Length; i++)
+                {
+                    var read = reader.ReadUInt64();
+                    Assert.AreEqual(randomULongs[i], read);
+                }
+            }
+            Assert.AreEqual(position, stream.Position, StreamCorruptedMessage);
+        }
 
 		[Test]
 		public void ShouldWriteAndReadStrings(
