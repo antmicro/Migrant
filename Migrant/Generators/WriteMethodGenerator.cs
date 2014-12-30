@@ -307,6 +307,15 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateArrayWriteLoop(int currentDimension, int rank, int[] indexLocals, int[] lengthLocals, Type arrayType, Type elementType)
         {
+            var arrayWrittenLabel = generator.DefineLabel();
+
+            // check all the lengths and return if at least one is zero
+            for(var i = 0; i < rank; i++)
+            {
+                generator.Emit(OpCodes.Ldloc, lengthLocals[i]);
+                generator.Emit(OpCodes.Brfalse, arrayWrittenLabel);
+            }
+
             // initalization
             generator.Emit(OpCodes.Ldc_I4_0);
             generator.Emit(OpCodes.Stloc, indexLocals[currentDimension]);
@@ -337,6 +346,8 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Stloc, indexLocals[currentDimension]);
             generator.Emit(OpCodes.Ldloc, lengthLocals[currentDimension]);
             generator.Emit(OpCodes.Blt, loopBegin);
+
+            generator.MarkLabel(arrayWrittenLabel);
         }
 
         private void GenerateWriteCollection(CollectionMetaToken token)

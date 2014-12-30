@@ -408,13 +408,16 @@ namespace Antmicro.Migrant.Generators
             var loopControlLocal = generator.DeclareLocal(typeof(int)); // type is int not bool to reuse array length directly
             var loopBeginLabel = generator.DefineLabel();
             var loopEndLabel = generator.DefineLabel();
-            var lengthIsZeroLabel = generator.DefineLabel();
+            var nonZeroLengthLabel = generator.DefineLabel();
 						
             GenerateReadPrimitive(typeof(Int32));
             generator.Emit(OpCodes.Stloc, rankLocal); // read amount of dimensions of the array
 			
             if(isMultidimensional)
             {
+                generator.Emit(OpCodes.Ldc_I4_1);
+                generator.Emit(OpCodes.Stloc, loopControlLocal);
+
                 generator.Emit(OpCodes.Ldloc, rankLocal);
                 generator.Emit(OpCodes.Newarr, typeof(Int32));
                 generator.Emit(OpCodes.Stloc, lengthsLocal); // create an array for keeping the lengths of each dimension
@@ -425,12 +428,12 @@ namespace Antmicro.Migrant.Generators
                     generator.Emit(OpCodes.Ldloc, i);
                     GenerateReadPrimitive(typeof(Int32));
                     generator.Emit(OpCodes.Dup);
-                    generator.Emit(OpCodes.Brfalse, lengthIsZeroLabel);
+                    generator.Emit(OpCodes.Brtrue, nonZeroLengthLabel);
 
-                    generator.Emit(OpCodes.Ldc_I4_1);
+                    generator.Emit(OpCodes.Ldc_I4_0);
                     generator.Emit(OpCodes.Stloc, loopControlLocal);
 
-                    generator.MarkLabel(lengthIsZeroLabel);
+                    generator.MarkLabel(nonZeroLengthLabel);
                     generator.Emit(OpCodes.Stelem, typeof(Int32)); // populate the lengths with values read from stream
                 });
             }
