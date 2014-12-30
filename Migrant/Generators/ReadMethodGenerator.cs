@@ -3,6 +3,7 @@
 
   Authors:
    * Mateusz Holenko (mholenko@antmicro.com)
+   * Konrad Kruczynski (kkruczynski@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -484,7 +485,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Ldloc, arrayLocal);
             if(isMultidimensional)
             {
-                GenerateReadField(elementFormalType, true);
+                GenerateReadField(elementFormalType);
                 generator.Emit(OpCodes.Ldloc, positionLocal);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(a => a.SetValue(null, new int[0])));
             }
@@ -493,8 +494,7 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldloc, positionLocal);
                 generator.Emit(OpCodes.Ldelema, elementFormalType);
 
-                GenerateReadField(elementFormalType, true);
-                generator.Emit(OpCodes.Castclass, elementFormalType);
+                GenerateReadField(elementFormalType, false);
                 generator.Emit(OpCodes.Stobj, elementFormalType);
             }
                 
