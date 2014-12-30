@@ -383,7 +383,6 @@ namespace Antmicro.Migrant.Generators
             {
                 GeneratorHelper.GenerateLoop(generator, countLocal, cl =>
                 {
-
                     PushDeserializedObjectOntoStack(objectIdLocal);
                     generator.Emit(OpCodes.Castclass, collectionType);
                     GenerateReadField(elementFormalType, false);
@@ -411,7 +410,7 @@ namespace Antmicro.Migrant.Generators
             var loopEndLabel = generator.DefineLabel();
             var lengthIsZeroLabel = generator.DefineLabel();
 
-            var isNotEmptyArrayLocal = generator.DeclareLocal(typeof(bool));
+            var isNotEmptyArrayLocal = generator.DeclareLocal(typeof(int)); // type is int not bool to reuse array length directly
 						
             GenerateReadPrimitive(typeof(Int32));
             generator.Emit(OpCodes.Stloc, rankLocal); // read amount of dimensions of the array
@@ -469,11 +468,6 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldloc, rankLocal);
                 generator.Emit(OpCodes.Newarr, typeof(Int32));
                 generator.Emit(OpCodes.Stloc, positionLocal); // create an array for keeping the current position of each dimension
-            }
-            else
-            {
-                generator.Emit(OpCodes.Ldc_I4_0);
-                generator.Emit(OpCodes.Stloc, positionLocal);
             }
 
             generator.Emit(OpCodes.Ldloc, isNotEmptyArrayLocal);
