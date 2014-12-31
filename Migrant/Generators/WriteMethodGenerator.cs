@@ -139,7 +139,6 @@ namespace Antmicro.Migrant.Generators
             foreach(var method in methodsWithAttribute)
             {
                 // let's make the delegate
-                //generator.Emit(OpCodes.Ldtoken, typeof(Action));
                 if(method.IsStatic)
                 {
                     generator.Emit(OpCodes.Ldnull);
