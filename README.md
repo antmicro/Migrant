@@ -219,6 +219,14 @@ or, under Mono:
 
 > xbuild Migrant.sln
 
+## Coding style
+
+If you intend to help us developing Migrant, you're most welcome!
+
+Please adhere to our coding style rules. For MonoDevelop, they are included in the .sln files. For Visual Studio we provide a .vssettings file you can import to your IDE.
+
+In case of any doubts, just take a look to see how we have done it.
+
 ## More information
 
 Additional information will soon be available on our [company's website](http://www.antmicro.com/OpenSource).
