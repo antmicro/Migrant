@@ -247,7 +247,9 @@ namespace Antmicro.Migrant
             {
                 return SerializationType.Transient;
             }
-            if(type.IsValueType)
+            // treat pointer as a value type so that it is immediately check
+            // for legality (which should fail)
+            if(type.IsValueType || type.IsPointer)
             {
                 return SerializationType.Value;
             }
