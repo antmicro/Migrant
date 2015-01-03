@@ -34,12 +34,13 @@ using System.Threading;
 using Antmicro.Migrant.Hooks;
 using System.Linq;
 using Antmicro.Migrant.VersionTolerance;
+using Antmicro.Migrant.Utilities;
 
 namespace Antmicro.Migrant.Generators
 {
     internal class WriteMethodGenerator
     {
-        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject)
+        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, int typeId)
         {
             typeWeAreGeneratingFor = typeToGenerate;
             ObjectWriter.CheckLegality(typeToGenerate);
@@ -55,6 +56,39 @@ namespace Antmicro.Migrant.Generators
                 dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}_{1}", methodNo, typeToGenerate.Name), null, ParameterTypes, true);
             }
             generator = dynamicMethod.GetILGenerator();
+
+            // surrogates
+            if(surrogateId != -1)
+            {
+                generator.Emit(OpCodes.Ldarg_0);
+
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Ldfld, typeof(ObjectWriter).GetField("surrogatesForObjects", BindingFlags.NonPublic | BindingFlags.Instance));
+                generator.Emit(OpCodes.Ldc_I4, surrogateId);
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<InheritanceAwareList<Delegate>>(x => x.GetByIndex(0)));
+
+                var delegateType = typeof(Func<,>).MakeGenericType(typeToGenerate, typeof(object));
+                generator.Emit(OpCodes.Castclass, delegateType);
+                generator.Emit(OpCodes.Ldarg_2);
+                generator.Emit(OpCodes.Call, delegateType.GetMethod("Invoke"));
+
+                generator.Emit(OpCodes.Call, typeof(ObjectWriter).GetMethod("InvokeCallbacksAndWriteObject", BindingFlags.NonPublic | BindingFlags.Instance));
+                generator.Emit(OpCodes.Ret);
+                return;
+            }
+
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldfld, typeof(ObjectWriter).GetField("typeIdJustWritten", BindingFlags.NonPublic | BindingFlags.Instance));
+            var omitWriteIdLabel = generator.DefineLabel();
+            generator.Emit(OpCodes.Brtrue, omitWriteIdLabel);
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Ldc_I4, typeId);
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<PrimitiveWriter>(x => x.Write(0)));
+
+            generator.MarkLabel(omitWriteIdLabel);
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldc_I4_0);
+            generator.Emit(OpCodes.Stfld, typeof(ObjectWriter).GetField("typeIdJustWritten", BindingFlags.NonPublic | BindingFlags.Instance));
 
             // preserialization callbacks
             GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));

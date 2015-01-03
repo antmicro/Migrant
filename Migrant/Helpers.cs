@@ -256,6 +256,20 @@ namespace Antmicro.Migrant
             return SerializationType.Reference;
         }
 
+        internal static int GetSurrogateFactoryIdForType(Type type, InheritanceAwareList<Delegate> swapList)
+        {
+            var i = 0;
+            foreach(var swapCandidate in swapList)
+            {
+                if(swapCandidate.Key.IsAssignableFrom(type))
+                {
+                    return swapCandidate.Value == null ? -1 : i;
+                }
+                i++;
+            }
+            return -1;
+        }
+
         internal static void SwapObjectWithSurrogate(ref object o, InheritanceAwareList<Delegate> swapList)
         {
             var type = o.GetType();

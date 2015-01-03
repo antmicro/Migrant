@@ -39,6 +39,7 @@ using System.Diagnostics;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.Customization;
+using System.Runtime.CompilerServices;
 
 namespace Antmicro.Migrant
 {
@@ -90,7 +91,7 @@ namespace Antmicro.Migrant
             }
             currentlyWrittenTypes = new Stack<Type>();
             transientTypeCache = new Dictionary<Type, bool>();
-            writeMethods = new List<Action<PrimitiveWriter, object>>();
+            writeMethods = new Dictionary<Type, Action<PrimitiveWriter, object>>();
             postSerializationHooks = new List<Action>();
             this.writeMethodCache = writeMethodCache;
             this.isGenerating = isGenerating;
@@ -238,8 +239,8 @@ namespace Antmicro.Migrant
                 writer.Write(typeId);
                 return typeId;
             }
-            AddMissingType(type);
-            typeId = typeIndices[type];
+            typeId = nextTypeId++;
+            typeIndices.Add(type, typeId);
             writer.Write(typeId);
             writer.Write(type.AssemblyQualifiedName);
             Stamp(type);
@@ -317,14 +318,40 @@ namespace Antmicro.Migrant
 
         private void WriteObjectInner(object o)
         {
-            Helpers.SwapObjectWithSurrogate(ref o, surrogatesForObjects);
             var type = o.GetType();
-            var typeId = TouchAndWriteTypeId(type);
-            writeMethods[typeId](writer, o);
+            if(writeMethods.ContainsKey(type))
+            {
+                writeMethods[type](writer, o);
+                return;
+            }
+
+            // we have to stamp the type if it is not surrogated
+            var surrogateId = Helpers.GetSurrogateFactoryIdForType(type, surrogatesForObjects);
+            if(surrogateId == -1)
+            {
+                TouchAndWriteTypeId(type);
+                typeIdJustWritten = true;
+            }
+
+            Action<PrimitiveWriter, object> writeMethod = null; // for transient class or interface the delegate will never be called
+            if(!CheckTransient(type) && !type.IsInterface)
+            {
+                if(writeMethodCache != null && writeMethodCache.ContainsKey(type))
+                {
+                    writeMethod = (Action<PrimitiveWriter, object>)writeMethodCache[type].CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
+                }
+                else
+                {
+                    writeMethod = PrepareWriteMethod(type, surrogateId);
+                }
+            }
+            writeMethods.Add(type, writeMethod);
+            writeMethod(writer, o);
         }
 
-        private void WriteObjectUsingReflection(PrimitiveWriter primitiveWriter, object o)
+        private void WriteObjectUsingReflection(PrimitiveWriter primitiveWriter, object o, int typeId)
         {
+            WriteTypeIdIfNecessary(typeId);
             // the primitiveWriter parameter is not used here in fact, it is only to have
             // signature compatible with the generated method
             Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
@@ -589,46 +616,39 @@ namespace Antmicro.Migrant
             WriteObjectsFields(value, formalType);
         }
 
-        private void AddMissingType(Type type)
-        {
-            typeIndices.Add(type, nextTypeId++);
-            Action<PrimitiveWriter, object> writeMethod = null; // for transient class or interface the delegate will never be called
-            if(!CheckTransient(type) && !type.IsInterface)
-            {
-                if(writeMethodCache != null && writeMethodCache.ContainsKey(type))
-                {
-                    writeMethod = (Action<PrimitiveWriter, object>)writeMethodCache[type].CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
-                }
-                else
-                {
-                    writeMethod = PrepareWriteMethod(type);
-                }
-            }
-
-            // an element is always included (even when null) to ensure indices to be exact with typeId
-            writeMethods.Add(writeMethod);
-        }
-
         private void AddMissingMethod(MethodInfo info)
         {
             methodIndices.Add(info, nextMethodId++);
         }
 
-        private Action<PrimitiveWriter, object> PrepareWriteMethod(Type actualType)
+        private Action<PrimitiveWriter, object> PrepareWriteMethod(Type actualType, int surrogateId)
         {
-            var specialWrite = LinkSpecialWrite(actualType);
-            if(specialWrite != null)
+            var typeId = -1;
+            if(surrogateId == -1)
             {
-                // linked methods are not added to writeMethodCache, there's no point
-                return specialWrite;
+                typeId = typeIndices[actualType];
+            }
+
+            if(surrogateId == -1)
+            {
+                var specialWrite = LinkSpecialWrite(actualType, typeId);
+                if(specialWrite != null)
+                {
+                    // linked methods are not added to writeMethodCache, there's no point
+                    return specialWrite;
+                }
             }
 
             if(!isGenerating)
             {
-                return WriteObjectUsingReflection;
+                if(surrogateId != -1)
+                {
+                    return (pw, o) => InvokeCallbacksAndWriteObject(surrogatesForObjects.GetByIndex(surrogateId).DynamicInvoke(new [] { o }));
+                }
+                return (pw, o) => WriteObjectUsingReflection(pw, o, typeId);
             }
 
-            var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject).Method;
+            var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId, typeId).Method;
             var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
             if(writeMethodCache != null)
             {
@@ -637,16 +657,21 @@ namespace Antmicro.Migrant
             return result;
         }
 
-        private Action<PrimitiveWriter, object> LinkSpecialWrite(Type actualType)
+        private Action<PrimitiveWriter, object> LinkSpecialWrite(Type actualType, int typeId)
         {
             if(actualType == typeof(string))
             {
-                return (y, obj) => y.Write((string)obj);
+                return (y, obj) =>
+                {
+                    WriteTypeIdIfNecessary(typeId);
+                    y.Write((string)obj);
+                };
             }
             if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
             {
                 return (writer, obj) =>
                 {
+                    WriteTypeIdIfNecessary(typeId);
                     var startingPosition = writer.Position;
                     ((ISpeciallySerializable)obj).Save(writer);
                     writer.Write(writer.Position - startingPosition);
@@ -656,6 +681,7 @@ namespace Antmicro.Migrant
             {
                 return (writer, objToWrite) =>
                 {
+                    WriteTypeIdIfNecessary(typeId);
                     writer.Write(1); // rank of the array
                     var array = (byte[])objToWrite;
                     writer.Write(array.Length);
@@ -665,6 +691,19 @@ namespace Antmicro.Migrant
             return null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteTypeIdIfNecessary(int typeId)
+        {
+            if(!typeIdJustWritten)
+            {
+                writer.Write(typeId);
+            }
+            else
+            {
+                typeIdJustWritten = false;
+            }
+        }
+
         private ObjectIdentifier identifier;
         private ObjectIdentifierContext identifierContext;
         private int objectsWrittenThisSession;
@@ -672,6 +711,7 @@ namespace Antmicro.Migrant
         private int nextTypeId;
         private int nextMethodId;
         private PrimitiveWriter writer;
+        private bool typeIdJustWritten;
         private readonly TypeStamper typeStamper;
         private readonly HashSet<int> inlineWritten;
         private readonly bool isGenerating;
@@ -685,7 +725,7 @@ namespace Antmicro.Migrant
         private readonly Dictionary<Type, bool> transientTypeCache;
         private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
         private readonly InheritanceAwareList<Delegate> surrogatesForObjects;
-        private readonly List<Action<PrimitiveWriter, object>> writeMethods;
+        private readonly Dictionary<Type, Action<PrimitiveWriter, object>> writeMethods;
         private readonly Stack<Type> currentlyWrittenTypes;
     }
 }

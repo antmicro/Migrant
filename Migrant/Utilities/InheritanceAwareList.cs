@@ -77,6 +77,11 @@ namespace Antmicro.Migrant.Utilities
             }
         }
 
+        public T GetByIndex(int index)
+        {
+            return values[index];
+        }
+
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
