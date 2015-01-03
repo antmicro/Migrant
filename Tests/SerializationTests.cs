@@ -143,10 +143,6 @@ namespace Antmicro.Migrant.Tests
                 SerializerClone(intPtrClass);
                 Assert.Fail("Class with IntPtr was serialized without exception.");
             }
-            catch(ArgumentException)
-            {
-
-            }
             catch(InvalidOperationException)
             {
 
