@@ -900,6 +900,21 @@ namespace Antmicro.Migrant.Tests
             CollectionAssert.AreEqual(array, copy);
         }
 
+        [Test]
+        public void ShouldNotSerializePointer()
+        {
+            var classWithPtr = new ClassWithPointer();
+            try
+            {
+                SerializerClone(classWithPtr);
+                Assert.Fail("A class with pointer was serialized, but it should have been not.");
+            }
+            catch(InvalidOperationException)
+            {
+
+            }
+        }
+
         public class GenericClass<T>
         {
             [Transient]
@@ -1330,6 +1345,11 @@ namespace Antmicro.Migrant.Tests
             }
 
             public ClassWithIntPtr WithIntPtr { get; private set; }
+        }
+
+        public unsafe class ClassWithPointer
+        {
+            protected int* Pointer;
         }
 
         private class ClassWithEvent<T>
