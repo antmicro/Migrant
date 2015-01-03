@@ -138,7 +138,7 @@ namespace Antmicro.Migrant
                 }
                 while(identifier.Count - identifierCountPreviousSession > objectsWrittenThisSession)
                 {
-                    if(!inlineWritten.Contains(/*objectsWritten*/identifierCountPreviousSession + objectsWrittenThisSession))
+                    if(!inlineWritten.Contains(identifierCountPreviousSession + objectsWrittenThisSession))
                     {
                         InvokeCallbacksAndWriteObject(identifier[identifierCountPreviousSession + objectsWrittenThisSession]);
                     }
