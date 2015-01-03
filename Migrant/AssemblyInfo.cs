@@ -31,8 +31,8 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyTitle("Migrant")]
 [assembly: AssemblyDescription("Fast and flexible serialization framework usable on undecorated classes.")]
 [assembly: AssemblyCompany("Antmicro")]
-[assembly: AssemblyCopyright("Copyright by Antmicro 2012 - 2014")]
+[assembly: AssemblyCopyright("Copyright by Antmicro 2012 - 2015")]
 
-[assembly: AssemblyVersion("0.9")]
+[assembly: AssemblyVersion("0.9.1")]
 
 [assembly: InternalsVisibleTo("Tests")]
