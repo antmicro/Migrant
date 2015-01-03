@@ -648,7 +648,10 @@ namespace Antmicro.Migrant
                 return (pw, o) => WriteObjectUsingReflection(pw, o, typeId);
             }
 
-            var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId, typeId).Method;
+            var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId, typeId,
+                Helpers.GetFieldInfo<ObjectWriter, InheritanceAwareList<Delegate>>(x => x.surrogatesForObjects),
+                Helpers.GetFieldInfo<ObjectWriter, bool>(x => x.typeIdJustWritten),
+                Helpers.GetMethodInfo<ObjectWriter>(x => x.InvokeCallbacksAndWriteObject(null))).Method;
             var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
             if(writeMethodCache != null)
             {

@@ -40,7 +40,8 @@ namespace Antmicro.Migrant.Generators
 {
     internal class WriteMethodGenerator
     {
-        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, int typeId)
+        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, int typeId, FieldInfo surrogatesField, FieldInfo typeIdWrittenField,
+            MethodInfo writeObjectMethod)
         {
             typeWeAreGeneratingFor = typeToGenerate;
             ObjectWriter.CheckLegality(typeToGenerate);
@@ -63,7 +64,7 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldarg_0);
 
                 generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(OpCodes.Ldfld, typeof(ObjectWriter).GetField("surrogatesForObjects", BindingFlags.NonPublic | BindingFlags.Instance));
+                generator.Emit(OpCodes.Ldfld, surrogatesField);
                 generator.Emit(OpCodes.Ldc_I4, surrogateId);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<InheritanceAwareList<Delegate>>(x => x.GetByIndex(0)));
 
@@ -72,13 +73,13 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldarg_2);
                 generator.Emit(OpCodes.Call, delegateType.GetMethod("Invoke"));
 
-                generator.Emit(OpCodes.Call, typeof(ObjectWriter).GetMethod("InvokeCallbacksAndWriteObject", BindingFlags.NonPublic | BindingFlags.Instance));
+                generator.Emit(OpCodes.Call, writeObjectMethod);
                 generator.Emit(OpCodes.Ret);
                 return;
             }
 
             generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldfld, typeof(ObjectWriter).GetField("typeIdJustWritten", BindingFlags.NonPublic | BindingFlags.Instance));
+            generator.Emit(OpCodes.Ldfld, typeIdWrittenField);
             var omitWriteIdLabel = generator.DefineLabel();
             generator.Emit(OpCodes.Brtrue, omitWriteIdLabel);
             generator.Emit(OpCodes.Ldarg_1);
@@ -88,7 +89,7 @@ namespace Antmicro.Migrant.Generators
             generator.MarkLabel(omitWriteIdLabel);
             generator.Emit(OpCodes.Ldarg_0);
             generator.Emit(OpCodes.Ldc_I4_0);
-            generator.Emit(OpCodes.Stfld, typeof(ObjectWriter).GetField("typeIdJustWritten", BindingFlags.NonPublic | BindingFlags.Instance));
+            generator.Emit(OpCodes.Stfld, typeIdWrittenField);
 
             // preserialization callbacks
             GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));
