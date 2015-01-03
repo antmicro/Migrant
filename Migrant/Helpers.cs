@@ -186,13 +186,8 @@ namespace Antmicro.Migrant
 
         public static FieldInfo GetFieldInfo<T, TResult>(Expression<Func<T, TResult>> expression)
         {
-            var mexpr = expression.Body as MemberExpression;
-            if(mexpr == null)
-            {
-                return null;
-            }
-
-            return mexpr.Member as FieldInfo;
+            var memberExpression = (MemberExpression)expression.Body;
+            return (FieldInfo)memberExpression.Member;
         }
 
         public static MethodInfo GetPropertyGetterInfo<T, TResult>(Expression<Func<T, TResult>> expression)
