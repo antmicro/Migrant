@@ -333,17 +333,14 @@ namespace Antmicro.Migrant
                 typeIdJustWritten = true;
             }
 
-            Action<PrimitiveWriter, object> writeMethod = null; // for transient class or interface the delegate will never be called
-            if(!CheckTransient(type) && !type.IsInterface)
+            Action<PrimitiveWriter, object> writeMethod;
+            if(writeMethodCache != null && writeMethodCache.ContainsKey(type))
             {
-                if(writeMethodCache != null && writeMethodCache.ContainsKey(type))
-                {
-                    writeMethod = (Action<PrimitiveWriter, object>)writeMethodCache[type].CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
-                }
-                else
-                {
-                    writeMethod = PrepareWriteMethod(type, surrogateId);
-                }
+                writeMethod = (Action<PrimitiveWriter, object>)writeMethodCache[type].CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
+            }
+            else
+            {
+                writeMethod = PrepareWriteMethod(type, surrogateId);
             }
             writeMethods.Add(type, writeMethod);
             writeMethod(writer, o);
