@@ -265,19 +265,6 @@ namespace Antmicro.Migrant
             return -1;
         }
 
-        internal static void SwapObjectWithSurrogate(ref object o, InheritanceAwareList<Delegate> swapList)
-        {
-            var type = o.GetType();
-            foreach(var swapCandidate in swapList)
-            {
-                if(swapCandidate.Key.IsAssignableFrom(type))
-                {
-                    o = swapCandidate.Value.DynamicInvoke(new object[] { o });
-                    break;
-                }
-            }
-        }
-
         public static bool IsWriteableByPrimitiveWriter(Type type)
         {
             return TypesWriteableByPrimitiveWriter.Contains(type);
