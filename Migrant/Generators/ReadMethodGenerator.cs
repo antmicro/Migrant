@@ -42,9 +42,13 @@ namespace Antmicro.Migrant.Generators
 {
     internal sealed class ReadMethodGenerator
     {
-        public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader, bool treatCollectionAsUserObject)
+        public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader, bool treatCollectionAsUserObject, int objectForSurrogateId,
+            FieldInfo objectsForSurrogatesField, FieldInfo deserializedObjectsField)
         {
+            this.objectForSurrogateId = objectForSurrogateId;
+            this.deserializedObjectsField = deserializedObjectsField;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
+            this.objectsForSurrogatesField = objectsForSurrogatesField;
             this.stampReader = stampReader;
             if(typeToGenerate.IsArray)
             {
@@ -233,15 +237,30 @@ namespace Antmicro.Migrant.Generators
                 }
             });
 
-            PushDeserializedObjectOntoStack(objectIdLocal);
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldloc, objectIdLocal);
-            GenerateCodeCall<object, ObjectReader, int>((obj, or, objectId) =>
+            // surrogates
+            if(objectForSurrogateId != -1)
             {
-                Helpers.SwapObjectWithSurrogate(ref obj, or.objectsForSurrogates);
-                or.deserializedObjects[objectId] = obj; // could be swapped
-            });
-			
+                // used (1)
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Ldfld, deserializedObjectsField);
+                generator.Emit(OpCodes.Ldloc, objectIdLocal);
+
+                // obtain surrogate factory
+                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Ldfld, objectsForSurrogatesField);
+                generator.Emit(OpCodes.Ldc_I4, objectForSurrogateId);
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<InheritanceAwareList<Delegate>>(x => x.GetByIndex(0)));
+
+                // recreate an object from the surrogate
+                var delegateType = typeof(Func<,>).MakeGenericType(formalType, typeof(object));
+                generator.Emit(OpCodes.Castclass, delegateType);
+                PushDeserializedObjectOntoStack(objectIdLocal);
+                generator.Emit(OpCodes.Call, delegateType.GetMethod("Invoke"));
+
+                // save recreated object
+                // (1) here
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>>(x => x.SetItem(0, null)));
+            }
             generator.MarkLabel(finish);
         }
 
@@ -907,6 +926,9 @@ namespace Antmicro.Migrant.Generators
         }
 
         private ILGenerator generator;
+        private readonly int objectForSurrogateId;
+        private readonly FieldInfo objectsForSurrogatesField;
+        private readonly FieldInfo deserializedObjectsField;
         private readonly bool treatCollectionAsUserObject;
         private readonly DynamicMethod dynamicMethod;
         private readonly TypeStampReader stampReader;

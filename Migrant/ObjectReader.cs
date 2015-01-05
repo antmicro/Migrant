@@ -178,7 +178,10 @@ namespace Antmicro.Migrant
         {
             if(!readMethodsCache.ContainsKey(type))
             {
-                var rmg = new ReadMethodGenerator(type, stamper, treatCollectionAsUserObject);
+                var surrogateId = Helpers.GetSurrogateFactoryIdForType(type, objectsForSurrogates);
+                var rmg = new ReadMethodGenerator(type, stamper, treatCollectionAsUserObject, surrogateId,
+                    Helpers.GetFieldInfo<ObjectReader, InheritanceAwareList<Delegate>>(x => x.objectsForSurrogates),
+                    Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects));
                 readMethodsCache.Add(type, rmg.Method);
             }
         }
