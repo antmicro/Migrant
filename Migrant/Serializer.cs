@@ -365,7 +365,7 @@ namespace Antmicro.Migrant
             /// <typeparam name='TObject'>
             /// The type of the object returned by callback.
             /// </typeparam>
-            public void SetObject<TObject>(Func<TSurrogate, TObject> callback)
+            public void SetObject<TObject>(Func<TSurrogate, TObject> callback) where TObject : class
             {
                 if(serializer.deserializationDone)
                 {
@@ -397,7 +397,7 @@ namespace Antmicro.Migrant
             /// <typeparam name='TSurrogate'>
             /// The type of the object returned by callback.
             /// </typeparam>
-            public void SetSurrogate<TSurrogate>(Func<TObject, TSurrogate> callback)
+            public void SetSurrogate<TSurrogate>(Func<TObject, TSurrogate> callback) where TSurrogate : class
             {
                 if(serializer.serializationDone)
                 {
