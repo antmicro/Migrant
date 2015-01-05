@@ -238,8 +238,11 @@ namespace Antmicro.Migrant
                 // it can happen if we deserialize delegate with empty invocation list
                 return;
             }
-            Helpers.SwapObjectWithSurrogate(ref obj, objectsForSurrogates);
-            deserializedObjects[objectId] = obj; // could be swapped
+            var factoryId = Helpers.GetSurrogateFactoryIdForType(obj.GetType(), objectsForSurrogates);
+            if(factoryId != -1)
+            {
+                deserializedObjects[objectId] = objectsForSurrogates.GetByIndex(factoryId).DynamicInvoke(new [] { obj });
+            }
             Helpers.InvokeAttribute(typeof(PostDeserializationAttribute), obj);
             var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostDeserializationAttribute), obj);
             if(postHook != null)
