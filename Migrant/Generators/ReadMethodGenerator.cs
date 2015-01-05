@@ -169,15 +169,6 @@ namespace Antmicro.Migrant.Generators
 			
             PushDeserializedObjectOntoStack(objectIdLocal);
             generator.Emit(OpCodes.Brfalse, finish);
-			
-            PushDeserializedObjectOntoStack(objectIdLocal);
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldloc, objectIdLocal);
-            GenerateCodeCall<object, ObjectReader, int>((obj, or, objectId) =>
-            {
-                Helpers.SwapObjectWithSurrogate(ref obj, or.objectsForSurrogates);
-                or.deserializedObjects[objectId] = obj; // could be swapped
-            });
 
             var methods = Helpers.GetMethodsWithAttribute(typeof(PostDeserializationAttribute), formalType);
             foreach(var method in methods)
@@ -240,6 +231,15 @@ namespace Antmicro.Migrant.Generators
                 {
                     or.postDeserializationCallback(obj);
                 }
+            });
+
+            PushDeserializedObjectOntoStack(objectIdLocal);
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldloc, objectIdLocal);
+            GenerateCodeCall<object, ObjectReader, int>((obj, or, objectId) =>
+            {
+                Helpers.SwapObjectWithSurrogate(ref obj, or.objectsForSurrogates);
+                or.deserializedObjects[objectId] = obj; // could be swapped
             });
 			
             generator.MarkLabel(finish);
