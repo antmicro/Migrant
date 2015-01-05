@@ -43,10 +43,14 @@ namespace Antmicro.Migrant.Generators
     internal sealed class ReadMethodGenerator
     {
         public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader, bool treatCollectionAsUserObject, int objectForSurrogateId,
-            FieldInfo objectsForSurrogatesField, FieldInfo deserializedObjectsField)
+            FieldInfo objectsForSurrogatesField, FieldInfo deserializedObjectsField, FieldInfo primitiveReaderField, FieldInfo postDeserializationCallbackField,
+            FieldInfo postDeserializationHooksField)
         {
             this.objectForSurrogateId = objectForSurrogateId;
             this.deserializedObjectsField = deserializedObjectsField;
+            this.primitiveReaderField = primitiveReaderField;
+            this.postDeserializationCallbackField = postDeserializationCallbackField;
+            this.postDeserializationHooksField = postDeserializationHooksField;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             this.objectsForSurrogatesField = objectsForSurrogatesField;
             this.stampReader = stampReader;
@@ -193,7 +197,7 @@ namespace Antmicro.Migrant.Generators
             foreach(var method in methods)
             {
                 generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(OpCodes.Ldfld, Helpers.GetFieldInfo<ObjectReader, object>(or => or.postDeserializationHooks));
+                generator.Emit(OpCodes.Ldfld, postDeserializationHooksField);
 
                 PushTypeOntoStack(typeof(Action));
                 if(method.IsStatic)
@@ -226,16 +230,19 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<List<Action>>(x => x.Add(null)));
             }
 
+            var callbackLocal = generator.DeclareLocal(typeof(Action<object>));
             generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldfld, postDeserializationCallbackField); // PROMPT
+            var afterCallbackCall = generator.DefineLabel();
+            generator.Emit(OpCodes.Dup);
+            generator.Emit(OpCodes.Stloc, callbackLocal);
+            generator.Emit(OpCodes.Brfalse, afterCallbackCall);
+            //generator.Emit(OpCodes.Castclass, typeof(Action<object>));
+            generator.Emit(OpCodes.Ldloc, callbackLocal);
             PushDeserializedObjectOntoStack(objectIdLocal);
-
-            GenerateCodeCall<ObjectReader, object>((or, obj) =>
-            {
-                if(or.postDeserializationCallback != null)
-                {
-                    or.postDeserializationCallback(obj);
-                }
-            });
+            //generator.Emit(OpCodes.Ldnull);
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Action<object>>(x => x.Invoke(null)));
+            generator.MarkLabel(afterCallbackCall);
 
             // surrogates
             if(objectForSurrogateId != -1)
@@ -808,13 +815,13 @@ namespace Antmicro.Migrant.Generators
         private void PushPrimitiveReaderOntoStack()
         {
             generator.Emit(OpCodes.Ldarg_0); // object reader
-            generator.Emit(OpCodes.Ldfld, Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader));
+            generator.Emit(OpCodes.Ldfld, primitiveReaderField);
         }
 
         private void PushDeserializedObjectsCollectionOntoStack()
         {
             generator.Emit(OpCodes.Ldarg_0); // object reader	
-            generator.Emit(OpCodes.Ldfld, Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects));
+            generator.Emit(OpCodes.Ldfld, deserializedObjectsField);
         }
 
         private void PushDeserializedObjectOntoStack(LocalBuilder local)
@@ -929,6 +936,9 @@ namespace Antmicro.Migrant.Generators
         private readonly int objectForSurrogateId;
         private readonly FieldInfo objectsForSurrogatesField;
         private readonly FieldInfo deserializedObjectsField;
+        private readonly FieldInfo primitiveReaderField;
+        private readonly FieldInfo postDeserializationCallbackField;
+        private readonly FieldInfo postDeserializationHooksField;
         private readonly bool treatCollectionAsUserObject;
         private readonly DynamicMethod dynamicMethod;
         private readonly TypeStampReader stampReader;
