@@ -916,6 +916,32 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
+        [Test]
+        public void ShouldNotSerializeNull()
+        {
+            try
+            {
+                SerializerClone<object>(null);
+                Assert.Fail("Serialization of null succeeded while it should not.");
+            }
+            catch(ArgumentException)
+            {
+            }
+        }
+
+        [Test]
+        public void ShouldNotSerializeTransient()
+        {
+            try
+            {
+                SerializerClone(new TransientClass());
+                Assert.Fail("Serialization of a transient object succeeded while it should not.");
+            }
+            catch(ArgumentException)
+            {
+            }
+        }
+
         public class GenericClass<T>
         {
             [Transient]
