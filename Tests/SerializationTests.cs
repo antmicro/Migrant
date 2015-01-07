@@ -899,6 +899,11 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldNotSerializePointer()
         {
+            if(Environment.OSVersion.Platform == PlatformID.Unix && Environment.OSVersion.Version < Version.Parse("4.0"))
+            {
+                Assert.Inconclusive("Due to a bug in mono implementation this test is ignored on Linux");
+            }
+
             var classWithPtr = new ClassWithPointer();
             try
             {
