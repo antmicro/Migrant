@@ -213,6 +213,21 @@ namespace Antmicro.Migrant.Tests
             Assert.AreEqual(4, copy.DerivedPostDeserializationCounter);
         }
 
+        [Test]
+        public void ShouldFailWithSurrogateAndLatePostDeserializationHook()
+        {
+            try
+            {
+                var lateHook = new LateDeserializationMockA();
+                PseudoClone(lateHook, serializer => serializer.ForSurrogate<LateDeserializationMockA>().SetObject(x => new object()));
+                Assert.Fail("Serialization finished while it should fail.");
+            }
+            catch(InvalidOperationException)
+            {
+
+            }
+        }
+
         private void ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization<T>(T prePostMock) where T : IPrePostMock
         {
             try
