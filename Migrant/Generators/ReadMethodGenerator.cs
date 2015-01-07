@@ -282,15 +282,17 @@ namespace Antmicro.Migrant.Generators
                 return;
             }
 
-            var collectionToken = new CollectionMetaToken(formalType);
+            CollectionMetaToken collectionToken;
+
+            if(!CollectionMetaToken.TryGetCollectionMetaToken(formalType, out collectionToken))
+            {
+                throw new InvalidOperationException(InternalErrorMessage);
+            }
+
             if(collectionToken.IsDictionary)
             {
                 GenerateFillDictionary(collectionToken, formalType, objectIdLocal);
                 return;
-            }
-            else if(!collectionToken.IsCollection)
-            {
-                throw new InvalidOperationException(InternalErrorMessage);
             }
 
             GenerateFillCollection(collectionToken.FormalElementType, formalType, objectIdLocal);

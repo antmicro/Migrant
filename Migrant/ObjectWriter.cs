@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 - 2013 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012 - 2014 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -435,8 +435,8 @@ namespace Antmicro.Migrant
 
             if(!treatCollectionAsUserObject)
             {
-                var collectionToken = new CollectionMetaToken(o.GetType());
-                if(collectionToken.IsCollection)
+                CollectionMetaToken collectionToken; 
+                if (CollectionMetaToken.TryGetCollectionMetaToken(o.GetType(), out collectionToken))
                 {
                     // here we can have normal or extension method that needs to be treated differently
                     int count = collectionToken.CountMethod.IsStatic ? 
