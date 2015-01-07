@@ -53,15 +53,8 @@ namespace Antmicro.Migrant
 
         public Type ActualType { get; private set; }
 
-        public CollectionMetaToken(Type actualType)
+        private CollectionMetaToken(Type actualType)
         {
-            var typeToCheck = actualType.IsGenericType ? actualType.GetGenericTypeDefinition() : actualType;
-            if(!SpeciallySerializedCollections.Contains(typeToCheck))
-            {
-                IsCollection = false;
-                return;
-            }
-
             ActualType = actualType;
             FormalElementType = typeof(object);
             FormalKeyType = typeof(object);
@@ -78,6 +71,24 @@ namespace Antmicro.Migrant
                     return;
                 }
             }
+        }
+
+        public static bool IsCollection(Type actualType)
+        {
+            var typeToCheck = actualType.IsGenericType ? actualType.GetGenericTypeDefinition() : actualType;
+            return SpeciallySerializedCollections.Contains(typeToCheck);
+        }
+
+        public static bool TryGetCollectionMetaToken(Type actualType, out CollectionMetaToken token)
+        {
+            if (!IsCollection(actualType))
+            {
+                token = null;
+                return false;
+            }
+
+            token = new CollectionMetaToken(actualType);
+            return true;
         }
 
         static CollectionMetaToken()

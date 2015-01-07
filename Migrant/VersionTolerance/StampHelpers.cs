@@ -1,8 +1,9 @@
 /*
-  Copyright (c) 2013 Ant Micro <www.antmicro.com>
+  Copyright (c) 2014 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -34,7 +35,7 @@ namespace Antmicro.Migrant.VersionTolerance
     {
         public static bool IsStampNeeded(Type type, bool treatCollectionAsUserObject)
         {
-            return !Helpers.IsWriteableByPrimitiveWriter(type) && (!new CollectionMetaToken(type).IsCollection || treatCollectionAsUserObject);
+            return !Helpers.IsWriteableByPrimitiveWriter(type) && (!CollectionMetaToken.IsCollection(type) || treatCollectionAsUserObject);
         }
 
         public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)
