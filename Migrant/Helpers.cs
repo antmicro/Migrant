@@ -38,27 +38,10 @@ namespace Antmicro.Migrant
 {
     internal static class Helpers
     {
-        internal static bool CheckTransientNoCache(Type type)
-        {
-            return type.IsDefined(typeof(TransientAttribute), true);
-        }
-
         public static bool CanBeCreatedWithDataOnly(Type actualType, bool treatCollectionAsUserObject = false)
         {
             return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType)
             || (!treatCollectionAsUserObject && (actualType.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(actualType.GetGenericTypeDefinition())));
-        }
-
-        private static int GetBoundary(long currentPosition)
-        {
-            foreach(var padding in PaddingBoundaries)
-            {
-                if(currentPosition <= padding)
-                {
-                    return padding;
-                }
-            }
-            return MaximalPadding;
         }
 
         public static int GetCurrentPaddingValue(long currentPosition)
@@ -186,13 +169,8 @@ namespace Antmicro.Migrant
 
         public static FieldInfo GetFieldInfo<T, TResult>(Expression<Func<T, TResult>> expression)
         {
-            var mexpr = expression.Body as MemberExpression;
-            if(mexpr == null)
-            {
-                return null;
-            }
-
-            return mexpr.Member as FieldInfo;
+            var memberExpression = (MemberExpression)expression.Body;
+            return (FieldInfo)memberExpression.Member;
         }
 
         public static MethodInfo GetPropertyGetterInfo<T, TResult>(Expression<Func<T, TResult>> expression)
@@ -241,6 +219,16 @@ namespace Antmicro.Migrant
             return methodCall.Method;
         }
 
+        public static bool IsWriteableByPrimitiveWriter(Type type)
+        {
+            return TypesWriteableByPrimitiveWriter.Contains(type);
+        }
+
+        internal static bool CheckTransientNoCache(Type type)
+        {
+            return type.IsDefined(typeof(TransientAttribute), true);
+        }
+
         internal static SerializationType GetSerializationType(Type type)
         {
             if(Helpers.CheckTransientNoCache(type))
@@ -256,22 +244,32 @@ namespace Antmicro.Migrant
             return SerializationType.Reference;
         }
 
-        internal static void SwapObjectWithSurrogate(ref object o, InheritanceAwareList<Delegate> swapList)
+        internal static int GetSurrogateFactoryIdForType(Type type, InheritanceAwareList<Delegate> swapList)
         {
-            var type = o.GetType();
+            var i = 0;
             foreach(var swapCandidate in swapList)
             {
                 if(swapCandidate.Key.IsAssignableFrom(type))
                 {
-                    o = swapCandidate.Value.DynamicInvoke(new object[] { o });
-                    break;
+                    return swapCandidate.Value == null ? -1 : i;
                 }
+                i++;
             }
+            return -1;
         }
 
-        public static bool IsWriteableByPrimitiveWriter(Type type)
+        internal static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
+
+        private static int GetBoundary(long currentPosition)
         {
-            return TypesWriteableByPrimitiveWriter.Contains(type);
+            foreach(var padding in PaddingBoundaries)
+            {
+                if(currentPosition <= padding)
+                {
+                    return padding;
+                }
+            }
+            return MaximalPadding;
         }
 
         static Helpers()
@@ -279,8 +277,6 @@ namespace Antmicro.Migrant
             TypesWriteableByPrimitiveWriter = new HashSet<Type>(typeof(PrimitiveWriter).GetMethods().Where(x => x.Name == "Write").Select(x => x.GetParameters()[0].ParameterType));
             TypesWriteableByPrimitiveWriter.TrimExcess();
         }
-
-        public static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
         private static readonly HashSet<Type> TypesWriteableByPrimitiveWriter;
         private static readonly int[] PaddingBoundaries = {

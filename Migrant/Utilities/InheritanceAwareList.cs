@@ -77,6 +77,16 @@ namespace Antmicro.Migrant.Utilities
             }
         }
 
+        /// <summary>
+        /// Gets a value by an index.
+        /// </summary>
+        /// <returns>Value at a given index.</returns>
+        /// <param name="index">The index of the element.</param>
+        public T GetByIndex(int index)
+        {
+            return values[index];
+        }
+
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return GetEnumerator();

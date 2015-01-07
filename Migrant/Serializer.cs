@@ -35,39 +35,39 @@ using Antmicro.Migrant.BultinSurrogates;
 
 namespace Antmicro.Migrant
 {
-	/// <summary>
-	/// Provides the mechanism for binary serialization and deserialization of objects.
-	/// </summary>
-	/// <remarks>
-	/// Please consult the general serializer documentation to find the limitations
-	/// and constraints which serialized objects must fullfill.
-	/// </remarks>
-	public class Serializer
-	{
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Antmicro.Migrant.Serializer"/> class.
-		/// </summary>
-		/// <param name='settings'>
-		/// Serializer's settings, can be null or not given, in that case default settings are
-		/// used.
-		/// </param>
-		public Serializer(Settings settings = null)
-		{
-			if(settings == null)
-			{
-				settings = new Settings(); // default settings
-			}
-			this.settings = settings;
-			writeMethodCache = new Dictionary<Type, DynamicMethod>();
+    /// <summary>
+    /// Provides the mechanism for binary serialization and deserialization of objects.
+    /// </summary>
+    /// <remarks>
+    /// Please consult the general serializer documentation to find the limitations
+    /// and constraints which serialized objects must fullfill.
+    /// </remarks>
+    public class Serializer
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Antmicro.Migrant.Serializer"/> class.
+        /// </summary>
+        /// <param name='settings'>
+        /// Serializer's settings, can be null or not given, in that case default settings are
+        /// used.
+        /// </param>
+        public Serializer(Settings settings = null)
+        {
+            if(settings == null)
+            {
+                settings = new Settings(); // default settings
+            }
+            this.settings = settings;
+            writeMethodCache = new Dictionary<Type, DynamicMethod>();
             objectsForSurrogates = new InheritanceAwareList<Delegate>();
             surrogatesForObjects = new InheritanceAwareList<Delegate>();
-			readMethodCache = new Dictionary<Type, DynamicMethod>();
+            readMethodCache = new Dictionary<Type, DynamicMethod>();
 
             if(settings.SupportForISerializable)
             {
                 ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
                 ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
-                ForObject<Delegate>().SetSurrogate(x => x); //because Delegate implements ISerializable but we support it directly.
+                ForObject<Delegate>().SetSurrogate<Func<Delegate, object>>(null); //because Delegate implements ISerializable but we support it directly.
             }
 
             if(settings.SupportForIXmlSerializable)
@@ -75,26 +75,26 @@ namespace Antmicro.Migrant
                 ForObject<System.Xml.Serialization.IXmlSerializable>().SetSurrogate(x => new SurrogateForIXmlSerializable(x));
                 ForSurrogate<SurrogateForIXmlSerializable>().SetObject(x => x.Restore());
             }
-		}
+        }
 
-		/// <summary>
-		/// Serializes the specified object to a given stream.
-		/// </summary>
-		/// <param name='obj'>
-		/// Object to serialize along with its references.
-		/// </param>
-		/// <param name='stream'>
-		/// Stream to which the given object should be serialized. Has to be writeable.
-		/// </param>
-		public void Serialize(object obj, Stream stream)
-		{
-			WriteHeader(stream);
+        /// <summary>
+        /// Serializes the specified object to a given stream.
+        /// </summary>
+        /// <param name='obj'>
+        /// Object to serialize along with its references.
+        /// </param>
+        /// <param name='stream'>
+        /// Stream to which the given object should be serialized. Has to be writeable.
+        /// </param>
+        public void Serialize(object obj, Stream stream)
+        {
+            WriteHeader(stream);
             using(var writer = ObtainWriter(stream))
             {
                 writer.WriteObject(obj);
             }
-			serializationDone = true;
-		}
+            serializationDone = true;
+        }
 
         /// <summary>
         /// Returns the open stream serializer, which can be used to do consecutive serializations
@@ -125,52 +125,52 @@ namespace Antmicro.Migrant
             return new OpenStreamDeserializer(ObtainReader(stream, preserveReferences), settings, stream);
         }
 
-		/// <summary>
-		/// Gives the ability to set callback providing object for surrogate of given type. The object will be provided instead of such
-		/// surrogate in the effect of deserialization.
-		/// </summary>
-		/// <returns>
-		/// Object letting you set the object for the given surrogate type.
-		/// </returns>
-		/// <typeparam name='TSurrogate'>
-		/// The type for which callback will be invoked.
-		/// </typeparam>
-		public ObjectForSurrogateSetter<TSurrogate> ForSurrogate<TSurrogate>()
-		{
-			return new ObjectForSurrogateSetter<TSurrogate>(this);
-		}
+        /// <summary>
+        /// Gives the ability to set callback providing object for surrogate of given type. The object will be provided instead of such
+        /// surrogate in the effect of deserialization.
+        /// </summary>
+        /// <returns>
+        /// Object letting you set the object for the given surrogate type.
+        /// </returns>
+        /// <typeparam name='TSurrogate'>
+        /// The type for which callback will be invoked.
+        /// </typeparam>
+        public ObjectForSurrogateSetter<TSurrogate> ForSurrogate<TSurrogate>()
+        {
+            return new ObjectForSurrogateSetter<TSurrogate>(this);
+        }
 
-		/// <summary>
-		/// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of 
-		/// the object of that type.
-		/// </summary>
-		/// <returns>
-		/// Object letting you set the surrogate for the given type.
-		/// </returns>
-		/// <typeparam name='TObject'>
-		/// The type for which callback will be invoked.
-		/// </typeparam>
-		public SurrogateForObjectSetter<TObject> ForObject<TObject>()
-		{
-			return new SurrogateForObjectSetter<TObject>(this);
-		}
+        /// <summary>
+        /// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of 
+        /// the object of that type.
+        /// </summary>
+        /// <returns>
+        /// Object letting you set the surrogate for the given type.
+        /// </returns>
+        /// <typeparam name='TObject'>
+        /// The type for which callback will be invoked.
+        /// </typeparam>
+        public SurrogateForObjectSetter<TObject> ForObject<TObject>()
+        {
+            return new SurrogateForObjectSetter<TObject>(this);
+        }
 
-		/// <summary>
-		/// Deserializes object from the specified stream.
-		/// </summary>
-		/// <param name='stream'>
-		/// The stream to read data from. Must be readable.
-		/// </param>
-		/// <typeparam name='T'>
-		/// The expected type of the deserialized object. The deserialized object must be
-		/// convertible to this type.
-		/// </typeparam>
-		public T Deserialize<T>(Stream stream)
-		{
+        /// <summary>
+        /// Deserializes object from the specified stream.
+        /// </summary>
+        /// <param name='stream'>
+        /// The stream to read data from. Must be readable.
+        /// </param>
+        /// <typeparam name='T'>
+        /// The expected type of the deserialized object. The deserialized object must be
+        /// convertible to this type.
+        /// </typeparam>
+        public T Deserialize<T>(Stream stream)
+        {
             T result;
             ThrowOnWrongResult(TryDeserialize(stream, out result));
             return result;
-		}
+        }
 
         /// <summary>
         /// Tries to deserialize object from specified stream.
@@ -211,67 +211,67 @@ namespace Antmicro.Migrant
             }
         }
 
-		/// <summary>
-		/// Is invoked before serialization, once for every unique, serialized object. Provides this
-		/// object in its single parameter.
-		/// </summary>
-		public event Action<object> OnPreSerialization;
+        /// <summary>
+        /// Is invoked before serialization, once for every unique, serialized object. Provides this
+        /// object in its single parameter.
+        /// </summary>
+        public event Action<object> OnPreSerialization;
 
-		/// <summary>
-		/// Is invoked after serialization, once for every unique, serialized object. Provides this
-		/// object in its single parameter.
-		/// </summary>
-		public event Action<object> OnPostSerialization;
+        /// <summary>
+        /// Is invoked after serialization, once for every unique, serialized object. Provides this
+        /// object in its single parameter.
+        /// </summary>
+        public event Action<object> OnPostSerialization;
 
-		/// <summary>
-		/// Is invoked before deserialization, once for every unique, serialized object. Provides this
-		/// object in its single parameter.
-		/// </summary>
-		public event Action<object> OnPostDeserialization;
+        /// <summary>
+        /// Is invoked before deserialization, once for every unique, serialized object. Provides this
+        /// object in its single parameter.
+        /// </summary>
+        public event Action<object> OnPostDeserialization;
 
-		/// <summary>
-		/// Makes a deep copy of a given object using the serializer.
-		/// </summary>
-		/// <returns>
-		/// The deep copy of a given object.
-		/// </returns>
-		/// <param name='toClone'>
-		/// The object to make a deep copy of.
-		/// </param>
-		/// <param name='settings'>
-		/// Settings used for serializer which does deep clone.
-		/// </param>
-		public static T DeepClone<T>(T toClone, Settings settings = null)
-		{
-			var serializer = new Serializer(settings);
-			var stream = new MemoryStream();
-			serializer.Serialize(toClone, stream);
-			var position = stream.Position;
-			stream.Seek(0, SeekOrigin.Begin);
-			var result = serializer.Deserialize<T>(stream);
-			if(position != stream.Position)
-			{
-				throw new InvalidOperationException(
+        /// <summary>
+        /// Makes a deep copy of a given object using the serializer.
+        /// </summary>
+        /// <returns>
+        /// The deep copy of a given object.
+        /// </returns>
+        /// <param name='toClone'>
+        /// The object to make a deep copy of.
+        /// </param>
+        /// <param name='settings'>
+        /// Settings used for serializer which does deep clone.
+        /// </param>
+        public static T DeepClone<T>(T toClone, Settings settings = null)
+        {
+            var serializer = new Serializer(settings);
+            var stream = new MemoryStream();
+            serializer.Serialize(toClone, stream);
+            var position = stream.Position;
+            stream.Seek(0, SeekOrigin.Begin);
+            var result = serializer.Deserialize<T>(stream);
+            if(position != stream.Position)
+            {
+                throw new InvalidOperationException(
                     string.Format("Internal error in serializer: {0} bytes were written, but only {1} were read.",
-                              position, stream.Position));
-			}
-			return result;
-		}
+                        position, stream.Position));
+            }
+            return result;
+        }
 
-		private void WriteHeader(Stream stream)
-		{
-			stream.WriteByte(Magic1);
-			stream.WriteByte(Magic2);
-			stream.WriteByte(Magic3);
-			stream.WriteByte(VersionNumber);
+        private void WriteHeader(Stream stream)
+        {
+            stream.WriteByte(Magic1);
+            stream.WriteByte(Magic2);
+            stream.WriteByte(Magic3);
+            stream.WriteByte(VersionNumber);
             stream.WriteByte(settings.ReferencePreservation == ReferencePreservation.DoNotPreserve ? (byte)0 : (byte)1);
-		}
+        }
 
         private ObjectWriter ObtainWriter(Stream stream)
         {
             var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
                              writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, 
-                settings.TreatCollectionAsUserObject, settings.UseBuffering, settings.ReferencePreservation);
+                             settings.TreatCollectionAsUserObject, settings.UseBuffering, settings.ReferencePreservation);
             return writer;
         }
 
@@ -298,7 +298,7 @@ namespace Antmicro.Migrant
 
         private void ThrowOnWrongResult(DeserializationResult result)
         {
-            switch (result)
+            switch(result)
             {
             case DeserializationResult.OK:
                 return;
@@ -333,81 +333,81 @@ namespace Antmicro.Migrant
         }
 
         private Exception lastException;
-		private bool serializationDone;
-		private bool deserializationDone;
-		private readonly Settings settings;
-		private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
-		private readonly Dictionary<Type, DynamicMethod> readMethodCache;
+        private bool serializationDone;
+        private bool deserializationDone;
+        private readonly Settings settings;
+        private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
+        private readonly Dictionary<Type, DynamicMethod> readMethodCache;
         private readonly InheritanceAwareList<Delegate> surrogatesForObjects;
         private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
-		private const byte VersionNumber = 4;
-		private const byte Magic1 = 0x32;
-		private const byte Magic2 = 0x66;
-		private const byte Magic3 = 0x34;
+        private const byte VersionNumber = 4;
+        private const byte Magic1 = 0x32;
+        private const byte Magic2 = 0x66;
+        private const byte Magic3 = 0x34;
 
-		/// <summary>
-		/// Lets you set a callback providing object for type of the surrogate given to method that provided
-		/// this object on a serializer that provided this object.
-		/// </summary>
-		public class ObjectForSurrogateSetter<TSurrogate>
-		{
-			internal ObjectForSurrogateSetter(Serializer serializer)
-			{
-				this.serializer = serializer;
-			}
+        /// <summary>
+        /// Lets you set a callback providing object for type of the surrogate given to method that provided
+        /// this object on a serializer that provided this object.
+        /// </summary>
+        public class ObjectForSurrogateSetter<TSurrogate>
+        {
+            internal ObjectForSurrogateSetter(Serializer serializer)
+            {
+                this.serializer = serializer;
+            }
 
-			/// <summary>
-			/// Sets the callback proividing object for surrogate.
-			/// </summary>
-			/// <param name='callback'>
-			/// Callback proividing object for surrogate.
-			/// </param>
-			/// <typeparam name='TObject'>
-			/// The type of the object returned by callback.
-			/// </typeparam>
-			public void SetObject<TObject>(Func<TSurrogate, TObject> callback)
-			{
-				if(serializer.deserializationDone)
-				{
-					throw new InvalidOperationException("Cannot set objects for surrogates after any deserialization is done.");
-				}
+            /// <summary>
+            /// Sets the callback proividing object for surrogate.
+            /// </summary>
+            /// <param name='callback'>
+            /// Callback proividing object for surrogate.
+            /// </param>
+            /// <typeparam name='TObject'>
+            /// The type of the object returned by callback.
+            /// </typeparam>
+            public void SetObject<TObject>(Func<TSurrogate, TObject> callback) where TObject : class
+            {
+                if(serializer.deserializationDone)
+                {
+                    throw new InvalidOperationException("Cannot set objects for surrogates after any deserialization is done.");
+                }
                 serializer.objectsForSurrogates.AddOrReplace(typeof(TSurrogate), callback);
-			}
+            }
 
-			private readonly Serializer serializer;
-		}
+            private readonly Serializer serializer;
+        }
 
-		/// <summary>
-		/// Lets you set a callback providing surrogate for type of the object given to method that provided
-		/// this object on a serializer that provided this object.
-		/// </summary>
-		public class SurrogateForObjectSetter<TObject>
-		{
-			internal SurrogateForObjectSetter(Serializer serializer)
-			{
-				this.serializer = serializer;
-			}
+        /// <summary>
+        /// Lets you set a callback providing surrogate for type of the object given to method that provided
+        /// this object on a serializer that provided this object.
+        /// </summary>
+        public class SurrogateForObjectSetter<TObject>
+        {
+            internal SurrogateForObjectSetter(Serializer serializer)
+            {
+                this.serializer = serializer;
+            }
 
-			/// <summary>
-			/// Sets the callback providing surrogate for object.
-			/// </summary>
-			/// <param name='callback'>
-			/// Callback providing surrogate for object.
-			/// </param>
-			/// <typeparam name='TSurrogate'>
-			/// The type of the object returned by callback.
-			/// </typeparam>
-			public void SetSurrogate<TSurrogate>(Func<TObject, TSurrogate> callback)
-			{
-				if(serializer.serializationDone)
-				{
-					throw new InvalidOperationException("Cannot set surrogates for objects after any serialization is done.");
-				}
+            /// <summary>
+            /// Sets the callback providing surrogate for object.
+            /// </summary>
+            /// <param name='callback'>
+            /// Callback providing surrogate for object.
+            /// </param>
+            /// <typeparam name='TSurrogate'>
+            /// The type of the object returned by callback.
+            /// </typeparam>
+            public void SetSurrogate<TSurrogate>(Func<TObject, TSurrogate> callback) where TSurrogate : class
+            {
+                if(serializer.serializationDone)
+                {
+                    throw new InvalidOperationException("Cannot set surrogates for objects after any serialization is done.");
+                }
                 serializer.surrogatesForObjects.AddOrReplace(typeof(TObject), callback);
-			}
+            }
 
-			private readonly Serializer serializer;
-		}
+            private readonly Serializer serializer;
+        }
 
         /// <summary>
         /// Serializer that is attached to one stream and can do consecutive serializations that are aware of the data written
@@ -498,6 +498,6 @@ namespace Antmicro.Migrant
             private readonly Settings settings;
             private readonly Stream stream;
         }
-	}
+    }
 }
 

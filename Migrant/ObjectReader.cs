@@ -178,7 +178,13 @@ namespace Antmicro.Migrant
         {
             if(!readMethodsCache.ContainsKey(type))
             {
-                var rmg = new ReadMethodGenerator(type, stamper, treatCollectionAsUserObject);
+                var surrogateId = Helpers.GetSurrogateFactoryIdForType(type, objectsForSurrogates);
+                var rmg = new ReadMethodGenerator(type, stamper, treatCollectionAsUserObject, surrogateId,
+                    Helpers.GetFieldInfo<ObjectReader, InheritanceAwareList<Delegate>>(x => x.objectsForSurrogates),
+                    Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects),
+                    Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader),
+                    Helpers.GetFieldInfo<ObjectReader, Action<object>>(x => x.postDeserializationCallback),
+                    Helpers.GetFieldInfo<ObjectReader, List<Action>>(x => x.postDeserializationHooks));
                 readMethodsCache.Add(type, rmg.Method);
             }
         }
@@ -238,8 +244,11 @@ namespace Antmicro.Migrant
                 // it can happen if we deserialize delegate with empty invocation list
                 return;
             }
-            Helpers.SwapObjectWithSurrogate(ref obj, objectsForSurrogates);
-            deserializedObjects[objectId] = obj; // could be swapped
+            var factoryId = Helpers.GetSurrogateFactoryIdForType(obj.GetType(), objectsForSurrogates);
+            if(factoryId != -1)
+            {
+                deserializedObjects[objectId] = objectsForSurrogates.GetByIndex(factoryId).DynamicInvoke(new [] { obj });
+            }
             Helpers.InvokeAttribute(typeof(PostDeserializationAttribute), obj);
             var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostDeserializationAttribute), obj);
             if(postHook != null)
@@ -640,16 +649,16 @@ namespace Antmicro.Migrant
         private readonly bool useGeneratedDeserialization;
         private readonly bool treatCollectionAsUserObject;
         private ReferencePreservation referencePreservation;
-        internal AutoResizingList<object> deserializedObjects;
+        private AutoResizingList<object> deserializedObjects;
         private IDictionary<Type, DynamicMethod> readMethodsCache;
         private readonly Dictionary<Type, Func<Int32, object>> delegatesCache;
-        internal readonly PrimitiveReader reader;
+        private readonly PrimitiveReader reader;
         private readonly TypeStampReader stamper;
         private readonly List<Type> typeList;
         private readonly List<MethodInfo> methodList;
-        internal readonly Action<object> postDeserializationCallback;
-        internal readonly List<Action> postDeserializationHooks;
-        internal readonly InheritanceAwareList<Delegate> objectsForSurrogates;
+        private readonly Action<object> postDeserializationCallback;
+        private readonly List<Action> postDeserializationHooks;
+        private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
         private const int InitialCapacity = 128;
         private const string InternalErrorMessage = "Internal error: should not reach here.";
         private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
