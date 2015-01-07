@@ -120,6 +120,10 @@ namespace Antmicro.Migrant
         /// </param>
         public void WriteObject(object o)
         {
+            if(o == null || Helpers.CheckTransientNoCache(o.GetType()))
+            {
+                throw new ArgumentException("Cannot write a null object or a transient object.");
+            }
             objectsWrittenThisSession = 0;
             if(referencePreservation != ReferencePreservation.Preserve)
             {
