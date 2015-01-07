@@ -71,7 +71,7 @@ namespace Antmicro.Migrant.VersionTolerance
             var assemblyTypeStamp = new TypeStamp(type, true);
             if(assemblyTypeStamp.Classes.Count != streamTypeStamp.Classes.Count && !versionToleranceLevel.HasFlag(VersionToleranceLevel.InheritanceChainChange))
             {
-                throw new InvalidOperationException(string.Format("Class hierarchy changed. Expected {0} classes in a chain, but found {1}.", assemblyTypeStamp.Classes.Count, streamTypeStamp.Classes.Count));
+                throw new InvalidOperationException(string.Format("Class hierarchy changed. Expected {1} classes in a chain, but found {0}.", assemblyTypeStamp.Classes.Count, streamTypeStamp.Classes.Count));
             }
 
             var cmpResult = assemblyTypeStamp.CompareWith(streamTypeStamp);

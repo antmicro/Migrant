@@ -233,8 +233,8 @@ namespace Antmicro.Migrant.Generators
             }
             if(!treatCollectionAsUserObject)
             {
-                var collectionToken = new CollectionMetaToken(actualType);
-                if(collectionToken.IsCollection)
+                CollectionMetaToken collectionToken;
+                if(CollectionMetaToken.TryGetCollectionMetaToken(actualType, out collectionToken))
                 {
                     GenerateWriteCollection(collectionToken);
                     return true;

@@ -185,6 +185,54 @@ namespace Antmicro.Migrant.Tests
 
             Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
         }
+
+        [Test]
+        public void ShouldHandleBaseClassAddition()
+        {
+            var type1 = DynamicClass.Create("A").WithField<object>("f");
+            var type2 = DynamicClass.Create("A", DynamicClass.Create("X")).WithField<object>("f");
+
+            testsOnDomain1.CreateInstanceOnAppDomain(type1);
+            testsOnDomain1.SetValueOnAppDomain("f", new Object());
+
+            var bytes = testsOnDomain1.SerializeOnAppDomain();
+            testsOnDomain2.CreateInstanceOnAppDomain(type2);
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.InheritanceChainChange));
+
+            Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
+        }
+
+        [Test]
+        public void ShouldHandleBaseClassRemoval()
+        {
+            var type1 = DynamicClass.Create("A", DynamicClass.Create("X")).WithField<object>("f");
+            var type2 = DynamicClass.Create("A").WithField<object>("f");
+
+            testsOnDomain1.CreateInstanceOnAppDomain(type1);
+            testsOnDomain1.SetValueOnAppDomain("f", new Object());
+
+            var bytes = testsOnDomain1.SerializeOnAppDomain();
+            testsOnDomain2.CreateInstanceOnAppDomain(type2);
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.InheritanceChainChange));
+
+            Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
+        }
+
+        [Test]
+        public void ShouldHandleBaseClassChange()
+        {
+            var type1 = DynamicClass.Create("A", DynamicClass.Create("X")).WithField<object>("f");
+            var type2 = DynamicClass.Create("A", DynamicClass.Create("Y")).WithField<object>("f");
+
+            testsOnDomain1.CreateInstanceOnAppDomain(type1);
+            testsOnDomain1.SetValueOnAppDomain("f", new Object());
+
+            var bytes = testsOnDomain1.SerializeOnAppDomain();
+            testsOnDomain2.CreateInstanceOnAppDomain(type2);
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.TypeNameChanged));
+
+            Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
+        }
     }
 }
 

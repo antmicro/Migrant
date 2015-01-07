@@ -328,20 +328,20 @@ namespace Antmicro.Migrant
                 LoadAndVerifySpeciallySerializableAndVerify(speciallyDeserializable, reader);
                 return;
             }
-            var collectionMetaToken = new CollectionMetaToken(type);
-            if(collectionMetaToken.IsDictionary)
-            {
-                FillDictionary(collectionMetaToken, obj);
-                return;
-            }
-
-            if(!collectionMetaToken.IsCollection)
+            CollectionMetaToken token;
+            if (!CollectionMetaToken.TryGetCollectionMetaToken(type, out token))
             {
                 throw new InvalidOperationException(InternalErrorMessage);
             }
 
+            if(token.IsDictionary)
+            {
+                FillDictionary(token, obj);
+                return;
+            }
+
             // so we can assume it is ICollection<T> or ICollection
-            FillCollection(collectionMetaToken.FormalElementType, obj);
+            FillCollection(token.FormalElementType, obj);
         }
 
         private object ReadField(Type formalType)
@@ -638,7 +638,7 @@ namespace Antmicro.Migrant
             {
                 return CreationWay.Null;
             }
-            if(!treatCollectionAsUserObject && (new CollectionMetaToken(actualType)).IsCollection)
+            if(!treatCollectionAsUserObject && CollectionMetaToken.IsCollection(actualType))
             {
                 return CreationWay.DefaultCtor;
             }
