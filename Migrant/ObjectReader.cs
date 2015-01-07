@@ -253,6 +253,10 @@ namespace Antmicro.Migrant
             var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostDeserializationAttribute), obj);
             if(postHook != null)
             {
+                if(factoryId != -1)
+                {
+                    throw new InvalidOperationException(string.Format(ObjectReader.LateHookAndSurrogateError, actualType));
+                }
                 postDeserializationHooks.Add(postHook);
             }
             if(postDeserializationCallback != null)
@@ -644,6 +648,8 @@ namespace Antmicro.Migrant
             }
             return CreationWay.Uninitialized;
         }
+
+        internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
         private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;

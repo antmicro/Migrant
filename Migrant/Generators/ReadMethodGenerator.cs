@@ -178,7 +178,7 @@ namespace Antmicro.Migrant.Generators
             PushDeserializedObjectOntoStack(objectIdLocal);
             generator.Emit(OpCodes.Brfalse, finish);
 
-            var methods = Helpers.GetMethodsWithAttribute(typeof(PostDeserializationAttribute), formalType);
+            var methods = Helpers.GetMethodsWithAttribute(typeof(PostDeserializationAttribute), formalType).ToArray();
             foreach(var method in methods)
             {
                 PushDeserializedObjectOntoStack(objectIdLocal);
@@ -193,7 +193,12 @@ namespace Antmicro.Migrant.Generators
                 }
             }
 			
-            methods = Helpers.GetMethodsWithAttribute(typeof(LatePostDeserializationAttribute), formalType);
+            methods = Helpers.GetMethodsWithAttribute(typeof(LatePostDeserializationAttribute), formalType).ToArray();
+            if(objectForSurrogateId != -1 && methods.Length != 0)
+            {
+                throw new InvalidOperationException(
+                    string.Format(ObjectReader.LateHookAndSurrogateError, formalType));
+            }
             foreach(var method in methods)
             {
                 generator.Emit(OpCodes.Ldarg_0);
