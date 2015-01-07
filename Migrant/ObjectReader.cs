@@ -55,7 +55,7 @@ namespace Antmicro.Migrant
         /// </param>
         /// <param name='objectsForSurrogates'>
         /// Dictionary, containing callbacks that provide objects for given type of surrogate. Callbacks have to be of type Func&lt;T, object&gt; where
-        /// typeof(T) is type of surrogate.
+        /// typeof(T) is type of surrogate. They always have to be in sync with <paramref name="readMethods"/>.
         /// </param>
         /// <param name='postDeserializationCallback'>
         /// Callback which will be called after deserialization of every unique object. Deserialized
@@ -63,7 +63,8 @@ namespace Antmicro.Migrant
         /// </param>
         /// <param name='readMethods'>
         /// Cache in which generated read methods are stored and reused between instances of <see cref="Antmicro.Migrant.ObjectReader" />.
-        /// Can be null if one does not want to use the cache.
+        /// Can be null if one does not want to use the cache. For the life of the cache you always have to provide the same 
+        /// <paramref name="objectsForSurrogates"/>.
         /// </param>
         /// <param name='isGenerating'>
         /// True if read methods are to be generated, false if one wants to use reflection.

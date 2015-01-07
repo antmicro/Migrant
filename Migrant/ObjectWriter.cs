@@ -62,11 +62,12 @@ namespace Antmicro.Migrant
         /// </param>
         /// <param name='writeMethodCache'>
         /// Cache in which generated write methods are stored and reused between instances of <see cref="Antmicro.Migrant.ObjectWriter" />.
-        /// Can be null if one does not want to use the cache.
+        /// Can be null if one does not want to use the cache. Note for the life of the cache you always have to provide the same
+        /// <paramref name="surrogatesForObjects"/>.
         /// </param>
         /// <param name='surrogatesForObjects'>
         /// Dictionary, containing callbacks that provide surrogate for given type. Callbacks have to be of type Func&lt;T, object&gt; where
-        /// typeof(T) is given type.
+        /// typeof(T) is given type. Note that the list always have to be in sync with <paramref name="writeMethodCache"/>.
         /// </param>			
         /// <param name='isGenerating'>
         /// True if write methods are to be generated, false if one wants to use reflection.

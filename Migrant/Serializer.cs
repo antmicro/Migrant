@@ -360,7 +360,9 @@ namespace Antmicro.Migrant
             /// Sets the callback proividing object for surrogate.
             /// </summary>
             /// <param name='callback'>
-            /// Callback proividing object for surrogate.
+            /// Callback proividing object for surrogate. The callback can be null, in that case surrogate of the type
+            /// <typeparamref name="TSurrogate" /> will be deserialized as is even if there is an object for the more
+            /// general type.
             /// </param>
             /// <typeparam name='TObject'>
             /// The type of the object returned by callback.
@@ -392,7 +394,9 @@ namespace Antmicro.Migrant
             /// Sets the callback providing surrogate for object.
             /// </summary>
             /// <param name='callback'>
-            /// Callback providing surrogate for object.
+            /// Callback providing surrogate for object. The callback can be null, in that case object of the type
+            /// <typeparamref name="TObject" /> will be serialized as is even if there is a surrogate for the more
+            /// general type.
             /// </param>
             /// <typeparam name='TSurrogate'>
             /// The type of the object returned by callback.
