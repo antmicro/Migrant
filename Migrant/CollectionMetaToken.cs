@@ -35,8 +35,6 @@ namespace Antmicro.Migrant
 {
     internal class CollectionMetaToken
     {
-        public bool IsCollection { get; private set; }
-
         public bool IsDictionary { get; private set; }
 
         public bool IsGeneric { get; private set; }
@@ -112,7 +110,6 @@ namespace Antmicro.Migrant
         {
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IDictionary<,>), 
                 (iface, cmt) => {
-                    cmt.IsCollection = true;
                     cmt.IsDictionary = true;
                     cmt.IsGeneric = true;
                     var arguments = iface.GetGenericArguments();
@@ -122,7 +119,6 @@ namespace Antmicro.Migrant
                 }),
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(ICollection<>),
                 (iface, cmt) => {
-                    cmt.IsCollection = true;
                     cmt.IsGeneric = true;
                     cmt.IsGenericallyIterable = true;
                     cmt.FormalElementType = iface.GetGenericArguments()[0];
@@ -130,20 +126,17 @@ namespace Antmicro.Migrant
                 }),
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IEnumerable<>),
                 (iface, cmt) => {
-                    cmt.IsCollection = true;
                     cmt.IsGenericallyIterable = true;
                     cmt.FormalElementType = iface.GetGenericArguments()[0];
                     cmt.CountMethod = typeof(Enumerable).GetMethods().Single(m => m.GetParameters().Length == 1 && m.Name == "Count").MakeGenericMethod(iface.GetGenericArguments()[0]);
                 }),
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IDictionary),
                 (iface, cmt) => {
-                    cmt.IsCollection = true;
                     cmt.IsDictionary = true;
                     cmt.CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
                 }),
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(ICollection),                 
                 (iface, cmt) => {
-                    cmt.IsCollection = true;
                     cmt.CountMethod = typeof(ICollection).GetProperty("Count").GetGetMethod();
                 })
         };
