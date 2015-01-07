@@ -26,6 +26,7 @@
 */
 using System;
 using Antmicro.Migrant.Customization;
+using System.IO;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -54,6 +55,17 @@ namespace Antmicro.Migrant.Tests
         protected T SerializerClone<T>(T toClone)
         {
             return Serializer.DeepClone(toClone, GetSettings());
+        }
+
+        // pseudo, because cloned object can be/can contain different type due to surrogate operations
+        protected object PseudoClone(object obj, Action<Serializer> actionsBeforeSerilization)
+        {
+            var serializer = new Serializer(GetSettings());
+            actionsBeforeSerilization(serializer);
+            var mStream = new MemoryStream();
+            serializer.Serialize(obj, mStream);
+            mStream.Seek(0, SeekOrigin.Begin);
+            return serializer.Deserialize<object>(mStream);
         }
 
         private readonly bool useGeneratedSerializer;

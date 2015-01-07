@@ -36,12 +36,11 @@ namespace Antmicro.Migrant.Tests
 	[TestFixture(true, false)]
 	[TestFixture(false, true)]
 	[TestFixture(true, true)]
-	public class SurrogateTests
+    public class SurrogateTests : BaseTestWithSettings
 	{
-		public SurrogateTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+        public SurrogateTests(bool useGeneratedSerializer, bool useGeneratedDeserializer) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false)
 		{
-			this.useGeneratedDeserializer = useGeneratedDeserializer;
-			this.useGeneratedSerializer = useGeneratedSerializer;
+
 		}
 
 		[Test]
@@ -193,7 +192,7 @@ namespace Antmicro.Migrant.Tests
 		[Test]
 		public void ShouldThrowWhenSettingSurrogatesAfterSerialization()
 		{
-			var serializer = new Serializer(SettingsFromFields);
+            var serializer = new Serializer(GetSettings());
 			serializer.Serialize(new object(), Stream.Null);
 			Assert.Throws<InvalidOperationException>(() => serializer.ForObject<object>().SetSurrogate(x => new object()));
 		}
@@ -201,40 +200,13 @@ namespace Antmicro.Migrant.Tests
 		[Test]
 		public void ShouldThrowWhenSettingObjectForSurrogateAfterDeserialization()
 		{
-			var serializer = new Serializer(SettingsFromFields);
+            var serializer = new Serializer(GetSettings());
 			var stream = new MemoryStream();
 			serializer.Serialize(new object(), stream);
 			stream.Seek(0, SeekOrigin.Begin);
 			serializer.Deserialize<object>(stream);
 			Assert.Throws<InvalidOperationException>(() => serializer.ForSurrogate<object>().SetObject(x => new object()));
 		}
-
-		// pseudo, because cloned object can be/can contain different type due to surrogate operations
-		private object PseudoClone(object obj, Action<Serializer> actionsBeforeSerilization)
-		{
-			var serializer = new Serializer(SettingsFromFields);
-			actionsBeforeSerilization(serializer);
-			var mStream = new MemoryStream();
-			serializer.Serialize(obj, mStream);
-			mStream.Seek(0, SeekOrigin.Begin);
-			return serializer.Deserialize<object>(mStream);
-		}
-
-		private Customization.Settings SettingsFromFields
-		{
-			get
-			{
-				var settings = new Customization.Settings
-					(
-						useGeneratedSerializer ? Customization.Method.Generated : Customization.Method.Reflection,
-						useGeneratedDeserializer ? Customization.Method.Generated : Customization.Method.Reflection
-				);
-				return settings;
-			}
-		}
-
-		private bool useGeneratedSerializer;
-		private bool useGeneratedDeserializer;
 
 	}
 
