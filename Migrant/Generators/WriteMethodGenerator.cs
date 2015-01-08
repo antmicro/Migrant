@@ -40,7 +40,7 @@ namespace Antmicro.Migrant.Generators
 {
     internal class WriteMethodGenerator
     {
-        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, int typeId, FieldInfo surrogatesField, FieldInfo typeIdWrittenField,
+        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, FieldInfo typeIndicesField, FieldInfo surrogatesField, FieldInfo typeIdWrittenField,
             MethodInfo writeObjectMethod)
         {
             typeWeAreGeneratingFor = typeToGenerate;
@@ -85,8 +85,13 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Ldfld, typeIdWrittenField);
             var omitWriteIdLabel = generator.DefineLabel();
             generator.Emit(OpCodes.Brtrue, omitWriteIdLabel);
+
             generator.Emit(OpCodes.Ldarg_1);
-            generator.Emit(OpCodes.Ldc_I4, typeId);
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldfld, typeIndicesField);
+            generator.Emit(OpCodes.Ldtoken, typeToGenerate);
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
+            generator.Emit(OpCodes.Call, typeof(Dictionary<Type, int>).GetMethod("get_Item"));
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<PrimitiveWriter>(x => x.Write(0)));
 
             generator.MarkLabel(omitWriteIdLabel);

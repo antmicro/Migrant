@@ -235,23 +235,6 @@ namespace Antmicro.Migrant
             }
         }
 
-        internal int TouchAndWriteTypeId(Type type)
-        {
-            int typeId;
-            if(typeIndices.ContainsKey(type))
-            {
-                typeId = typeIndices[type];
-                writer.Write(typeId);
-                return typeId;
-            }
-            typeId = nextTypeId++;
-            typeIndices.Add(type, typeId);
-            writer.Write(typeId);
-            writer.Write(type.AssemblyQualifiedName);
-            Stamp(type);
-            return typeId;
-        }
-
         internal int TouchAndWriteMethodId(MethodInfo info)
         {
             int methodId;
@@ -285,6 +268,23 @@ namespace Antmicro.Migrant
         internal static bool HasSpecialWriteMethod(Type type)
         {
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
+        }
+
+        private int TouchAndWriteTypeId(Type type)
+        {
+            int typeId;
+            if(typeIndices.ContainsKey(type))
+            {
+                typeId = typeIndices[type];
+                writer.Write(typeId);
+                return typeId;
+            }
+            typeId = nextTypeId++;
+            typeIndices.Add(type, typeId);
+            writer.Write(typeId);
+            writer.Write(type.AssemblyQualifiedName);
+            Stamp(type);
+            return typeId;
         }
 
         private void PrepareForNextWrite()
@@ -650,7 +650,8 @@ namespace Antmicro.Migrant
                 return (pw, o) => WriteObjectUsingReflection(pw, o, typeId);
             }
 
-            var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId, typeId,
+            var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
+                Helpers.GetFieldInfo<ObjectWriter, Dictionary<Type, int>>(x => x.typeIndices),
                 Helpers.GetFieldInfo<ObjectWriter, InheritanceAwareList<Delegate>>(x => x.surrogatesForObjects),
                 Helpers.GetFieldInfo<ObjectWriter, bool>(x => x.typeIdJustWritten),
                 Helpers.GetMethodInfo<ObjectWriter>(x => x.InvokeCallbacksAndWriteObject(null))).Method;
