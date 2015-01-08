@@ -942,6 +942,35 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
+        [Test]
+        public void ShouldSerializeTwoTimesDifferentObjects()
+        {
+            var serializer = new Serializer(GetSettings());
+
+            using(var stream = new MemoryStream())
+            {
+                var obj = new SimpleContainer();
+                obj.First = new SimpleClass();
+                obj.Second = new SimpleClass();
+                serializer.Serialize(obj, stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                var copy = serializer.Deserialize<SimpleContainer>(stream);
+                Assert.IsNotNull(copy);
+            }
+
+            using(var stream = new MemoryStream())
+            {
+                var obj = new object[] { new SimpleClass(), new SimpleContainer(), new SimpleContainer() };
+                serializer.Serialize(obj, stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                var copy = serializer.Deserialize<object[]>(stream);
+                Assert.IsNotNull(copy);
+                Assert.IsInstanceOf<SimpleClass>(copy[0]);
+                Assert.IsInstanceOf<SimpleContainer>(copy[1]);
+                Assert.IsInstanceOf<SimpleContainer>(copy[2]);
+            }
+        }
+
         public class GenericClass<T>
         {
             [Transient]
