@@ -208,6 +208,27 @@ namespace Antmicro.Migrant.Tests
 			Assert.Throws<InvalidOperationException>(() => serializer.ForSurrogate<object>().SetObject(x => new object()));
 		}
 
+        [Test]
+        public void ShouldDoSurrogateObjectSwapTwoTimes()
+        {
+            var b = new SurrogateMockB();
+            var serializer = new Serializer(GetSettings());
+            serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(1));
+            serializer.ForSurrogate<SurrogateMockA>().SetObject(x => new SurrogateMockC());
+
+            for(var i = 0; i < 2; i++)
+            {
+                using(var stream = new MemoryStream())
+                {
+                    serializer.Serialize(b, stream);
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var pseudocopy = serializer.Deserialize<object>(stream);
+                    var c = pseudocopy as SurrogateMockC;
+                    Assert.IsNotNull(c);
+                }
+            }
+        }
+
 	}
 
 	public class SurrogateMockA
