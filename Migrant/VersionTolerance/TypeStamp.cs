@@ -89,7 +89,6 @@ namespace Antmicro.Migrant
                     if(matchedIndex == -1)
                     {
                         // we assume that this class is removed base one
-                        //result.Add (new TypeStampDiff (TypeStampDiffKind.BaseClassAdded, cl));
                         result.ClassesAdded.Add(cl.AssemblyQualifiedName);
                         currOffset++;
                         continue;
