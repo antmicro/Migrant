@@ -330,8 +330,8 @@ namespace Antmicro.Migrant.Tests
             Assert.IsEmpty(compareResult.FieldsChanged);
 
             Assert.AreEqual(1, compareResult.ClassesRenamed.Count);
-            Assert.IsTrue(compareResult.ClassesRenamed[0].Item1.StartsWith("A"));
-            Assert.IsTrue(compareResult.ClassesRenamed[0].Item2.StartsWith("B"));
+            Assert.IsTrue(compareResult.ClassesRenamed[0].Item1.FullName.StartsWith("A"));
+            Assert.IsTrue(compareResult.ClassesRenamed[0].Item2.FullName.StartsWith("B"));
         }
     }
 }

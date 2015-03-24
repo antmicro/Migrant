@@ -95,7 +95,7 @@ namespace Antmicro.Migrant
                         continue;
                     }
 
-                    result.ClassesRenamed.Add(Tuple.Create(previous.Classes[matchedIndex].AssemblyQualifiedName, cl.AssemblyQualifiedName));
+                    result.ClassesRenamed.Add(Tuple.Create(previous.Classes[matchedIndex], cl));
                 }
 
                 if(matchedIndex == Classes.IndexOf(cl))
@@ -152,7 +152,7 @@ namespace Antmicro.Migrant
 
             public List<FieldDescriptor> FieldsChanged { get; private set; }
 
-            public List<Tuple<string, string>> ClassesRenamed { get; private set; }
+            public List<Tuple<TypeDescriptor, TypeDescriptor>> ClassesRenamed { get; private set; }
 
             public List<string> ClassesAdded { get; private set; }
 
@@ -176,7 +176,7 @@ namespace Antmicro.Migrant
                 FieldsMoved = new Dictionary<FieldDescriptor, FieldDescriptor>();
                 FieldsChanged = new List<FieldDescriptor>();
 
-                ClassesRenamed = new List<Tuple<string, string>>();
+                ClassesRenamed = new List<Tuple<TypeDescriptor, TypeDescriptor>>();
                 ClassesAdded = new List<string>();
                 ClassesRemoved = new List<string>();
             }

@@ -82,16 +82,11 @@ namespace Antmicro.Migrant.VersionTolerance
                 {
                     foreach(var renamed in cmpResult.ClassesRenamed)
                     {
-                        var beforeStrippedVersion = Regex.Replace(renamed.Item1, "Version=[0-9.]*", string.Empty);
-                        var afterStrippedVersion = Regex.Replace(renamed.Item2, "Version=[0-9.]*", string.Empty);
-
-                        if(beforeStrippedVersion == afterStrippedVersion)
+                        if (renamed.Item1.FullName == renamed.Item2.FullName
+                            && renamed.Item1.AssemblyName == renamed.Item2.AssemblyName
+                            && renamed.Item1.AssemblyVersion != renamed.Item2.AssemblyVersion)
                         {
-                            // it means that the only difference was Version
-                            var afterVersion = Regex.Match(renamed.Item2, "Version=([0-9.])*").Groups[0].Value;
-                            var beforeVersion = Regex.Match(renamed.Item1, "Version=([0-9.])*").Groups[0].Value;
-
-                            throw new InvalidOperationException(string.Format("Assembly version changed from {0} to {1} for class {2}", beforeVersion, afterVersion, cmpResult.ClassesRenamed[0].Item1));
+                            throw new InvalidOperationException(string.Format("Assembly version changed from {0} to {1} for class {2}", renamed.Item1.AssemblyVersion, renamed.Item1.AssemblyVersion, renamed.Item1.FullName));
                         }
                     }
                 }
@@ -100,12 +95,9 @@ namespace Antmicro.Migrant.VersionTolerance
                 {
                     foreach(var renamed in cmpResult.ClassesRenamed)
                     {
-                        var beforeName = Regex.Match(renamed.Item1, "^([^,]*),").Groups[0].Value;
-                        var afterName = Regex.Match(renamed.Item2, "^([^,]*),").Groups[0].Value;
-
-                        if(beforeName != afterName)
+                        if(renamed.Item1.FullName != renamed.Item2.FullName)
                         {
-                            throw new InvalidOperationException(string.Format("Class name changed from {0} to {1}", beforeName, afterName));
+                            throw new InvalidOperationException(string.Format("Class name changed from {0} to {1}", renamed.Item1.FullName, renamed.Item2.FullName));
                         }
                     }
                 }
