@@ -76,26 +76,41 @@ namespace Antmicro.Migrant.VersionTolerance
 
             var cmpResult = assemblyTypeStamp.CompareWith(streamTypeStamp);
 
-            if(cmpResult.ClassesRenamed.Any() && !versionToleranceLevel.HasFlag(VersionToleranceLevel.TypeNameChanged))
+            if(cmpResult.ClassesRenamed.Any())
             {
-                if(versionToleranceLevel.HasFlag(VersionToleranceLevel.AssemblyVersionChanged))
+                if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.AssemblyVersionChanged))
                 {
                     foreach(var renamed in cmpResult.ClassesRenamed)
                     {
                         var beforeStrippedVersion = Regex.Replace(renamed.Item1, "Version=[0-9.]*", string.Empty);
                         var afterStrippedVersion = Regex.Replace(renamed.Item2, "Version=[0-9.]*", string.Empty);
 
-                        if(beforeStrippedVersion != afterStrippedVersion)
+                        if(beforeStrippedVersion == afterStrippedVersion)
                         {
-                            throw new InvalidOperationException(string.Format("Class name changed from {0} to {1}", cmpResult.ClassesRenamed[0].Item1, cmpResult.ClassesRenamed[0].Item2));
+                            // it means that the only difference was Version
+                            var afterVersion = Regex.Match(renamed.Item2, "Version=([0-9.])*").Groups[0].Value;
+                            var beforeVersion = Regex.Match(renamed.Item1, "Version=([0-9.])*").Groups[0].Value;
+
+                            throw new InvalidOperationException(string.Format("Assembly version changed from {0} to {1} for class {2}", beforeVersion, afterVersion, cmpResult.ClassesRenamed[0].Item1));
                         }
                     }
                 }
-                else
+
+                if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.TypeNameChanged))
                 {
-                    throw new InvalidOperationException(string.Format("Class name changed from {0} to {1}", cmpResult.ClassesRenamed[0].Item1, cmpResult.ClassesRenamed[0].Item2));
+                    foreach(var renamed in cmpResult.ClassesRenamed)
+                    {
+                        var beforeName = Regex.Match(renamed.Item1, "^([^,]*),").Groups[0].Value;
+                        var afterName = Regex.Match(renamed.Item2, "^([^,]*),").Groups[0].Value;
+
+                        if(beforeName != afterName)
+                        {
+                            throw new InvalidOperationException(string.Format("Class name changed from {0} to {1}", beforeName, afterName));
+                        }
+                    }
                 }
             }
+
             if(cmpResult.FieldsAdded.Any() && !versionToleranceLevel.HasFlag(VersionToleranceLevel.FieldAddition))
             {
                 throw new InvalidOperationException(string.Format("Field added: {0}.", cmpResult.FieldsAdded[0].Name));
