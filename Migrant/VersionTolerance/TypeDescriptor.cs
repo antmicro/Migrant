@@ -39,6 +39,10 @@ namespace Antmicro.Migrant
 
         public TypeDescriptor(Tuple<Type, IEnumerable<FieldInfo>> type) : this()
         {
+            AssemblyVersion = type.Item1.Assembly.GetName().Version;
+            FullName = type.Item1.FullName;
+            AssemblyName = type.Item1.Assembly.FullName;
+
             AssemblyQualifiedName = type.Item1.AssemblyQualifiedName;
             foreach(var field in type.Item2)
             {
@@ -121,6 +125,12 @@ namespace Antmicro.Migrant
 
             return true;
         }
+
+        public string AssemblyName { get; private set; }
+
+        public Version AssemblyVersion { get; private set; }
+
+        public string FullName { get; private set; }
 
         public string AssemblyQualifiedName { get; private set; }
 
