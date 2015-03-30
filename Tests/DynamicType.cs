@@ -31,47 +31,47 @@ using System.IO;
 namespace Antmicro.Migrant.Tests
 {
     [Serializable]
-    public class DynamicClass
+    public class DynamicType
     {
-        public static DynamicClass Create(string name, DynamicClass baseClass = null)
+        public static DynamicType CreateClass(string name, DynamicType baseClass = null)
         {
-            var result = new DynamicClass(ClassType.Class);
+            var result = new DynamicType(KindOfDynamicType.Class);
             result.name = name;
             result.baseClass = baseClass;
             return result;
         }
 
-        public static DynamicClass CreateStruct(string name)
+        public static DynamicType CreateStruct(string name)
         {
-            var result = new DynamicClass(ClassType.Struct);
+            var result = new DynamicType(KindOfDynamicType.Struct);
             result.name = name;
             result.baseClass = null;
             return result;
         }
 
-        public DynamicClass WithField(string name, Type type)
+        public DynamicType WithField(string name, Type type)
         {
             fields.Add(name, new FieldDescriptor { Type = type });
             return this;
         }
 
-        public DynamicClass WithField<T>(string name)
+        public DynamicType WithField<T>(string name)
         {
             return WithField(name, typeof(T));
         }
 
-        public DynamicClass WithTransientField(string name, Type type)
+        public DynamicType WithTransientField(string name, Type type)
         {
             fields.Add(name, new FieldDescriptor { Type = type, IsTransient = true });
             return this;
         }
 
-        public DynamicClass WithConstructorField<T>(string name)
+        public DynamicType WithConstructorField<T>(string name)
         {
             return WithConstructorField(name, typeof(T));
         }
 
-        public DynamicClass WithConstructorField(string name, Type type)
+        public DynamicType WithConstructorField(string name, Type type)
         {
             fields.Add(name, new FieldDescriptor { Type = type, IsConstructor = true });
             return this;
@@ -86,7 +86,7 @@ namespace Antmicro.Migrant.Tests
         private Type InnerCreateType(ModuleBuilder moduleBuilder)
         {
             TypeBuilder typeBuilder;
-            if(type == ClassType.Struct)
+            if(type == KindOfDynamicType.Struct)
             {
                 typeBuilder = moduleBuilder.DefineType(name,
                     TypeAttributes.Public |
@@ -138,15 +138,15 @@ namespace Antmicro.Migrant.Tests
             return Activator.CreateInstance(builtType);
         }
 
-        private DynamicClass(ClassType type)
+        private DynamicType(KindOfDynamicType type)
         {
             this.type = type;
         }
 
-        private ClassType type;
+        private KindOfDynamicType type;
         private string name;
         private Dictionary<string, FieldDescriptor> fields = new Dictionary<string, FieldDescriptor>();
-        private DynamicClass baseClass;
+        private DynamicType baseClass;
 
         private static readonly AssemblyName AssemblyName = new AssemblyName("TestAssembly");
         private const int counter = 0;
@@ -162,7 +162,7 @@ namespace Antmicro.Migrant.Tests
             public bool IsConstructor { get; set; }
         }
 
-        private enum ClassType
+        private enum KindOfDynamicType
         {
             Class,
             Struct

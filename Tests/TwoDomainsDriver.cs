@@ -39,7 +39,7 @@ namespace Antmicro.Migrant.Tests
 
         public TwoDomainsDriver()
         {
-            DynamicClass.prefix = AppDomain.CurrentDomain.FriendlyName;
+            DynamicType.prefix = AppDomain.CurrentDomain.FriendlyName;
         }
 
         public void PrepareDomains()
@@ -73,7 +73,7 @@ namespace Antmicro.Migrant.Tests
             Directory.Delete("domain2", true);
         }
 
-        public void CreateInstanceOnAppDomain(DynamicClass type)
+        public void CreateInstanceOnAppDomain(DynamicType type)
         {
             obj = type.Instantiate();
         }
@@ -132,7 +132,7 @@ namespace Antmicro.Migrant.Tests
             obj = deserializer.Deserialize<object>(stream);
         }
 
-        public bool SerializeAndDeserializeOnTwoAppDomains(DynamicClass domainOneType, DynamicClass domainTwoType, VersionToleranceLevel vtl)
+        public bool SerializeAndDeserializeOnTwoAppDomains(DynamicType domainOneType, DynamicType domainTwoType, VersionToleranceLevel vtl)
         {
             testsOnDomain1.CreateInstanceOnAppDomain(domainOneType);
             testsOnDomain2.CreateInstanceOnAppDomain(domainTwoType);

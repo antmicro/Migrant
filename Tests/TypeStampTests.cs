@@ -34,13 +34,13 @@ namespace Antmicro.Migrant.Tests
         [SetUp]
         public void SetUp()
         {
-            DynamicClass.prefix = null;
+            DynamicType.prefix = null;
         }
 
         [Test]
         public void ShouldFindNoDifferences()
         {
-            var obj = DynamicClass.Create("C", DynamicClass.Create("B", DynamicClass.Create("A"))).Instantiate();
+            var obj = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A"))).Instantiate();
             var stamp = new TypeStamp(obj.GetType());
 
             var compareResult = stamp.CompareWith(stamp);
@@ -50,8 +50,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectFieldInsertionSimple()
         {
-            var objPrev = DynamicClass.Create("A").Instantiate();
-            var objCurr = DynamicClass.Create("A").WithField("a", typeof(int)).Instantiate();
+            var objPrev = DynamicType.CreateClass("A").Instantiate();
+            var objCurr = DynamicType.CreateClass("A").WithField("a", typeof(int)).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -72,8 +72,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldNotDetectInsertionOfTransientField()
         {
-            var objPrev = DynamicClass.Create("A").Instantiate();
-            var objCurr = DynamicClass.Create("A").WithTransientField("a", typeof(int)).Instantiate();
+            var objPrev = DynamicType.CreateClass("A").Instantiate();
+            var objCurr = DynamicType.CreateClass("A").WithTransientField("a", typeof(int)).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -86,8 +86,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectInsertionOfOverridingField()
         {
-            var objPrev = DynamicClass.Create("A", DynamicClass.Create("Base").WithField("a", typeof(int))).Instantiate();
-            var objCurr = DynamicClass.Create("A", DynamicClass.Create("Base").WithField("a", typeof(int))).WithField("a", typeof(int)).Instantiate();
+            var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).Instantiate();
+            var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).WithField("a", typeof(int)).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -108,8 +108,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectFieldRemovalSimple()
         {
-            var objPrev = DynamicClass.Create("A").WithField("a", typeof(int)).Instantiate();
-            var objCurr = DynamicClass.Create("A").Instantiate();
+            var objPrev = DynamicType.CreateClass("A").WithField("a", typeof(int)).Instantiate();
+            var objCurr = DynamicType.CreateClass("A").Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -130,8 +130,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldNotDetectRemovalOfTransientField()
         {
-            var objPrev = DynamicClass.Create("A").WithTransientField("a", typeof(int)).Instantiate();
-            var objCurr = DynamicClass.Create("A").Instantiate();
+            var objPrev = DynamicType.CreateClass("A").WithTransientField("a", typeof(int)).Instantiate();
+            var objCurr = DynamicType.CreateClass("A").Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -144,8 +144,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectRemovalOfOverridingField()
         {
-            var objPrev = DynamicClass.Create("A", DynamicClass.Create("Base").WithField("a", typeof(int))).WithField("a", typeof(int)).Instantiate();
-            var objCurr = DynamicClass.Create("A", DynamicClass.Create("Base").WithField("a", typeof(int))).Instantiate();
+            var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).WithField("a", typeof(int)).Instantiate();
+            var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -166,8 +166,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectFieldMoveDownSimple()
         {
-            var objPrev = DynamicClass.Create("A", DynamicClass.Create("Base")).WithField("a", typeof(int)).Instantiate();
-            var objCurr = DynamicClass.Create("A", DynamicClass.Create("Base").WithField("a", typeof(int))).Instantiate();
+            var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).WithField("a", typeof(int)).Instantiate();
+            var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -188,8 +188,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectFieldMoveUpSimple()
         {
-            var objPrev = DynamicClass.Create("A", DynamicClass.Create("Base")).WithField("a", typeof(int)).Instantiate();
-            var objCurr = DynamicClass.Create("A", DynamicClass.Create("Base").WithField("a", typeof(int))).Instantiate();
+            var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).WithField("a", typeof(int)).Instantiate();
+            var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -210,8 +210,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectBaseClassInsertionSimple()
         {
-            var objPrev = DynamicClass.Create("A").Instantiate();
-            var objCurr = DynamicClass.Create("A", DynamicClass.Create("Base")).Instantiate();
+            var objPrev = DynamicType.CreateClass("A").Instantiate();
+            var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -232,13 +232,13 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectBaseClassInsertionComplex()
         {
-            var objPrev = DynamicClass.Create("B", DynamicClass.Create("A")).Instantiate();
-            var objCurr = DynamicClass.Create("B", 
-                DynamicClass.Create("W",
-                    DynamicClass.Create("Z",
-                        DynamicClass.Create("A",
-                            DynamicClass.Create("X",
-                                DynamicClass.Create("O")))))).Instantiate();
+            var objPrev = DynamicType.CreateClass("B", DynamicType.CreateClass("A")).Instantiate();
+            var objCurr = DynamicType.CreateClass("B", 
+                DynamicType.CreateClass("W",
+                    DynamicType.CreateClass("Z",
+                        DynamicType.CreateClass("A",
+                            DynamicType.CreateClass("X",
+                                DynamicType.CreateClass("O")))))).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -262,13 +262,13 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectBaseClassRemovalComplex()
         {
-            var objPrev = DynamicClass.Create("B", 
-                DynamicClass.Create("W",
-                    DynamicClass.Create("Z",
-                        DynamicClass.Create("A",
-                            DynamicClass.Create("X",
-                                DynamicClass.Create("O")))))).Instantiate();
-            var objCurr = DynamicClass.Create("B", DynamicClass.Create("A")).Instantiate();
+            var objPrev = DynamicType.CreateClass("B", 
+                DynamicType.CreateClass("W",
+                    DynamicType.CreateClass("Z",
+                        DynamicType.CreateClass("A",
+                            DynamicType.CreateClass("X",
+                                DynamicType.CreateClass("O")))))).Instantiate();
+            var objCurr = DynamicType.CreateClass("B", DynamicType.CreateClass("A")).Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -292,8 +292,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectBaseClassRemovalSimple()
         {
-            var objPrev = DynamicClass.Create("A", DynamicClass.Create("Base")).Instantiate();
-            var objCurr = DynamicClass.Create("A").Instantiate();
+            var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).Instantiate();
+            var objCurr = DynamicType.CreateClass("A").Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());
@@ -314,8 +314,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDetectClassRenameSimple()
         {
-            var objPrev = DynamicClass.Create("A").Instantiate();
-            var objCurr = DynamicClass.Create("B").Instantiate();
+            var objPrev = DynamicType.CreateClass("A").Instantiate();
+            var objCurr = DynamicType.CreateClass("B").Instantiate();
 
             var stampPrev = new TypeStamp(objPrev.GetType());
             var stampCurr = new TypeStamp(objCurr.GetType());

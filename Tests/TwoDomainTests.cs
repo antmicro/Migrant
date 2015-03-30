@@ -57,8 +57,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleFieldRemoval()
         {
-            var type1 = DynamicClass.Create("A").WithField<string>("a").WithField<int>("b").WithField<string>("c");
-            var type2 = DynamicClass.Create("A").WithField<string>("a").WithField<string>("c");
+            var type1 = DynamicType.CreateClass("A").WithField<string>("a").WithField<int>("b").WithField<string>("c");
+            var type2 = DynamicType.CreateClass("A").WithField<string>("a").WithField<string>("c");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("a", "testing");
@@ -77,8 +77,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleFieldRemovalInStruct()
         {
-            var type1 = DynamicClass.CreateStruct("A").WithField<string>("a").WithField<int>("b").WithField<string>("c");
-            var type2 = DynamicClass.CreateStruct("A").WithField<string>("a").WithField<string>("c");
+            var type1 = DynamicType.CreateStruct("A").WithField<string>("a").WithField<int>("b").WithField<string>("c");
+            var type2 = DynamicType.CreateStruct("A").WithField<string>("a").WithField<string>("c");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("a", "testing");
@@ -96,8 +96,8 @@ namespace Antmicro.Migrant.Tests
 
         public void ShouldHandleFieldInsertion()
         {
-            var type1 = DynamicClass.Create("A").WithField<string>("a").WithField<string>("c");
-            var type2 = DynamicClass.Create("A").WithField<string>("a").WithField<int>("b").WithField<string>("c");
+            var type1 = DynamicType.CreateClass("A").WithField<string>("a").WithField<string>("c");
+            var type2 = DynamicType.CreateClass("A").WithField<string>("a").WithField<int>("b").WithField<string>("c");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("a", "testing");
@@ -116,8 +116,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleFieldMoveDown()
         {
-            var type1 = DynamicClass.Create("A", DynamicClass.Create("Base")).WithField<string>("a").WithField<string>("b");
-            var type2 = DynamicClass.Create("A", DynamicClass.Create("Base").WithField<string>("a")).WithField<string>("b");
+            var type1 = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).WithField<string>("a").WithField<string>("b");
+            var type2 = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField<string>("a")).WithField<string>("b");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("a", "testing");
@@ -135,8 +135,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleFieldMoveUp()
         {
-            var type1 = DynamicClass.Create("A", DynamicClass.Create("Base").WithField<string>("a")).WithField<string>("b");
-            var type2 = DynamicClass.Create("A", DynamicClass.Create("Base")).WithField<string>("a").WithField<string>("b");
+            var type1 = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField<string>("a")).WithField<string>("b");
+            var type2 = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).WithField<string>("a").WithField<string>("b");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("a", "testing");
@@ -154,8 +154,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleNewFieldMoveDown()
         {
-            var type1 = DynamicClass.Create("C", DynamicClass.Create("B", DynamicClass.Create("A")).WithField<int>("f")).WithField<int>("f");
-            var type2 = DynamicClass.Create("C", DynamicClass.Create("B", DynamicClass.Create("A").WithField<int>("f")).WithField<int>("f"));
+            var type1 = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A")).WithField<int>("f")).WithField<int>("f");
+            var type2 = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A").WithField<int>("f")).WithField<int>("f"));
                         
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("B", "f", 200);
@@ -173,8 +173,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleNewFieldMoveUp()
         {
-            var type1 = DynamicClass.Create("C", DynamicClass.Create("B", DynamicClass.Create("A").WithField<int>("f")).WithField<int>("f"));
-            var type2 = DynamicClass.Create("C", DynamicClass.Create("B", DynamicClass.Create("A")).WithField<int>("f")).WithField<int>("f");
+            var type1 = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A").WithField<int>("f")).WithField<int>("f"));
+            var type2 = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A")).WithField<int>("f")).WithField<int>("f");
                         
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("A", "f", 100);
@@ -192,8 +192,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldDeserializeConstructorFields()
         {
-            var type1 = DynamicClass.Create("A").WithConstructorField<object>("f");
-            var type2 = DynamicClass.Create("A").WithConstructorField<object>("f");
+            var type1 = DynamicType.CreateClass("A").WithConstructorField<object>("f");
+            var type2 = DynamicType.CreateClass("A").WithConstructorField<object>("f");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("f", new Object());
@@ -208,8 +208,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleBaseClassAddition()
         {
-            var type1 = DynamicClass.Create("A").WithField<object>("f");
-            var type2 = DynamicClass.Create("A", DynamicClass.Create("X")).WithField<object>("f");
+            var type1 = DynamicType.CreateClass("A").WithField<object>("f");
+            var type2 = DynamicType.CreateClass("A", DynamicType.CreateClass("X")).WithField<object>("f");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("f", new Object());
@@ -224,8 +224,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleBaseClassRemoval()
         {
-            var type1 = DynamicClass.Create("A", DynamicClass.Create("X")).WithField<object>("f");
-            var type2 = DynamicClass.Create("A").WithField<object>("f");
+            var type1 = DynamicType.CreateClass("A", DynamicType.CreateClass("X")).WithField<object>("f");
+            var type2 = DynamicType.CreateClass("A").WithField<object>("f");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("f", new Object());
@@ -240,8 +240,8 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleBaseClassChange()
         {
-            var type1 = DynamicClass.Create("A", DynamicClass.Create("X")).WithField<object>("f");
-            var type2 = DynamicClass.Create("A", DynamicClass.Create("Y")).WithField<object>("f");
+            var type1 = DynamicType.CreateClass("A", DynamicType.CreateClass("X")).WithField<object>("f");
+            var type2 = DynamicType.CreateClass("A", DynamicType.CreateClass("Y")).WithField<object>("f");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("f", new Object());

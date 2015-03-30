@@ -73,8 +73,8 @@ namespace Antmicro.Migrant.Tests
                 VersionToleranceLevel.TypeNameChanged)] VersionToleranceLevel vtl)
         {
             var deserializationOK = SerializeAndDeserializeOnTwoAppDomains(
-                                        DynamicClass.Create("A"),
-                                        DynamicClass.Create("A", DynamicClass.Create("BaseA")),
+                                        DynamicType.CreateClass("A"),
+                                        DynamicType.CreateClass("A", DynamicType.CreateClass("BaseA")),
                                         vtl);
 
             Assert.IsTrue(vtl.HasFlag(VersionToleranceLevel.InheritanceChainChange) ? deserializationOK : !deserializationOK);
@@ -91,8 +91,8 @@ namespace Antmicro.Migrant.Tests
                 VersionToleranceLevel.TypeNameChanged)] VersionToleranceLevel vtl)
         {
             var deserializationOK = SerializeAndDeserializeOnTwoAppDomains(
-                                        DynamicClass.Create("A", DynamicClass.Create("BaseA")),
-                                        DynamicClass.Create("A"),
+                                        DynamicType.CreateClass("A", DynamicType.CreateClass("BaseA")),
+                                        DynamicType.CreateClass("A"),
                                         vtl);
 
             Assert.IsTrue(vtl.HasFlag(VersionToleranceLevel.InheritanceChainChange) ? deserializationOK : !deserializationOK);
@@ -109,8 +109,8 @@ namespace Antmicro.Migrant.Tests
                 VersionToleranceLevel.TypeNameChanged)] VersionToleranceLevel vtl)
         {
             var deserializationOK = SerializeAndDeserializeOnTwoAppDomains(
-                                        DynamicClass.Create("A", DynamicClass.Create("BaseA")),
-                                        DynamicClass.Create("A", DynamicClass.Create("NewBaseA")),
+                                        DynamicType.CreateClass("A", DynamicType.CreateClass("BaseA")),
+                                        DynamicType.CreateClass("A", DynamicType.CreateClass("NewBaseA")),
                                         vtl);
 
             Assert.IsTrue(
@@ -129,8 +129,8 @@ namespace Antmicro.Migrant.Tests
                 VersionToleranceLevel.TypeNameChanged)] VersionToleranceLevel vtl)
         {
             var deserializationOK = SerializeAndDeserializeOnTwoAppDomains(
-                                        DynamicClass.Create("A", DynamicClass.Create("BaseA").WithField("a", typeof(string))).WithField("b", typeof(int)),
-                                        DynamicClass.Create("A", DynamicClass.Create("BaseA")).WithField("a", typeof(string)).WithField("b", typeof(int)),
+                                        DynamicType.CreateClass("A", DynamicType.CreateClass("BaseA").WithField("a", typeof(string))).WithField("b", typeof(int)),
+                                        DynamicType.CreateClass("A", DynamicType.CreateClass("BaseA")).WithField("a", typeof(string)).WithField("b", typeof(int)),
                                         vtl);
 
             Assert.IsTrue(vtl.HasFlag(VersionToleranceLevel.FieldMove) ? deserializationOK : !deserializationOK);
@@ -146,8 +146,8 @@ namespace Antmicro.Migrant.Tests
                 VersionToleranceLevel.Guid,
                 VersionToleranceLevel.TypeNameChanged)] VersionToleranceLevel vtl)
         {
-            var type1 = DynamicClass.Create("A").WithField<int>("a");
-            var type2 = DynamicClass.Create("A").WithField<int>("a").WithField<float>("b");
+            var type1 = DynamicType.CreateClass("A").WithField<int>("a");
+            var type2 = DynamicType.CreateClass("A").WithField<int>("a").WithField<float>("b");
 
             var deserializationOK = SerializeAndDeserializeOnTwoAppDomains(type1, type2, vtl);
 
@@ -164,8 +164,8 @@ namespace Antmicro.Migrant.Tests
                 VersionToleranceLevel.Guid,
                 VersionToleranceLevel.TypeNameChanged)] VersionToleranceLevel vtl)
         {
-            var type1 = DynamicClass.Create("A").WithField<int>("a").WithField<float>("b");
-            var type2 = DynamicClass.Create("A").WithField<int>("a");
+            var type1 = DynamicType.CreateClass("A").WithField<int>("a").WithField<float>("b");
+            var type2 = DynamicType.CreateClass("A").WithField<int>("a");
             var deserializationOK = SerializeAndDeserializeOnTwoAppDomains(type1, type2, vtl);
 
             Assert.IsTrue(vtl.HasFlag(VersionToleranceLevel.FieldRemoval) ? deserializationOK : !deserializationOK);
@@ -181,7 +181,7 @@ namespace Antmicro.Migrant.Tests
                 VersionToleranceLevel.Guid,
                 VersionToleranceLevel.TypeNameChanged)] VersionToleranceLevel vtl)
         {
-            var type = DynamicClass.Create("A").WithField<int>("Field");
+            var type = DynamicType.CreateClass("A").WithField<int>("Field");
             var result = SerializeAndDeserializeOnTwoAppDomains(type, type, vtl);
 
             Assert.IsTrue(vtl.HasFlag(VersionToleranceLevel.Guid) ? !result : result);
