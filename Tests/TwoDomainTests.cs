@@ -75,6 +75,25 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
+        public void ShouldHandleFieldRemovalInStruct()
+        {
+            var type1 = DynamicClass.CreateStruct("A").WithField<string>("a").WithField<int>("b").WithField<string>("c");
+            var type2 = DynamicClass.CreateStruct("A").WithField<string>("a").WithField<string>("c");
+
+            testsOnDomain1.CreateInstanceOnAppDomain(type1);
+            testsOnDomain1.SetValueOnAppDomain("a", "testing");
+            testsOnDomain1.SetValueOnAppDomain("b", 147);
+            testsOnDomain1.SetValueOnAppDomain("c", "finish");
+
+            var bytes = testsOnDomain1.SerializeOnAppDomain();
+
+            testsOnDomain2.CreateInstanceOnAppDomain(type2);
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.FieldRemoval));
+
+            Assert.AreEqual("testing", testsOnDomain2.GetValueOnAppDomain("a"));
+            Assert.AreEqual("finish", testsOnDomain2.GetValueOnAppDomain("c"));
+        }
+
         public void ShouldHandleFieldInsertion()
         {
             var type1 = DynamicClass.Create("A").WithField<string>("a").WithField<string>("c");
