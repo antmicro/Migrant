@@ -701,10 +701,8 @@ namespace Antmicro.Migrant.Generators
             else
             {
                 // here we have struct
-                generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(OpCodes.Ldtoken, nullableActualType ?? formalType);
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, Type>((reader, type) => reader.ReadStamp(type)));
+                GenerateReadType();
+                generator.Emit(OpCodes.Pop);
                 var structLocal = generator.DeclareLocal(forcedFormalType);
                 GenerateUpdateStructFields(forcedFormalType, structLocal);
 
@@ -808,12 +806,21 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
         {			
-            var fields = StampHelpers.GetFieldsInSerializationOrder(formalType).ToList();
+            var fields = stampReader.GetFieldsToDeserialize(formalType);
             foreach(var field in fields)
             {
                 generator.Emit(OpCodes.Ldloca, structLocal);
-                GenerateReadField(field.FieldType, false);
-                generator.Emit(OpCodes.Stfld, field);
+                var type = field.TypeToOmit ?? field.Field.FieldType;
+                GenerateReadField(type, false);
+                if(field.Field != null)
+                {
+                    generator.Emit(OpCodes.Stfld, field.Field);
+                }
+                else
+                {
+                    generator.Emit(OpCodes.Pop); // struct local
+                    generator.Emit(OpCodes.Pop); // read value
+                }
             }
         }
 

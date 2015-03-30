@@ -384,8 +384,8 @@ namespace Antmicro.Migrant
             }
             var returnedObject = Activator.CreateInstance(formalType);
             // here we have a boxed struct which we put to struct reference list
-            ReadStamp(formalType);
-            UpdateFields(formalType, returnedObject);
+            var type = ReadType();
+            UpdateFields(type, returnedObject);
             // if this is subtype
             return returnedObject;
         }

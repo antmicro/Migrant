@@ -270,7 +270,7 @@ namespace Antmicro.Migrant
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
         }
 
-        private int TouchAndWriteTypeId(Type type)
+        internal int TouchAndWriteTypeId(Type type)
         {
             int typeId;
             if(typeIndices.ContainsKey(type))
@@ -614,7 +614,7 @@ namespace Antmicro.Migrant
             }
 
             // so we guess it is struct
-            Stamp(formalType);
+            TouchAndWriteTypeId(formalType);
             WriteObjectsFields(value, formalType);
         }
 

@@ -35,9 +35,17 @@ namespace Antmicro.Migrant.Tests
     {
         public static DynamicClass Create(string name, DynamicClass baseClass = null)
         {
-            var result = new DynamicClass();
+            var result = new DynamicClass(ClassType.Class);
             result.name = name;
             result.baseClass = baseClass;
+            return result;
+        }
+
+        public static DynamicClass CreateStruct(string name)
+        {
+            var result = new DynamicClass(ClassType.Struct);
+            result.name = name;
+            result.baseClass = null;
             return result;
         }
 
@@ -77,7 +85,21 @@ namespace Antmicro.Migrant.Tests
 
         private Type InnerCreateType(ModuleBuilder moduleBuilder)
         {
-            var typeBuilder = moduleBuilder.DefineType(name, TypeAttributes.Class | TypeAttributes.Public);
+            TypeBuilder typeBuilder;
+            if(type == ClassType.Struct)
+            {
+                typeBuilder = moduleBuilder.DefineType(name,
+                    TypeAttributes.Public |
+                    TypeAttributes.Sealed |
+                    TypeAttributes.SequentialLayout |
+                    TypeAttributes.Serializable,
+                    typeof(ValueType));
+            }
+            else
+            {
+                typeBuilder = moduleBuilder.DefineType(name, TypeAttributes.Class | TypeAttributes.Public);
+            }
+
             if(baseClass != null)
             {
                 typeBuilder.SetParent(baseClass.InnerCreateType(moduleBuilder));
@@ -116,10 +138,12 @@ namespace Antmicro.Migrant.Tests
             return Activator.CreateInstance(builtType);
         }
 
-        private DynamicClass()
+        private DynamicClass(ClassType type)
         {
+            this.type = type;
         }
 
+        private ClassType type;
         private string name;
         private Dictionary<string, FieldDescriptor> fields = new Dictionary<string, FieldDescriptor>();
         private DynamicClass baseClass;
@@ -136,6 +160,12 @@ namespace Antmicro.Migrant.Tests
             public bool IsTransient { get; set; }
 
             public bool IsConstructor { get; set; }
+        }
+
+        private enum ClassType
+        {
+            Class,
+            Struct
         }
     }
 }
