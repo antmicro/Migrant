@@ -175,7 +175,7 @@ namespace Antmicro.Migrant
             reader.Dispose();
         }
 
-        private void EnsureReadMethod(Type type)
+        private void TouchReadMethod(Type type)
         {
             if(!readMethodsCache.ContainsKey(type))
             {
@@ -213,7 +213,7 @@ namespace Antmicro.Migrant
 
         internal void ReadObjectInnerGenerated(Type actualType, int objectId)
         {
-            EnsureReadMethod(actualType);
+            TouchReadMethod(actualType);
             if(!delegatesCache.ContainsKey(actualType))
             {
                 var func = (Func<Int32, object>)readMethodsCache[actualType].CreateDelegate(typeof(Func<Int32, object>), this);
