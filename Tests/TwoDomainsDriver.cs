@@ -109,8 +109,26 @@ namespace Antmicro.Migrant.Tests
 
         public void SetValueOnAppDomain(string fieldName, object value)
         {
-            var field = obj.GetType().GetField(fieldName);
-            field.SetValue(obj, value);
+            SetValueOnAppDomainInner(obj, fieldName, value);
+        }
+
+        private object SetValueOnAppDomainInner(object o, string fieldName, object value)
+        {
+            var elements = fieldName.Split(new [] { '.' }, 2);
+            if(elements.Length == 1)
+            {
+                var field = o.GetType().GetField(fieldName);
+                field.SetValue(o, value);
+                return o;
+            }
+            else
+            {
+                var field = o.GetType().GetField(elements[0]);
+                var local = field.GetValue(o);
+                local = SetValueOnAppDomainInner(local, elements[1], value);
+                field.SetValue(o, local);
+                return o;
+            }
         }
 
         public object GetValueOnAppDomain(string className, string fieldName)
@@ -121,8 +139,16 @@ namespace Antmicro.Migrant.Tests
 
         public object GetValueOnAppDomain(string fieldName)
         {
-            var field = obj.GetType().GetField(fieldName);
-            return field.GetValue(obj);
+            var elements = fieldName.Split('.');
+            FieldInfo field = null;
+            object currentObject = null;
+            foreach(var element in elements)
+            {
+                currentObject = (currentObject == null) ? obj : field.GetValue(currentObject);
+                field = currentObject.GetType().GetField(element);
+            }
+
+            return field.GetValue(currentObject);
         }
 
         public void DeserializeOnAppDomain(byte[] data, Settings settings)
