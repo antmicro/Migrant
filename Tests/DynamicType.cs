@@ -27,6 +27,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -47,6 +48,12 @@ namespace Antmicro.Migrant.Tests
             result.name = name;
             result.baseClass = null;
             return result;
+        }
+
+        public DynamicType WithField(string name, DynamicType type)
+        {
+            fields.Add(name, new FieldDescriptor { DynamicType = type });
+            return this;
         }
 
         public DynamicType WithField(string name, Type type)
@@ -107,6 +114,11 @@ namespace Antmicro.Migrant.Tests
 
             foreach(var field in fields)
             {
+                if(field.Value.DynamicType != null && field.Value.Type == null)
+                {
+                    field.Value.Type = field.Value.DynamicType.InnerCreateType(moduleBuilder);
+                }
+
                 var fBldr = typeBuilder.DefineField(field.Key, field.Value.Type, FieldAttributes.Public);
                 if(field.Value.IsTransient)
                 {
@@ -135,7 +147,12 @@ namespace Antmicro.Migrant.Tests
                 File.Delete(Path.Combine(prefix, dllName));
                 File.Move(dllName, Path.Combine(prefix, dllName));
             }
-            return Activator.CreateInstance(builtType);
+            var result = Activator.CreateInstance(builtType);
+            foreach(var field in fields.Where(x => x.Value.DynamicType != null))
+            {
+                builtType.GetField(field.Key).SetValue(result, Activator.CreateInstance(field.Value.Type));
+            }
+            return result;
         }
 
         private DynamicType(KindOfDynamicType type)
@@ -155,6 +172,8 @@ namespace Antmicro.Migrant.Tests
         [Serializable]
         private class FieldDescriptor
         {
+            public DynamicType DynamicType { get; set; }
+
             public Type Type { get; set; }
 
             public bool IsTransient { get; set; }
