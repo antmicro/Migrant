@@ -342,19 +342,22 @@ namespace Antmicro.Migrant
                     CheckBuffer(sizeof(ulong));
                 }
                 ulong current = 0;
+                int bitsShift = (sizeof(ulong) - 1) * 8;
+                ulong mask = ((ulong)0xFF << bitsShift);
                 for(int i = 0; i < sizeof(ulong); ++i)
                 {
-                    current = value & 255;
+                    current = (value & mask) >> bitsShift;
                     valueToWrite = (byte)current;
                     if(buffered)
                     {
-                        buffer[currentBufferPosition + sizeof(ulong) - i - 1] = valueToWrite;
+                        buffer[currentBufferPosition + i] = valueToWrite;
                     }
                     else
                     {
                         stream.WriteByte(valueToWrite);
                     }
-                    value >>= 8;
+                    mask >>= 8;
+                    bitsShift -= 8;
                 }
 
                 if(buffered)
