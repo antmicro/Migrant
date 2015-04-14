@@ -103,6 +103,7 @@ namespace Antmicro.Migrant
             reader = new PrimitiveReader(stream, useBuffering);
             stamper = new TypeStampReader(reader, versionToleranceLevel);
             this.referencePreservation = referencePreservation;
+            this.versionToleranceLevel = versionToleranceLevel;
         }
 
         /// <summary>
@@ -652,6 +653,7 @@ namespace Antmicro.Migrant
 
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
+        private readonly VersionToleranceLevel versionToleranceLevel;
         private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;
         private readonly bool treatCollectionAsUserObject;
