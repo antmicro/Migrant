@@ -36,47 +36,30 @@ namespace Antmicro.Migrant.Customization
     public enum VersionToleranceLevel
     {
         /// <summary>
-        /// Both new and old layout have to have the same base classes, number of fields, with the same names and types.
-        /// </summary>
-        ExactLayout = 0,
-
-        /// <summary>
         /// Both serialized and serialized classes must have identical module ID (which is GUID). In other words
         /// that means these assemblies are from one and the same compilation.
         /// </summary>
-        Guid = 0x1,
+        AllowGuidChange = 0x1,
 
         /// <summary>
         /// The new layout can have more fields that the old one. They are initialized to their default values.
         /// </summary>
-        FieldAddition = 0x2,
+        AllowFieldAddition = 0x2,
 
         /// <summary>
         /// The new layout can have less fields that the old one. Values of the missing one are ignored.
         /// </summary>
-        FieldRemoval = 0x4,
-
-        /// <summary>
-        /// In the new layout fields can be moved to another classes in the inheritance hierarchy. 
-        /// Fields will be matched by names, therefore this flag cannot be used in classes with multiple fields with the same name.
-        /// </summary>
-        FieldMove = 0x8,
+        AllowFieldRemoval = 0x4,
 
         /// <summary>
         /// Classes inheritance hirarchy can vary between new and old layout, e.g., base class can be removed.
         /// </summary>
-        InheritanceChainChange = 0x10,
-
-        /// <summary>
-        /// Classes names can vary between new and old layout.
-        /// Fields will be matched by names, therefore this flag cannot be used in classes with multiple fields with the same name.
-        /// </summary>
-        TypeNameChanged = 0x20,
+        AllowInheritanceChainChange = 0x80,
 
         /// <summary>
         /// Assemblies version can very between new and old layout.
         /// </summary>
-        AssemblyVersionChanged = 0x40
+        AllowAssemblyVersionChange = 0x10
     }
 }
 

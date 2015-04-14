@@ -51,12 +51,12 @@
     <Compile Include="VersionToleranceTests.cs" />
     <Compile Include="BaseTestWithSettings.cs" />
     <Compile Include="BuiltinSurrogatesTests.cs" />
-    <Compile Include="TypeStampTests.cs" />
     <Compile Include="TwoDomainsDriver.cs" />
     <Compile Include="TwoDomainTests.cs" />
     <Compile Include="OpenStreamSerializationTests.cs" />
     <Compile Include="BlockingCollectionSerializationTests.cs" />
     <Compile Include="DynamicType.cs" />
+    <Compile Include="TypeDescriptorComparisonTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

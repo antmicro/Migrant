@@ -68,7 +68,7 @@ namespace Antmicro.Migrant.Tests
             var bytes = testsOnDomain1.SerializeOnAppDomain();
 
             testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.FieldRemoval));
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange(Antmicro.Migrant.Customization.VersionToleranceLevel.AllowFieldRemoval));
 
             Assert.AreEqual("testing", testsOnDomain2.GetValueOnAppDomain("a"));
             Assert.AreEqual("finish", testsOnDomain2.GetValueOnAppDomain("c"));
@@ -88,12 +88,33 @@ namespace Antmicro.Migrant.Tests
             var bytes = testsOnDomain1.SerializeOnAppDomain();
 
             testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.FieldRemoval));
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange(Antmicro.Migrant.Customization.VersionToleranceLevel.AllowFieldRemoval));
 
             Assert.AreEqual("testing", testsOnDomain2.GetValueOnAppDomain("a"));
             Assert.AreEqual("finish", testsOnDomain2.GetValueOnAppDomain("c"));
         }
 
+        [Test]
+        public void ShouldHandleFieldRemovalInStructNestedInClass()
+        {
+            var type1 = DynamicType.CreateClass("A").WithField<string>("a").WithField("b", DynamicType.CreateStruct("B").WithField<string>("a").WithField<int>("b"));
+            var type2 = DynamicType.CreateClass("A").WithField<string>("a").WithField("b", DynamicType.CreateStruct("B").WithField<int>("b"));
+
+            testsOnDomain1.CreateInstanceOnAppDomain(type1);
+            testsOnDomain1.SetValueOnAppDomain("a", "testing");
+            testsOnDomain1.SetValueOnAppDomain("b.a", "text");
+            testsOnDomain1.SetValueOnAppDomain("b.b", 147);
+
+            var bytes = testsOnDomain1.SerializeOnAppDomain();
+
+            testsOnDomain2.CreateInstanceOnAppDomain(type2);
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange(Antmicro.Migrant.Customization.VersionToleranceLevel.AllowFieldRemoval));
+
+            Assert.AreEqual("testing", testsOnDomain2.GetValueOnAppDomain("a"));
+            Assert.AreEqual(147, testsOnDomain2.GetValueOnAppDomain("b.b"));
+        }
+
+        [Test]
         public void ShouldHandleFieldInsertion()
         {
             var type1 = DynamicType.CreateClass("A").WithField<string>("a").WithField<string>("c");
@@ -106,87 +127,11 @@ namespace Antmicro.Migrant.Tests
             var bytes = testsOnDomain1.SerializeOnAppDomain();
 
             testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.FieldAddition));
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange(Antmicro.Migrant.Customization.VersionToleranceLevel.AllowFieldAddition));
 
             Assert.AreEqual("testing", testsOnDomain2.GetValueOnAppDomain("a"));
             Assert.AreEqual(0, testsOnDomain2.GetValueOnAppDomain("b"));
             Assert.AreEqual("finish", testsOnDomain2.GetValueOnAppDomain("c"));
-        }
-
-        [Test]
-        public void ShouldHandleFieldMoveDown()
-        {
-            var type1 = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).WithField<string>("a").WithField<string>("b");
-            var type2 = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField<string>("a")).WithField<string>("b");
-
-            testsOnDomain1.CreateInstanceOnAppDomain(type1);
-            testsOnDomain1.SetValueOnAppDomain("a", "testing");
-            testsOnDomain1.SetValueOnAppDomain("b", "finish");
-
-            var bytes = testsOnDomain1.SerializeOnAppDomain();
-
-            testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.FieldMove));
-
-            Assert.AreEqual("testing", testsOnDomain2.GetValueOnAppDomain("a"));
-            Assert.AreEqual("finish", testsOnDomain2.GetValueOnAppDomain("b"));
-        }
-
-        [Test]
-        public void ShouldHandleFieldMoveUp()
-        {
-            var type1 = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField<string>("a")).WithField<string>("b");
-            var type2 = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).WithField<string>("a").WithField<string>("b");
-
-            testsOnDomain1.CreateInstanceOnAppDomain(type1);
-            testsOnDomain1.SetValueOnAppDomain("a", "testing");
-            testsOnDomain1.SetValueOnAppDomain("b", "finish");
-
-            var bytes = testsOnDomain1.SerializeOnAppDomain();
-
-            testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.FieldMove));
-
-            Assert.AreEqual("testing", testsOnDomain2.GetValueOnAppDomain("a"));
-            Assert.AreEqual("finish", testsOnDomain2.GetValueOnAppDomain("b"));
-        }
-
-        [Test]
-        public void ShouldHandleNewFieldMoveDown()
-        {
-            var type1 = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A")).WithField<int>("f")).WithField<int>("f");
-            var type2 = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A").WithField<int>("f")).WithField<int>("f"));
-                        
-            testsOnDomain1.CreateInstanceOnAppDomain(type1);
-            testsOnDomain1.SetValueOnAppDomain("B", "f", 200);
-            testsOnDomain1.SetValueOnAppDomain("C", "f", 300);
-
-            var bytes = testsOnDomain1.SerializeOnAppDomain();
-
-            testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.FieldMove));
-
-            Assert.AreEqual(300, testsOnDomain2.GetValueOnAppDomain("A", "f"));
-            Assert.AreEqual(200, testsOnDomain2.GetValueOnAppDomain("B", "f"));
-        }
-
-        [Test]
-        public void ShouldHandleNewFieldMoveUp()
-        {
-            var type1 = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A").WithField<int>("f")).WithField<int>("f"));
-            var type2 = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A")).WithField<int>("f")).WithField<int>("f");
-                        
-            testsOnDomain1.CreateInstanceOnAppDomain(type1);
-            testsOnDomain1.SetValueOnAppDomain("A", "f", 100);
-            testsOnDomain1.SetValueOnAppDomain("B", "f", 200);
-
-            var bytes = testsOnDomain1.SerializeOnAppDomain();
-
-            testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.FieldMove));
-
-            Assert.AreEqual(100, testsOnDomain2.GetValueOnAppDomain("C", "f"));
-            Assert.AreEqual(200, testsOnDomain2.GetValueOnAppDomain("B", "f"));
         }
 
         [Test]
@@ -200,7 +145,7 @@ namespace Antmicro.Migrant.Tests
 
             var bytes = testsOnDomain1.SerializeOnAppDomain();
             testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings());
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange());
 
             Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
         }
@@ -216,7 +161,7 @@ namespace Antmicro.Migrant.Tests
 
             var bytes = testsOnDomain1.SerializeOnAppDomain();
             testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.InheritanceChainChange));
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange(Antmicro.Migrant.Customization.VersionToleranceLevel.AllowInheritanceChainChange));
 
             Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
         }
@@ -232,23 +177,7 @@ namespace Antmicro.Migrant.Tests
 
             var bytes = testsOnDomain1.SerializeOnAppDomain();
             testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.InheritanceChainChange));
-
-            Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
-        }
-
-        [Test]
-        public void ShouldHandleBaseClassChange()
-        {
-            var type1 = DynamicType.CreateClass("A", DynamicType.CreateClass("X")).WithField<object>("f");
-            var type2 = DynamicType.CreateClass("A", DynamicType.CreateClass("Y")).WithField<object>("f");
-
-            testsOnDomain1.CreateInstanceOnAppDomain(type1);
-            testsOnDomain1.SetValueOnAppDomain("f", new Object());
-
-            var bytes = testsOnDomain1.SerializeOnAppDomain();
-            testsOnDomain2.CreateInstanceOnAppDomain(type2);
-            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(Antmicro.Migrant.Customization.VersionToleranceLevel.TypeNameChanged));
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange(Antmicro.Migrant.Customization.VersionToleranceLevel.AllowInheritanceChainChange));
 
             Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
         }
