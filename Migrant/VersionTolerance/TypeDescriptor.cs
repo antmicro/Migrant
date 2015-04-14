@@ -26,60 +26,113 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using Antmicro.Migrant.VersionTolerance;
+using Antmicro.Migrant.Customization;
+using System.Text.RegularExpressions;
 
 namespace Antmicro.Migrant
 {
     internal class TypeDescriptor
     {
-        public TypeDescriptor()
+        public static TypeDescriptor ReadFromStream(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
         {
-            Fields = new List<FieldDescriptor>();
+            var result =  new TypeDescriptor();
+            result.ReadTypeStamp(reader);
+            result.versionToleranceLevel = versionToleranceLevel;
+
+            return result;
         }
 
-        public TypeDescriptor(Tuple<Type, IEnumerable<FieldInfo>> type) : this()
+        public static TypeDescriptor CreateFromType(Type type)
         {
-            AssemblyVersion = type.Item1.Assembly.GetName().Version;
-            FullName = type.Item1.FullName;
-            AssemblyName = type.Item1.Assembly.FullName;
-
-            AssemblyQualifiedName = type.Item1.AssemblyQualifiedName;
-            foreach(var field in type.Item2)
+            if(!cache.ContainsKey(type))
             {
-                Fields.Add(new FieldDescriptor(field));
+                cache[type] = new TypeDescriptor();
+                // we need to call init after creating empty `TypeDescriptor`
+                // and putting it in `Cache` as field types can refer to the
+                // cache
+                cache[type].Init(type);
+            }
+
+            return cache[type];
+        }
+
+        public void ReadStructureStampIfNeeded(ObjectReader reader)
+        {
+            if(StampHelpers.IsStampNeeded(this, reader.TreatCollectionAsUserObject))
+            {
+                ReadStructureStamp(reader);
             }
         }
 
-        public void WriteTo(PrimitiveWriter writer)
+        public void WriteStructureStampIfNeeded(ObjectWriter writer)
         {
-            writer.Write(AssemblyQualifiedName);
-            writer.Write(Fields.Count);
-            foreach(var fl in Fields)
+            if(StampHelpers.IsStampNeeded(type, writer.TreatCollectionAsUserObject))
             {
-                fl.WriteTo(writer);
+                WriteStructureStamp(writer);
             }
         }
 
-        public void ReadFrom(PrimitiveReader reader)
+        public void WriteTypeStamp(ObjectWriter writer)
         {
-            AssemblyQualifiedName = reader.ReadString();
-            var countNo = reader.ReadInt32();
-            for(var i = 0; i < countNo; i++)
+            writer.PrimitiveWriter.Write(AssemblyQualifiedName);
+            writer.PrimitiveWriter.Write(IsGenericType ? 1 : 0);
+            writer.PrimitiveWriter.Write(ModuleGUID);
+        }
+
+        public Type Resolve()
+        {
+            if(type != null)
             {
-                var field = new FieldDescriptor(AssemblyQualifiedName);
-                field.ReadFrom(reader);
-                Fields.Add(field);
+                return type;
             }
+
+            type = Type.GetType(typeAQN);
+            if(type == null)
+            {
+                throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", typeAQN));
+            }
+            fieldsToDeserialize = VerifyStructure();
+           
+            cache[type] = this;
+            return type;
+        }
+
+        /// <summary>
+        /// Resolves type and calculates which fields should be read and which ommited during deserialization.
+        /// </summary>
+        /// <returns>The collection of elements describing fields to deserialize or omit.</returns>
+        public IEnumerable<FieldInfoOrEntryToOmit> GetFieldsToDeserialize()
+        {
+            Resolve();
+            return fieldsToDeserialize;
+        }
+
+        public override int GetHashCode()
+        {
+            return AssemblyQualifiedName.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            var objAsTypeDescriptor = obj as TypeDescriptor;
+            if(objAsTypeDescriptor != null)
+            {
+                return AssemblyQualifiedName == objAsTypeDescriptor.AssemblyQualifiedName;
+            }
+
+            return obj != null && obj.Equals(this);
         }
 
         public TypeDescriptorCompareResult CompareWith(TypeDescriptor previous)
         {
             var result = new TypeDescriptorCompareResult();
 
-            var prevFields = previous.Fields.ToDictionary(x => x.Name, x => x);
-            foreach(var field in Fields.Where(f => !f.IsTransient))
+            var prevFields = previous.fields.ToDictionary(x => x.FullName, x => x);
+            foreach(var field in fields.Where(f => !f.IsTransient))
             {
                 FieldDescriptor currentField;
-                if(!prevFields.TryGetValue(field.Name, out currentField))
+                if(!prevFields.TryGetValue(field.FullName, out currentField))
                 {
                     // field is missing in the previous version of the class
                     result.FieldsAdded.Add(field);
@@ -94,7 +147,7 @@ namespace Antmicro.Migrant
 
                 // why do we remove a field from current ones? if some field is still left after our operation, then field addition occured
                 // we have to check that, cause it can be illegal from the version tolerance point of view
-                prevFields.Remove(field.Name);
+                prevFields.Remove(field.FullName);
             }
 
             // result should also contain transient fields, because some of them may
@@ -107,33 +160,142 @@ namespace Antmicro.Migrant
             return result;
         }
 
-        public bool HasSameLayout(TypeDescriptor td)
+        public TypeDescriptor GetGenericTypeDefinition()
         {
-            if(Fields.Count != td.Fields.Count)
+            if(type != null)
             {
-                return false;
+                var td = new TypeDescriptor();
+                td.Init(type);
+                return td.GetGenericTypeDefinition();
             }
 
-            for(var i = 0; i < Fields.Count; i++)
-            {
-                if(Fields[i].CompareWith(td.Fields[i]) != FieldDescriptor.CompareResult.Match)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            var index = typeAQN.IndexOf('[');
+            return new TypeDescriptor(string.Format("{0}, {1}", typeAQN.Substring(0, index), AssemblyName), 1);
         }
 
-        public string AssemblyName { get; private set; }
+        public bool IsGenericType { get { return type != null ? type.IsGenericType : isGenericType.Value; } }
 
-        public Version AssemblyVersion { get; private set; }
+        public Guid ModuleGUID { get { return type != null ? type.Module.ModuleVersionId : moduleGUID.Value; } }
 
-        public string FullName { get; private set; }
+        public string AssemblyName { get { return type != null ? type.Assembly.FullName : assemblyName; } }
 
-        public string AssemblyQualifiedName { get; private set; }
+        public Version AssemblyVersion { get { return type != null ? type.Assembly.GetName().Version : assemblyVersion; } }
 
-        public List<FieldDescriptor> Fields { get; private set; }
+        public string FullName { get { return type != null ? type.FullName : typeAQN.Substring(0, typeAQN.IndexOfAny(new [] { '[', ',' })); } }
+
+        public string AssemblyQualifiedName { get { return type != null ? type.AssemblyQualifiedName : typeAQN; } }
+
+        private TypeDescriptor()
+        {
+            fields = new List<FieldDescriptor>();
+        }
+
+        private TypeDescriptor(string typeAQN, int genericParameters) : this()
+        {
+            this.typeAQN = typeAQN;
+            isGenericType = (genericParameters > 0);
+        }
+
+        private void Init(Type t)
+        {
+            type = t;
+
+            assemblyName = type.Assembly.FullName;
+            assemblyVersion = GetVersionFromFullName(assemblyName);
+            typeAQN = type.AssemblyQualifiedName;
+            isGenericType = type.IsGenericType;
+            moduleGUID = type.Module.ModuleVersionId;
+
+            if(t.BaseType != null)
+            {
+                baseType = TypeDescriptor.CreateFromType(t.BaseType);
+            }
+
+            fieldsToDeserialize = new List<FieldInfoOrEntryToOmit>();
+            foreach(var field in StampHelpers.GetFieldsInSerializationOrder(type, true))
+            {
+                fieldsToDeserialize.Add(new FieldInfoOrEntryToOmit(field));
+                if(!field.IsTransient())
+                {
+                    fields.Add(new FieldDescriptor(field));
+                }
+            }
+        }
+
+        private IEnumerable<FieldInfoOrEntryToOmit> GetConstructorRecreatedFields()
+        {
+            Resolve();
+            return fieldsToDeserialize.Where(x => x.Field != null && x.Field.IsConstructor());
+        }
+
+        private List<FieldInfoOrEntryToOmit> VerifyStructure()
+        {
+            var result = new List<FieldInfoOrEntryToOmit>();
+
+            return result;
+        }
+
+        // this is just a temporary method that should be removed when assembly stamping is finished
+        private static Version GetVersionFromFullName(string assemblyName)
+        {
+            var match = Regex.Match(assemblyName, @"^.* Version=([0-9.]*), Culture=[A-Za-z0-9]*, PublicKeyToken=[0-9A-Za-z-]*$");
+            var versionString = match.Groups[1].Value;
+            return new Version(versionString);
+        }
+
+        private void ReadTypeStamp(ObjectReader reader)
+        {
+            typeAQN = reader.PrimitiveReader.ReadString();
+            assemblyName = typeAQN.Substring(typeAQN.IndexOfOccurence(',', -4) + 2);
+            assemblyVersion = GetVersionFromFullName(assemblyName);
+            isGenericType = (reader.PrimitiveReader.ReadInt32() > 0);
+            moduleGUID = reader.PrimitiveReader.ReadGuid();
+        }
+
+        private void ReadStructureStamp(ObjectReader reader)
+        {
+            baseType = reader.ReadType();
+            var noOfFields = reader.PrimitiveReader.ReadInt32();
+            for(int i = 0; i < noOfFields; i++)
+            {
+                var fieldDescriptor = new FieldDescriptor(this);
+                fieldDescriptor.ReadFrom(reader);
+                fields.Add(fieldDescriptor);
+            }
+        }
+
+        private void WriteStructureStamp(ObjectWriter writer)
+        {
+            if(baseType == null)
+            {
+                writer.PrimitiveWriter.Write(Consts.NullObjectId);
+            }
+            else
+            {
+                writer.TouchAndWriteTypeId(baseType.Resolve());
+            }
+
+            writer.PrimitiveWriter.Write(fields.Count);
+            foreach(var field in fields)
+            {
+                field.WriteTo(writer);
+            }
+        }
+
+        private string typeAQN;
+        private string assemblyName;
+        private bool? isGenericType;
+        private Guid? moduleGUID;
+        private Version assemblyVersion;
+
+        private Type type;
+        private TypeDescriptor baseType;
+        private VersionToleranceLevel versionToleranceLevel;
+
+        private readonly List<FieldDescriptor> fields;
+        private List<FieldInfoOrEntryToOmit> fieldsToDeserialize;
+
+        private static Dictionary<Type, TypeDescriptor> cache = new Dictionary<Type, TypeDescriptor>();
 
         public class TypeDescriptorCompareResult
         {
@@ -142,6 +304,8 @@ namespace Antmicro.Migrant
             public List<FieldDescriptor> FieldsAdded { get; private set; }
 
             public List<FieldDescriptor> FieldsChanged { get; private set; }
+
+            public bool Empty { get { return FieldsRemoved.Count == 0 && FieldsAdded.Count == 0 && FieldsChanged.Count == 0; } }
 
             public TypeDescriptorCompareResult()
             {

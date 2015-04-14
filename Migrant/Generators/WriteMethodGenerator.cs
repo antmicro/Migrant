@@ -91,7 +91,8 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Ldfld, typeIndicesField);
             generator.Emit(OpCodes.Ldtoken, typeToGenerate);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
-            generator.Emit(OpCodes.Call, typeof(Dictionary<Type, int>).GetMethod("get_Item"));
+            generator.Emit(OpCodes.Call, typeof(TypeDescriptor).GetMethod("CreateFromType"));
+            generator.Emit(OpCodes.Call, typeof(Dictionary<TypeDescriptor, int>).GetMethod("get_Item"));
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<PrimitiveWriter>(x => x.Write(0)));
 
             generator.MarkLabel(omitWriteIdLabel);
@@ -585,12 +586,6 @@ namespace Antmicro.Migrant.Generators
                 generator.MarkLabel(finish);
                 return;
             }
-
-            generator.Emit(OpCodes.Ldarg_0); // objectWriter
-            generator.Emit(OpCodes.Ldtoken, formalType);
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type)));
-            generator.Emit(OpCodes.Pop);
 
             if(formalType.IsGenericType && formalType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
             {

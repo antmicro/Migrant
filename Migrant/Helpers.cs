@@ -119,9 +119,14 @@ namespace Antmicro.Migrant
             return methodsToInvoke.Select(x => (Action)Delegate.CreateDelegate(typeof(Action), x.IsStatic ? null : o, x)).Aggregate((x, y) => (Action)Delegate.Combine(x, y));
         }
 
-        public static bool IsNotTransient(this FieldInfo fieldInfo)
+        public static bool IsTransient(this FieldInfo finfo)
         {
-            return (fieldInfo.Attributes & FieldAttributes.Literal) == 0 && !fieldInfo.IsDefined(typeof(TransientAttribute), false);
+            return finfo.IsDefined(typeof(TransientAttribute), false);
+        }
+
+        public static bool IsConstructor(this FieldInfo finfo)
+        {
+            return finfo.IsDefined(typeof(ConstructorAttribute), false);
         }
 
         public static int MaximalPadding
@@ -152,18 +157,28 @@ namespace Antmicro.Migrant
                 throw new ArgumentNullException("t");
             }  
 
-            var typesToScan = new List<Type>() { t };
-            while(t.BaseType != null)
-            {
-                typesToScan.Insert(0, t.BaseType);
-                t = t.BaseType;
-            }
-
             var result = new List<Tuple<Type, IEnumerable<FieldInfo>>>();
-            foreach(var type in typesToScan)
+            foreach(var type in t.GetInheritanceHierarchy())
             {
                 result.Add(Tuple.Create(type, GetAllFields(type, false)));
             }
+            return result;
+        }
+
+        public static IEnumerable<Type> GetInheritanceHierarchy(this Type t)
+        {
+            if(t == null)
+            {
+                throw new ArgumentNullException("t");
+            }  
+
+            var result = new List<Type> { t };
+            while(t.BaseType != null)
+            {
+                result.Insert(0, t.BaseType);
+                t = t.BaseType;
+            }
+
             return result;
         }
 
@@ -224,6 +239,11 @@ namespace Antmicro.Migrant
             return TypesWriteableByPrimitiveWriter.Contains(type);
         }
 
+        public static bool IsWriteableByPrimitiveWriter(TypeDescriptor type)
+        {
+            return TypesWriteableByPrimitiveWriter.Any(x => x.AssemblyQualifiedName == type.AssemblyQualifiedName);
+        }
+
         internal static bool CheckTransientNoCache(Type type)
         {
             return type.IsDefined(typeof(TransientAttribute), true);
@@ -256,6 +276,30 @@ namespace Antmicro.Migrant
                 i++;
             }
             return -1;
+        }
+
+        internal static int[] AllIndicesOf(this string str, char c)
+        {
+            var result = new List<int>();
+            var array = str.ToCharArray();
+            for(int i = 0; i < array.Length; i++)
+            {
+                if(array[i] == c)
+                {
+                    result.Add(i);
+                }
+            }
+            return result.ToArray();
+        }
+
+        internal static int IndexOfOccurence(this string str, char c, int occurence)
+        {
+            var indices = str.AllIndicesOf(c);
+            if ((occurence < 0 && indices.Length <= -occurence) || (occurence >= 0 && indices.Length < occurence))
+            {
+                return -1;
+            }
+            return occurence < 0 ? indices[indices.Length + occurence] : indices[occurence];
         }
 
         internal static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
@@ -291,4 +335,3 @@ namespace Antmicro.Migrant
         public const byte TickIndicator = 255;
     }
 }
-

@@ -98,12 +98,11 @@ namespace Antmicro.Migrant
             this.isGenerating = isGenerating;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             this.surrogatesForObjects = surrogatesForObjects;
-            typeIndices = new Dictionary<Type, int>();
+            typeIndices = new Dictionary<TypeDescriptor, int>();
             methodIndices = new Dictionary<MethodInfo, int>();
             this.preSerializationCallback = preSerializationCallback;
             this.postSerializationCallback = postSerializationCallback;
             writer = new PrimitiveWriter(stream, useBuffering);
-            typeStamper = new TypeStamper(writer, treatCollectionAsUserObject);
             inlineWritten = new HashSet<int>();
             this.referencePreservation = referencePreservation;
             if(referencePreservation == ReferencePreservation.Preserve)
@@ -264,11 +263,6 @@ namespace Antmicro.Migrant
             return methodId;
         }
 
-        internal void Stamp(Type type)
-        {
-            typeStamper.Stamp(type);
-        }
-
         internal static bool HasSpecialWriteMethod(Type type)
         {
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
@@ -276,18 +270,20 @@ namespace Antmicro.Migrant
 
         internal int TouchAndWriteTypeId(Type type)
         {
+            var typeDescriptor = TypeDescriptor.CreateFromType(type);
+
             int typeId;
-            if(typeIndices.ContainsKey(type))
+            if(typeIndices.ContainsKey(typeDescriptor))
             {
-                typeId = typeIndices[type];
+                typeId = typeIndices[typeDescriptor];
                 writer.Write(typeId);
                 return typeId;
             }
             typeId = nextTypeId++;
-            typeIndices.Add(type, typeId);
+            typeIndices.Add(typeDescriptor, typeId);
             writer.Write(typeId);
-            writer.Write(type.AssemblyQualifiedName);
-            Stamp(type);
+            typeDescriptor.WriteTypeStamp(this);
+            typeDescriptor.WriteStructureStampIfNeeded(this);
             return typeId;
         }
 
@@ -618,7 +614,6 @@ namespace Antmicro.Migrant
             }
 
             // so we guess it is struct
-            TouchAndWriteTypeId(formalType);
             WriteObjectsFields(value, formalType);
         }
 
@@ -632,7 +627,7 @@ namespace Antmicro.Migrant
             var typeId = -1;
             if(surrogateId == -1)
             {
-                typeId = typeIndices[actualType];
+                typeId = typeIndices[TypeDescriptor.CreateFromType(actualType)];
             }
 
             if(surrogateId == -1)
@@ -655,7 +650,7 @@ namespace Antmicro.Migrant
             }
 
             var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
-                Helpers.GetFieldInfo<ObjectWriter, Dictionary<Type, int>>(x => x.typeIndices),
+                Helpers.GetFieldInfo<ObjectWriter, Dictionary<TypeDescriptor, int>>(x => x.typeIndices),
                 Helpers.GetFieldInfo<ObjectWriter, InheritanceAwareList<Delegate>>(x => x.surrogatesForObjects),
                 Helpers.GetFieldInfo<ObjectWriter, bool>(x => x.typeIdJustWritten),
                 Helpers.GetMethodInfo<ObjectWriter>(x => x.InvokeCallbacksAndWriteObject(null))).Method;
@@ -722,7 +717,6 @@ namespace Antmicro.Migrant
         private int nextMethodId;
         private PrimitiveWriter writer;
         private bool typeIdJustWritten;
-        private readonly TypeStamper typeStamper;
         private readonly HashSet<int> inlineWritten;
         private readonly bool isGenerating;
         private readonly bool treatCollectionAsUserObject;
@@ -730,7 +724,7 @@ namespace Antmicro.Migrant
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
         private readonly List<Action> postSerializationHooks;
-        private readonly Dictionary<Type, int> typeIndices;
+        private readonly Dictionary<TypeDescriptor, int> typeIndices;
         private readonly Dictionary<MethodInfo, int> methodIndices;
         private readonly Dictionary<Type, bool> transientTypeCache;
         private readonly IDictionary<Type, DynamicMethod> writeMethodCache;

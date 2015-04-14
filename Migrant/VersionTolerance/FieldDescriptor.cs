@@ -25,49 +25,55 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Antmicro.Migrant
 {
     internal class FieldDescriptor
     {
-        public FieldDescriptor(string owningTypeAQN)
-        { 
-            OwningTypeAQN = owningTypeAQN;
+        public FieldDescriptor(TypeDescriptor declaringType)
+        {
+            DeclaringType = declaringType;
         }
 
         public FieldDescriptor(FieldInfo finfo)
         {
-            OwningTypeAQN = finfo.DeclaringType.AssemblyQualifiedName;
             Name = finfo.Name;
-            TypeAQN = finfo.FieldType.AssemblyQualifiedName;
-            IsTransient = finfo.GetCustomAttributes(false).Any(a => a is TransientAttribute);
-            IsConstructor = finfo.GetCustomAttributes(false).Any(a => a is ConstructorAttribute);
+
+            DeclaringType = TypeDescriptor.CreateFromType(finfo.DeclaringType);
+            FieldType = TypeDescriptor.CreateFromType(finfo.FieldType);
+            IsTransient = finfo.IsTransient();
+            IsConstructor = finfo.IsConstructor();
         }
 
-        public void WriteTo(PrimitiveWriter writer)
+        public FieldInfo Resolve()
         {
-            writer.Write(Name);
-            writer.Write(TypeAQN);
+            return DeclaringType.Resolve().GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
         }
 
-        public void ReadFrom(PrimitiveReader reader)
+        public void WriteTo(ObjectWriter writer)
         {
-            Name = reader.ReadString();
-            TypeAQN = reader.ReadString();
+            writer.TouchAndWriteTypeId(FieldType.Resolve());
+            writer.TouchAndWriteTypeId(DeclaringType.Resolve());
+            writer.PrimitiveWriter.Write(Name);
+        }
+
+        public void ReadFrom(ObjectReader reader)
+        {
+            FieldType = reader.ReadType();
+            DeclaringType = reader.ReadType();
+            Name = reader.PrimitiveReader.ReadString();
         }
 
         public CompareResult CompareWith(FieldDescriptor fd)
         {
             if(fd.Name == Name)
             {
-                if(fd.TypeAQN != TypeAQN)
+                if(!fd.FieldType.Equals(FieldType))
                 {
                     return CompareResult.FieldTypeChanged;
                 }
             }
-            else if(fd.TypeAQN == TypeAQN)
+            else if(fd.FieldType.Equals(FieldType))
             {
                 if(fd.Name != Name)
                 {
@@ -87,7 +93,7 @@ namespace Antmicro.Migrant
             var fd = obj as FieldDescriptor;
             if(fd != null)
             {
-                return fd.Name == Name && fd.TypeAQN == TypeAQN && fd.IsTransient == IsTransient && fd.OwningTypeAQN == OwningTypeAQN;
+                return fd.Name == Name && fd.FieldType.Equals(FieldType) && fd.IsTransient == IsTransient && fd.DeclaringType.Equals(DeclaringType);
             }
             return base.Equals(obj);
         }
@@ -97,9 +103,9 @@ namespace Antmicro.Migrant
             var hash = 17;
 
             hash = hash * 23 + (Name != null ? Name.GetHashCode() : 0);
-            hash = hash * 23 + (TypeAQN != null ? TypeAQN.GetHashCode() : 0);
+            hash = hash * 23 + (FieldType != null ? FieldType.GetHashCode() : 0);
             hash = hash * 23 + IsTransient.GetHashCode();
-            hash = hash * 23 + (OwningTypeAQN != null ? OwningTypeAQN.GetHashCode() : 0);
+            hash = hash * 23 + (DeclaringType != null ? DeclaringType.GetHashCode() : 0);
 
             return hash;
         }
@@ -110,9 +116,11 @@ namespace Antmicro.Migrant
 
         public string Name { get; private set; }
 
-        public string TypeAQN { get; private set; }
+        public string FullName { get { return string.Format("{0}:{1}", DeclaringType.FullName, Name); } }
 
-        public string OwningTypeAQN { get; set; }
+        public TypeDescriptor DeclaringType { get; private set; }
+
+        public TypeDescriptor FieldType { get; private set; }
 
         public enum CompareResult
         {
@@ -126,7 +134,7 @@ namespace Antmicro.Migrant
         {
             public bool Equals(FieldDescriptor x, FieldDescriptor y)
             {
-                return x.Name == y.Name && x.TypeAQN == y.TypeAQN;
+                return x.Name == y.Name && x.FieldType.Equals(y.FieldType);
             }
 
             public int GetHashCode(FieldDescriptor obj)
@@ -134,7 +142,7 @@ namespace Antmicro.Migrant
                 var hash = 17;
 
                 hash = hash * 23 + (obj.Name != null ? obj.Name.GetHashCode() : 0);
-                hash = hash * 23 + (obj.TypeAQN != null ? obj.TypeAQN.GetHashCode() : 0);
+                hash = hash * 23 + (obj.FieldType != null ? obj.FieldType.GetHashCode() : 0);
 
                 return hash;
             }

@@ -94,14 +94,13 @@ namespace Antmicro.Migrant
             this.objectsForSurrogates = objectsForSurrogates;
             this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
             this.useGeneratedDeserialization = isGenerating;
-            typeList = new List<Type>();
+            typeList = new List<TypeDescriptor>();
             methodList = new List<MethodInfo>();
             postDeserializationHooks = new List<Action>();
             this.postDeserializationCallback = postDeserializationCallback;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             delegatesCache = new Dictionary<Type, Func<int, object>>();
             reader = new PrimitiveReader(stream, useBuffering);
-            stamper = new TypeStampReader(reader, versionToleranceLevel);
             this.referencePreservation = referencePreservation;
             this.versionToleranceLevel = versionToleranceLevel;
         }
@@ -140,7 +139,7 @@ namespace Antmicro.Migrant
                 deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             }
             var firstObjectId = deserializedObjects.Count;
-            var type = ReadType();
+            var type = ReadType().Resolve();
             if(useGeneratedDeserialization)
             {
                 ReadObjectInnerGenerated(type, firstObjectId);
@@ -185,7 +184,7 @@ namespace Antmicro.Migrant
             if(!readMethodsCache.ContainsKey(type))
             {
                 var surrogateId = Helpers.GetSurrogateFactoryIdForType(type, objectsForSurrogates);
-                var rmg = new ReadMethodGenerator(type, stamper, treatCollectionAsUserObject, surrogateId,
+                var rmg = new ReadMethodGenerator(type, treatCollectionAsUserObject, surrogateId,
                     Helpers.GetFieldInfo<ObjectReader, InheritanceAwareList<Delegate>>(x => x.objectsForSurrogates),
                     Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects),
                     Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader),
@@ -273,7 +272,7 @@ namespace Antmicro.Migrant
 
         private void UpdateFields(Type actualType, object target)
         {
-            var fieldOrTypeInfos = stamper.GetFieldsToDeserialize(actualType);
+            var fieldOrTypeInfos = TypeDescriptor.CreateFromType(actualType).GetFieldsToDeserialize();
             foreach(var fieldOrTypeInfo in fieldOrTypeInfos)
             {
                 if(fieldOrTypeInfo.Field == null)
@@ -366,7 +365,7 @@ namespace Antmicro.Migrant
                 }
                 if(refId >= deserializedObjects.Count)
                 {
-                    ReadObjectInner(ReadType(), refId);
+                    ReadObjectInner(ReadType().Resolve(), refId);
                 }
                 return deserializedObjects[refId];
             }
@@ -389,8 +388,7 @@ namespace Antmicro.Migrant
             }
             var returnedObject = Activator.CreateInstance(formalType);
             // here we have a boxed struct which we put to struct reference list
-            var type = ReadType();
-            UpdateFields(type, returnedObject);
+            UpdateFields(formalType, returnedObject);
             // if this is subtype
             return returnedObject;
         }
@@ -557,7 +555,7 @@ namespace Antmicro.Migrant
             }
         }
 
-        internal Type ReadType()
+        internal TypeDescriptor ReadType()
         {
             var typeId = reader.ReadInt32();
             if(typeId == Consts.NullObjectId)
@@ -566,12 +564,7 @@ namespace Antmicro.Migrant
             }
             if(typeList.Count <= typeId)
             {
-                var typeName = reader.ReadString();
-                var type = Type.GetType(typeName);
-                if(type == null)
-                {
-                    throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", typeName));
-                }
+                var type = TypeDescriptor.ReadFromStream(this, versionToleranceLevel);
                 typeList.Add(type);
             }
             else
@@ -579,7 +572,9 @@ namespace Antmicro.Migrant
                 return typeList[typeId];
             }
             var readType = typeList[typeId];
-            ReadStamp(readType);
+            // we need to read stamp here (i.e., after adding to typeList)
+            // as other types from the stamp can reference this type
+            readType.ReadStructureStampIfNeeded(this);
             return readType;
         }
 
@@ -590,13 +585,13 @@ namespace Antmicro.Migrant
             var methodId = reader.ReadInt32();
             if(methodList.Count <= methodId)
             {
-                var type = ReadType();
+                var type = ReadType().Resolve();
                 var methodName = reader.ReadString();
                 var parametersCount = reader.ReadInt32();
                 var types = new Type[parametersCount];
                 for(int i = 0; i < types.Length; i++)
                 {
-                    types[i] = ReadType();
+                    types[i] = ReadType().Resolve();
                 }
 
                 result = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
@@ -608,11 +603,6 @@ namespace Antmicro.Migrant
             }
 
             return result;
-        }
-
-        internal void ReadStamp(Type type)
-        {
-            stamper.ReadStamp(type, treatCollectionAsUserObject);
         }
 
         private object TouchObject(Type actualType, int refId)
@@ -666,8 +656,7 @@ namespace Antmicro.Migrant
         private IDictionary<Type, DynamicMethod> readMethodsCache;
         private readonly Dictionary<Type, Func<Int32, object>> delegatesCache;
         private readonly PrimitiveReader reader;
-        private readonly TypeStampReader stamper;
-        private readonly List<Type> typeList;
+        private readonly List<TypeDescriptor> typeList;
         private readonly List<MethodInfo> methodList;
         private readonly Action<object> postDeserializationCallback;
         private readonly List<Action> postDeserializationHooks;

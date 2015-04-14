@@ -42,7 +42,7 @@ namespace Antmicro.Migrant.Generators
 {
     internal sealed class ReadMethodGenerator
     {
-        public ReadMethodGenerator(Type typeToGenerate, TypeStampReader stampReader, bool treatCollectionAsUserObject, int objectForSurrogateId,
+        public ReadMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int objectForSurrogateId,
             FieldInfo objectsForSurrogatesField, FieldInfo deserializedObjectsField, FieldInfo primitiveReaderField, FieldInfo postDeserializationCallbackField,
             FieldInfo postDeserializationHooksField)
         {
@@ -53,7 +53,6 @@ namespace Antmicro.Migrant.Generators
             this.postDeserializationHooksField = postDeserializationHooksField;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             this.objectsForSurrogatesField = objectsForSurrogatesField;
-            this.stampReader = stampReader;
             if(typeToGenerate.IsArray)
             {
                 dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, true);
@@ -701,11 +700,8 @@ namespace Antmicro.Migrant.Generators
             else
             {
                 // here we have struct
-                GenerateReadType();
-                generator.Emit(OpCodes.Pop);
                 var structLocal = generator.DeclareLocal(forcedFormalType);
                 GenerateUpdateStructFields(forcedFormalType, structLocal);
-
                 generator.Emit(OpCodes.Ldloc, structLocal);
                 if(forcedBoxIfValueType)
                 {
@@ -757,7 +753,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
         {
-            var fields = stampReader.GetFieldsToDeserialize(formalType);
+            var fields = TypeDescriptor.CreateFromType(formalType).GetFieldsToDeserialize();
             foreach(var fieldOrType in fields)
             {
                 if(fieldOrType.Field == null)
@@ -806,7 +802,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
         {			
-            var fields = stampReader.GetFieldsToDeserialize(formalType);
+            var fields = TypeDescriptor.CreateFromType(formalType).GetFieldsToDeserialize();
             foreach(var field in fields)
             {
                 generator.Emit(OpCodes.Ldloca, structLocal);
@@ -927,7 +923,8 @@ namespace Antmicro.Migrant.Generators
             // method returns read type (or null) 
 
             generator.Emit(OpCodes.Ldarg_0); // object reader
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, Type>(or => or.ReadType()));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, TypeDescriptor>(or => or.ReadType()));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<TypeDescriptor, Type>(td => td.Resolve()));
         }
 
         private void GenerateReadMethod()
@@ -955,7 +952,6 @@ namespace Antmicro.Migrant.Generators
         private readonly FieldInfo postDeserializationHooksField;
         private readonly bool treatCollectionAsUserObject;
         private readonly DynamicMethod dynamicMethod;
-        private readonly TypeStampReader stampReader;
         private const string InternalErrorMessage = "Internal error: should not reach here.";
         private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
         private static readonly Type[] ParameterTypes = new [] {
