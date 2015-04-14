@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2014 Antmicro <www.antmicro.com>
+  Copyright (c) 2015 Antmicro <www.antmicro.com>
 
   Authors:
    * Mateusz Holenko (mholenko@antmicro.com)

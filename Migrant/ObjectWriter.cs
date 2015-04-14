@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 - 2014 Antmicro <www.antmicro.com>
+  Copyright (c) 2012 - 2015 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
