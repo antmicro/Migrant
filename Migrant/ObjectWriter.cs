@@ -628,10 +628,6 @@ namespace Antmicro.Migrant
             if(surrogateId == -1)
             {
                 typeId = typeIndices[TypeDescriptor.CreateFromType(actualType)];
-            }
-
-            if(surrogateId == -1)
-            {
                 var specialWrite = LinkSpecialWrite(actualType, typeId);
                 if(specialWrite != null)
                 {
