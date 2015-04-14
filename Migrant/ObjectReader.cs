@@ -106,6 +106,10 @@ namespace Antmicro.Migrant
             this.versionToleranceLevel = versionToleranceLevel;
         }
 
+        public bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
+
+        public PrimitiveReader PrimitiveReader { get { return reader; } }
+
         /// <summary>
         /// Reads the object with the expected formal type <typeparam name='T'/>.
         /// </summary>
