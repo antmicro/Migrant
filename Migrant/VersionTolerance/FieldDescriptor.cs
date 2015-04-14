@@ -47,6 +47,7 @@ namespace Antmicro.Migrant
 
         public FieldInfo Resolve()
         {
+            FieldType.Resolve();
             return DeclaringType.Resolve().GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
         }
 
