@@ -75,9 +75,9 @@ namespace Antmicro.Migrant
 
         public void WriteTypeStamp(ObjectWriter writer)
         {
-            writer.PrimitiveWriter.Write(AssemblyQualifiedName);
+            TypeAssembly.WriteTo(writer);
+            writer.PrimitiveWriter.Write(FullName);
             writer.PrimitiveWriter.Write(IsGenericType ? 1 : 0);
-            writer.PrimitiveWriter.Write(ModuleGUID);
         }
 
         public Type Resolve()
@@ -87,10 +87,10 @@ namespace Antmicro.Migrant
                 return type;
             }
 
-            type = Type.GetType(typeAQN);
+            type = TypeAssembly.Resolve().GetType(fullName);
             if(type == null)
             {
-                throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", typeAQN));
+                throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", fullName));
             }
             fieldsToDeserialize = VerifyStructure();
            
@@ -164,47 +164,47 @@ namespace Antmicro.Migrant
         {
             if(type != null)
             {
-                var td = new TypeDescriptor();
-                td.Init(type);
-                return td.GetGenericTypeDefinition();
+                return new TypeDescriptor((type.IsGenericType ? type.GetGenericTypeDefinition() : type).FullName, TypeAssembly, 0);
             }
 
-            var index = typeAQN.IndexOf('[');
-            return new TypeDescriptor(string.Format("{0}, {1}", typeAQN.Substring(0, index), AssemblyName), 1);
+            var index = fullName.IndexOf('[');
+            return new TypeDescriptor(fullName.Substring(0, index), TypeAssembly, 1);
         }
 
         public bool IsGenericType { get { return type != null ? type.IsGenericType : isGenericType.Value; } }
 
-        public Guid ModuleGUID { get { return type != null ? type.Module.ModuleVersionId : moduleGUID.Value; } }
+        public string FullName { get { return type != null ? type.FullName : fullName; } }
 
-        public string AssemblyName { get { return type != null ? type.Assembly.FullName : assemblyName; } }
+        public string AssemblyQualifiedName
+        { 
+            get
+            { 
+                return type != null ? type.AssemblyQualifiedName : string.Format("{0}, {1}", FullName, TypeAssembly.FullName);
+            }
+        }
 
-        public Version AssemblyVersion { get { return type != null ? type.Assembly.GetName().Version : assemblyVersion; } }
-
-        public string FullName { get { return type != null ? type.FullName : typeAQN.Substring(0, typeAQN.IndexOfAny(new [] { '[', ',' })); } }
-
-        public string AssemblyQualifiedName { get { return type != null ? type.AssemblyQualifiedName : typeAQN; } }
+        public AssemblyDescriptor TypeAssembly { get; private set; }
 
         private TypeDescriptor()
         {
             fields = new List<FieldDescriptor>();
         }
 
-        private TypeDescriptor(string typeAQN, int genericParameters) : this()
+        // TODO: this should be removed
+        private TypeDescriptor(string fullName, AssemblyDescriptor assembly, int genericParameters) : this()
         {
-            this.typeAQN = typeAQN;
+            this.fullName = fullName;
             isGenericType = (genericParameters > 0);
+            TypeAssembly = assembly;
         }
 
         private void Init(Type t)
         {
             type = t;
 
-            assemblyName = type.Assembly.FullName;
-            assemblyVersion = GetVersionFromFullName(assemblyName);
-            typeAQN = type.AssemblyQualifiedName;
+            TypeAssembly = new AssemblyDescriptor(t.Assembly);
+            fullName = type.FullName;
             isGenericType = type.IsGenericType;
-            moduleGUID = type.Module.ModuleVersionId;
 
             if(t.BaseType != null)
             {
@@ -230,7 +230,7 @@ namespace Antmicro.Migrant
 
         private List<FieldInfoOrEntryToOmit> VerifyStructure()
         {
-            if(moduleGUID == type.Module.ModuleVersionId)
+            if(TypeAssembly.ModuleGUID == type.Module.ModuleVersionId)
             {
                 return StampHelpers.GetFieldsInSerializationOrder(type, true).Select(x => new FieldInfoOrEntryToOmit(x)).ToList();
             }
@@ -238,7 +238,7 @@ namespace Antmicro.Migrant
             if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowGuidChange))
             {
                 throw new InvalidOperationException(string.Format("The class was serialized with different module version id {0}, current one is {1}.",
-                    moduleGUID, type.Module.ModuleVersionId));
+                    TypeAssembly.ModuleGUID, type.Module.ModuleVersionId));
             }
 
             var result = new List<FieldInfoOrEntryToOmit>();
@@ -249,9 +249,9 @@ namespace Antmicro.Migrant
                 throw new InvalidOperationException(string.Format("Class hierarchy changed. Expected {1} as base class, but found {0}.", baseType, assemblyTypeDescriptor.baseType));
             }
 
-            if(assemblyTypeDescriptor.AssemblyVersion != AssemblyVersion && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
+            if(assemblyTypeDescriptor.TypeAssembly.Version != TypeAssembly.Version && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
             {
-                throw new InvalidOperationException(string.Format("Assembly version changed from {0} to {1} for class {2}", AssemblyVersion, assemblyTypeDescriptor.AssemblyVersion, FullName));
+                throw new InvalidOperationException(string.Format("Assembly version changed from {0} to {1} for class {2}", TypeAssembly.Version, assemblyTypeDescriptor.TypeAssembly.Version, FullName));
             }
 
             var cmpResult = assemblyTypeDescriptor.CompareWith(this);
@@ -300,11 +300,10 @@ namespace Antmicro.Migrant
 
         private void ReadTypeStamp(ObjectReader reader)
         {
-            typeAQN = reader.PrimitiveReader.ReadString();
-            assemblyName = typeAQN.Substring(typeAQN.IndexOfOccurence(',', -4) + 2);
-            assemblyVersion = GetVersionFromFullName(assemblyName);
+            TypeAssembly = new AssemblyDescriptor();
+            TypeAssembly.ReadFrom(reader);
+            fullName = reader.PrimitiveReader.ReadString();
             isGenericType = (reader.PrimitiveReader.ReadInt32() > 0);
-            moduleGUID = reader.PrimitiveReader.ReadGuid();
         }
 
         private void ReadStructureStamp(ObjectReader reader)
@@ -337,11 +336,8 @@ namespace Antmicro.Migrant
             }
         }
 
-        private string typeAQN;
-        private string assemblyName;
+        private string fullName;
         private bool? isGenericType;
-        private Guid? moduleGUID;
-        private Version assemblyVersion;
 
         private Type type;
         private TypeDescriptor baseType;
