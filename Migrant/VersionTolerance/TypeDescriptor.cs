@@ -75,7 +75,7 @@ namespace Antmicro.Migrant
 
         public void WriteTypeStamp(ObjectWriter writer)
         {
-            TypeAssembly.WriteTo(writer);
+            writer.TouchAndWriteAssemblyId(TypeAssembly);
             writer.PrimitiveWriter.Write(FullName);
             writer.PrimitiveWriter.Write(IsGenericType ? 1 : 0);
         }
@@ -202,7 +202,7 @@ namespace Antmicro.Migrant
         {
             type = t;
 
-            TypeAssembly = new AssemblyDescriptor(t.Assembly);
+            TypeAssembly = AssemblyDescriptor.CreateFromAssembly(t.Assembly);
             fullName = type.FullName;
             isGenericType = type.IsGenericType;
 
@@ -300,8 +300,7 @@ namespace Antmicro.Migrant
 
         private void ReadTypeStamp(ObjectReader reader)
         {
-            TypeAssembly = new AssemblyDescriptor();
-            TypeAssembly.ReadFrom(reader);
+            TypeAssembly = reader.ReadAssembly();
             fullName = reader.PrimitiveReader.ReadString();
             isGenericType = (reader.PrimitiveReader.ReadInt32() > 0);
         }

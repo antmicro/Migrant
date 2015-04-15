@@ -100,6 +100,7 @@ namespace Antmicro.Migrant
             this.surrogatesForObjects = surrogatesForObjects;
             typeIndices = new Dictionary<TypeDescriptor, int>();
             methodIndices = new Dictionary<MethodInfo, int>();
+            assemblyIndices = new Dictionary<AssemblyDescriptor, int>();
             this.preSerializationCallback = preSerializationCallback;
             this.postSerializationCallback = postSerializationCallback;
             writer = new PrimitiveWriter(stream, useBuffering);
@@ -285,6 +286,22 @@ namespace Antmicro.Migrant
             typeDescriptor.WriteTypeStamp(this);
             typeDescriptor.WriteStructureStampIfNeeded(this);
             return typeId;
+        }
+
+        internal int TouchAndWriteAssemblyId(AssemblyDescriptor assembly)
+        {
+            int assemblyId;
+            if(assemblyIndices.ContainsKey(assembly))
+            {
+                assemblyId = assemblyIndices[assembly];
+                writer.Write(assemblyId);
+                return assemblyId;
+            }
+            assemblyId = nextAssemblyId++;
+            assemblyIndices.Add(assembly, assemblyId);
+            writer.Write(assemblyId);
+            assembly.WriteTo(this);
+            return assemblyId;
         }
 
         private void PrepareForNextWrite()
@@ -711,6 +728,7 @@ namespace Antmicro.Migrant
         private int identifierCountPreviousSession;
         private int nextTypeId;
         private int nextMethodId;
+        private int nextAssemblyId;
         private PrimitiveWriter writer;
         private bool typeIdJustWritten;
         private readonly HashSet<int> inlineWritten;
@@ -722,6 +740,7 @@ namespace Antmicro.Migrant
         private readonly List<Action> postSerializationHooks;
         private readonly Dictionary<TypeDescriptor, int> typeIndices;
         private readonly Dictionary<MethodInfo, int> methodIndices;
+        private readonly Dictionary<AssemblyDescriptor, int> assemblyIndices;
         private readonly Dictionary<Type, bool> transientTypeCache;
         private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
         private readonly InheritanceAwareList<Delegate> surrogatesForObjects;

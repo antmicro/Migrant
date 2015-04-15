@@ -31,11 +31,40 @@ namespace Antmicro.Migrant.VersionTolerance
 {
     public class AssemblyDescriptor
     {
-        public AssemblyDescriptor()
+        public static AssemblyDescriptor ReadFromStream(ObjectReader reader)
+        {
+            var descriptor = new AssemblyDescriptor();
+            descriptor.ReadAssemblyStamp(reader);
+            return descriptor;
+        }
+
+        public static AssemblyDescriptor CreateFromAssembly(Assembly assembly)
+        {
+            return new AssemblyDescriptor(assembly);
+        }
+
+        public Assembly Resolve()
+        {
+            if(assembly == null)
+            {
+                var assemblyName = new AssemblyName(FullName);
+                assembly = Assembly.Load(assemblyName);
+            }
+
+            return assembly;
+        }
+
+        public void WriteTo(ObjectWriter writer)
+        {
+            WriteAssemblyStamp(writer);
+        }
+
+
+        private AssemblyDescriptor()
         {
         }
 
-        public AssemblyDescriptor(Assembly assembly)
+        private AssemblyDescriptor(Assembly assembly)
         {
             if(assembly.Modules.Count() != 1)
             {
@@ -52,7 +81,7 @@ namespace Antmicro.Migrant.VersionTolerance
             ModuleGUID = assembly.Modules.First().ModuleVersionId;
         }
 
-        public void WriteTo(ObjectWriter writer)
+        private void WriteAssemblyStamp(ObjectWriter writer)
         {
             writer.PrimitiveWriter.Write(Name);
             writer.PrimitiveWriter.Write(Version);
@@ -63,7 +92,7 @@ namespace Antmicro.Migrant.VersionTolerance
             writer.PrimitiveWriter.Write(ModuleGUID);
         }
 
-        public void ReadFrom(ObjectReader reader)
+        private void ReadAssemblyStamp(ObjectReader reader)
         {
             Name = reader.PrimitiveReader.ReadString();
             Version = reader.PrimitiveReader.ReadVersion();
@@ -84,21 +113,10 @@ namespace Antmicro.Migrant.VersionTolerance
             ModuleGUID = reader.PrimitiveReader.ReadGuid();
         }
 
-        public Assembly Resolve()
-        {
-            if(assembly == null)
-            {
-                var assemblyName = new AssemblyName(FullName);
-                assembly = Assembly.Load(assemblyName);
-            }
-
-            return assembly;
-        }
-
-        public Guid ModuleGUID { get; private set; } 
-
         // TODO: fix problem with culture name
         public string FullName { get { return string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, "neutral"/*Culture.Name*/, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); } }
+
+        public Guid ModuleGUID { get; private set; } 
 
         public string Name { get; private set; }
         public Version Version { get; private set; }
