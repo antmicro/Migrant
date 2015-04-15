@@ -51,8 +51,8 @@ namespace Antmicro.Migrant.Tests
             {
                 Assert.AreEqual(strings[0], reader.ReadObject<string>());
                 Assert.AreEqual(strings[1], reader.ReadObject<string>());
-                Assert.AreEqual(position, stream.Position);
             }
+            Assert.AreEqual(position, stream.Position);
 		}
 	}
 }
