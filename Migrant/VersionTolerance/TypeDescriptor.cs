@@ -67,7 +67,7 @@ namespace Antmicro.Migrant
 
         public void WriteStructureStampIfNeeded(ObjectWriter writer)
         {
-            if(StampHelpers.IsStampNeeded(type, writer.TreatCollectionAsUserObject))
+            if(StampHelpers.IsStampNeeded(this, writer.TreatCollectionAsUserObject))
             {
                 WriteStructureStamp(writer);
             }
