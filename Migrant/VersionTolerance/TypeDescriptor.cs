@@ -28,7 +28,6 @@ using System.Reflection;
 using System.Linq;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Customization;
-using System.Text.RegularExpressions;
 
 namespace Antmicro.Migrant
 {
@@ -77,7 +76,11 @@ namespace Antmicro.Migrant
         {
             writer.TouchAndWriteAssemblyId(TypeAssembly);
             writer.PrimitiveWriter.Write(FullName);
-            writer.PrimitiveWriter.Write(IsGenericType ? 1 : 0);
+            writer.PrimitiveWriter.Write(genericArguments.Count);
+            foreach (var genericArgument in genericArguments)
+            {
+                writer.TouchAndWriteTypeId(genericArgument.Resolve());
+            }
         }
 
         public Type Resolve()
@@ -92,6 +95,18 @@ namespace Antmicro.Migrant
             {
                 throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", fullName));
             }
+
+            if(type.IsGenericType)
+            {
+                var genericTypes = new Type[genericArguments.Count];
+                var counter = 0;
+                foreach(var genArg in genericArguments)
+                {
+                    genericTypes[counter++] = genArg.Resolve();
+                }
+                type = type.MakeGenericType(genericTypes);
+            }
+
             fieldsToDeserialize = VerifyStructure();
            
             cache[type] = this;
@@ -160,26 +175,42 @@ namespace Antmicro.Migrant
             return result;
         }
 
-        public TypeDescriptor GetGenericTypeDefinition()
-        {
-            if(type != null)
-            {
-                return new TypeDescriptor((type.IsGenericType ? type.GetGenericTypeDefinition() : type).FullName, TypeAssembly, 0);
-            }
+        public bool IsGenericType { get { return type != null ? type.IsGenericType : genericArguments.Any(); } }
 
-            var index = fullName.IndexOf('[');
-            return new TypeDescriptor(fullName.Substring(0, index), TypeAssembly, 1);
+        public string FullName 
+        { 
+            get 
+            { 
+                if(type != null)
+                {
+                    return (type.IsGenericType ? (type.GetGenericTypeDefinition()) : type).FullName;
+                }
+                return fullName; 
+            } 
         }
-
-        public bool IsGenericType { get { return type != null ? type.IsGenericType : isGenericType.Value; } }
-
-        public string FullName { get { return type != null ? type.FullName : fullName; } }
 
         public string AssemblyQualifiedName
         { 
             get
             { 
                 return type != null ? type.AssemblyQualifiedName : string.Format("{0}, {1}", FullName, TypeAssembly.FullName);
+            }
+        }
+
+        public string GenericAssemblyQualifiedName
+        {
+            get
+            {
+                if(type != null)
+                {
+                    if(type.IsGenericType)
+                    {
+                        return type.GetGenericTypeDefinition().AssemblyQualifiedName;
+                    }
+                    return type.AssemblyQualifiedName;
+                }
+
+                return string.Format("{0}, {1}", FullName, TypeAssembly.FullName);
             }
         }
 
@@ -190,21 +221,25 @@ namespace Antmicro.Migrant
             fields = new List<FieldDescriptor>();
         }
 
-        // TODO: this should be removed
-        private TypeDescriptor(string fullName, AssemblyDescriptor assembly, int genericParameters) : this()
-        {
-            this.fullName = fullName;
-            isGenericType = (genericParameters > 0);
-            TypeAssembly = assembly;
-        }
-
         private void Init(Type t)
         {
             type = t;
 
             TypeAssembly = AssemblyDescriptor.CreateFromAssembly(t.Assembly);
-            fullName = type.FullName;
-            isGenericType = type.IsGenericType;
+
+            genericArguments = new List<TypeDescriptor>();
+            if(type.IsGenericType)
+            {
+                fullName = type.GetGenericTypeDefinition().FullName;
+                foreach(var genericArgument in type.GetGenericArguments())
+                {
+                    genericArguments.Add(TypeDescriptor.CreateFromType(genericArgument));
+                }
+            }
+            else
+            {
+                fullName = type.FullName;
+            }
 
             if(t.BaseType != null)
             {
@@ -290,19 +325,16 @@ namespace Antmicro.Migrant
             return result;
         }
 
-        // this is just a temporary method that should be removed when assembly stamping is finished
-        private static Version GetVersionFromFullName(string assemblyName)
-        {
-            var match = Regex.Match(assemblyName, @"^.* Version=([0-9.]*), Culture=[A-Za-z0-9]*, PublicKeyToken=[0-9A-Za-z-]*$");
-            var versionString = match.Groups[1].Value;
-            return new Version(versionString);
-        }
-
         private void ReadTypeStamp(ObjectReader reader)
         {
             TypeAssembly = reader.ReadAssembly();
             fullName = reader.PrimitiveReader.ReadString();
-            isGenericType = (reader.PrimitiveReader.ReadInt32() > 0);
+            var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
+            genericArguments = new List<TypeDescriptor>();
+            for(int i = 0; i < genericArgumentsCount; i++)
+            {
+                genericArguments.Add(reader.ReadType());
+            }
         }
 
         private void ReadStructureStamp(ObjectReader reader)
@@ -336,7 +368,7 @@ namespace Antmicro.Migrant
         }
 
         private string fullName;
-        private bool? isGenericType;
+        private List<TypeDescriptor> genericArguments;
 
         private Type type;
         private TypeDescriptor baseType;

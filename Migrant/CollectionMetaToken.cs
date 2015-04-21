@@ -79,8 +79,7 @@ namespace Antmicro.Migrant
 
         public static bool IsCollection(TypeDescriptor actualType)
         {
-            var typeToCheck = actualType.IsGenericType ? actualType.GetGenericTypeDefinition() : actualType;
-            return SpeciallySerializedCollections.Any(x => x.AssemblyQualifiedName == typeToCheck.AssemblyQualifiedName);
+            return SpeciallySerializedCollections.Any(x => x.AssemblyQualifiedName == actualType.GenericAssemblyQualifiedName);
         }
 
         public static bool TryGetCollectionMetaToken(Type actualType, out CollectionMetaToken token)

@@ -94,7 +94,7 @@ namespace Antmicro.Migrant
             this.objectsForSurrogates = objectsForSurrogates;
             this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
             this.useGeneratedDeserialization = isGenerating;
-            typeList = new List<TypeDescriptor>();
+            typeCache = new Dictionary<int, TypeDescriptor>();
             methodList = new List<MethodInfo>();
             assembliesList = new List<AssemblyDescriptor>();
             postDeserializationHooks = new List<Action>();
@@ -563,20 +563,18 @@ namespace Antmicro.Migrant
             {
                 return null;
             }
-            if(typeList.Count <= typeId)
+            if(typeCache.Any() && typeCache.Keys.Max() >= typeId)
             {
-                var type = TypeDescriptor.ReadFromStream(this, versionToleranceLevel);
-                typeList.Add(type);
+                return typeCache[typeId];
             }
-            else
-            {
-                return typeList[typeId];
-            }
-            var readType = typeList[typeId];
+
+            var type = TypeDescriptor.ReadFromStream(this, versionToleranceLevel);
+            typeCache.Add(typeId, type);
+
             // we need to read stamp here (i.e., after adding to typeList)
             // as other types from the stamp can reference this type
-            readType.ReadStructureStampIfNeeded(this);
-            return readType;
+            type.ReadStructureStampIfNeeded(this);
+            return type;
         }
 
         internal MethodInfo ReadMethod()
@@ -672,7 +670,7 @@ namespace Antmicro.Migrant
         private IDictionary<Type, DynamicMethod> readMethodsCache;
         private readonly Dictionary<Type, Func<Int32, object>> delegatesCache;
         private readonly PrimitiveReader reader;
-        private readonly List<TypeDescriptor> typeList;
+        private readonly Dictionary<int, TypeDescriptor> typeCache;
         private readonly List<MethodInfo> methodList;
         private readonly List<AssemblyDescriptor> assembliesList;
         private readonly Action<object> postDeserializationCallback;
