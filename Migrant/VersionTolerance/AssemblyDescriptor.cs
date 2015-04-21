@@ -59,6 +59,20 @@ namespace Antmicro.Migrant.VersionTolerance
             WriteAssemblyStamp(writer);
         }
 
+        public override bool Equals(object obj)
+        {
+            var objAsAssemblyDescriptor = obj as AssemblyDescriptor;
+            if (objAsAssemblyDescriptor != null)
+            {
+                return FullName == objAsAssemblyDescriptor.FullName;
+            }
+            return obj != null && obj.Equals(this);
+        }
+
+        public override int GetHashCode()
+        {
+            return FullName.GetHashCode();
+        }
 
         private AssemblyDescriptor()
         {
