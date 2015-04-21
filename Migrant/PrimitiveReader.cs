@@ -131,7 +131,10 @@ namespace Antmicro.Migrant
                 CheckBuffer();
                 return buffer[currentBufferPosition++];
             }
-            return stream.ReadByteOrThrow();
+            var result = stream.ReadByteOrThrow();
+
+            currentBufferPosition++;
+            return result;
         }
 
         /// <summary>
@@ -395,6 +398,7 @@ namespace Antmicro.Migrant
                 bufferCreated = true;
                 var data = new byte[byteNumber];
                 stream.ReadOrThrow(data, 0, byteNumber);
+                currentBufferPosition += byteNumber;
                 return new ArraySegment<byte>(data);
             }
             bufferCreated = false;

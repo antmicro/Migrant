@@ -134,6 +134,7 @@ namespace Antmicro.Migrant
             }
             else
             {
+                currentBufferPosition++;
                 stream.WriteByte(value);
             }
         }
@@ -365,6 +366,10 @@ namespace Antmicro.Migrant
                 {
                     currentBufferPosition += sizeof(ulong);
                 }
+                else
+                {
+                    currentPosition += sizeof(ulong);
+                }
                 return;
             }
 #endif
@@ -381,6 +386,7 @@ namespace Antmicro.Migrant
                 }
                 else
                 {
+                    currentPosition++;
                     stream.WriteByte(valueToWrite);
                 }
                 value >>= 7;
@@ -392,6 +398,7 @@ namespace Antmicro.Migrant
             }
             else
             {
+                currentPosition++;
                 stream.WriteByte(valueToWrite);
             }
         }
@@ -410,6 +417,7 @@ namespace Antmicro.Migrant
             else
             {
                 stream.Write(data, offset, length);
+                currentPosition += length;
                 return;
             }
             if(length > BufferSize)
