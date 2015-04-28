@@ -25,7 +25,6 @@
 using System;
 using System.Reflection;
 using System.Linq;
-using System.Globalization;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
@@ -89,7 +88,7 @@ namespace Antmicro.Migrant.VersionTolerance
 
             Name = assembly.GetName().Name;
             Version = assembly.GetName().Version;
-            Culture = assembly.GetName().CultureInfo;
+            CultureName = assembly.GetName().CultureName;
             Token = assembly.GetName().GetPublicKeyToken();
 
             ModuleGUID = assembly.Modules.First().ModuleVersionId;
@@ -99,7 +98,7 @@ namespace Antmicro.Migrant.VersionTolerance
         {
             writer.PrimitiveWriter.Write(Name);
             writer.PrimitiveWriter.Write(Version);
-            writer.PrimitiveWriter.Write(Culture.Name);
+            writer.PrimitiveWriter.Write(CultureName);
             writer.PrimitiveWriter.Write((byte)Token.Length);
             writer.PrimitiveWriter.Write(Token);
 
@@ -110,7 +109,7 @@ namespace Antmicro.Migrant.VersionTolerance
         {
             Name = reader.PrimitiveReader.ReadString();
             Version = reader.PrimitiveReader.ReadVersion();
-            Culture = CultureInfo.GetCultureInfo(reader.PrimitiveReader.ReadString());
+            CultureName = reader.PrimitiveReader.ReadString();
             var tokenLength = reader.PrimitiveReader.ReadByte();
             switch(tokenLength)
             {
@@ -127,14 +126,13 @@ namespace Antmicro.Migrant.VersionTolerance
             ModuleGUID = reader.PrimitiveReader.ReadGuid();
         }
 
-        // TODO: fix problem with culture name
-        public string FullName { get { return string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, "neutral"/*Culture.Name*/, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); } }
+        public string FullName { get { return string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, CultureName, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); } }
 
         public Guid ModuleGUID { get; private set; } 
 
         public string Name { get; private set; }
         public Version Version { get; private set; }
-        public CultureInfo Culture { get; private set; }
+        public string CultureName { get; private set; }
         public byte[] Token { get; private set; }
 
         private Assembly assembly;
