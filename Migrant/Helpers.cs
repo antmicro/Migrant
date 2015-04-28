@@ -277,31 +277,7 @@ namespace Antmicro.Migrant
             }
             return -1;
         }
-
-        internal static int[] AllIndicesOf(this string str, char c)
-        {
-            var result = new List<int>();
-            var array = str.ToCharArray();
-            for(int i = 0; i < array.Length; i++)
-            {
-                if(array[i] == c)
-                {
-                    result.Add(i);
-                }
-            }
-            return result.ToArray();
-        }
-
-        internal static int IndexOfOccurence(this string str, char c, int occurence)
-        {
-            var indices = str.AllIndicesOf(c);
-            if ((occurence < 0 && indices.Length <= -occurence) || (occurence >= 0 && indices.Length < occurence))
-            {
-                return -1;
-            }
-            return occurence < 0 ? indices[indices.Length + occurence] : indices[occurence];
-        }
-
+        
         internal static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
         private static int GetBoundary(long currentPosition)
