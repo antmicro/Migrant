@@ -38,11 +38,6 @@ namespace Antmicro.Migrant.VersionTolerance
             return !Helpers.IsWriteableByPrimitiveWriter(type) && (!CollectionMetaToken.IsCollection(type) || treatCollectionAsUserObject);
         }
 
-        public static bool IsStampNeeded(Type type, bool treatCollectionAsUserObject)
-        {
-            return !Helpers.IsWriteableByPrimitiveWriter(type) && (!CollectionMetaToken.IsCollection(type) || treatCollectionAsUserObject);
-        }
-
         public static IEnumerable<FieldInfo> GetFieldsInSerializationOrder(Type type, bool withTransient = false)
         {
             return type.GetAllFields(true).Where(f => withTransient || !f.IsTransient()).OrderBy(f => f.Name);
