@@ -73,7 +73,7 @@ namespace Antmicro.Migrant.PerformanceTester
                         Console.WriteLine("{0,20}: {1}", test.GetType().Name, result);
                         if(options.OutputFile != null)
                         {
-                            File.AppendAllText(options.OutputFile, string.Format("{0}-{1}-{2}-{3},{4},{5}{6}", serializerType, test.GetType().Name, testType, options.Id, result.Average, result.StandardDeviation, Environment.NewLine));
+                            File.AppendAllText(options.OutputFile, string.Format("{0}-{1}-{2}-{3};{4};{5}{6}", serializerType, test.GetType().Name, testType, options.Id, result.Average, result.StandardDeviation, Environment.NewLine));
                         }
                     }
                     Console.WriteLine("");
