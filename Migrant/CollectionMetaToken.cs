@@ -79,7 +79,7 @@ namespace Antmicro.Migrant
 
         public static bool IsCollection(TypeDescriptor actualType)
         {
-            return SpeciallySerializedCollections.Any(x => x.AssemblyQualifiedName == actualType.GenericAssemblyQualifiedName);
+            return SpeciallySerializedCollectionsAQNs.Contains(actualType.GenericAssemblyQualifiedName);
         }
 
         public static bool TryGetCollectionMetaToken(Type actualType, out CollectionMetaToken token)
@@ -96,7 +96,7 @@ namespace Antmicro.Migrant
 
         static CollectionMetaToken()
         {
-            SpeciallySerializedCollections = new HashSet<Type>(new [] {
+            var speciallySerializedTypes = new [] {
                 typeof(List<>),
                 typeof(ReadOnlyCollection<>),
                 typeof(Dictionary<,>),
@@ -105,11 +105,17 @@ namespace Antmicro.Migrant
                 typeof(Stack<>),
                 typeof(BlockingCollection<>),
                 typeof(Hashtable)
-            });
+            };
+            SpeciallySerializedCollections = new HashSet<Type>(speciallySerializedTypes);
             SpeciallySerializedCollections.TrimExcess();
+
+            SpeciallySerializedCollectionsAQNs = new HashSet<string>(speciallySerializedTypes.Select(x => x.AssemblyQualifiedName));
+            SpeciallySerializedCollectionsAQNs.TrimExcess();
         }
 
         private static readonly HashSet<Type> SpeciallySerializedCollections;
+        // this set is generated automatically from `SpeciallySerializedCollections` collection in order to speed up lookups based on `TypeDescriptor`
+        private static readonly HashSet<string> SpeciallySerializedCollectionsAQNs;
 
         private static readonly Tuple<Type, Action<Type, CollectionMetaToken>>[] CollectionPriorities = 
         {
