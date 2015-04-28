@@ -193,7 +193,11 @@ namespace Antmicro.Migrant
         { 
             get
             { 
-                return type != null ? type.AssemblyQualifiedName : string.Format("{0}, {1}", FullName, TypeAssembly.FullName);
+                if (assemblyQualifiedName == null)
+                {
+                    assemblyQualifiedName = type != null ? type.AssemblyQualifiedName : string.Format("{0}, {1}", FullName, TypeAssembly.FullName);
+                }
+                return assemblyQualifiedName;
             }
         }
 
@@ -368,6 +372,7 @@ namespace Antmicro.Migrant
         }
 
         private string fullName;
+        private string assemblyQualifiedName;
         private List<TypeDescriptor> genericArguments;
 
         private Type type;
