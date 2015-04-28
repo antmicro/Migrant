@@ -143,43 +143,7 @@ namespace Antmicro.Migrant
             {
                 return Enumerable.Empty<FieldInfo>();
             }
-            if(recursive)
-            {
-                return t.GetFields(DefaultBindingFlags).Union(GetAllFields(t.BaseType));
-            }
-            return t.GetFields(DefaultBindingFlags);
-        }
-
-        public static IEnumerable<Tuple<Type, IEnumerable<FieldInfo>>> GetAllFieldsStructurized(this Type t)
-        {
-            if(t == null)
-            {
-                throw new ArgumentNullException("t");
-            }  
-
-            var result = new List<Tuple<Type, IEnumerable<FieldInfo>>>();
-            foreach(var type in t.GetInheritanceHierarchy())
-            {
-                result.Add(Tuple.Create(type, GetAllFields(type, false)));
-            }
-            return result;
-        }
-
-        public static IEnumerable<Type> GetInheritanceHierarchy(this Type t)
-        {
-            if(t == null)
-            {
-                throw new ArgumentNullException("t");
-            }  
-
-            var result = new List<Type> { t };
-            while(t.BaseType != null)
-            {
-                result.Insert(0, t.BaseType);
-                t = t.BaseType;
-            }
-
-            return result;
+            return recursive ? t.GetFields(DefaultBindingFlags).Union(GetAllFields(t.BaseType)) : t.GetFields(DefaultBindingFlags);
         }
 
         public static FieldInfo GetFieldInfo<T, TResult>(Expression<Func<T, TResult>> expression)
