@@ -241,7 +241,7 @@ namespace Antmicro.Migrant
 
         public static bool IsWriteableByPrimitiveWriter(TypeDescriptor type)
         {
-            return TypesWriteableByPrimitiveWriter.Any(x => x.AssemblyQualifiedName == type.AssemblyQualifiedName);
+            return TypesWriteableByPrimitiveWriterAQNs.Contains(type.AssemblyQualifiedName);
         }
 
         internal static bool CheckTransientNoCache(Type type)
@@ -319,10 +319,14 @@ namespace Antmicro.Migrant
         static Helpers()
         {
             TypesWriteableByPrimitiveWriter = new HashSet<Type>(typeof(PrimitiveWriter).GetMethods().Where(x => x.Name == "Write").Select(x => x.GetParameters()[0].ParameterType));
+            TypesWriteableByPrimitiveWriterAQNs = new HashSet<string>(TypesWriteableByPrimitiveWriter.Select(x => x.AssemblyQualifiedName));
             TypesWriteableByPrimitiveWriter.TrimExcess();
+            TypesWriteableByPrimitiveWriterAQNs.TrimExcess();
         }
 
         private static readonly HashSet<Type> TypesWriteableByPrimitiveWriter;
+        // this collection is here only to speed up lookups of `TypeDescriptor` objects
+        private static readonly HashSet<string> TypesWriteableByPrimitiveWriterAQNs;
         private static readonly int[] PaddingBoundaries = {
             128,
             1024,
