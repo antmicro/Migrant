@@ -91,7 +91,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Ldfld, typeIndicesField);
             generator.Emit(OpCodes.Ldtoken, typeToGenerate);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
-            generator.Emit(OpCodes.Call, typeof(TypeDescriptor).GetMethod("CreateFromType"));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => TypeDescriptor.CreateFromType(null)));
             generator.Emit(OpCodes.Call, typeof(Dictionary<TypeDescriptor, int>).GetMethod("get_Item"));
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<PrimitiveWriter>(x => x.Write(0)));
 
