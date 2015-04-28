@@ -28,7 +28,7 @@ using System.Linq;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
-    public class AssemblyDescriptor
+    internal class AssemblyDescriptor
     {
         public static AssemblyDescriptor ReadFromStream(ObjectReader reader)
         {
