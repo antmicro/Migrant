@@ -47,8 +47,12 @@ namespace Antmicro.Migrant
 
         public FieldInfo Resolve()
         {
-            FieldType.Resolve();
-            return DeclaringType.Resolve().GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
+            if (fieldInfo == null)
+            {
+                FieldType.Resolve();
+                fieldInfo = DeclaringType.Resolve().GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
+            }
+            return fieldInfo;
         }
 
         public void WriteTo(ObjectWriter writer)
@@ -122,6 +126,8 @@ namespace Antmicro.Migrant
         public TypeDescriptor DeclaringType { get; private set; }
 
         public TypeDescriptor FieldType { get; private set; }
+
+        private FieldInfo fieldInfo;
 
         public enum CompareResult
         {
