@@ -112,10 +112,6 @@ namespace Antmicro.Migrant
             }
         }
 
-        public bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
-
-        public PrimitiveWriter PrimitiveWriter { get { return writer; } }
-
         /// <summary>
         /// Writes the given object along with the ones referenced by it.
         /// </summary>
@@ -303,6 +299,10 @@ namespace Antmicro.Migrant
             assembly.WriteTo(this);
             return assemblyId;
         }
+
+        internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
+
+        internal PrimitiveWriter PrimitiveWriter { get { return writer; } }
 
         private void PrepareForNextWrite()
         {

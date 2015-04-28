@@ -106,10 +106,6 @@ namespace Antmicro.Migrant
             this.versionToleranceLevel = versionToleranceLevel;
         }
 
-        public bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
-
-        public PrimitiveReader PrimitiveReader { get { return reader; } }
-
         /// <summary>
         /// Reads the object with the expected formal type <typeparam name='T'/>.
         /// </summary>
@@ -658,6 +654,10 @@ namespace Antmicro.Migrant
             }
             return CreationWay.Uninitialized;
         }
+
+        internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
+
+        internal PrimitiveReader PrimitiveReader { get { return reader; } }
 
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
