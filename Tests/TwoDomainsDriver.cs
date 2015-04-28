@@ -36,6 +36,9 @@ namespace Antmicro.Migrant.Tests
             this.useGeneratedDeserializer = useGeneratedDeserializer;
             this.useGeneratedSerializer = useGeneratedSerializer;
 
+            // this is just a little hack that allows us to debug TwoDomainTests on one domain
+            // when `PrepareDomains` method is not called; when `PrepareDomains` is called
+            // then these fields are overwritten with proper values
             testsOnDomain1 = this;
             testsOnDomain2 = this;
         }
