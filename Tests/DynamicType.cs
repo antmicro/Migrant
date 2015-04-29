@@ -34,17 +34,26 @@ namespace Antmicro.Migrant.Tests
     [Serializable]
     public class DynamicType
     {
-        public static DynamicType CreateClass(string name, DynamicType baseClass = null)
+        public static DynamicType CreateClass(string name, DynamicType baseClass = null, DynamicType genericArgument = null)
         {
             var result = new DynamicType(KindOfDynamicType.Class);
             result.name = name;
             result.baseClass = baseClass;
+            result.genericArgument = genericArgument;
             return result;
         }
 
         public static DynamicType CreateStruct(string name)
         {
             var result = new DynamicType(KindOfDynamicType.Struct);
+            result.name = name;
+            result.baseClass = null;
+            return result;
+        }
+
+        public static DynamicType CreateInterface(string name)
+        {
+            var result = new DynamicType(KindOfDynamicType.Interface);
             result.name = name;
             result.baseClass = null;
             return result;
@@ -92,19 +101,28 @@ namespace Antmicro.Migrant.Tests
 
         private Type InnerCreateType(ModuleBuilder moduleBuilder)
         {
-            TypeBuilder typeBuilder;
-            if(type == KindOfDynamicType.Struct)
+            TypeBuilder typeBuilder = null;
+            switch(type)
             {
-                typeBuilder = moduleBuilder.DefineType(name,
-                    TypeAttributes.Public |
-                    TypeAttributes.Sealed |
-                    TypeAttributes.SequentialLayout |
-                    TypeAttributes.Serializable,
-                    typeof(ValueType));
-            }
-            else
-            {
+            case KindOfDynamicType.Struct:
+                    typeBuilder = moduleBuilder.DefineType(name,
+                        TypeAttributes.Public |
+                        TypeAttributes.Sealed |
+                        TypeAttributes.SequentialLayout |
+                        TypeAttributes.Serializable,
+                        typeof(ValueType));
+                break;
+            case KindOfDynamicType.Interface:
+                typeBuilder = moduleBuilder.DefineType(name, TypeAttributes.Interface | TypeAttributes.Public | TypeAttributes.Abstract);
+                break;
+            case KindOfDynamicType.Class: 
                 typeBuilder = moduleBuilder.DefineType(name, TypeAttributes.Class | TypeAttributes.Public);
+                if(genericArgument != null)
+                {
+                    typeBuilder.DefineGenericParameters(new [] { "TFirst" });
+                }
+
+                break;
             }
 
             if(baseClass != null)
@@ -132,7 +150,12 @@ namespace Antmicro.Migrant.Tests
                 }
             }
 
-            return typeBuilder.CreateType();
+            var result = typeBuilder.CreateType();
+            if(genericArgument != null)
+            {
+                result = result.MakeGenericType(genericArgument.InnerCreateType(moduleBuilder));
+            }
+            return result;
         }
 
         public object Instantiate()
@@ -164,6 +187,7 @@ namespace Antmicro.Migrant.Tests
         private string name;
         private Dictionary<string, FieldDescriptor> fields = new Dictionary<string, FieldDescriptor>();
         private DynamicType baseClass;
+        private DynamicType genericArgument;
 
         private static readonly AssemblyName AssemblyName = new AssemblyName("TestAssembly");
         private const int counter = 0;
@@ -184,7 +208,8 @@ namespace Antmicro.Migrant.Tests
         private enum KindOfDynamicType
         {
             Class,
-            Struct
+            Struct,
+            Interface
         }
     }
 }
