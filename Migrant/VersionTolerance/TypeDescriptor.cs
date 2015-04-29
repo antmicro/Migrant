@@ -302,7 +302,9 @@ namespace Antmicro.Migrant
             var result = new List<FieldInfoOrEntryToOmit>();
 
             var assemblyTypeDescriptor = TypeDescriptor.CreateFromType(type);
-            if(!assemblyTypeDescriptor.baseType.Equals(baseType) && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowInheritanceChainChange))
+            if( !(assemblyTypeDescriptor.baseType == null && baseType == null)
+                && ((assemblyTypeDescriptor.baseType == null && baseType != null) || !assemblyTypeDescriptor.baseType.Equals(baseType)) 
+                && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowInheritanceChainChange))
             {
                 throw new InvalidOperationException(string.Format("Class hierarchy changed. Expected {1} as base class, but found {0}.", baseType, assemblyTypeDescriptor.baseType));
             }

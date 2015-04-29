@@ -181,6 +181,23 @@ namespace Antmicro.Migrant.Tests
 
             Assert.IsNotNull(testsOnDomain2.GetValueOnAppDomain("f"));
         }
+
+        [Test]
+        public void ShouldSerializeGenericTypeWithInterface()
+        {
+            var type1 = DynamicType.CreateClass("A", genericArgument: DynamicType.CreateInterface("IX")).WithField<int>("f");
+            var type2 = DynamicType.CreateClass("A", genericArgument: DynamicType.CreateInterface("IX")).WithField<int>("f");
+
+            testsOnDomain1.CreateInstanceOnAppDomain(type1);
+            testsOnDomain1.SetValueOnAppDomain("f", 1);
+
+            var bytes = testsOnDomain1.SerializeOnAppDomain();
+            testsOnDomain2.CreateInstanceOnAppDomain(type2);
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange(Antmicro.Migrant.Customization.VersionToleranceLevel.AllowInheritanceChainChange));
+
+            Assert.AreEqual(1, testsOnDomain2.GetValueOnAppDomain("f"));
+        }
+            
     }
 }
 
