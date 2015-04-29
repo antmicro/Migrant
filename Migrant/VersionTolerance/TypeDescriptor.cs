@@ -28,6 +28,7 @@ using System.Reflection;
 using System.Linq;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Customization;
+using System.Text;
 
 namespace Antmicro.Migrant
 {
@@ -195,7 +196,25 @@ namespace Antmicro.Migrant
             { 
                 if (assemblyQualifiedName == null)
                 {
-                    assemblyQualifiedName = type != null ? type.AssemblyQualifiedName : string.Format("{0}, {1}", FullName, TypeAssembly.FullName);
+                    if(type != null)
+                    {
+                        assemblyQualifiedName = type.AssemblyQualifiedName;
+                    }
+                    else
+                    {
+                        var bldr = new StringBuilder("[]");
+                        foreach(var genericArgument in genericArguments)
+                        {
+                            bldr.Insert(bldr.Length - 1, string.Format("[{0}],", genericArgument.AssemblyQualifiedName));
+                        }
+                        if(bldr.Length > 2)
+                        {
+                            // remove last ',' comma
+                            bldr.Remove(bldr.Length - 2, 1);
+                        }
+
+                        assemblyQualifiedName = string.Format("{0}{1}, {2}", FullName, bldr.Length == 2 ? string.Empty : bldr.ToString(), TypeAssembly.FullName);
+                    }
                 }
                 return assemblyQualifiedName;
             }
