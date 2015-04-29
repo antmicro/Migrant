@@ -125,13 +125,15 @@ Choose wisely.
 
 ### Version tolerance
 
-What if some changes are made to the layout of the class between serialization and deserialization? Migrant can cope with that up to some extent. During creation of serializer you can specify settings, among which there is a version tolerance level. This is an enumeration with five possible values:
+What if some changes are made to the layout of the class between serialization and deserialization? Migrant can cope with that up to some extent. During creation of serializer you can specify settings, among which there is a version tolerance level. In the most restrictive (default) configuration, deserialization is possible if module ID (which is GUID generated when module is compiled) is the same as it was during serialization. In other words, serialization and deserialization must be done with the same assembly.
 
-- ``GUID`` - the most restrictive option. Deserialization is possible if module ID (which is GUID generated when module is compiled) is the same as it was during serialization. In other words, serialization and deserialization must be done with the same assembly.
-- ``Exact`` - this is a default value. Deserialization is possible if no fields are added or removed and no type changes were done.
-- ``FieldAddition`` - new version of the type can contain more fields than it contained during serialization. They are initialized with their default values.
-- ``FieldRemoval`` - new version of the type can contain less fields than it contained during serialization.
-- ``FieldAdditionAndRemoval`` - combination of these two above.
+However, there is a way to weaken this condition by specifing flags from a special enumeration called `VersionToleranceLevel`:
+
+- ``AllowGuidChange`` - guid values may differ between types which means that it can com from different compilations of the same library. The layout of the class (fields, base class, name) must be the same. 
+- ``AllowFieldAddition`` - new version of the type can contain more fields than it contained during serialization. They are initialized with their default values.
+- ``AllowFieldRemoval`` - new version of the type can contain less fields than it contained during serialization.
+- ``AllowInheritanceChainChange`` - inheritance chain can change, i.e. base class can be added/removed.
+- ``AllowAssemblyVersionChange`` - assembly version (but not it's name or culture) can differ between serialized and deserializad types.
 
 ### Collections handling
 
