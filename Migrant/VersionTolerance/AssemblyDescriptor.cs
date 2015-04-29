@@ -89,6 +89,10 @@ namespace Antmicro.Migrant.VersionTolerance
             Name = assembly.GetName().Name;
             Version = assembly.GetName().Version;
             CultureName = assembly.GetName().CultureName;
+            if (CultureName == string.Empty)
+            {
+                CultureName = "neutral";
+            }
             Token = assembly.GetName().GetPublicKeyToken();
 
             ModuleGUID = assembly.Modules.First().ModuleVersionId;
