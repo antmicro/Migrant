@@ -36,8 +36,7 @@ namespace Antmicro.Migrant.Customization
     public enum VersionToleranceLevel
     {
         /// <summary>
-        /// Both serialized and serialized classes must have identical module ID (which is GUID). In other words
-        /// that means these assemblies are from one and the same compilation.
+        /// Difference in guid is allowed which means that classes may be from different compilation of the same library.
         /// </summary>
         AllowGuidChange = 0x1,
 
