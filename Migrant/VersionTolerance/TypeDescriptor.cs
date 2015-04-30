@@ -28,7 +28,6 @@ using System.Reflection;
 using System.Linq;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Customization;
-using System.Text;
 using System.Collections.Concurrent;
 
 namespace Antmicro.Migrant

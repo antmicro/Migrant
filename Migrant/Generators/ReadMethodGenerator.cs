@@ -35,7 +35,6 @@ using Antmicro.Migrant;
 using Antmicro.Migrant.Hooks;
 using Antmicro.Migrant.Utilities;
 using System.Collections;
-using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Generators;
 
 namespace Antmicro.Migrant.Generators
