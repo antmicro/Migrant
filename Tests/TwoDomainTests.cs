@@ -169,8 +169,10 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldHandleBaseClassRemoval()
         {
-            var type1 = DynamicType.CreateClass("A", DynamicType.CreateClass("X")).WithField<object>("f");
-            var type2 = DynamicType.CreateClass("A").WithField<object>("f");
+            var typeX = DynamicType.CreateClass("X");
+
+            var type1 = DynamicType.CreateClass("A", typeX).WithField<object>("f");
+            var type2 = DynamicType.CreateClass("A", additionalTypes: new [] { typeX }).WithField<object>("f");
 
             testsOnDomain1.CreateInstanceOnAppDomain(type1);
             testsOnDomain1.SetValueOnAppDomain("f", new Object());

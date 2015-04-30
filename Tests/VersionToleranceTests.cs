@@ -87,7 +87,7 @@ namespace Antmicro.Migrant.Tests
         {
             var deserializationOK = SerializeAndDeserializeOnTwoAppDomains(
                                         DynamicType.CreateClass("A", DynamicType.CreateClass("BaseA")),
-                                        DynamicType.CreateClass("A"),
+                                        DynamicType.CreateClass("A", additionalTypes: new [] { DynamicType.CreateClass("BaseA") }),
                                         vtl);
 
             Assert.IsTrue(vtl.HasFlag(VersionToleranceLevel.AllowInheritanceChainChange) ? deserializationOK : !deserializationOK);
@@ -105,7 +105,7 @@ namespace Antmicro.Migrant.Tests
         {
             var deserializationOK = SerializeAndDeserializeOnTwoAppDomains(
                                         DynamicType.CreateClass("A", DynamicType.CreateClass("BaseA")),
-                                        DynamicType.CreateClass("A", DynamicType.CreateClass("NewBaseA")),
+                                        DynamicType.CreateClass("A", DynamicType.CreateClass("NewBaseA"), additionalTypes: new [] { DynamicType.CreateClass("BaseA") }),
                                         vtl);
 
             Assert.IsTrue(
