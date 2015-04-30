@@ -29,6 +29,7 @@ using System.Linq;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Customization;
 using System.Text;
+using System.Collections.Concurrent;
 
 namespace Antmicro.Migrant
 {
@@ -45,16 +46,18 @@ namespace Antmicro.Migrant
 
         public static TypeDescriptor CreateFromType(Type type)
         {
-            if(!cache.ContainsKey(type))
+            TypeDescriptor value;
+            if(!cache.TryGetValue(type, out value))
             {
-                cache[type] = new TypeDescriptor();
+                value = new TypeDescriptor();
+                cache.AddOrUpdate(type, value, (k, v) => value);
                 // we need to call init after creating empty `TypeDescriptor`
                 // and putting it in `Cache` as field types can refer to the
                 // cache
-                cache[type].Init(type);
+                value.Init(type);
             }
 
-            return cache[type];
+            return value;
         }
 
         public void ReadStructureStampIfNeeded(ObjectReader reader)
@@ -403,7 +406,7 @@ namespace Antmicro.Migrant
         private readonly List<FieldDescriptor> fields;
         private List<FieldInfoOrEntryToOmit> fieldsToDeserialize;
 
-        private static Dictionary<Type, TypeDescriptor> cache = new Dictionary<Type, TypeDescriptor>();
+        private static ConcurrentDictionary<Type, TypeDescriptor> cache = new ConcurrentDictionary<Type, TypeDescriptor>();
 
         public class TypeDescriptorCompareResult
         {
