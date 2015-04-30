@@ -34,12 +34,13 @@ namespace Antmicro.Migrant.Tests
     [Serializable]
     public class DynamicType
     {
-        public static DynamicType CreateClass(string name, DynamicType baseClass = null, DynamicType genericArgument = null)
+        public static DynamicType CreateClass(string name, DynamicType baseClass = null, DynamicType genericArgument = null, IEnumerable<DynamicType> additionalTypes = null)
         {
             var result = new DynamicType(KindOfDynamicType.Class);
             result.name = name;
             result.baseClass = baseClass;
             result.genericArgument = genericArgument;
+            result.additionalTypes = additionalTypes;
             return result;
         }
 
@@ -96,6 +97,13 @@ namespace Antmicro.Migrant.Tests
         public Type CreateType(AssemblyBuilder assemblyBuilder, string moduleName)
         {
             var module = new DynamicModule(assemblyBuilder.DefineDynamicModule(moduleName));
+            if(additionalTypes != null)
+            {
+                foreach(var additionalType in additionalTypes)
+                {
+                    additionalType.InnerCreateType(module);
+                }
+            }
             return InnerCreateType(module);
         }
 
@@ -196,6 +204,7 @@ namespace Antmicro.Migrant.Tests
         private DynamicType baseClass;
         private DynamicType genericArgument;
 
+        private IEnumerable<DynamicType> additionalTypes;
         private static readonly AssemblyName AssemblyName = new AssemblyName("TestAssembly");
         private const int counter = 0;
         public static string prefix;
