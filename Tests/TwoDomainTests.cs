@@ -199,6 +199,22 @@ namespace Antmicro.Migrant.Tests
 
             Assert.AreEqual(1, testsOnDomain2.GetValueOnAppDomain("f"));
         }
+
+        [Test]
+        public void ShouldHandleAssemblyVersionChange()
+        {
+            var type1 = DynamicType.CreateClass("A").WithField("a", DynamicType.CreateClass("C").WithField<int>("c"));
+            var type2 = DynamicType.CreateClass("A").WithField("a", DynamicType.CreateClass("C").WithField<int>("c"));
+
+            testsOnDomain1.CreateInstanceOnAppDomain(type1, new Version(1, 0));
+            testsOnDomain1.SetValueOnAppDomain("a.c", 1);
+
+            var bytes = testsOnDomain1.SerializeOnAppDomain();
+            testsOnDomain2.CreateInstanceOnAppDomain(type2, new Version(1, 1));
+            testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettingsAllowingGuidChange(Antmicro.Migrant.Customization.VersionToleranceLevel.AllowAssemblyVersionChange));
+
+            Assert.AreEqual(1, testsOnDomain2.GetValueOnAppDomain("a.c"));
+        }
             
     }
 }

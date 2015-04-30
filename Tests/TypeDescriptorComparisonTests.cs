@@ -25,6 +25,7 @@
 using System;
 using NUnit.Framework;
 using System.Linq;
+using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -201,6 +202,22 @@ namespace Antmicro.Migrant.Tests
 
             Assert.AreEqual(1, compareResult.FieldsChanged.Count);
             Assert.AreEqual("A:a", compareResult.FieldsChanged.ElementAt(0).FullName);
+        }
+
+        [Test]
+        public void ShouldHandleAssemblyVersionChange()
+        {
+            var objPrev = DynamicType.CreateClass("A").WithField("a", DynamicType.CreateClass("C").WithField<int>("c")).Instantiate(new Version(1, 0));
+            var objCurr = DynamicType.CreateClass("A").WithField("a", DynamicType.CreateClass("C").WithField<int>("c")).Instantiate(new Version(1, 1));
+
+            var descPrev = TypeDescriptor.CreateFromType(objPrev.GetType());
+            var descCurr = TypeDescriptor.CreateFromType(objCurr.GetType());
+
+            var compareResult = descCurr.CompareWith(descPrev, VersionToleranceLevel.AllowAssemblyVersionChange);
+
+            Assert.IsEmpty(compareResult.FieldsAdded);
+            Assert.IsEmpty(compareResult.FieldsChanged);
+            Assert.IsEmpty(compareResult.FieldsRemoved);
         }
     }
 }
