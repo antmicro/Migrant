@@ -35,23 +35,14 @@ namespace Antmicro.Migrant.VersionTolerance
         {
             var descriptor = new AssemblyDescriptor();
             descriptor.ReadAssemblyStamp(reader);
+            var assemblyName = new AssemblyName(descriptor.FullName);
+            descriptor.UnderlyingAssembly = Assembly.Load(assemblyName);
             return descriptor;
         }
 
         public static AssemblyDescriptor CreateFromAssembly(Assembly assembly)
         {
             return new AssemblyDescriptor(assembly);
-        }
-
-        public Assembly Resolve()
-        {
-            if(assembly == null)
-            {
-                var assemblyName = new AssemblyName(FullName);
-                assembly = Assembly.Load(assemblyName);
-            }
-
-            return assembly;
         }
 
         public void WriteTo(ObjectWriter writer)
@@ -95,7 +86,7 @@ namespace Antmicro.Migrant.VersionTolerance
                 throw new ArgumentException("Multimoduled assemblies are not supported yet.");
             }
 
-            this.assembly = assembly;
+            this.UnderlyingAssembly = assembly;
 
             Name = assembly.GetName().Name;
             Version = assembly.GetName().Version;
@@ -144,13 +135,11 @@ namespace Antmicro.Migrant.VersionTolerance
         public string FullName { get { return string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, CultureName, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); } }
 
         public Guid ModuleGUID { get; private set; } 
-
+        public Assembly UnderlyingAssembly { get; private set; }
         public string Name { get; private set; }
         public Version Version { get; private set; }
         public string CultureName { get; private set; }
         public byte[] Token { get; private set; }
-
-        private Assembly assembly;
     }
 
     internal static class PrimitiveWriterReaderExtensions

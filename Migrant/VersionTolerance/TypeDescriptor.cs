@@ -204,7 +204,7 @@ namespace Antmicro.Migrant
 
         private void Resolve()
         {
-            var type = TypeAssembly.Resolve().GetType(GenericFullName);
+            var type = TypeAssembly.UnderlyingAssembly.GetType(GenericFullName);
             if(type == null)
             {
                 throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", GenericFullName));
