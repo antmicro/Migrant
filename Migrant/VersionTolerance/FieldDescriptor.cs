@@ -44,15 +44,8 @@ namespace Antmicro.Migrant
             FieldType = TypeDescriptor.CreateFromType(finfo.FieldType);
             IsTransient = finfo.IsTransient();
             IsConstructor = finfo.IsConstructor();
-        }
 
-        public FieldInfo Resolve()
-        {
-            if (fieldInfo == null)
-            {
-                fieldInfo = DeclaringType.UnderlyingType.GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
-            }
-            return fieldInfo;
+            UnderlyingFieldInfo = finfo;
         }
 
         public void WriteTo(ObjectWriter writer)
@@ -67,6 +60,8 @@ namespace Antmicro.Migrant
             FieldType = reader.ReadType();
             DeclaringType = reader.ReadType();
             Name = reader.PrimitiveReader.ReadString();
+
+            UnderlyingFieldInfo = DeclaringType.UnderlyingType.GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
         }
 
         public CompareResult CompareWith(FieldDescriptor fd, VersionToleranceLevel versionToleranceLevel)
@@ -127,7 +122,7 @@ namespace Antmicro.Migrant
 
         public TypeDescriptor FieldType { get; private set; }
 
-        private FieldInfo fieldInfo;
+        public FieldInfo UnderlyingFieldInfo { get; private set; }
 
         public enum CompareResult
         {

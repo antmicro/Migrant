@@ -283,7 +283,7 @@ namespace Antmicro.Migrant
                 }
                 else
                 {
-                    result.Add(new FieldInfoOrEntryToOmit(field.Resolve()));
+                    result.Add(new FieldInfoOrEntryToOmit(field.UnderlyingFieldInfo));
                 }
             }
 
