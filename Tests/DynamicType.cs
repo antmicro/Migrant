@@ -95,17 +95,22 @@ namespace Antmicro.Migrant.Tests
 
         public Type CreateType(AssemblyBuilder assemblyBuilder, string moduleName)
         {
-            var moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName);
-            return InnerCreateType(moduleBuilder);
+            var module = new DynamicModule(assemblyBuilder.DefineDynamicModule(moduleName));
+            return InnerCreateType(module);
         }
 
-        private Type InnerCreateType(ModuleBuilder moduleBuilder)
+        private Type InnerCreateType(DynamicModule module)
         {
+            if(module.CreatedTypes.ContainsKey(name))
+            {
+                return module.CreatedTypes[name];
+            }
+
             TypeBuilder typeBuilder = null;
             switch(type)
             {
             case KindOfDynamicType.Struct:
-                    typeBuilder = moduleBuilder.DefineType(name,
+                    typeBuilder = module.Builder.DefineType(name,
                         TypeAttributes.Public |
                         TypeAttributes.Sealed |
                         TypeAttributes.SequentialLayout |
@@ -113,10 +118,10 @@ namespace Antmicro.Migrant.Tests
                         typeof(ValueType));
                 break;
             case KindOfDynamicType.Interface:
-                typeBuilder = moduleBuilder.DefineType(name, TypeAttributes.Interface | TypeAttributes.Public | TypeAttributes.Abstract);
+                typeBuilder = module.Builder.DefineType(name, TypeAttributes.Interface | TypeAttributes.Public | TypeAttributes.Abstract);
                 break;
             case KindOfDynamicType.Class: 
-                typeBuilder = moduleBuilder.DefineType(name, TypeAttributes.Class | TypeAttributes.Public);
+                typeBuilder = module.Builder.DefineType(name, TypeAttributes.Class | TypeAttributes.Public);
                 if(genericArgument != null)
                 {
                     typeBuilder.DefineGenericParameters(new [] { "TFirst" });
@@ -127,20 +132,20 @@ namespace Antmicro.Migrant.Tests
 
             if(baseClass != null)
             {
-                typeBuilder.SetParent(baseClass.InnerCreateType(moduleBuilder));
+                typeBuilder.SetParent(baseClass.InnerCreateType(module));
             }
 
             foreach(var field in fields)
             {
                 if(field.Value.DynamicType != null && field.Value.Type == null)
                 {
-                    field.Value.Type = field.Value.DynamicType.InnerCreateType(moduleBuilder);
+                    field.Value.Type = field.Value.DynamicType.InnerCreateType(module);
                 }
 
                 var fBldr = typeBuilder.DefineField(field.Key, field.Value.Type, FieldAttributes.Public);
                 if(field.Value.IsTransient)
                 {
-                    var taC = typeof(TransientAttribute).GetConstructor(Type.EmptyTypes);
+                    var taC = typeof(TransientAttribute).GetConstructor(System.Type.EmptyTypes);
                     fBldr.SetCustomAttribute(new CustomAttributeBuilder(taC, new object[0]));
                 }
                 if(field.Value.IsConstructor)
@@ -153,8 +158,9 @@ namespace Antmicro.Migrant.Tests
             var result = typeBuilder.CreateType();
             if(genericArgument != null)
             {
-                result = result.MakeGenericType(genericArgument.InnerCreateType(moduleBuilder));
+                result = result.MakeGenericType(genericArgument.InnerCreateType(module));
             }
+            module.CreatedTypes[name] = result;
             return result;
         }
 
@@ -211,6 +217,18 @@ namespace Antmicro.Migrant.Tests
             Class,
             Struct,
             Interface
+        }
+
+        private class DynamicModule
+        {
+            public DynamicModule(ModuleBuilder builder)
+            {
+                Builder = builder;
+                CreatedTypes = new Dictionary<string, Type>();
+            }
+
+            public ModuleBuilder Builder { get; private set; }
+            public Dictionary<string, Type> CreatedTypes { get; private set; }
         }
     }
 }
