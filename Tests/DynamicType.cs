@@ -196,11 +196,12 @@ namespace Antmicro.Migrant.Tests
         private DynamicType(KindOfDynamicType type)
         {
             this.type = type;
+            fields = new Dictionary<string, FieldDescriptor>();
         }
 
         private KindOfDynamicType type;
         private string name;
-        private Dictionary<string, FieldDescriptor> fields = new Dictionary<string, FieldDescriptor>();
+        private Dictionary<string, FieldDescriptor> fields;
         private DynamicType baseClass;
         private DynamicType genericArgument;
 
