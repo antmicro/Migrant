@@ -79,9 +79,9 @@ namespace Antmicro.Migrant.Tests
             Directory.Delete("domain2", true);
         }
 
-        public void CreateInstanceOnAppDomain(DynamicType type)
+        public void CreateInstanceOnAppDomain(DynamicType type, Version version = null)
         {
-            obj = type.Instantiate();
+            obj = type.Instantiate(version);
         }
 
         public byte[] SerializeOnAppDomain()

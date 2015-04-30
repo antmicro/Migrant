@@ -158,11 +158,12 @@ namespace Antmicro.Migrant.Tests
             return result;
         }
 
-        public object Instantiate()
+        public object Instantiate(Version version = null)
         {
-            var dllName = string.Format("{0}-{1}-{2}.dll", AssemblyName.Name, "xxx", counter);
-
-            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(string.Format("{0}-{1}-{2}", AssemblyName.Name, "xxx", counter/*++*/)), /*persistent ?*/AssemblyBuilderAccess.RunAndSave /*: AssemblyBuilderAccess.Run*/);
+            var dllName = string.Format("{0}-{1}-{2}.dll", AssemblyName.Name, "xxx", "0");
+            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(
+                new AssemblyName(string.Format("{0}-{1}-{2}", AssemblyName.Name, "xxx", counter)) { Version = version }, 
+                AssemblyBuilderAccess.RunAndSave);
             var builtType = CreateType(assemblyBuilder, dllName);
             assemblyBuilder.Save(dllName);
             if(!string.IsNullOrWhiteSpace(prefix))
