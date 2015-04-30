@@ -35,12 +35,10 @@ namespace Antmicro.Migrant
 {
     internal class TypeDescriptor
     {
-        public static TypeDescriptor ReadFromStream(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
+        public static TypeDescriptor ReadFromStream(ObjectReader reader)
         {
             var result =  new TypeDescriptor();
             result.ReadTypeStamp(reader);
-            result.versionToleranceLevel = versionToleranceLevel;
-
             return result;
         }
 
@@ -60,11 +58,11 @@ namespace Antmicro.Migrant
             return value;
         }
 
-        public void ReadStructureStampIfNeeded(ObjectReader reader)
+        public void ReadStructureStampIfNeeded(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
         {
             if(StampHelpers.IsStampNeeded(this, reader.TreatCollectionAsUserObject))
             {
-                ReadStructureStamp(reader);
+                ReadStructureStamp(reader, versionToleranceLevel);
             }
         }
 
@@ -79,57 +77,17 @@ namespace Antmicro.Migrant
         public void WriteTypeStamp(ObjectWriter writer)
         {
             writer.TouchAndWriteAssemblyId(TypeAssembly);
-            writer.PrimitiveWriter.Write(FullName);
+            writer.PrimitiveWriter.Write(GenericFullName);
             writer.PrimitiveWriter.Write(genericArguments.Count);
             foreach (var genericArgument in genericArguments)
             {
-                writer.TouchAndWriteTypeId(genericArgument.Resolve());
+                writer.TouchAndWriteTypeId(genericArgument.UnderlyingType);
             }
-        }
-
-        public Type Resolve()
-        {
-            if(type != null)
-            {
-                return type;
-            }
-
-            type = TypeAssembly.Resolve().GetType(fullName);
-            if(type == null)
-            {
-                throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", fullName));
-            }
-
-            if(type.IsGenericType)
-            {
-                var genericTypes = new Type[genericArguments.Count];
-                var counter = 0;
-                foreach(var genArg in genericArguments)
-                {
-                    genericTypes[counter++] = genArg.Resolve();
-                }
-                type = type.MakeGenericType(genericTypes);
-            }
-
-            fieldsToDeserialize = VerifyStructure();
-           
-            cache[type] = this;
-            return type;
-        }
-
-        /// <summary>
-        /// Resolves type and calculates which fields should be read and which ommited during deserialization.
-        /// </summary>
-        /// <returns>The collection of elements describing fields to deserialize or omit.</returns>
-        public IEnumerable<FieldInfoOrEntryToOmit> GetFieldsToDeserialize()
-        {
-            Resolve();
-            return fieldsToDeserialize;
         }
 
         public override int GetHashCode()
         {
-            return AssemblyQualifiedName.GetHashCode();
+            return UnderlyingType.GetHashCode();
         }
 
         public override bool Equals(object obj)
@@ -137,13 +95,24 @@ namespace Antmicro.Migrant
             var objAsTypeDescriptor = obj as TypeDescriptor;
             if(objAsTypeDescriptor != null)
             {
-                return AssemblyQualifiedName == objAsTypeDescriptor.AssemblyQualifiedName;
+                return UnderlyingType == objAsTypeDescriptor.UnderlyingType;
             }
 
             return obj != null && obj.Equals(this);
         }
 
-        public TypeDescriptorCompareResult CompareWith(TypeDescriptor previous)
+        public bool Equals(TypeDescriptor obj, VersionToleranceLevel versionToleranceLevel)
+        {
+            if(versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
+            {
+                return obj.UnderlyingType.FullName == UnderlyingType.FullName
+                    && obj.TypeAssembly.Equals(TypeAssembly, versionToleranceLevel);
+            }
+
+            return Equals(obj);
+        }
+
+        public TypeDescriptorCompareResult CompareWith(TypeDescriptor previous, VersionToleranceLevel versionToleranceLevel = 0)
         {
             var result = new TypeDescriptorCompareResult();
 
@@ -158,7 +127,7 @@ namespace Antmicro.Migrant
                     continue;
                 }
                 // are the types compatible?
-                var compareResult = currentField.CompareWith(field);
+                var compareResult = currentField.CompareWith(field, versionToleranceLevel);
                 if(compareResult != FieldDescriptor.CompareResult.Match)
                 {
                     result.FieldsChanged.Add(field);
@@ -179,68 +148,15 @@ namespace Antmicro.Migrant
             return result;
         }
 
-        public bool IsGenericType { get { return type != null ? type.IsGenericType : genericArguments.Any(); } }
+        public Type UnderlyingType { get; private set; }
 
-        public string FullName 
-        { 
-            get 
-            { 
-                if(type != null)
-                {
-                    return (type.IsGenericType ? (type.GetGenericTypeDefinition()) : type).FullName;
-                }
-                return fullName; 
-            } 
-        }
-
-        public string AssemblyQualifiedName
-        { 
-            get
-            { 
-                if (assemblyQualifiedName == null)
-                {
-                    if(type != null)
-                    {
-                        assemblyQualifiedName = type.AssemblyQualifiedName;
-                    }
-                    else
-                    {
-                        var bldr = new StringBuilder("[]");
-                        foreach(var genericArgument in genericArguments)
-                        {
-                            bldr.Insert(bldr.Length - 1, string.Format("[{0}],", genericArgument.AssemblyQualifiedName));
-                        }
-                        if(bldr.Length > 2)
-                        {
-                            // remove last ',' comma
-                            bldr.Remove(bldr.Length - 2, 1);
-                        }
-
-                        assemblyQualifiedName = string.Format("{0}{1}, {2}", FullName, bldr.Length == 2 ? string.Empty : bldr.ToString(), TypeAssembly.FullName);
-                    }
-                }
-                return assemblyQualifiedName;
-            }
-        }
-
-        public string GenericAssemblyQualifiedName
-        {
-            get
-            {
-                if(type != null)
-                {
-                    if(type.IsGenericType)
-                    {
-                        return type.GetGenericTypeDefinition().AssemblyQualifiedName;
-                    }
-                    return type.AssemblyQualifiedName;
-                }
-
-                return string.Format("{0}, {1}", FullName, TypeAssembly.FullName);
-            }
-        }
-
+        public string GenericFullName { get; private set; }
+      
+        public string GenericAssemblyQualifiedName { get; private set; }
+      
         public AssemblyDescriptor TypeAssembly { get; private set; }
+
+        public IEnumerable<FieldInfoOrEntryToOmit> FieldsToDeserialize { get; private set; }
 
         private TypeDescriptor()
         {
@@ -249,31 +165,34 @@ namespace Antmicro.Migrant
 
         private void Init(Type t)
         {
-            type = t;
+            UnderlyingType = t;
 
             TypeAssembly = AssemblyDescriptor.CreateFromAssembly(t.Assembly);
 
             genericArguments = new List<TypeDescriptor>();
-            if(type.IsGenericType)
+            if(UnderlyingType.IsGenericType)
             {
-                fullName = type.GetGenericTypeDefinition().FullName;
-                foreach(var genericArgument in type.GetGenericArguments())
+                GenericFullName = UnderlyingType.GetGenericTypeDefinition().FullName;
+                GenericAssemblyQualifiedName = UnderlyingType.GetGenericTypeDefinition().AssemblyQualifiedName;
+                foreach(var genericArgument in UnderlyingType.GetGenericArguments())
                 {
                     genericArguments.Add(TypeDescriptor.CreateFromType(genericArgument));
                 }
             }
             else
             {
-                fullName = type.FullName;
+                GenericAssemblyQualifiedName = UnderlyingType.AssemblyQualifiedName;
+                GenericFullName = UnderlyingType.FullName;
             }
 
             if(t.BaseType != null)
             {
+                System.IO.File.AppendAllText("/tmp/log", string.Format("Setting base type '{0}' for '{1}' in Init method\n", t.BaseType.FullName, t.FullName));
                 baseType = TypeDescriptor.CreateFromType(t.BaseType);
             }
 
-            fieldsToDeserialize = new List<FieldInfoOrEntryToOmit>();
-            foreach(var field in StampHelpers.GetFieldsInSerializationOrder(type, true))
+            var fieldsToDeserialize = new List<FieldInfoOrEntryToOmit>();
+            foreach(var field in StampHelpers.GetFieldsInSerializationOrder(UnderlyingType, true))
             {
                 fieldsToDeserialize.Add(new FieldInfoOrEntryToOmit(field));
                 if(!field.IsTransient())
@@ -281,43 +200,67 @@ namespace Antmicro.Migrant
                     fields.Add(new FieldDescriptor(field));
                 }
             }
+            FieldsToDeserialize = fieldsToDeserialize;
+        }
+
+        private void Resolve()
+        {
+            var type = TypeAssembly.Resolve().GetType(GenericFullName);
+            if(type == null)
+            {
+                throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", GenericFullName));
+            }
+
+            GenericAssemblyQualifiedName = type.AssemblyQualifiedName;
+
+            if(type.IsGenericType)
+            {
+                var genericTypes = new Type[genericArguments.Count];
+                var counter = 0;
+                foreach(var genArg in genericArguments)
+                {
+                    genericTypes[counter++] = genArg.UnderlyingType;
+                }
+                type = type.MakeGenericType(genericTypes);
+            }
+
+            UnderlyingType = type;
         }
 
         private IEnumerable<FieldInfoOrEntryToOmit> GetConstructorRecreatedFields()
         {
-            Resolve();
-            return fieldsToDeserialize.Where(x => x.Field != null && x.Field.IsConstructor());
+            return FieldsToDeserialize.Where(x => x.Field != null && x.Field.IsConstructor());
         }
 
-        private List<FieldInfoOrEntryToOmit> VerifyStructure()
+        private List<FieldInfoOrEntryToOmit> VerifyStructure(VersionToleranceLevel versionToleranceLevel)
         {
-            if(TypeAssembly.ModuleGUID == type.Module.ModuleVersionId)
+            if(TypeAssembly.ModuleGUID == UnderlyingType.Module.ModuleVersionId)
             {
-                return StampHelpers.GetFieldsInSerializationOrder(type, true).Select(x => new FieldInfoOrEntryToOmit(x)).ToList();
+                return StampHelpers.GetFieldsInSerializationOrder(UnderlyingType, true).Select(x => new FieldInfoOrEntryToOmit(x)).ToList();
             }
 
             if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowGuidChange))
             {
                 throw new InvalidOperationException(string.Format("The class was serialized with different module version id {0}, current one is {1}.",
-                    TypeAssembly.ModuleGUID, type.Module.ModuleVersionId));
+                    TypeAssembly.ModuleGUID, UnderlyingType.Module.ModuleVersionId));
             }
 
             var result = new List<FieldInfoOrEntryToOmit>();
 
-            var assemblyTypeDescriptor = TypeDescriptor.CreateFromType(type);
+            var assemblyTypeDescriptor = TypeDescriptor.CreateFromType(UnderlyingType);
             if( !(assemblyTypeDescriptor.baseType == null && baseType == null)
                 && ((assemblyTypeDescriptor.baseType == null && baseType != null) || !assemblyTypeDescriptor.baseType.Equals(baseType)) 
                 && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowInheritanceChainChange))
             {
-                throw new InvalidOperationException(string.Format("Class hierarchy changed. Expected {1} as base class, but found {0}.", baseType, assemblyTypeDescriptor.baseType));
+                throw new InvalidOperationException(string.Format("Class hierarchy changed. Expected '{1}' as base class, but found '{0}'.", baseType != null ? baseType.UnderlyingType.FullName : "null", assemblyTypeDescriptor.baseType != null ? assemblyTypeDescriptor.baseType.UnderlyingType.FullName : "null"));
             }
 
             if(assemblyTypeDescriptor.TypeAssembly.Version != TypeAssembly.Version && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
             {
-                throw new InvalidOperationException(string.Format("Assembly version changed from {0} to {1} for class {2}", TypeAssembly.Version, assemblyTypeDescriptor.TypeAssembly.Version, FullName));
+                throw new InvalidOperationException(string.Format("Assembly version changed from {0} to {1} for class {2}", TypeAssembly.Version, assemblyTypeDescriptor.TypeAssembly.Version, UnderlyingType.FullName));
             }
 
-            var cmpResult = assemblyTypeDescriptor.CompareWith(this);
+            var cmpResult = assemblyTypeDescriptor.CompareWith(this, versionToleranceLevel);
 
             if(cmpResult.FieldsChanged.Any())
             {
@@ -337,7 +280,7 @@ namespace Antmicro.Migrant
             {
                 if(cmpResult.FieldsRemoved.Contains(field))
                 {
-                    result.Add(new FieldInfoOrEntryToOmit(field.FieldType.Resolve()));
+                    result.Add(new FieldInfoOrEntryToOmit(field.FieldType.UnderlyingType));
                 }
                 else
                 {
@@ -356,16 +299,17 @@ namespace Antmicro.Migrant
         private void ReadTypeStamp(ObjectReader reader)
         {
             TypeAssembly = reader.ReadAssembly();
-            fullName = reader.PrimitiveReader.ReadString();
+            GenericFullName = reader.PrimitiveReader.ReadString();
             var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
             genericArguments = new List<TypeDescriptor>();
             for(int i = 0; i < genericArgumentsCount; i++)
             {
                 genericArguments.Add(reader.ReadType());
             }
+            Resolve();
         }
 
-        private void ReadStructureStamp(ObjectReader reader)
+        private void ReadStructureStamp(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
         {
             baseType = reader.ReadType();
             var noOfFields = reader.PrimitiveReader.ReadInt32();
@@ -375,6 +319,8 @@ namespace Antmicro.Migrant
                 fieldDescriptor.ReadFrom(reader);
                 fields.Add(fieldDescriptor);
             }
+            FieldsToDeserialize = VerifyStructure(versionToleranceLevel);
+            cache[UnderlyingType] = this;
         }
 
         private void WriteStructureStamp(ObjectWriter writer)
@@ -385,7 +331,7 @@ namespace Antmicro.Migrant
             }
             else
             {
-                writer.TouchAndWriteTypeId(baseType.Resolve());
+                writer.TouchAndWriteTypeId(baseType.UnderlyingType);
             }
 
             writer.PrimitiveWriter.Write(fields.Count);
@@ -395,16 +341,11 @@ namespace Antmicro.Migrant
             }
         }
 
-        private string fullName;
-        private string assemblyQualifiedName;
         private List<TypeDescriptor> genericArguments;
 
-        private Type type;
         private TypeDescriptor baseType;
-        private VersionToleranceLevel versionToleranceLevel;
 
         private readonly List<FieldDescriptor> fields;
-        private List<FieldInfoOrEntryToOmit> fieldsToDeserialize;
 
         private static ConcurrentDictionary<Type, TypeDescriptor> cache = new ConcurrentDictionary<Type, TypeDescriptor>();
 

@@ -136,7 +136,7 @@ namespace Antmicro.Migrant
                 deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             }
             var firstObjectId = deserializedObjects.Count;
-            var type = ReadType().Resolve();
+            var type = ReadType().UnderlyingType;
             if(useGeneratedDeserialization)
             {
                 ReadObjectInnerGenerated(type, firstObjectId);
@@ -269,7 +269,7 @@ namespace Antmicro.Migrant
 
         private void UpdateFields(Type actualType, object target)
         {
-            var fieldOrTypeInfos = TypeDescriptor.CreateFromType(actualType).GetFieldsToDeserialize();
+            var fieldOrTypeInfos = TypeDescriptor.CreateFromType(actualType).FieldsToDeserialize;
             foreach(var fieldOrTypeInfo in fieldOrTypeInfos)
             {
                 if(fieldOrTypeInfo.Field == null)
@@ -362,7 +362,7 @@ namespace Antmicro.Migrant
                 }
                 if(refId >= deserializedObjects.Count)
                 {
-                    ReadObjectInner(ReadType().Resolve(), refId);
+                    ReadObjectInner(ReadType().UnderlyingType, refId);
                 }
                 return deserializedObjects[refId];
             }
@@ -564,12 +564,12 @@ namespace Antmicro.Migrant
                 return typeCache[typeId];
             }
 
-            var type = TypeDescriptor.ReadFromStream(this, versionToleranceLevel);
+            var type = TypeDescriptor.ReadFromStream(this);
             typeCache.Add(typeId, type);
 
             // we need to read stamp here (i.e., after adding to typeList)
             // as other types from the stamp can reference this type
-            type.ReadStructureStampIfNeeded(this);
+            type.ReadStructureStampIfNeeded(this, versionToleranceLevel);
             return type;
         }
 
@@ -580,13 +580,13 @@ namespace Antmicro.Migrant
             var methodId = reader.ReadInt32();
             if(methodList.Count <= methodId)
             {
-                var type = ReadType().Resolve();
+                var type = ReadType().UnderlyingType;
                 var methodName = reader.ReadString();
                 var parametersCount = reader.ReadInt32();
                 var types = new Type[parametersCount];
                 for(int i = 0; i < types.Length; i++)
                 {
-                    types[i] = ReadType().Resolve();
+                    types[i] = ReadType().UnderlyingType;
                 }
 
                 result = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);

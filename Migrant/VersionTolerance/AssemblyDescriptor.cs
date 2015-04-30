@@ -25,6 +25,7 @@
 using System;
 using System.Reflection;
 using System.Linq;
+using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
@@ -66,6 +67,16 @@ namespace Antmicro.Migrant.VersionTolerance
                 return FullName == objAsAssemblyDescriptor.FullName;
             }
             return obj != null && obj.Equals(this);
+        }
+
+        public bool Equals(AssemblyDescriptor obj, VersionToleranceLevel versionToleranceLevel)
+        {
+            if(versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
+            {
+                return obj.Name == Name && obj.CultureName == CultureName && obj.Token.SequenceEqual(Token);
+            }
+
+            return Equals(obj);
         }
 
         public override int GetHashCode()

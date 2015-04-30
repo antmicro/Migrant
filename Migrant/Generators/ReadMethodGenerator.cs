@@ -753,7 +753,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
         {
-            var fields = TypeDescriptor.CreateFromType(formalType).GetFieldsToDeserialize();
+            var fields = TypeDescriptor.CreateFromType(formalType).FieldsToDeserialize;
             foreach(var fieldOrType in fields)
             {
                 if(fieldOrType.Field == null)
@@ -802,7 +802,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
         {			
-            var fields = TypeDescriptor.CreateFromType(formalType).GetFieldsToDeserialize();
+            var fields = TypeDescriptor.CreateFromType(formalType).FieldsToDeserialize;
             foreach(var field in fields)
             {
                 generator.Emit(OpCodes.Ldloca, structLocal);
@@ -924,7 +924,7 @@ namespace Antmicro.Migrant.Generators
 
             generator.Emit(OpCodes.Ldarg_0); // object reader
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, TypeDescriptor>(or => or.ReadType()));
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<TypeDescriptor, Type>(td => td.Resolve()));
+            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<TypeDescriptor, Type>(td => td.UnderlyingType));
         }
 
         private void GenerateReadMethod()

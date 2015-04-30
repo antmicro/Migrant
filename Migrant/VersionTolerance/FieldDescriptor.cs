@@ -25,6 +25,7 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
+using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant
 {
@@ -49,16 +50,15 @@ namespace Antmicro.Migrant
         {
             if (fieldInfo == null)
             {
-                FieldType.Resolve();
-                fieldInfo = DeclaringType.Resolve().GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
+                fieldInfo = DeclaringType.UnderlyingType.GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
             }
             return fieldInfo;
         }
 
         public void WriteTo(ObjectWriter writer)
         {
-            writer.TouchAndWriteTypeId(FieldType.Resolve());
-            writer.TouchAndWriteTypeId(DeclaringType.Resolve());
+            writer.TouchAndWriteTypeId(FieldType.UnderlyingType);
+            writer.TouchAndWriteTypeId(DeclaringType.UnderlyingType);
             writer.PrimitiveWriter.Write(Name);
         }
 
@@ -69,11 +69,11 @@ namespace Antmicro.Migrant
             Name = reader.PrimitiveReader.ReadString();
         }
 
-        public CompareResult CompareWith(FieldDescriptor fd)
+        public CompareResult CompareWith(FieldDescriptor fd, VersionToleranceLevel versionToleranceLevel)
         {
             if(fd.Name == Name)
             {
-                if(!fd.FieldType.Equals(FieldType))
+                if(!fd.FieldType.Equals(FieldType, versionToleranceLevel))
                 {
                     return CompareResult.FieldTypeChanged;
                 }
@@ -121,7 +121,7 @@ namespace Antmicro.Migrant
 
         public string Name { get; private set; }
 
-        public string FullName { get { return string.Format("{0}:{1}", DeclaringType.FullName, Name); } }
+        public string FullName { get { return string.Format("{0}:{1}", DeclaringType.UnderlyingType.FullName, Name); } }
 
         public TypeDescriptor DeclaringType { get; private set; }
 
