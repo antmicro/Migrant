@@ -599,6 +599,22 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
+        public void ShouldInvokeConstructorForFieldInStruct()
+        {
+            var withCtor = new StructWithConstructorAttribute();
+            var copy = SerializerClone(withCtor);
+            Assert.IsTrue(copy.IsFieldConstructed, "[Constructor] marked field was not initialized.");
+        }
+
+        [Test]
+        public void ShouldInvokeConstructorForFieldInStructComplex()
+        {
+            var withCtor = new StructWithConstructorAttributeOnNestedStruct();
+            var copy = SerializerClone(withCtor);
+            Assert.IsTrue(copy.IsFieldConstructed, "[Constructor] marked field was not initialized.");
+        }
+
+        [Test]
         public void ShouldInvokeConstructorForField()
         {
             var withCtor = new WithConstructorAttribute();
@@ -1246,6 +1262,45 @@ namespace Antmicro.Migrant.Tests
                     writer.Write(666 + i);
                 }
             }
+        }
+
+        private struct StructWithConstructorAttribute
+        {
+            public bool IsFieldConstructed
+            {
+                get
+                {
+                    return resetEvent != null;
+                }
+            }
+
+            [Constructor(false)]
+            private ManualResetEvent
+            resetEvent;
+        }
+
+        private struct StructWithConstructorAttributeOnNestedStruct
+        {
+            public bool IsFieldConstructed
+            {
+                get
+                {
+                    return s.field == 5;
+                }
+            }
+
+            [ConstructorAttribute]
+            private NestedStruct s;
+        }
+
+        private struct NestedStruct
+        {
+            public NestedStruct()
+            {
+                field = 5;
+            }
+
+            public int field;
         }
 
         private class WithConstructorAttribute

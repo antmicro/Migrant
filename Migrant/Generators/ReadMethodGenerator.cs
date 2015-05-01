@@ -804,8 +804,52 @@ namespace Antmicro.Migrant.Generators
             var fields = TypeDescriptor.CreateFromType(formalType).FieldsToDeserialize;
             foreach(var field in fields)
             {
+                if(field.Field == null)
+                {
+                    GenerateReadField(field.TypeToOmit, false);
+                    generator.Emit(OpCodes.Pop);
+                    continue;
+                }
+                    
+                if(field.Field.IsDefined(typeof(TransientAttribute), false))
+                {
+                    if(field.Field.IsDefined(typeof(ConstructorAttribute), false))
+                    {
+                        generator.Emit(OpCodes.Ldloca, structLocal);
+                        generator.Emit(OpCodes.Ldtoken, field.Field);
+                        if(field.Field.DeclaringType.IsGenericType)
+                        {
+                            generator.Emit(OpCodes.Ldtoken, field.Field.ReflectedType);
+                            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.Field.FieldHandle, new RuntimeTypeHandle())));
+                        }
+                        else
+                        {
+                            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.Field.FieldHandle)));
+                        }
+
+                        GenerateCodeFCall<FieldInfo, object>(fi =>
+                        {
+                            // this code is done using reflection and not generated due to
+                            // small estimated profit and lot of code to write:
+                            // * copying constructor attributes from generating to generated code
+                            // * calculating optimal constructor to call based on a collection of arguments
+                            var ctorAttribute = (ConstructorAttribute)fi.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
+                            return Activator.CreateInstance(fi.FieldType, ctorAttribute.Parameters);
+                        });
+
+                        if(field.Field.FieldType.IsValueType)
+                        {
+                            generator.Emit(OpCodes.Unbox_Any, field.Field.FieldType);
+                        }
+
+                        generator.Emit(OpCodes.Stfld, field.Field);
+                    }
+                    continue;
+                }
+
                 generator.Emit(OpCodes.Ldloca, structLocal);
                 var type = field.TypeToOmit ?? field.Field.FieldType;
+
                 GenerateReadField(type, false);
                 if(field.Field != null)
                 {
@@ -871,7 +915,12 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Call, a.Method);
         }
 
-        private void GenerateCodeFCall<TResult, T1, T2, T3>(Func<TResult, T1, T2, T3> f)
+        private void GenerateCodeFCall<T1, TResult>(Func<T1, TResult> f)
+        {
+            generator.Emit(OpCodes.Call, f.Method);
+        }
+
+        private void GenerateCodeFCall<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> f)
         {
             generator.Emit(OpCodes.Call, f.Method);
         }
