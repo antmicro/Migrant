@@ -1289,15 +1289,15 @@ namespace Antmicro.Migrant.Tests
                 }
             }
 
-            [ConstructorAttribute]
+            [ConstructorAttribute(true)]
             private NestedStruct s;
         }
 
         private struct NestedStruct
         {
-            public NestedStruct()
+            public NestedStruct(bool condition)
             {
-                field = 5;
+                field = (condition ? 5 : 0);
             }
 
             public int field;
