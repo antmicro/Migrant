@@ -767,16 +767,7 @@ namespace Antmicro.Migrant.Generators
                 {
                     if(field.IsDefined(typeof(ConstructorAttribute), false))
                     {
-                        generator.Emit(OpCodes.Ldtoken, field);
-                        if(field.DeclaringType.IsGenericType)
-                        {
-                            generator.Emit(OpCodes.Ldtoken, field.ReflectedType);
-                            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle, new RuntimeTypeHandle())));
-                        }
-                        else
-                        {
-                            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.FieldHandle)));
-                        }
+                        PushFieldInfoOntoStack(field);
                         PushDeserializedObjectOntoStack(objectIdLocal);
 
                         GenerateCodeCall<FieldInfo, object>((fi, target) =>
@@ -816,17 +807,7 @@ namespace Antmicro.Migrant.Generators
                     if(field.Field.IsDefined(typeof(ConstructorAttribute), false))
                     {
                         generator.Emit(OpCodes.Ldloca, structLocal);
-                        generator.Emit(OpCodes.Ldtoken, field.Field);
-                        if(field.Field.DeclaringType.IsGenericType)
-                        {
-                            generator.Emit(OpCodes.Ldtoken, field.Field.ReflectedType);
-                            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.Field.FieldHandle, new RuntimeTypeHandle())));
-                        }
-                        else
-                        {
-                            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(field.Field.FieldHandle)));
-                        }
-
+                        PushFieldInfoOntoStack(field.Field);
                         GenerateCodeFCall<FieldInfo, object>(fi =>
                         {
                             // this code is done using reflection and not generated due to
@@ -898,6 +879,20 @@ namespace Antmicro.Migrant.Generators
         {
             generator.Emit(OpCodes.Ldtoken, type);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o))); // loads value of <<typeToGenerate>> onto stack
+        }
+
+        private void PushFieldInfoOntoStack(FieldInfo finfo)
+        {
+            generator.Emit(OpCodes.Ldtoken, finfo);
+            if(finfo.DeclaringType.IsGenericType)
+            {
+                generator.Emit(OpCodes.Ldtoken, finfo.ReflectedType);
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(finfo.FieldHandle, new RuntimeTypeHandle())));
+            }
+            else
+            {
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => FieldInfo.GetFieldFromHandle(finfo.FieldHandle)));
+            }
         }
 
         private void GenerateCodeCall<T1, T2>(Action<T1, T2> a)
