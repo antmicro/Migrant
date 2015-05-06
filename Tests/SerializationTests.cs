@@ -150,6 +150,21 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
+        public void ShouldNotSerializeSpinLock()
+        {
+            var spinLockClass = new ClassWithSpinLock{ SLock = new SpinLock() };
+            try
+            {
+                SerializerClone(spinLockClass);
+                Assert.Fail("Class with SpinLock was serialized without exception.");
+            }
+            catch(InvalidOperationException)
+            {
+
+            }
+        }
+
+        [Test]
         public void ShouldSerializeWithInheritance()
         {
             SimpleBaseClass derived = new SimpleDerivedClass { BaseField = 1, DerivedField = 2 };
@@ -1083,6 +1098,11 @@ namespace Antmicro.Migrant.Tests
         public class ClassWithIntPtr
         {
             public IntPtr Ptr { get; set; }
+        }
+
+        public class ClassWithSpinLock
+        {
+            public SpinLock SLock { get; set; }
         }
 
         public class SimpleBaseClass

@@ -212,7 +212,7 @@ namespace Antmicro.Migrant
         internal static void CheckLegality(Type type, Type containingType = null, IEnumerable<Type> writtenTypes = null)
         {
             // containing type is a hint in case of 
-            if(type.IsPointer || type == typeof(IntPtr) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ThreadLocal<>)))
+            if(type.IsPointer || type == typeof(IntPtr) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ThreadLocal<>)) || type == typeof(SpinLock))
             {
                 IEnumerable<string> typeNames;
                 if(writtenTypes == null)
@@ -231,7 +231,7 @@ namespace Antmicro.Migrant
                 }
 
                 var path = typeNames.Reverse().Aggregate((x, y) => x + " => " + y);
-                throw new InvalidOperationException("Pointer or ThreadLocal encountered during serialization. The classes path that lead to it was: " + path);
+                throw new InvalidOperationException("Pointer or ThreadLocal or SpinLock encountered during serialization. The classes path that lead to it was: " + path);
             }
         }
 
