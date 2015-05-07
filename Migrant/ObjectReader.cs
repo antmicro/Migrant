@@ -107,7 +107,7 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
-        /// Reads the object with the expected formal type <typeparam name='T'/>.
+        /// Reads the object with the expected formal type <typeparamref name='T'/>.
         /// </summary>
         /// <returns>
         /// The object, previously written by the <see cref="Antmicro.Migrant.ObjectWriter" />.
