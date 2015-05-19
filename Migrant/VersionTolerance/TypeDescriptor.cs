@@ -186,7 +186,6 @@ namespace Antmicro.Migrant
 
             if(t.BaseType != null)
             {
-                System.IO.File.AppendAllText("/tmp/log", string.Format("Setting base type '{0}' for '{1}' in Init method\n", t.BaseType.FullName, t.FullName));
                 baseType = TypeDescriptor.CreateFromType(t.BaseType);
             }
 
