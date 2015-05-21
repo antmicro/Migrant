@@ -1019,8 +1019,7 @@ namespace Antmicro.Migrant.Tests
         {
             public GenericClassWithGenericDelegate()
             {
-                var x = new InnerClass();
-                del = x.Action;
+                del = Action;
             }
 
             public void CallDelegate(T c)
@@ -1028,14 +1027,11 @@ namespace Antmicro.Migrant.Tests
                 del(c, "string");
             }
 
-            private readonly Action<T, string> del;
-
-            private class InnerClass
+            private void Action<TInner>(TInner x, string y)
             {
-                public void Action<TInner>(TInner x, string y)
-                {
-                }
             }
+
+            private readonly Action<T, string> del;
         }
 
         public class GenericClass<T>

@@ -601,7 +601,7 @@ namespace Antmicro.Migrant
                             new TypeOrGenericTypeArgument(ReadType().UnderlyingType);
                     }
 
-                    result = type.GetMethods().SingleOrDefault(m => 
+                    result = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(m => 
                         m.IsGenericMethod && 
                         m.GetGenericMethodDefinition().Name == methodName && 
                         m.GetGenericArguments().Length == genericArgumentsCount && 
