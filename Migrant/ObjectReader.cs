@@ -750,13 +750,13 @@ namespace Antmicro.Migrant
 
         private struct TypeOrGenericTypeArgument
         {
-            public TypeOrGenericTypeArgument(Type t)
+            public TypeOrGenericTypeArgument(Type t) : this()
             {
                 Type = t;
                 GenericTypeArgumentIndex = -1;
             }
 
-            public TypeOrGenericTypeArgument(int index)
+            public TypeOrGenericTypeArgument(int index) : this()
             {
                 Type = null;
                 GenericTypeArgumentIndex = index;
