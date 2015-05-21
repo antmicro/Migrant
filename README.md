@@ -1,4 +1,4 @@
-# Migrant 0.10.2
+# Migrant 0.10.3
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/3674/badge.svg)](https://scan.coverity.com/projects/3674)
 
