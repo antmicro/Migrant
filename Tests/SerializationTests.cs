@@ -1002,6 +1002,44 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
+        [Test]
+        public void ShouldSerializeClassWithGenericMethodDelegate()
+        {
+            var serializer = new Serializer(GetSettings());
+
+            var obj = new GenericClassWithGenericDelegate<List<bool>>();
+            using(var stream = new MemoryStream())
+            {
+                serializer.Serialize(obj, stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                var copy = serializer.Deserialize<GenericClassWithGenericDelegate<List<bool>>>(stream);
+                Assert.IsNotNull(copy);
+            }
+        }
+
+        public class GenericClassWithGenericDelegate<T>
+        {
+            public GenericClassWithGenericDelegate()
+            {
+                var x = new InnerClass();
+                del = x.Action;
+            }
+
+            public void CallDelegate(T c)
+            {
+                del(c, "string");
+            }
+
+            private readonly Action<T, string> del;
+
+            private class InnerClass
+            {
+                public void Action<TInner>(TInner x, string y)
+                {
+                }
+            }
+        }
+
         public class GenericClass<T>
         {
             [Transient]

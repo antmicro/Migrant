@@ -582,14 +582,47 @@ namespace Antmicro.Migrant
             {
                 var type = ReadType().UnderlyingType;
                 var methodName = reader.ReadString();
-                var parametersCount = reader.ReadInt32();
-                var types = new Type[parametersCount];
-                for(int i = 0; i < types.Length; i++)
+                var genericArgumentsCount = reader.ReadInt32();
+                var genericArguments = new Type[genericArgumentsCount];
+                for(int i = 0; i < genericArgumentsCount; i++)
                 {
-                    types[i] = ReadType().UnderlyingType;
+                    genericArguments[i] = ReadType().UnderlyingType;
                 }
 
-                result = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
+                var parametersCount = reader.ReadInt32();
+                if(genericArgumentsCount > 0)
+                {
+                    var parameters = new TypeOrGenericTypeArgument[parametersCount];
+                    for(int i = 0; i < parameters.Length; i++)
+                    {
+                        var genericType = reader.ReadBoolean();
+                        parameters[i] = genericType ? 
+                            new TypeOrGenericTypeArgument(reader.ReadInt32()) :
+                            new TypeOrGenericTypeArgument(ReadType().UnderlyingType);
+                    }
+
+                    result = type.GetMethods().SingleOrDefault(m => 
+                        m.IsGenericMethod && 
+                        m.GetGenericMethodDefinition().Name == methodName && 
+                        m.GetGenericArguments().Length == genericArgumentsCount && 
+                        CompareGenericArguments(m.GetGenericMethodDefinition().GetParameters(), parameters));
+
+                    if(result != null)
+                    {
+                        result = result.MakeGenericMethod(genericArguments);
+                    }
+                }
+                else
+                {
+                    var types = new Type[parametersCount];
+                    for(int i = 0; i < types.Length; i++)
+                    {
+                        types[i] = ReadType().UnderlyingType;
+                    }
+
+                    result = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
+                }
+
                 methodList.Add(result);
             }
             else
@@ -661,6 +694,34 @@ namespace Antmicro.Migrant
 
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
+        private static bool CompareGenericArguments(ParameterInfo[] actual, TypeOrGenericTypeArgument[] expected)
+        {
+            if(actual.Length != expected.Length)
+            {
+                return false;
+            }
+
+            for(int i = 0; i < actual.Length; i++)
+            {
+                if(actual[i].ParameterType.IsGenericParameter)
+                {
+                    if(actual[i].ParameterType.GenericParameterPosition != expected[i].GenericTypeArgumentIndex)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if(actual[i].ParameterType != expected[i].Type)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         private readonly VersionToleranceLevel versionToleranceLevel;
         private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;
@@ -685,6 +746,24 @@ namespace Antmicro.Migrant
             Uninitialized,
             DefaultCtor,
             Null
+        }
+
+        private struct TypeOrGenericTypeArgument
+        {
+            public TypeOrGenericTypeArgument(Type t)
+            {
+                Type = t;
+                GenericTypeArgumentIndex = -1;
+            }
+
+            public TypeOrGenericTypeArgument(int index)
+            {
+                Type = null;
+                GenericTypeArgumentIndex = index;
+            }
+
+            public Type Type { get; private set; }
+            public int GenericTypeArgumentIndex { get; private set; }
         }
     }
 }

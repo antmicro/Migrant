@@ -248,13 +248,45 @@ namespace Antmicro.Migrant
             methodId = methodIndices[info];
             writer.Write(methodId);
             TouchAndWriteTypeId(info.ReflectedType);
-            writer.Write(info.Name);
 
-            var parameters = info.GetParameters();
-            writer.Write(parameters.Length);
-            foreach(var p in parameters)
+            var methodParameters = info.GetParameters();
+            if(info.IsGenericMethod)
             {
-                TouchAndWriteTypeId(p.ParameterType);
+                var genericDefinition = info.GetGenericMethodDefinition();
+                var genericArguments = info.GetGenericArguments();
+                var genericMethodParamters = genericDefinition.GetParameters();
+
+                writer.Write(genericDefinition.Name);
+                writer.Write(genericArguments.Length);
+                for(int i = 0; i < genericArguments.Length; i++)
+                {
+                    TouchAndWriteTypeId(genericArguments[i]);
+                }
+
+                writer.Write(genericMethodParamters.Length);
+                for(int i = 0; i < genericMethodParamters.Length; i++)
+                {
+                    writer.Write(genericMethodParamters[i].ParameterType.IsGenericParameter);
+                    if(genericMethodParamters[i].ParameterType.IsGenericParameter)
+                    {
+                        writer.Write(genericMethodParamters[i].ParameterType.GenericParameterPosition);
+                    }
+                    else
+                    {
+                        TouchAndWriteTypeId(methodParameters[i].ParameterType);
+                    }
+                }
+            }
+            else
+            {
+                writer.Write(info.Name);
+                writer.Write(0); // no generic arguments
+                writer.Write(methodParameters.Length);
+
+                foreach(var p in methodParameters)
+                {
+                    TouchAndWriteTypeId(p.ParameterType);
+                }
             }
 
             return methodId;
