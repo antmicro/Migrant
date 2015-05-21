@@ -290,8 +290,6 @@ namespace Antmicro.Migrant.Tests
             Assert.AreSame(copy[0].Element, copy[1].Element);
         }
 
-
-
         [Test]
         public void ShouldSerializeListWithNull()
         {
