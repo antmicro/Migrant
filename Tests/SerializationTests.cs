@@ -767,7 +767,7 @@ namespace Antmicro.Migrant.Tests
         public void ShouldThrowOnThreadLocalSerialization()
         {
             var classWithThreadLocal = new ClassWithThreadLocal();
-            Assert.Throws(typeof(InvalidOperationException), () => Serializer.DeepClone(classWithThreadLocal));
+            Assert.Throws(typeof(InvalidOperationException), () => SerializerClone(classWithThreadLocal));
         }
 
         [Test]
