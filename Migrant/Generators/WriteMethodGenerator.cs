@@ -40,8 +40,7 @@ namespace Antmicro.Migrant.Generators
 {
     internal class WriteMethodGenerator
     {
-        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, FieldInfo typeIndicesField, FieldInfo surrogatesField, FieldInfo typeIdWrittenField,
-            MethodInfo writeObjectMethod)
+        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, FieldInfo surrogatesField, MethodInfo writeObjectMethod)
         {
             typeWeAreGeneratingFor = typeToGenerate;
             ObjectWriter.CheckLegality(typeToGenerate);
@@ -81,24 +80,14 @@ namespace Antmicro.Migrant.Generators
                 return;
             }
 
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldfld, typeIdWrittenField);
-            var omitWriteIdLabel = generator.DefineLabel();
-            generator.Emit(OpCodes.Brtrue, omitWriteIdLabel);
+            var delegateTouchAndWriteTypeId = Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type));
+            generator.Emit(OpCodes.Ldarg_0); // objectWriter
 
-            generator.Emit(OpCodes.Ldarg_1);
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldfld, typeIndicesField);
-            generator.Emit(OpCodes.Ldtoken, typeToGenerate);
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o)));
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(() => TypeDescriptor.CreateFromType(null)));
-            generator.Emit(OpCodes.Call, typeof(Dictionary<TypeDescriptor, int>).GetMethod("get_Item"));
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<PrimitiveWriter>(x => x.Write(0)));
+            generator.Emit(OpCodes.Ldarg_2);
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(o => o.GetType()));
 
-            generator.MarkLabel(omitWriteIdLabel);
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldc_I4_0);
-            generator.Emit(OpCodes.Stfld, typeIdWrittenField);
+            generator.Emit(OpCodes.Call, delegateTouchAndWriteTypeId);
+            generator.Emit(OpCodes.Pop);
 
             // preserialization callbacks
             GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));
