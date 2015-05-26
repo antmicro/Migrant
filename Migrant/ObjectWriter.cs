@@ -296,9 +296,45 @@ namespace Antmicro.Migrant
         {
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
         }
-
+        
         internal int TouchAndWriteTypeId(Type type)
         {
+            if(type.IsArray)
+            {
+                PrimitiveWriter.Write(type.GetArrayRank());
+                return TouchAndWriteTypeId(type.GetElementType());
+            }
+
+            PrimitiveWriter.Write(0); // normal variable, array-rank = 0
+
+            if(type.IsGenericType)
+            {
+                TouchAndWriteTypeIdInner(type.GetGenericTypeDefinition());
+                var genericArguments = type.GetGenericArguments();
+                PrimitiveWriter.Write(genericArguments.Length);
+                foreach(var genericArgument in genericArguments)
+                {
+                    TouchAndWriteTypeId(genericArgument);
+                }
+            }
+            else
+            { 
+                TouchAndWriteTypeIdInner(type);
+                PrimitiveWriter.Write(0); // no generic arguments
+            }
+            
+            return 0; // todo remove this return
+        }
+
+        private void TouchAndWriteTypeIdInner(Type type)
+        {
+            writer.Write(type.IsGenericParameter);
+            if(type.IsGenericParameter)
+            {
+                writer.Write(type.GenericParameterPosition);
+                return;
+            }
+
             var typeDescriptor = TypeDescriptor.CreateFromType(type);
 
             int typeId;
@@ -306,14 +342,13 @@ namespace Antmicro.Migrant
             {
                 typeId = typeIndices[typeDescriptor];
                 writer.Write(typeId);
-                return typeId;
+                return;
             }
             typeId = nextTypeId++;
             typeIndices.Add(typeDescriptor, typeId);
             writer.Write(typeId);
             typeDescriptor.WriteTypeStamp(this);
             typeDescriptor.WriteStructureStampIfNeeded(this);
-            return typeId;
         }
 
         internal int TouchAndWriteAssemblyId(AssemblyDescriptor assembly)

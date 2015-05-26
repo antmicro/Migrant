@@ -554,22 +554,62 @@ namespace Antmicro.Migrant
 
         internal TypeDescriptor ReadType()
         {
-            var typeId = reader.ReadInt32();
-            if(typeId == Consts.NullObjectId)
+            return ReadTypeWithContext(null);
+        }
+
+        internal TypeDescriptor ReadTypeWithContext(Type contextType)
+        {
+            var rank = reader.ReadInt32();
+            if(rank > 0)
             {
-                return null;
-            }
-            if(typeCache.Any() && typeCache.Keys.Max() >= typeId)
-            {
-                return typeCache[typeId];
+                var elementType = ReadTypeWithContext(contextType);
+                return TypeDescriptor.CreateFromType(elementType.UnderlyingType.MakeArrayType(rank));
             }
 
-            var type = TypeDescriptor.ReadFromStream(this);
-            typeCache.Add(typeId, type);
+            TypeDescriptor type;
+            var isGenericArgument = reader.ReadBoolean();
+            if(isGenericArgument)
+            {
+                if(contextType == null)
+                {
+                    throw new Exception("Encountered GenericArgument when no context type was provided.");
+                }
 
-            // we need to read stamp here (i.e., after adding to typeList)
-            // as other types from the stamp can reference this type
-            type.ReadStructureStampIfNeeded(this, versionToleranceLevel);
+                var position = reader.ReadInt32();
+                type = TypeDescriptor.CreateFromType(contextType.GetGenericArguments()[position]);
+            }
+            else
+            {
+                var typeId = reader.ReadInt32();
+                if(typeId == Consts.NullObjectId)
+                {
+                    return null;
+                }
+
+                if(typeCache.Any() && typeCache.Keys.Max() >= typeId)
+                {
+                    type = typeCache[typeId];
+                }
+                else
+                {
+                    type = TypeDescriptor.ReadFromStream(this);
+                    typeCache.Add(typeId, type);
+                    type.ReadStructureStampIfNeeded(this, versionToleranceLevel);
+                }
+            }
+
+            var genericArgumentsCount = reader.ReadInt32();
+            if(genericArgumentsCount > 0)
+            {
+                var genericArguments = new TypeDescriptor[genericArgumentsCount];
+                for(int i = 0; i < genericArgumentsCount; i++)
+                {
+                    genericArguments[i] = ReadTypeWithContext(type.UnderlyingType);
+                }
+                
+                return type.MakeGenericType(genericArguments);
+            }
+            
             return type;
         }
 
