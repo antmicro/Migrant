@@ -82,12 +82,9 @@ namespace Antmicro.Migrant.Generators
 
             var delegateTouchAndWriteTypeId = Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type));
             generator.Emit(OpCodes.Ldarg_0); // objectWriter
-
             generator.Emit(OpCodes.Ldarg_2);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(o => o.GetType()));
-
             generator.Emit(OpCodes.Call, delegateTouchAndWriteTypeId);
-            generator.Emit(OpCodes.Pop);
 
             // preserialization callbacks
             GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));

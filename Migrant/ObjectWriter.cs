@@ -297,12 +297,13 @@ namespace Antmicro.Migrant
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
         }
         
-        internal int TouchAndWriteTypeId(Type type)
+        internal void TouchAndWriteTypeId(Type type)
         {
             if(type.IsArray)
             {
                 PrimitiveWriter.Write(type.GetArrayRank());
-                return TouchAndWriteTypeId(type.GetElementType());
+                TouchAndWriteTypeId(type.GetElementType());
+                return;
             }
 
             PrimitiveWriter.Write(0); // normal variable, array-rank = 0
@@ -322,8 +323,6 @@ namespace Antmicro.Migrant
                 TouchAndWriteTypeIdInner(type);
                 PrimitiveWriter.Write(0); // no generic arguments
             }
-            
-            return 0; // todo remove this return
         }
 
         private void TouchAndWriteTypeIdInner(Type type)
