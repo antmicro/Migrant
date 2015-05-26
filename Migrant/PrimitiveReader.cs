@@ -126,14 +126,29 @@ namespace Antmicro.Migrant
         /// </summary>
         public byte ReadByte()
         {
+#if DEBUG
+            var position = Position;
+#endif
+                        
+            byte result;
             if(buffered)
             {
                 CheckBuffer();
-                return buffer[currentBufferPosition++];
+                result = buffer[currentBufferPosition++];
             }
-            var result = stream.ReadByteOrThrow();
+            else
+            {
+                result = stream.ReadByteOrThrow();
+                currentBufferPosition++;
+            }
 
-            currentBufferPosition++;
+#if DEBUG
+            if(PrimitiveWriter.TraceCalls)
+            {
+                Helpers.TraceReadCall(string.Format("PR: Reading byte at position {0} of value '{1}'", position, result), "InnerReadInteger");
+            }
+#endif
+
             return result;
         }
 
@@ -243,10 +258,22 @@ namespace Antmicro.Migrant
         /// </summary>
         public string ReadString()
         {
+#if DEBUG
+            var position = Position;
+#endif
             bool fake;
             var length = ReadInt32(); // length prefix
             var chunk = InnerChunkRead(length, out fake);
-            return Encoding.UTF8.GetString(chunk.Array, chunk.Offset, chunk.Count);
+            var result = Encoding.UTF8.GetString(chunk.Array, chunk.Offset, chunk.Count);
+
+#if DEBUG
+            if(PrimitiveWriter.TraceCalls)
+            {
+                Helpers.TraceReadCall(string.Format("PR: Reading string from position {0} of length {1} of value '{2}'", position, length, result));
+            }
+#endif
+
+            return result;
         }
 
         /// <summary>
@@ -353,10 +380,17 @@ namespace Antmicro.Migrant
 #if DEBUG
             if(PrimitiveWriter.DontUseIntegerCompression)
             {
+                var position = Position;
+
                 for(int i = 0; i < sizeof(ulong); ++i)
                 {
                     next = ReadByte();
                     result |= (next << 8 * (sizeof(ulong) - i - 1));
+                }
+
+                if(PrimitiveWriter.TraceCalls)
+                {
+                    Helpers.TraceReadCall(string.Format("PR: Reading int from position {0} of value '{1}'", position, result));
                 }
 
                 return result;

@@ -33,6 +33,7 @@ using System.Reflection;
 using System.Linq.Expressions;
 using System.Collections.ObjectModel;
 using Antmicro.Migrant.Utilities;
+using System.Diagnostics;
 
 namespace Antmicro.Migrant
 {
@@ -236,6 +237,33 @@ namespace Antmicro.Migrant
             }
             return -1;
         }
+
+#if DEBUG
+        internal static void TraceWriteCall(string message, params string[] ignoredMethods)
+        {
+            TraceCall(string.Format("{0}-writer", LogFile), message, ignoredMethods);
+        }
+
+        internal static void TraceReadCall(string message, params string[] ignoredMethods)
+        {
+            TraceCall(string.Format("{0}-reader", LogFile), message, ignoredMethods);
+        }
+
+        private static void TraceCall(string file, string message, string[] ignoredMethods)
+        {
+            var stackTrace = new StackTrace();
+            var methods = stackTrace.GetFrames().Select(x => Tuple.Create(x.GetMethod(), x.GetILOffset())).ToArray();
+            if(methods.Any(x => ignoredMethods.Contains(x.Item1.Name)))
+            {
+                return;
+            }
+
+            var path = methods.Where(x => x.Item1.DeclaringType.Namespace.StartsWith("Antmicro.Migrant")).Select(x => string.Format("{0}({1})+{2}", x.Item1.Name, string.Join(", ", x.Item1.GetParameters().Select(y => y.ParameterType.Name)), x.Item2)).Skip(2).Aggregate((x, y) => x + " => " + y);
+            File.AppendAllText(file, string.Format(" {0} ({1})\n", message, path));
+        }
+
+        internal static readonly string LogFile = "/tmp/migrant-log";
+#endif
         
         internal static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 

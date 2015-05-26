@@ -127,6 +127,13 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(byte value)
         {
+#if DEBUG
+            if(TraceCalls)
+            {
+                Helpers.TraceWriteCall(string.Format("PW: Writing byte at position {0} of value '{1}'", Position, value));
+            }
+#endif
+
             if(buffered)
             {
                 CheckBuffer(1);
@@ -252,6 +259,13 @@ namespace Antmicro.Migrant
         {
             var bytes = Encoding.UTF8.GetBytes(str);
             Write(bytes.Length);
+
+#if DEBUG
+            if(TraceCalls)
+            {
+                Helpers.TraceWriteCall(string.Format("PW: Writing string at position {0} of value '{1}'", Position, str));
+            }
+#endif
             InnerChunkWrite(bytes);
         }
 
@@ -336,6 +350,14 @@ namespace Antmicro.Migrant
         private void InnerWriteInteger(ulong value, int sizeInBytes)
         {
             byte valueToWrite;
+
+#if DEBUG
+            if(TraceCalls)
+            {
+                Helpers.TraceWriteCall(string.Format("PW: Writing int at position {0} of value '{1}'", Position, value));
+            }
+#endif
+
 #if DEBUG
             if(DontUseIntegerCompression)
             {
@@ -472,7 +494,8 @@ namespace Antmicro.Migrant
         private const int BufferSize = 4 * 1024;
 
         #if DEBUG
-        internal static readonly bool DontUseIntegerCompression = false;
+        internal static readonly bool DontUseIntegerCompression = true;
+        internal static readonly bool TraceCalls = false;
         #endif
     }
 }
