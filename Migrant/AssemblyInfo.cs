@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 - 2014 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012 - 2015 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -33,6 +33,6 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyCompany("Antmicro")]
 [assembly: AssemblyCopyright("Copyright by Antmicro 2012 - 2015")]
 
-[assembly: AssemblyVersion("0.10.3")]
+[assembly: AssemblyVersion("0.10.4")]
 
 [assembly: InternalsVisibleTo("Tests")]
