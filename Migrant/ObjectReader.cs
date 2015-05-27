@@ -563,7 +563,7 @@ namespace Antmicro.Migrant
             if(rank > 0)
             {
                 var elementType = ReadTypeWithContext(contextType);
-                return TypeDescriptor.CreateFromType(elementType.UnderlyingType.MakeArrayType(rank));
+                return TypeDescriptor.CreateFromType(rank == 1 ? elementType.UnderlyingType.MakeArrayType() : elementType.UnderlyingType.MakeArrayType(rank));
             }
 
             TypeDescriptor type;
