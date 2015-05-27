@@ -51,12 +51,15 @@ namespace Antmicro.Migrant
         public void WriteTo(ObjectWriter writer)
         {
             writer.TouchAndWriteTypeId(FieldType.UnderlyingType);
+            // we need to stamp declaring type in order to detect situation when field is moved from base to derived class
+            writer.TouchAndWriteTypeId(DeclaringType.UnderlyingType);
             writer.PrimitiveWriter.Write(Name);
         }
 
         public void ReadFrom(ObjectReader reader)
         {
             FieldType = reader.ReadTypeWithContext(DeclaringType.UnderlyingType.IsGenericType ? DeclaringType.UnderlyingType : null);
+            DeclaringType = reader.ReadTypeWithContext(DeclaringType.UnderlyingType.IsGenericType ? DeclaringType.UnderlyingType : null);
             Name = reader.PrimitiveReader.ReadString();
             UnderlyingFieldInfo = DeclaringType.UnderlyingType.GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
         }
