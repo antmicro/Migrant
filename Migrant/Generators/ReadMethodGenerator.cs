@@ -36,6 +36,8 @@ using Antmicro.Migrant.Hooks;
 using Antmicro.Migrant.Utilities;
 using System.Collections;
 using Antmicro.Migrant.Generators;
+using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace Antmicro.Migrant.Generators
 {
@@ -60,25 +62,42 @@ namespace Antmicro.Migrant.Generators
             {
                 dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, typeToGenerate, true);
             }
-            generator = dynamicMethod.GetILGenerator();
 
-            GenerateDynamicCode(typeToGenerate);
+#if DEBUG
+            if (SaveGeneratedAssembly)
+            {
+                var dynamicModule = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(string.Format("ReaderDynamicAssembly_{0}", Regex.Replace(typeToGenerate.Name, "[^a-zA-Z0-9_]", ""))), AssemblyBuilderAccess.Save);
+                var fileName = string.Format("{0}.dll", dynamicModule.GetName().Name);
+                var moduleBuilder = dynamicModule.DefineDynamicModule(dynamicModule.GetName().Name, fileName, true);
+                var typeBuilder = moduleBuilder.DefineType("DynamicType");
+                var methodBuilder = typeBuilder.DefineMethod("Read", MethodAttributes.Public | MethodAttributes.Static, null, ParameterTypes);
+
+                var gen = methodBuilder.GetILGenerator();
+                GenerateDynamicCode(gen, typeToGenerate);
+
+                typeBuilder.CreateType();
+                dynamicModule.Save(fileName);
+            }
+#endif
+
+            var generator = dynamicMethod.GetILGenerator();
+            GenerateDynamicCode(generator, typeToGenerate);
         }
 
-        private void GenerateDynamicCode(Type typeToGenerate)
+        private void GenerateDynamicCode(ILGenerator generator, Type typeToGenerate)
         {
-            GenerateReadObjectInner(typeToGenerate);
+            GenerateReadObjectInner(generator, typeToGenerate);
 			
-            PushDeserializedObjectsCollectionOntoStack();
+            PushDeserializedObjectsCollectionOntoStack(generator);
             generator.Emit(OpCodes.Ldarg_1);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>, object>(x => x[0]));
 					    
             generator.Emit(OpCodes.Ret);
         }
 
-        private void GenerateReadPrimitive(Type type)
+        private void GenerateReadPrimitive(ILGenerator generator, Type type)
         {
-            PushPrimitiveReaderOntoStack();
+            PushPrimitiveReaderOntoStack(generator);
             var mname = string.Concat("Read", type.Name);
             var readMethod = typeof(PrimitiveReader).GetMethod(mname);
             if(readMethod == null)
@@ -89,33 +108,33 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Call, readMethod);
         }
 
-        private void GenerateReadNotPrecreated(Type formalType, LocalBuilder objectIdLocal)
+        private void GenerateReadNotPrecreated(ILGenerator generator, Type formalType, LocalBuilder objectIdLocal)
         {
             if(formalType.IsValueType)
             {
-                PushDeserializedObjectsCollectionOntoStack();
+                PushDeserializedObjectsCollectionOntoStack(generator);
                 generator.Emit(OpCodes.Ldloc, objectIdLocal);
-                GenerateReadField(formalType, true);
+                GenerateReadField(generator, formalType, true);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>>(x => x.SetItem(0, null)));
             }
             else if(formalType == typeof(string))
             {
-                PushDeserializedObjectsCollectionOntoStack();
+                PushDeserializedObjectsCollectionOntoStack(generator);
                 generator.Emit(OpCodes.Ldloc, objectIdLocal);
-                GenerateReadPrimitive(formalType);
+                GenerateReadPrimitive(generator, formalType);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>>(x => x.SetItem(0, null)));
             }
             else if(formalType.IsArray)
             {
-                GenerateReadArray(formalType, objectIdLocal);
+                GenerateReadArray(generator, formalType, objectIdLocal);
             }
             else if(typeof(MulticastDelegate).IsAssignableFrom(formalType))
             {
-                GenerateReadDelegate(formalType, objectIdLocal);
+                GenerateReadDelegate(generator, formalType, objectIdLocal);
             }
             else if(formalType.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(formalType.GetGenericTypeDefinition()))
             {
-                GenerateReadReadOnlyCollection(formalType, objectIdLocal);
+                GenerateReadReadOnlyCollection(generator, formalType, objectIdLocal);
             }
             else
             {
@@ -123,26 +142,26 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private void GenerateReadDelegate(Type type, LocalBuilder objectIdLocal)
+        private void GenerateReadDelegate(ILGenerator generator, Type type, LocalBuilder objectIdLocal)
         {
             var invocationListLengthLocal = generator.DeclareLocal(typeof(Int32));
             var targetLocal = generator.DeclareLocal(typeof(object));
 
-            GenerateReadPrimitive(typeof(Int32));
+            GenerateReadPrimitive(generator, typeof(Int32));
             generator.Emit(OpCodes.Stloc, invocationListLengthLocal);
 
             GeneratorHelper.GenerateLoop(generator, invocationListLengthLocal, cl =>
             {
-                GenerateReadField(typeof(object));
+                GenerateReadField(generator, typeof(object));
                 generator.Emit(OpCodes.Stloc, targetLocal);
 
-                GenerateReadMethod();
-                PushTypeOntoStack(type);
+                GenerateReadMethod(generator);
+                PushTypeOntoStack(generator, type);
                 generator.Emit(OpCodes.Ldloc, targetLocal);
-                PushDeserializedObjectsCollectionOntoStack();
+                PushDeserializedObjectsCollectionOntoStack(generator);
                 generator.Emit(OpCodes.Ldloc, objectIdLocal);
 
-                GenerateCodeCall<MethodInfo, Type, object, AutoResizingList<object>, int>((method, t, target, deserializedObjects, objectId) =>
+                GenerateCodeCall<MethodInfo, Type, object, AutoResizingList<object>, int>(generator, (method, t, target, deserializedObjects, objectId) =>
                 {
                     var del = Delegate.CreateDelegate(t, target, method);
                     deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
@@ -150,7 +169,7 @@ namespace Antmicro.Migrant.Generators
             });
         }
 
-        private void GenerateReadObjectInner(Type formalType)
+        private void GenerateReadObjectInner(ILGenerator generator, Type formalType)
         {
             var finish = generator.DefineLabel();
             var objectIdLocal = generator.DeclareLocal(typeof(Int32));
@@ -158,28 +177,28 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Ldarg_1);
             generator.Emit(OpCodes.Stloc, objectIdLocal);
 
-            GenerateTouchObject(formalType);
+            GenerateTouchObject(generator, formalType);
 			
             switch(ObjectReader.GetCreationWay(formalType, treatCollectionAsUserObject))
             {
             case ObjectReader.CreationWay.Null:
-                GenerateReadNotPrecreated(formalType, objectIdLocal);
+                GenerateReadNotPrecreated(generator, formalType, objectIdLocal);
                 break;
             case ObjectReader.CreationWay.DefaultCtor:
-                GenerateUpdateElements(formalType, objectIdLocal);
+                GenerateUpdateElements(generator, formalType, objectIdLocal);
                 break;
             case ObjectReader.CreationWay.Uninitialized:
-                GenerateUpdateFields(formalType, objectIdLocal);
+                GenerateUpdateFields(generator, formalType, objectIdLocal);
                 break;
             }
 			
-            PushDeserializedObjectOntoStack(objectIdLocal);
+            PushDeserializedObjectOntoStack(generator, objectIdLocal);
             generator.Emit(OpCodes.Brfalse, finish);
 
             var methods = Helpers.GetMethodsWithAttribute(typeof(PostDeserializationAttribute), formalType).ToArray();
             foreach(var method in methods)
             {
-                PushDeserializedObjectOntoStack(objectIdLocal);
+                PushDeserializedObjectOntoStack(generator, objectIdLocal);
                 generator.Emit(OpCodes.Castclass, method.ReflectedType);
                 if(method.IsVirtual)
                 {
@@ -202,14 +221,14 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Ldfld, postDeserializationHooksField);
 
-                PushTypeOntoStack(typeof(Action));
+                PushTypeOntoStack(generator, typeof(Action));
                 if(method.IsStatic)
                 {
                     generator.Emit(OpCodes.Ldnull);
                 }
                 else
                 {
-                    PushDeserializedObjectOntoStack(objectIdLocal);
+                    PushDeserializedObjectOntoStack(generator, objectIdLocal);
                     generator.Emit(OpCodes.Castclass, method.ReflectedType);
                 }
 
@@ -242,7 +261,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Brfalse, afterCallbackCall);
             //generator.Emit(OpCodes.Castclass, typeof(Action<object>));
             generator.Emit(OpCodes.Ldloc, callbackLocal);
-            PushDeserializedObjectOntoStack(objectIdLocal);
+            PushDeserializedObjectOntoStack(generator, objectIdLocal);
             //generator.Emit(OpCodes.Ldnull);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Action<object>>(x => x.Invoke(null)));
             generator.MarkLabel(afterCallbackCall);
@@ -264,7 +283,7 @@ namespace Antmicro.Migrant.Generators
                 // recreate an object from the surrogate
                 var delegateType = typeof(Func<,>).MakeGenericType(formalType, typeof(object));
                 generator.Emit(OpCodes.Castclass, delegateType);
-                PushDeserializedObjectOntoStack(objectIdLocal);
+                PushDeserializedObjectOntoStack(generator, objectIdLocal);
                 generator.Emit(OpCodes.Call, delegateType.GetMethod("Invoke"));
 
                 // save recreated object
@@ -274,14 +293,14 @@ namespace Antmicro.Migrant.Generators
             generator.MarkLabel(finish);
         }
 
-        private void GenerateUpdateElements(Type formalType, LocalBuilder objectIdLocal)
+        private void GenerateUpdateElements(ILGenerator generator, Type formalType, LocalBuilder objectIdLocal)
         {
             if(typeof(ISpeciallySerializable).IsAssignableFrom(formalType))
             {
-                PushDeserializedObjectOntoStack(objectIdLocal);
+                PushDeserializedObjectOntoStack(generator, objectIdLocal);
                 generator.Emit(OpCodes.Castclass, typeof(ISpeciallySerializable));
-                PushPrimitiveReaderOntoStack();
-                GenerateCodeCall<ISpeciallySerializable, PrimitiveReader>(ObjectReader.LoadAndVerifySpeciallySerializableAndVerify);
+                PushPrimitiveReaderOntoStack(generator);
+                GenerateCodeCall<ISpeciallySerializable, PrimitiveReader>(generator, ObjectReader.LoadAndVerifySpeciallySerializableAndVerify);
                 return;
             }
 
@@ -294,20 +313,20 @@ namespace Antmicro.Migrant.Generators
 
             if(collectionToken.IsDictionary)
             {
-                GenerateFillDictionary(collectionToken, formalType, objectIdLocal);
+                GenerateFillDictionary(generator, collectionToken, formalType, objectIdLocal);
                 return;
             }
 
-            GenerateFillCollection(collectionToken.FormalElementType, formalType, objectIdLocal);
+            GenerateFillCollection(generator, collectionToken.FormalElementType, formalType, objectIdLocal);
         }
 
         #region Collections generators
 
-        private void GenerateFillDictionary(CollectionMetaToken collectionToken, Type dictionaryType, LocalBuilder objectIdLocal)
+        private void GenerateFillDictionary(ILGenerator generator, CollectionMetaToken collectionToken, Type dictionaryType, LocalBuilder objectIdLocal)
         {
             var countLocal = generator.DeclareLocal(typeof(Int32));
 
-            GenerateReadPrimitive(typeof(Int32));
+            GenerateReadPrimitive(generator, typeof(Int32));
             generator.Emit(OpCodes.Stloc, countLocal); // read dictionary elements count
 
             var addMethodArgumentTypes = new [] {
@@ -323,11 +342,11 @@ namespace Antmicro.Migrant.Generators
 
             GeneratorHelper.GenerateLoop(generator, countLocal, lc =>
             {
-                PushDeserializedObjectOntoStack(objectIdLocal);
+                PushDeserializedObjectOntoStack(generator, objectIdLocal);
                 generator.Emit(OpCodes.Castclass, dictionaryType);
 
-                GenerateReadField(collectionToken.FormalKeyType, false);
-                GenerateReadField(collectionToken.FormalValueType, false);
+                GenerateReadField(generator, collectionToken.FormalKeyType, false);
+                GenerateReadField(generator, collectionToken.FormalValueType, false);
 
                 generator.Emit(OpCodes.Callvirt, addMethod);
                 if(addMethod.ReturnType != typeof(void))
@@ -337,14 +356,14 @@ namespace Antmicro.Migrant.Generators
             });
         }
 
-        private void GenerateReadReadOnlyCollection(Type type, LocalBuilder objectIdLocal)
+        private void GenerateReadReadOnlyCollection(ILGenerator generator, Type type, LocalBuilder objectIdLocal)
         {
             var elementFormalType = type.GetGenericArguments()[0];
 			
             var lengthLocal = generator.DeclareLocal(typeof(Int32));
             var arrayLocal = generator.DeclareLocal(elementFormalType.MakeArrayType());
 			
-            GenerateReadPrimitive(typeof(Int32));
+            GenerateReadPrimitive(generator, typeof(Int32));
             generator.Emit(OpCodes.Stloc, lengthLocal); // read number of elements in the collection
 			
             generator.Emit(OpCodes.Ldloc, lengthLocal);
@@ -355,11 +374,11 @@ namespace Antmicro.Migrant.Generators
             {
                 generator.Emit(OpCodes.Ldloc, arrayLocal);
                 generator.Emit(OpCodes.Ldloc, lc);
-                GenerateReadField(elementFormalType);
+                GenerateReadField(generator, elementFormalType);
                 generator.Emit(OpCodes.Stelem, elementFormalType);
             });
 			
-            SaveNewDeserializedObject(objectIdLocal, () =>
+            SaveNewDeserializedObject(generator, objectIdLocal, () =>
             {
                 generator.Emit(OpCodes.Ldloc, arrayLocal);
                 generator.Emit(OpCodes.Castclass, typeof(IList<>).MakeGenericType(elementFormalType));
@@ -367,11 +386,11 @@ namespace Antmicro.Migrant.Generators
             });
         }
 
-        private void GenerateFillCollection(Type elementFormalType, Type collectionType, LocalBuilder objectIdLocal)
+        private void GenerateFillCollection(ILGenerator generator, Type elementFormalType, Type collectionType, LocalBuilder objectIdLocal)
         {
             var countLocal = generator.DeclareLocal(typeof(Int32));
 
-            GenerateReadPrimitive(typeof(Int32));
+            GenerateReadPrimitive(generator, typeof(Int32));
             generator.Emit(OpCodes.Stloc, countLocal); // read collection elements count
 
             var addMethod = collectionType.GetMethod("Add", new [] { elementFormalType }) ??
@@ -395,13 +414,13 @@ namespace Antmicro.Migrant.Generators
                 {
                     generator.Emit(OpCodes.Ldloc, tempArrLocal);
                     generator.Emit(OpCodes.Ldloc, cl);
-                    GenerateReadField(elementFormalType, false);
+                    GenerateReadField(generator, elementFormalType, false);
                     generator.Emit(OpCodes.Stelem, elementFormalType);
                 });
 				
                 GeneratorHelper.GenerateLoop(generator, countLocal, cl =>
                 {
-                    PushDeserializedObjectOntoStack(objectIdLocal);
+                    PushDeserializedObjectOntoStack(generator, objectIdLocal);
                     generator.Emit(OpCodes.Castclass, collectionType);
 
                     generator.Emit(OpCodes.Ldloc, tempArrLocal);
@@ -414,9 +433,9 @@ namespace Antmicro.Migrant.Generators
             {
                 GeneratorHelper.GenerateLoop(generator, countLocal, cl =>
                 {
-                    PushDeserializedObjectOntoStack(objectIdLocal);
+                    PushDeserializedObjectOntoStack(generator, objectIdLocal);
                     generator.Emit(OpCodes.Castclass, collectionType);
-                    GenerateReadField(elementFormalType, false);
+                    GenerateReadField(generator, elementFormalType, false);
                     generator.Emit(OpCodes.Callvirt, addMethod);
 
                     if(addMethod.ReturnType != typeof(void))
@@ -427,7 +446,7 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private void GenerateReadArray(Type arrayType, LocalBuilder objectIdLocal)
+        private void GenerateReadArray(ILGenerator generator, Type arrayType, LocalBuilder objectIdLocal)
         {
             var isMultidimensional = arrayType.GetArrayRank() > 1;
             var elementFormalType = arrayType.GetElementType();
@@ -441,7 +460,7 @@ namespace Antmicro.Migrant.Generators
             var loopEndLabel = generator.DefineLabel();
             var nonZeroLengthLabel = generator.DefineLabel();
 						
-            GenerateReadPrimitive(typeof(Int32));
+            GenerateReadPrimitive(generator, typeof(Int32));
             generator.Emit(OpCodes.Stloc, rankLocal); // read amount of dimensions of the array
 			
             if(isMultidimensional)
@@ -457,7 +476,7 @@ namespace Antmicro.Migrant.Generators
                 {
                     generator.Emit(OpCodes.Ldloc, lengthsLocal);
                     generator.Emit(OpCodes.Ldloc, i);
-                    GenerateReadPrimitive(typeof(Int32));
+                    GenerateReadPrimitive(generator, typeof(Int32));
                     generator.Emit(OpCodes.Dup);
                     generator.Emit(OpCodes.Brtrue, nonZeroLengthLabel);
 
@@ -470,13 +489,13 @@ namespace Antmicro.Migrant.Generators
             }
             else
             {
-                GenerateReadPrimitive(typeof(Int32));
+                GenerateReadPrimitive(generator, typeof(Int32));
                 generator.Emit(OpCodes.Dup);
                 generator.Emit(OpCodes.Stloc, lengthsLocal);
                 generator.Emit(OpCodes.Stloc, loopControlLocal);
             }
 			
-            PushTypeOntoStack(elementFormalType);
+            PushTypeOntoStack(generator, elementFormalType);
             if(isMultidimensional)
             {
                 generator.Emit(OpCodes.Ldloc, lengthsLocal);
@@ -490,7 +509,7 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Stloc, arrayLocal); // create a one dimensional array
             }
 			
-            SaveNewDeserializedObject(objectIdLocal, () =>
+            SaveNewDeserializedObject(generator, objectIdLocal, () =>
             {
                 generator.Emit(OpCodes.Ldloc, arrayLocal);
             }); // store created array to deserialized obejcts collection
@@ -510,7 +529,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Castclass, arrayType);
             if(isMultidimensional)
             {
-                GenerateReadField(elementFormalType);
+                GenerateReadField(generator, elementFormalType);
                 generator.Emit(OpCodes.Ldloc, positionLocal);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(a => a.SetValue(null, new int[0])));
             }
@@ -519,7 +538,7 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldloc, positionLocal);
                 generator.Emit(OpCodes.Ldelema, elementFormalType);
 
-                GenerateReadField(elementFormalType, false);
+                GenerateReadField(generator, elementFormalType, false);
                 generator.Emit(OpCodes.Stobj, elementFormalType);
             }
                 
@@ -529,7 +548,7 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldloc, lengthsLocal);
                 generator.Emit(OpCodes.Ldloc, rankLocal);
 
-                GenerateCodeFCall<int[], int[], int, bool>((counter, sizes, ranks) =>
+                GenerateCodeFCall<int[], int[], int, bool>(generator, (counter, sizes, ranks) =>
                 {
                     var currentRank = ranks - 1;
     				
@@ -567,7 +586,7 @@ namespace Antmicro.Migrant.Generators
 
         #endregion
 
-        private LocalBuilder GenerateCheckObjectMeta(LocalBuilder objectIdLocal)
+        private LocalBuilder GenerateCheckObjectMeta(ILGenerator generator, LocalBuilder objectIdLocal)
         {
             // method returns on stack:
             // 0 - object type read sucessfully and stored in returned local
@@ -577,7 +596,7 @@ namespace Antmicro.Migrant.Generators
             var finish = generator.DefineLabel();
             var actualTypeLocal = generator.DeclareLocal(typeof(Type));
 
-            PushDeserializedObjectsCollectionOntoStack();
+            PushDeserializedObjectsCollectionOntoStack(generator);
             generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<AutoResizingList<object>, int>(x => x.Count)); // check current length of DeserializedObjectsCollection
             generator.Emit(OpCodes.Ldloc, objectIdLocal);
             generator.Emit(OpCodes.Ble, objNotYetDeserialized); // jump to object creation if objectId > DOC.Count
@@ -586,7 +605,7 @@ namespace Antmicro.Migrant.Generators
 
             generator.MarkLabel(objNotYetDeserialized);
 
-            GenerateReadType();
+            GenerateReadType(generator);
             generator.Emit(OpCodes.Stloc, actualTypeLocal);
             generator.Emit(OpCodes.Ldc_I4_0); // push value <<0>> on stack to indicate that there is actual type next
 			
@@ -595,13 +614,13 @@ namespace Antmicro.Migrant.Generators
             return actualTypeLocal; // you should use this local only when value on stack is equal to 0; i tried to push two values on stack, but it didn't work
         }
 
-        private void GenerateReadField(Type formalType, bool boxIfValueType = true)
+        private void GenerateReadField(ILGenerator generator, Type formalType, bool boxIfValueType = true)
         {
             // method returns read field value on stack
 
             if(Helpers.CheckTransientNoCache(formalType))
             {
-                PushTypeOntoStack(formalType);
+                PushTypeOntoStack(generator, formalType);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => Helpers.GetDefaultValue(null)));
 
                 if(formalType.IsValueType && boxIfValueType)
@@ -624,14 +643,14 @@ namespace Antmicro.Migrant.Generators
 
             if(!formalType.IsValueType)
             {
-                GenerateReadPrimitive(typeof(Int32)); // read object reference
+                GenerateReadPrimitive(generator, typeof(Int32)); // read object reference
                 generator.Emit(OpCodes.Stloc, objectIdLocal);
 				
                 generator.Emit(OpCodes.Ldc_I4, Antmicro.Migrant.Consts.NullObjectId);
                 generator.Emit(OpCodes.Ldloc, objectIdLocal); 
                 generator.Emit(OpCodes.Beq, returnNullLabel); // check if object reference is not <<NULL>>
 				
-                objectActualTypeLocal = GenerateCheckObjectMeta(objectIdLocal); // read object Type
+                objectActualTypeLocal = GenerateCheckObjectMeta(generator, objectIdLocal); // read object Type
                 generator.Emit(OpCodes.Stloc, metaResultLocal);
 				
                 generator.Emit(OpCodes.Ldloc, metaResultLocal);
@@ -644,7 +663,7 @@ namespace Antmicro.Migrant.Generators
 				
                 generator.MarkLabel(else1); // if CheckObjectMeta returned 1
 				
-                PushDeserializedObjectOntoStack(objectIdLocal);
+                PushDeserializedObjectOntoStack(generator, objectIdLocal);
                 generator.Emit(OpCodes.Castclass, formalType);
                 generator.Emit(OpCodes.Br, finishLabel);
 				
@@ -661,7 +680,7 @@ namespace Antmicro.Migrant.Generators
                 forcedFormalType = nullableActualType;
                 forcedBoxIfValueType = true;
 
-                GenerateReadPrimitive(typeof(bool));
+                GenerateReadPrimitive(generator, typeof(bool));
                 generator.Emit(OpCodes.Brtrue, continueWithNullableLabel);
 
                 generator.Emit(OpCodes.Ldnull);
@@ -674,8 +693,8 @@ namespace Antmicro.Migrant.Generators
             {
                 var actualType = Enum.GetUnderlyingType(forcedFormalType);
                 
-                PushTypeOntoStack(forcedFormalType);
-                GenerateReadPrimitive(actualType);
+                PushTypeOntoStack(generator, forcedFormalType);
+                GenerateReadPrimitive(generator, actualType);
                 generator.Emit(OpCodes.Call, typeof(Enum).GetMethod("ToObject", BindingFlags.Static | BindingFlags.Public, null, new[] {
                     typeof(Type),
                     actualType
@@ -689,7 +708,7 @@ namespace Antmicro.Migrant.Generators
             else if(Helpers.IsWriteableByPrimitiveWriter(forcedFormalType))
             {
                 // value type
-                GenerateReadPrimitive(forcedFormalType);
+                GenerateReadPrimitive(generator, forcedFormalType);
 
                 if(forcedBoxIfValueType)
                 {
@@ -700,7 +719,7 @@ namespace Antmicro.Migrant.Generators
             {
                 // here we have struct
                 var structLocal = generator.DeclareLocal(forcedFormalType);
-                GenerateUpdateStructFields(forcedFormalType, structLocal);
+                GenerateUpdateStructFields(generator, forcedFormalType, structLocal);
                 generator.Emit(OpCodes.Ldloc, structLocal);
                 if(forcedBoxIfValueType)
                 {
@@ -750,14 +769,14 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
+        private void GenerateUpdateFields(ILGenerator generator, Type formalType, LocalBuilder objectIdLocal)
         {
             var fields = TypeDescriptor.CreateFromType(formalType).FieldsToDeserialize;
             foreach(var fieldOrType in fields)
             {
                 if(fieldOrType.Field == null)
                 {
-                    GenerateReadField(fieldOrType.TypeToOmit, false);
+                    GenerateReadField(generator, fieldOrType.TypeToOmit, false);
                     generator.Emit(OpCodes.Pop);
                     continue;
                 }
@@ -767,10 +786,10 @@ namespace Antmicro.Migrant.Generators
                 {
                     if(field.IsDefined(typeof(ConstructorAttribute), false))
                     {
-                        PushFieldInfoOntoStack(field);
-                        PushDeserializedObjectOntoStack(objectIdLocal);
+                        PushFieldInfoOntoStack(generator, field);
+                        PushDeserializedObjectOntoStack(generator, objectIdLocal);
 
-                        GenerateCodeCall<FieldInfo, object>((fi, target) =>
+                        GenerateCodeCall<FieldInfo, object>(generator, (fi, target) =>
                         {
                             // this code is done using reflection and not generated due to
                             // small estimated profit and lot of code to write:
@@ -783,21 +802,21 @@ namespace Antmicro.Migrant.Generators
                     continue;
                 }
 
-                PushDeserializedObjectOntoStack(objectIdLocal);
+                PushDeserializedObjectOntoStack(generator, objectIdLocal);
                 generator.Emit(OpCodes.Castclass, field.ReflectedType);
-                GenerateReadField(field.FieldType, false);
+                GenerateReadField(generator, field.FieldType, false);
                 generator.Emit(OpCodes.Stfld, field);
             }
         }
 
-        private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
+        private void GenerateUpdateStructFields(ILGenerator generator, Type formalType, LocalBuilder structLocal)
         {			
             var fields = TypeDescriptor.CreateFromType(formalType).FieldsToDeserialize;
             foreach(var field in fields)
             {
                 if(field.Field == null)
                 {
-                    GenerateReadField(field.TypeToOmit, false);
+                    GenerateReadField(generator, field.TypeToOmit, false);
                     generator.Emit(OpCodes.Pop);
                     continue;
                 }
@@ -807,8 +826,8 @@ namespace Antmicro.Migrant.Generators
                     if(field.Field.IsDefined(typeof(ConstructorAttribute), false))
                     {
                         generator.Emit(OpCodes.Ldloca, structLocal);
-                        PushFieldInfoOntoStack(field.Field);
-                        GenerateCodeFCall<FieldInfo, object>(fi =>
+                        PushFieldInfoOntoStack(generator, field.Field);
+                        GenerateCodeFCall<FieldInfo, object>(generator, fi =>
                         {
                             // this code is done using reflection and not generated due to
                             // small estimated profit and lot of code to write:
@@ -831,7 +850,7 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldloca, structLocal);
                 var type = field.TypeToOmit ?? field.Field.FieldType;
 
-                GenerateReadField(type, false);
+                GenerateReadField(generator, type, false);
                 if(field.Field != null)
                 {
                     generator.Emit(OpCodes.Stfld, field.Field);
@@ -846,28 +865,28 @@ namespace Antmicro.Migrant.Generators
 
         #region Push onto stack methods and other helper methods
 
-        private void PushPrimitiveReaderOntoStack()
+        private void PushPrimitiveReaderOntoStack(ILGenerator generator)
         {
             generator.Emit(OpCodes.Ldarg_0); // object reader
             generator.Emit(OpCodes.Ldfld, primitiveReaderField);
         }
 
-        private void PushDeserializedObjectsCollectionOntoStack()
+        private void PushDeserializedObjectsCollectionOntoStack(ILGenerator generator)
         {
             generator.Emit(OpCodes.Ldarg_0); // object reader	
             generator.Emit(OpCodes.Ldfld, deserializedObjectsField);
         }
 
-        private void PushDeserializedObjectOntoStack(LocalBuilder local)
+        private void PushDeserializedObjectOntoStack(ILGenerator generator, LocalBuilder local)
         {
-            PushDeserializedObjectsCollectionOntoStack();
+            PushDeserializedObjectsCollectionOntoStack(generator);
             generator.Emit(OpCodes.Ldloc, local);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>, object>(x => x[0])); // pushes reference to an object to update (id is wrong due to structs)
         }
 
-        private void SaveNewDeserializedObject(LocalBuilder objectIdLocal, Action generateNewObject)
+        private void SaveNewDeserializedObject(ILGenerator generator, LocalBuilder objectIdLocal, Action generateNewObject)
         {
-            PushDeserializedObjectsCollectionOntoStack();
+            PushDeserializedObjectsCollectionOntoStack(generator);
             generator.Emit(OpCodes.Ldloc, objectIdLocal);
 
             generateNewObject();
@@ -875,13 +894,13 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>>(x => x.SetItem(0, null)));
         }
 
-        private void PushTypeOntoStack(Type type)
+        private void PushTypeOntoStack(ILGenerator generator, Type type)
         {
             generator.Emit(OpCodes.Ldtoken, type);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<RuntimeTypeHandle, Type>(o => Type.GetTypeFromHandle(o))); // loads value of <<typeToGenerate>> onto stack
         }
 
-        private void PushFieldInfoOntoStack(FieldInfo finfo)
+        private void PushFieldInfoOntoStack(ILGenerator generator, FieldInfo finfo)
         {
             generator.Emit(OpCodes.Ldtoken, finfo);
             if(finfo.DeclaringType.IsGenericType)
@@ -895,34 +914,34 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private void GenerateCodeCall<T1, T2>(Action<T1, T2> a)
+        private void GenerateCodeCall<T1, T2>(ILGenerator generator, Action<T1, T2> a)
         {
             generator.Emit(OpCodes.Call, a.Method);
         }
 
-        private void GenerateCodeCall<T1, T2, T3>(Action<T1, T2, T3> a)
+        private void GenerateCodeCall<T1, T2, T3>(ILGenerator generator, Action<T1, T2, T3> a)
         {
             generator.Emit(OpCodes.Call, a.Method);
         }
 
-        private void GenerateCodeCall<T1, T2, T3, T4, T5>(Action<T1, T2, T3, T4, T5> a)
+        private void GenerateCodeCall<T1, T2, T3, T4, T5>(ILGenerator generator, Action<T1, T2, T3, T4, T5> a)
         {
             generator.Emit(OpCodes.Call, a.Method);
         }
 
-        private void GenerateCodeFCall<T1, TResult>(Func<T1, TResult> f)
+        private void GenerateCodeFCall<T1, TResult>(ILGenerator generator, Func<T1, TResult> f)
         {
             generator.Emit(OpCodes.Call, f.Method);
         }
 
-        private void GenerateCodeFCall<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> f)
+        private void GenerateCodeFCall<T1, T2, T3, TResult>(ILGenerator generator, Func<T1, T2, T3, TResult> f)
         {
             generator.Emit(OpCodes.Call, f.Method);
         }
 
         #endregion
 
-        private void GenerateTouchObject(Type formalType)
+        private void GenerateTouchObject(ILGenerator generator, Type formalType)
         {
             var objectIdLocal = generator.DeclareLocal(typeof(Int32));
             var objectTypeLocal = generator.DeclareLocal(typeof(Type));
@@ -930,7 +949,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Ldarg_1);
             generator.Emit(OpCodes.Stloc, objectIdLocal);
 
-            PushTypeOntoStack(formalType);
+            PushTypeOntoStack(generator, formalType);
             generator.Emit(OpCodes.Stloc, objectTypeLocal);
 
             switch(ObjectReader.GetCreationWay(formalType, treatCollectionAsUserObject))
@@ -939,7 +958,7 @@ namespace Antmicro.Migrant.Generators
                 break;
             case ObjectReader.CreationWay.DefaultCtor:
                     // execute if <<localId>> was not found in DOC
-                PushDeserializedObjectsCollectionOntoStack();
+                PushDeserializedObjectsCollectionOntoStack(generator);
 					
                 generator.Emit(OpCodes.Ldloc, objectIdLocal); // first argument
                 generator.Emit(OpCodes.Ldloc, objectTypeLocal);
@@ -949,7 +968,7 @@ namespace Antmicro.Migrant.Generators
                 break;
             case ObjectReader.CreationWay.Uninitialized:
                     // execute if <<localId>> was not found in DOC
-                PushDeserializedObjectsCollectionOntoStack();
+                PushDeserializedObjectsCollectionOntoStack(generator);
 					
                 generator.Emit(OpCodes.Ldloc, objectIdLocal); // first argument
                     //PushTypeOntoStack(formalType);
@@ -961,7 +980,7 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private void GenerateReadType()
+        private void GenerateReadType(ILGenerator generator)
         {
             // method returns read type (or null) 
 
@@ -970,7 +989,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<TypeDescriptor, Type>(td => td.UnderlyingType));
         }
 
-        private void GenerateReadMethod()
+        private void GenerateReadMethod(ILGenerator generator)
         {
             // method returns read methodInfo (or null)
 
@@ -986,7 +1005,6 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private ILGenerator generator;
         private readonly int objectForSurrogateId;
         private readonly FieldInfo objectsForSurrogatesField;
         private readonly FieldInfo deserializedObjectsField;
@@ -1001,5 +1019,9 @@ namespace Antmicro.Migrant.Generators
             typeof(ObjectReader),
             typeof(Int32)
         };
+
+#if DEBUG
+        private static readonly bool SaveGeneratedAssembly = false;
+#endif
     }
 }

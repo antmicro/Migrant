@@ -35,6 +35,7 @@ using Antmicro.Migrant.Hooks;
 using System.Linq;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Utilities;
+using System.Text.RegularExpressions;
 
 namespace Antmicro.Migrant.Generators
 {
@@ -55,8 +56,29 @@ namespace Antmicro.Migrant.Generators
                 var methodNo = Interlocked.Increment(ref WriteArrayMethodCounter);
                 dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}_{1}", methodNo, typeToGenerate.Name), null, ParameterTypes, true);
             }
-            generator = dynamicMethod.GetILGenerator();
 
+#if DEBUG
+            if(SaveGeneratedAssembly)
+            {
+                var dynamicModule = Thread.GetDomain().DefineDynamicAssembly(new AssemblyName(string.Format("WriterDynamicAssembly_{0}", Regex.Replace(typeToGenerate.Name, "[^a-zA-Z0-9_]", ""))), AssemblyBuilderAccess.RunAndSave);
+                var fileName = string.Format("{0}.dll", dynamicModule.GetName().Name);
+                var moduleBuilder = dynamicModule.DefineDynamicModule(dynamicModule.GetName().Name, fileName, true);
+                var typeBuilder = moduleBuilder.DefineType("DynamicType");
+                var methodBuilder = typeBuilder.DefineMethod("Write", MethodAttributes.Public | MethodAttributes.Static, null, ParameterTypes);
+
+                var gen = methodBuilder.GetILGenerator();
+                GenerateDynamicCode(gen, typeToGenerate, treatCollectionAsUserObject, surrogateId, surrogatesField, writeObjectMethod);
+                typeBuilder.CreateType();
+                dynamicModule.Save(fileName);
+            }
+#endif
+
+            var generator = dynamicMethod.GetILGenerator();
+            GenerateDynamicCode(generator, typeToGenerate, treatCollectionAsUserObject, surrogateId, surrogatesField, writeObjectMethod);
+        }
+
+        private void GenerateDynamicCode(ILGenerator generator, Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, FieldInfo surrogatesField, MethodInfo writeObjectMethod)
+        {
             // surrogates
             if(surrogateId != -1)
             {
@@ -87,7 +109,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Call, delegateTouchAndWriteTypeId);
 
             // preserialization callbacks
-            GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));
+            GenerateInvokeCallback(generator, typeToGenerate, typeof(PreSerializationAttribute));
             var exceptionBlockNeeded = Helpers.GetMethodsWithAttribute(typeof(PostSerializationAttribute), typeToGenerate).Any() ||
                                        Helpers.GetMethodsWithAttribute(typeof(LatePostSerializationAttribute), typeToGenerate).Any();
             if(exceptionBlockNeeded)
@@ -95,9 +117,9 @@ namespace Antmicro.Migrant.Generators
                 generator.BeginExceptionBlock();
             }
 
-            if(!GenerateSpecialWrite(typeToGenerate, treatCollectionAsUserObject))
+            if(!GenerateSpecialWrite(generator, typeToGenerate, treatCollectionAsUserObject))
             {
-                GenerateWriteFields(gen =>
+                GenerateWriteFields(generator, gen =>
                 {
                     gen.Emit(OpCodes.Ldarg_2);
                 }, typeToGenerate);
@@ -107,8 +129,8 @@ namespace Antmicro.Migrant.Generators
                 generator.BeginFinallyBlock();
             }
             // postserialization callbacks
-            GenerateInvokeCallback(typeToGenerate, typeof(PostSerializationAttribute));
-            GenerateAddCallbackToInvokeList(typeToGenerate, typeof(LatePostSerializationAttribute));
+            GenerateInvokeCallback(generator, typeToGenerate, typeof(PostSerializationAttribute));
+            GenerateAddCallbackToInvokeList(generator, typeToGenerate, typeof(LatePostSerializationAttribute));
             if(exceptionBlockNeeded)
             {
                 generator.EndExceptionBlock();
@@ -130,7 +152,7 @@ namespace Antmicro.Migrant.Generators
             primitiveWriterWriteBoolean = Helpers.GetMethodInfo<PrimitiveWriter>(writer => writer.Write(false));
         }
 
-        private void GenerateInvokeCallback(Type actualType, Type attributeType)
+        private void GenerateInvokeCallback(ILGenerator generator, Type actualType, Type attributeType)
         {
             var methodsWithAttribute = Helpers.GetMethodsWithAttribute(attributeType, actualType);
             foreach(var method in methodsWithAttribute)
@@ -150,7 +172,7 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private void GenerateAddCallbackToInvokeList(Type actualType, Type attributeType)
+        private void GenerateAddCallbackToInvokeList(ILGenerator generator, Type actualType, Type attributeType)
         {
             var actionCtor = typeof(Action).GetConstructor(new [] { typeof(object), typeof(IntPtr) });
             var stackPush = Helpers.GetMethodInfo<List<Action>>(x => x.Add(null));
@@ -184,12 +206,12 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private void GenerateWriteFields(Action<ILGenerator> putValueToWriteOnTop, Type actualType)
+        private void GenerateWriteFields(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type actualType)
         {
             var fields = StampHelpers.GetFieldsInSerializationOrder(actualType);
             foreach(var field in fields)
             {
-                GenerateWriteType(gen =>
+                GenerateWriteType(generator, gen =>
                 {
                     putValueToWriteOnTop(gen);
                     gen.Emit(OpCodes.Ldfld, field);
@@ -197,13 +219,13 @@ namespace Antmicro.Migrant.Generators
             }
         }
 
-        private bool GenerateSpecialWrite(Type actualType, bool treatCollectionAsUserObject)
+        private bool GenerateSpecialWrite(ILGenerator generator, Type actualType, bool treatCollectionAsUserObject)
         {
             if(actualType.IsValueType)
             {
                 // value type encountered here means it is in fact boxed value type
                 // according to protocol it is written as it would be written inlined
-                GenerateWriteValue(gen =>
+                GenerateWriteValue(generator, gen =>
                 {
                     gen.Emit(OpCodes.Ldarg_2); // value to serialize
                     gen.Emit(OpCodes.Unbox_Any, actualType);
@@ -212,12 +234,12 @@ namespace Antmicro.Migrant.Generators
             }
             if(actualType.IsArray)
             {
-                GenerateWriteArray(actualType);
+                GenerateWriteArray(generator, actualType);
                 return true;
             }
             if(typeof(MulticastDelegate).IsAssignableFrom(actualType))
             {
-                GenerateWriteDelegate(gen =>
+                GenerateWriteDelegate(generator, gen =>
                 {
                     gen.Emit(OpCodes.Ldarg_2); // value to serialize
                 });
@@ -228,20 +250,20 @@ namespace Antmicro.Migrant.Generators
                 CollectionMetaToken collectionToken;
                 if(CollectionMetaToken.TryGetCollectionMetaToken(actualType, out collectionToken))
                 {
-                    GenerateWriteCollection(collectionToken);
+                    GenerateWriteCollection(generator, collectionToken);
                     return true;
                 }
             }
             return false;
         }
 
-        private void GenerateWriteArray(Type actualType)
+        private void GenerateWriteArray(ILGenerator generator, Type actualType)
         {
             var elementType = actualType.GetElementType();
             var rank = actualType.GetArrayRank();
             if(rank != 1)
             {
-                GenerateWriteMultidimensionalArray(actualType, elementType);
+                GenerateWriteMultidimensionalArray(generator, actualType, elementType);
                 return;
             }
 
@@ -280,7 +302,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Ldelem, elementType);
             generator.Emit(OpCodes.Stloc_1); // we put current element to local variable
 
-            GenerateWriteType(gen =>
+            GenerateWriteType(generator, gen =>
             {
                 gen.Emit(OpCodes.Ldloc_1); // current element
             }, elementType);
@@ -294,7 +316,7 @@ namespace Antmicro.Migrant.Generators
             generator.MarkLabel(loopEnd);
         }
 
-        private void GenerateWriteMultidimensionalArray(Type actualType, Type elementType)
+        private void GenerateWriteMultidimensionalArray(ILGenerator generator, Type actualType, Type elementType)
         {
             var rank = actualType.GetArrayRank();
             // local for current element
@@ -331,10 +353,10 @@ namespace Antmicro.Migrant.Generators
             }
 
             // writing elements
-            GenerateArrayWriteLoop(0, rank, indexLocals, lengthLocals, actualType, elementType);
+            GenerateArrayWriteLoop(generator, 0, rank, indexLocals, lengthLocals, actualType, elementType);
         }
 
-        private void GenerateArrayWriteLoop(int currentDimension, int rank, int[] indexLocals, int[] lengthLocals, Type arrayType, Type elementType)
+        private void GenerateArrayWriteLoop(ILGenerator generator, int currentDimension, int rank, int[] indexLocals, int[] lengthLocals, Type arrayType, Type elementType)
         {
             var arrayWrittenLabel = generator.DefineLabel();
 
@@ -361,11 +383,11 @@ namespace Antmicro.Migrant.Generators
                 }
                 generator.Emit(OpCodes.Call, arrayType.GetMethod("Get"));
                 generator.Emit(OpCodes.Stloc_0);
-                GenerateWriteType(gen => gen.Emit(OpCodes.Ldloc_0), elementType);
+                GenerateWriteType(generator, gen => gen.Emit(OpCodes.Ldloc_0), elementType);
             }
             else
             {
-                GenerateArrayWriteLoop(currentDimension + 1, rank, indexLocals, lengthLocals, arrayType, elementType);
+                GenerateArrayWriteLoop(generator, currentDimension + 1, rank, indexLocals, lengthLocals, arrayType, elementType);
             }
             // incremeting index and loop exit condition check
             generator.Emit(OpCodes.Ldloc, indexLocals[currentDimension]);
@@ -379,7 +401,7 @@ namespace Antmicro.Migrant.Generators
             generator.MarkLabel(arrayWrittenLabel);
         }
 
-        private void GenerateWriteCollection(CollectionMetaToken token)
+        private void GenerateWriteCollection(ILGenerator generator, CollectionMetaToken token)
         {
             Type enumerableType;
             Type enumeratorType;
@@ -439,14 +461,14 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Key").GetGetMethod());
                 generator.Emit(OpCodes.Unbox_Any, token.FormalKeyType);
                 generator.Emit(OpCodes.Stloc_1);
-                GenerateWriteType(gen => gen.Emit(OpCodes.Ldloc_1), token.FormalKeyType);
+                GenerateWriteType(generator, gen => gen.Emit(OpCodes.Ldloc_1), token.FormalKeyType);
 
                 // value
                 generator.Emit(OpCodes.Ldloc_0);
                 generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Value").GetGetMethod());
                 generator.Emit(OpCodes.Unbox_Any, token.FormalValueType);
                 generator.Emit(OpCodes.Stloc_2);
-                GenerateWriteType(gen => gen.Emit(OpCodes.Ldloc_2), token.FormalValueType);
+                GenerateWriteType(generator, gen => gen.Emit(OpCodes.Ldloc_2), token.FormalValueType);
             }
             else
             {
@@ -454,22 +476,22 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Stloc_1);
 	
                 // operation on current element
-                GenerateWriteTypeLocal1(token.FormalElementType);
+                GenerateWriteTypeLocal1(generator, token.FormalElementType);
             }
 
             generator.Emit(OpCodes.Br, loopBegin);
             generator.MarkLabel(finish);
         }
 
-        private void GenerateWriteTypeLocal1(Type formalElementType)
+        private void GenerateWriteTypeLocal1(ILGenerator generator, Type formalElementType)
         {
-            GenerateWriteType(gen =>
+            GenerateWriteType(generator, gen =>
             {
                 gen.Emit(OpCodes.Ldloc_1);
             }, formalElementType);
         }
 
-        private void GenerateWriteType(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+        private void GenerateWriteType(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
         {
             switch(Helpers.GetSerializationType(formalType))
             {
@@ -477,15 +499,15 @@ namespace Antmicro.Migrant.Generators
 				// just omit it
                 return;
             case SerializationType.Value:
-                GenerateWriteValue(putValueToWriteOnTop, formalType);
+                GenerateWriteValue(generator, putValueToWriteOnTop, formalType);
                 break;
             case SerializationType.Reference:
-                GenerateWriteReference(putValueToWriteOnTop, formalType);
+                GenerateWriteReference(generator, putValueToWriteOnTop, formalType);
                 break;
             }
         }
 
-        private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop)
+        private void GenerateWriteDelegate(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop)
         {
             var delegateTouchAndWriteMethodId = Helpers.GetMethodInfo<ObjectWriter, MethodInfo>((writer, method) => writer.TouchAndWriteMethodId(method));
             var delegateGetInvocationList = Helpers.GetMethodInfo<ObjectWriter, MulticastDelegate>((writer, md) => writer.GetDelegatesWithNonTransientTargets(md));
@@ -516,7 +538,7 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldelem, element.LocalType);
                 generator.Emit(OpCodes.Stloc, element);
 
-                GenerateWriteReference(gen =>
+                GenerateWriteReference(generator, gen =>
                 {
                     gen.Emit(OpCodes.Ldloc, element);
                     gen.Emit(OpCodes.Call, delegateGetTarget);
@@ -530,7 +552,7 @@ namespace Antmicro.Migrant.Generators
             });
         }
 
-        private void GenerateWriteValue(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+        private void GenerateWriteValue(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
         {
             ObjectWriter.CheckLegality(formalType, typeWeAreGeneratingFor);
             if(formalType.IsEnum)
@@ -564,7 +586,7 @@ namespace Antmicro.Migrant.Generators
                 generator.MarkLabel(hasValue);
                 generator.Emit(OpCodes.Ldc_I4_1);
                 generator.Emit(OpCodes.Call, primitiveWriterWriteBoolean);
-                GenerateWriteValue(gen =>
+                GenerateWriteValue(generator, gen =>
                 {
                     generator.Emit(OpCodes.Ldloca_S, localIndex);
                     generator.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
@@ -577,7 +599,7 @@ namespace Antmicro.Migrant.Generators
             {
                 var keyValueTypes = formalType.GetGenericArguments();
                 var localIndex = generator.DeclareLocal(formalType).LocalIndex;
-                GenerateWriteType(gen =>
+                GenerateWriteType(generator, gen =>
                 {
                     putValueToWriteOnTop(gen);
                     // TODO: is there a better method of getting address?
@@ -591,7 +613,7 @@ namespace Antmicro.Migrant.Generators
                     gen.Emit(OpCodes.Ldloca_S, localIndex);
                     gen.Emit(OpCodes.Call, formalType.GetProperty("Key").GetGetMethod());
                 }, keyValueTypes[0]);
-                GenerateWriteType(gen =>
+                GenerateWriteType(generator, gen =>
                 {
                     // we assume here that the key write was invoked earlier (it should be
                     // if we're conforming to the protocol), so KeyValuePair is already
@@ -602,11 +624,11 @@ namespace Antmicro.Migrant.Generators
             }
             else
             {
-                GenerateWriteFields(putValueToWriteOnTop, formalType);
+                GenerateWriteFields(generator, putValueToWriteOnTop, formalType);
             }
         }
 
-        private void GenerateWriteReference(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+        private void GenerateWriteReference(ILGenerator generator, Action<ILGenerator> putValueToWriteOnTop, Type formalType)
         {
             var finish = generator.DefineLabel();
 
@@ -658,7 +680,6 @@ namespace Antmicro.Migrant.Generators
 
         private MethodInfo primitiveWriterWriteInteger;
         private MethodInfo primitiveWriterWriteBoolean;
-        private readonly ILGenerator generator;
         private readonly DynamicMethod dynamicMethod;
         private readonly Type typeWeAreGeneratingFor;
         private static int WriteArrayMethodCounter;
@@ -667,6 +688,10 @@ namespace Antmicro.Migrant.Generators
             typeof(PrimitiveWriter),
             typeof(object)
         };
+
+#if DEBUG
+        private static readonly bool SaveGeneratedAssembly = false;
+#endif
     }
 }
 
