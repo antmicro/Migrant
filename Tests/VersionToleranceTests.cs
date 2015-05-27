@@ -116,6 +116,7 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void TestFieldMovedBetweenClasses(
             [Values(
+                0,
                 VersionToleranceLevel.AllowInheritanceChainChange,
                 VersionToleranceLevel.AllowFieldAddition,
                 VersionToleranceLevel.AllowFieldRemoval,
