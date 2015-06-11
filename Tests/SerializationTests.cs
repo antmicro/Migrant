@@ -1018,6 +1018,38 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
+        [Test]
+        public void ShouldSerializeGenericClassWithGenericFieldInside()
+        {
+            var obj = new GenericClassWithGenericField<int, string>();
+            obj.Add("hejka");
+            var copy = SerializerClone(obj);
+
+            Assert.AreEqual("hejka", copy.Get());
+        }
+
+        public class GenericClassWithGenericField<T1, T2>
+        {
+            public GenericClassWithGenericField()
+            {
+                list = new List<T2>();
+            }
+
+            public void Add(T2 t)
+            {
+                list.Add(t);
+            }
+
+            public T2 Get()
+            {
+                var f = list.First();
+                list.RemoveAt(0);
+                return f;
+            }
+
+            private readonly List<T2> list;
+        }
+
         public class GenericClassWithGenericDelegate<T>
         {
             public GenericClassWithGenericDelegate()
