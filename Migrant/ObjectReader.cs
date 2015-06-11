@@ -575,8 +575,10 @@ namespace Antmicro.Migrant
                     throw new Exception("Encountered GenericArgument when no context type was provided.");
                 }
 
+                var typeId = reader.ReadInt32();
                 var position = reader.ReadInt32();
-                type = TypeDescriptor.CreateFromType(contextType.GetGenericArguments()[position]);
+
+                type = TypeDescriptor.CreateFromType(typeCache[typeId].UnderlyingType.GetGenericArguments()[position]);
             }
             else
             {

@@ -39,7 +39,6 @@ using System.Diagnostics;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.Customization;
-using System.Runtime.CompilerServices;
 
 namespace Antmicro.Migrant
 {
@@ -330,6 +329,7 @@ namespace Antmicro.Migrant
             writer.Write(type.IsGenericParameter);
             if(type.IsGenericParameter)
             {
+                writer.Write(typeIndices[TypeDescriptor.CreateFromType(type.DeclaringType)]);
                 writer.Write(type.GenericParameterPosition);
                 return;
             }
