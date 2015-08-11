@@ -97,6 +97,7 @@ namespace Antmicro.Migrant
             typeCache = new Dictionary<int, TypeDescriptor>();
             methodList = new List<MethodInfo>();
             assembliesList = new List<AssemblyDescriptor>();
+            modulesList = new List<ModuleDescriptor>();
             postDeserializationHooks = new List<Action>();
             this.postDeserializationCallback = postDeserializationCallback;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
@@ -648,6 +649,19 @@ namespace Antmicro.Migrant
             }
         }
 
+        internal ModuleDescriptor ReadModule()
+        {
+            var moduleId = PrimitiveReader.ReadInt32();
+            if(modulesList.Count <= moduleId)
+            {
+                var descriptor = ModuleDescriptor.ReadFromStream(this);
+                modulesList.Add(descriptor);
+                return descriptor;
+            }
+
+            return modulesList[moduleId];
+        }
+
         private object TouchObject(Type actualType, int refId)
         {
             if(deserializedObjects[refId] != null)
@@ -734,6 +748,7 @@ namespace Antmicro.Migrant
         private readonly Dictionary<int, TypeDescriptor> typeCache;
         private readonly List<MethodInfo> methodList;
         private readonly List<AssemblyDescriptor> assembliesList;
+        private readonly List<ModuleDescriptor> modulesList;
         private readonly Action<object> postDeserializationCallback;
         private readonly List<Action> postDeserializationHooks;
         private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
