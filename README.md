@@ -186,11 +186,11 @@ As with `ISerializable` Migrant can also utilize implementation of
 `IXmlSerializable`. In that case data is written to memory stream using
 `XmlSerializer` and then taken as a binary blob (along with type name).
 
-### (De)serializing the type `Type`
+### (De)serializing the `Type` type
 
-Directly serializing `Type` is not possible. One can however use surrogates for that purpose.
+Directly serializing `Type` is not possible, but you can use surrogates for that purpose.
 
-One solution is to serialize assembly qualified name of the type:
+One solution is to serialize the assembly qualified name of the type:
 
 ```csharp
 
