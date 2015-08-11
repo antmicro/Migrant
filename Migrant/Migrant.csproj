@@ -77,6 +77,7 @@
     <Compile Include="Utilities\PeekableStream.cs" />
     <Compile Include="BultinSurrogates\SurrogateForIXmlSerializable.cs" />
     <Compile Include="VersionTolerance\AssemblyDescriptor.cs" />
+    <Compile Include="VersionTolerance\VersionToleranceException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

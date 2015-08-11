@@ -1,6 +1,6 @@
 ﻿// *******************************************************************
 //
-//  Copyright (c) 2012-2014, Antmicro Ltd <antmicro.com>
+//  Copyright (c) 2012-2015, Antmicro Ltd <antmicro.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -22,33 +22,32 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // *******************************************************************
-namespace Antmicro.Migrant
+using System;
+using System.Runtime.Serialization;
+
+namespace Antmicro.Migrant.VersionTolerance
 {
-    /// <summary>
-    /// Enumeration describing possible desarialization operation results.
-    /// </summary>
-    public enum DeserializationResult
+    public class VersionToleranceException : Exception
     {
-        /// <summary>
-        /// Deserialization succeeded.
-        /// </summary>
-        OK,
-        /// <summary>
-        /// Magic number was different than expected.
-        /// </summary>
-        WrongMagic,
-        /// <summary>
-        /// Serializer version mismatch. 
-        /// </summary>
-        WrongVersion,
-        /// <summary>
-        /// The type structure has changed in a not allowed way.
-        /// </summary>
-        TypeStructureChanged,
-        /// <summary>
-        /// Data in a stream was corrupted.
-        /// </summary>
-        StreamCorrupted
+        public VersionToleranceException()
+        {
+        }
+        
+
+        public VersionToleranceException(string message) : base(message)
+        {
+        }
+        
+
+        public VersionToleranceException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+        
+
+        public VersionToleranceException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+        
     }
 }
 

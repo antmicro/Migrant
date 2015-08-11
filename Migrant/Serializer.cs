@@ -32,6 +32,7 @@ using Antmicro.Migrant.Customization;
 using System.Reflection.Emit;
 using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.BultinSurrogates;
+using Antmicro.Migrant.VersionTolerance;
 
 namespace Antmicro.Migrant
 {
@@ -202,6 +203,11 @@ namespace Antmicro.Migrant
                     obj = objectReader.ReadObject<T>();
                     deserializationDone = true;
                     return DeserializationResult.OK;
+                }
+                catch(VersionToleranceException ex)
+                {
+                    lastException = ex;
+                    return DeserializationResult.TypeStructureChanged;
                 }
                 catch(Exception ex)
                 {

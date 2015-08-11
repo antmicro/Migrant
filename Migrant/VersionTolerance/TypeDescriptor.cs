@@ -239,7 +239,7 @@ namespace Antmicro.Migrant
 
             if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowGuidChange))
             {
-                throw new InvalidOperationException(string.Format("The class was serialized with different module version id {0}, current one is {1}.",
+                throw new VersionToleranceException(string.Format("The class was serialized with different module version id {0}, current one is {1}.",
                     TypeAssembly.ModuleGUID, UnderlyingType.Module.ModuleVersionId));
             }
 
@@ -250,28 +250,28 @@ namespace Antmicro.Migrant
                 && ((assemblyTypeDescriptor.baseType == null && baseType != null) || !assemblyTypeDescriptor.baseType.Equals(baseType)) 
                 && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowInheritanceChainChange))
             {
-                throw new InvalidOperationException(string.Format("Class hierarchy changed. Expected '{1}' as base class, but found '{0}'.", baseType != null ? baseType.UnderlyingType.FullName : "null", assemblyTypeDescriptor.baseType != null ? assemblyTypeDescriptor.baseType.UnderlyingType.FullName : "null"));
+                throw new VersionToleranceException(string.Format("Class hierarchy changed. Expected '{1}' as base class, but found '{0}'.", baseType != null ? baseType.UnderlyingType.FullName : "null", assemblyTypeDescriptor.baseType != null ? assemblyTypeDescriptor.baseType.UnderlyingType.FullName : "null"));
             }
 
             if(assemblyTypeDescriptor.TypeAssembly.Version != TypeAssembly.Version && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
             {
-                throw new InvalidOperationException(string.Format("Assembly version changed from {0} to {1} for class {2}", TypeAssembly.Version, assemblyTypeDescriptor.TypeAssembly.Version, UnderlyingType.FullName));
+                throw new VersionToleranceException(string.Format("Assembly version changed from {0} to {1} for class {2}", TypeAssembly.Version, assemblyTypeDescriptor.TypeAssembly.Version, UnderlyingType.FullName));
             }
 
             var cmpResult = assemblyTypeDescriptor.CompareWith(this, versionToleranceLevel);
 
             if(cmpResult.FieldsChanged.Any())
             {
-                throw new InvalidOperationException(string.Format("Field {0} type changed.", cmpResult.FieldsChanged[0].Name));
+                throw new VersionToleranceException(string.Format("Field {0} type changed.", cmpResult.FieldsChanged[0].Name));
             }
 
             if(cmpResult.FieldsAdded.Any() && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowFieldAddition))
             {
-                throw new InvalidOperationException(string.Format("Field added: {0}.", cmpResult.FieldsAdded[0].Name));
+                throw new VersionToleranceException(string.Format("Field added: {0}.", cmpResult.FieldsAdded[0].Name));
             }
             if(cmpResult.FieldsRemoved.Any() && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowFieldRemoval))
             {
-                throw new InvalidOperationException(string.Format("Field removed: {0}.", cmpResult.FieldsRemoved[0].Name));
+                throw new VersionToleranceException(string.Format("Field removed: {0}.", cmpResult.FieldsRemoved[0].Name));
             }
 
             foreach(var field in fields)
