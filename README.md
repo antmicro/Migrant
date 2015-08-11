@@ -186,6 +186,89 @@ As with `ISerializable` Migrant can also utilize implementation of
 `IXmlSerializable`. In that case data is written to memory stream using
 `XmlSerializer` and then taken as a binary blob (along with type name).
 
+### (De)serializing the type `Type`
+
+Directly serializing `Type` is not possible. One can however use surrogates for that purpose.
+
+One solution is to serialize assembly qualified name of the type:
+
+```csharp
+
+class MainClass
+{ 
+	public static void Main(string[] args)
+	{
+		var serializer = new Serializer();
+		serializer.ForObject<Type>().SetSurrogate(type => new TypeSurrogate(type));
+		serializer.ForSurrogate<TypeSurrogate>().SetObject(x => x.Restore());
+
+		var typesIn = new [] { typeof(Type), typeof(int[]), typeof(MainClass) };
+
+		var stream = new MemoryStream();
+		serializer.Serialize(typesIn, stream);
+		stream.Seek(0, SeekOrigin.Begin);
+		var typesOut = serializer.Deserialize<Type[]>(stream);
+		foreach(var type in typesOut)
+		{
+			Console.WriteLine(type);
+		}
+	}
+}
+
+public class TypeSurrogate
+{
+	public TypeSurrogate(Type type)
+	{
+		assemblyQualifiedName = type.AssemblyQualifiedName;
+	}
+
+	public Type Restore()
+	{
+		return Type.GetType(assemblyQualifiedName);
+	}
+
+	private readonly string assemblyQualifiedName;
+}
+```
+
+If you would also like to use the same mechanisms of version tolerance that are used for normal types, you can go with this code:
+
+```csharp
+class MainClass
+{ 
+	public static void Main(string[] args)
+	{
+		var serializer = new Serializer();
+		serializer.ForObject<Type>().SetSurrogate(type => Activator.CreateInstance(typeof(TypeSurrogate<>).MakeGenericType(new [] { type })));
+		serializer.ForSurrogate<ITypeSurrogate>().SetObject(x => x.Restore());
+
+		var typesIn = new [] { typeof(Type), typeof(int[]), typeof(MainClass) };
+
+		var stream = new MemoryStream();
+		serializer.Serialize(typesIn, stream);
+		stream.Seek(0, SeekOrigin.Begin);
+		var typesOut = serializer.Deserialize<Type[]>(stream);
+		foreach(var type in typesOut)
+		{
+			Console.WriteLine(type);
+		}
+	}
+}
+
+public class TypeSurrogate<T> : ITypeSurrogate
+{
+	public Type Restore()
+	{
+		return typeof(T);
+	}
+}
+
+public interface ITypeSurrogate
+{
+	Type Restore();
+}
+```
+
 ## Features
 
 Migrant is designed to be easy to use. For most cases, the scenario consists of calling one method to serialize, and another to deserialize a whole set of interconnected objects. It's not necessary to provide any information about serialized types, only the root object to save. All of the other objects referenced by the root are serialized automatically. It works out of the box for value and reference types, complex collections etc. While serialization of certain objects (e.g. pointers) is meaningless and may lead to hard-to-trace problems, Migrant will gracefully fail to serialize such objects, providing the programmer with full information on what caused the problem and where is it located.
