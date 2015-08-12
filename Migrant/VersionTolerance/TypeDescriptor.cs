@@ -64,9 +64,11 @@ namespace Antmicro.Migrant
             genericArguments = new List<TypeDescriptor>();
             for(int i = 0; i < genericArgumentsCount; i++)
             {
-                genericArguments.Add(reader.ReadType());
+                genericArguments.Add(reader.Types.Read());
             }
+
             Resolve();
+            ReadStructureStampIfNeeded(reader, reader.VersionToleranceLevel);
         }
 
         public void WriteTo(ObjectWriter writer)
@@ -309,7 +311,7 @@ namespace Antmicro.Migrant
 
         private void ReadStructureStamp(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
         {
-            baseType = reader.ReadType();
+            baseType = reader.Types.Read();
             var noOfFields = reader.PrimitiveReader.ReadInt32();
             for(int i = 0; i < noOfFields; i++)
             {

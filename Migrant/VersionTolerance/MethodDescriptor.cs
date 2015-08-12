@@ -87,13 +87,13 @@ namespace Antmicro.Migrant.VersionTolerance
 
         public void ReadFromStream(ObjectReader reader)
         {
-            var type = reader.ReadType().UnderlyingType;
+            var type = reader.Types.Read().UnderlyingType;
             var methodName = reader.PrimitiveReader.ReadString();
             var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
             var genericArguments = new Type[genericArgumentsCount];
             for(int i = 0; i < genericArgumentsCount; i++)
             {
-                genericArguments[i] = reader.ReadType().UnderlyingType;
+                genericArguments[i] = reader.Types.Read().UnderlyingType;
             }
 
             var parametersCount = reader.PrimitiveReader.ReadInt32();
@@ -105,7 +105,7 @@ namespace Antmicro.Migrant.VersionTolerance
                     var genericType = reader.PrimitiveReader.ReadBoolean();
                     parameters[i] = genericType ? 
                         new TypeOrGenericTypeArgument(reader.PrimitiveReader.ReadInt32()) :
-                        new TypeOrGenericTypeArgument(reader.ReadType().UnderlyingType);
+                        new TypeOrGenericTypeArgument(reader.Types.Read().UnderlyingType);
                 }
 
                 UnderlyingMethod = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(m => 
@@ -124,7 +124,7 @@ namespace Antmicro.Migrant.VersionTolerance
                 var types = new Type[parametersCount];
                 for(int i = 0; i < types.Length; i++)
                 {
-                    types[i] = reader.ReadType().UnderlyingType;
+                    types[i] = reader.Types.Read().UnderlyingType;
                 }
 
                 UnderlyingMethod = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);

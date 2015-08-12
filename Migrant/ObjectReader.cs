@@ -94,7 +94,7 @@ namespace Antmicro.Migrant
             this.objectsForSurrogates = objectsForSurrogates;
             this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
             this.useGeneratedDeserialization = isGenerating;
-            typeCache = new Dictionary<int, TypeDescriptor>();
+            Types = new IdentifiedElementsList<TypeDescriptor>(this);
             Methods = new IdentifiedElementsList<MethodDescriptor>(this);
             Assemblies = new IdentifiedElementsList<AssemblyDescriptor>(this);
             Modules = new IdentifiedElementsList<ModuleDescriptor>(this);
@@ -104,7 +104,7 @@ namespace Antmicro.Migrant
             delegatesCache = new Dictionary<Type, Func<int, object>>();
             reader = new PrimitiveReader(stream, useBuffering);
             this.referencePreservation = referencePreservation;
-            this.versionToleranceLevel = versionToleranceLevel;
+            this.VersionToleranceLevel = versionToleranceLevel;
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace Antmicro.Migrant
                 deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             }
             var firstObjectId = deserializedObjects.Count;
-            var type = ReadType().UnderlyingType;
+            var type = Types.Read().UnderlyingType;
             if(useGeneratedDeserialization)
             {
                 ReadObjectInnerGenerated(type, firstObjectId);
@@ -363,7 +363,7 @@ namespace Antmicro.Migrant
                 }
                 if(refId >= deserializedObjects.Count)
                 {
-                    ReadObjectInner(ReadType().UnderlyingType, refId);
+                    ReadObjectInner(Types.Read().UnderlyingType, refId);
                 }
                 return deserializedObjects[refId];
             }
@@ -553,28 +553,6 @@ namespace Antmicro.Migrant
             }
         }
 
-        internal TypeDescriptor ReadType()
-        {
-            var typeId = reader.ReadInt32();
-            if(typeId == Consts.NullObjectId)
-            {
-                return null;
-            }
-            if(typeCache.Any() && typeCache.Keys.Max() >= typeId)
-            {
-                return typeCache[typeId];
-            }
-
-            var type = new TypeDescriptor();
-            type.ReadFromStream(this);
-            typeCache.Add(typeId, type);
-
-            // we need to read stamp here (i.e., after adding to typeList)
-            // as other types from the stamp can reference this type
-            type.ReadStructureStampIfNeeded(this, versionToleranceLevel);
-            return type;
-        }
-
         private object TouchObject(Type actualType, int refId)
         {
             if(deserializedObjects[refId] != null)
@@ -620,10 +598,11 @@ namespace Antmicro.Migrant
         internal IdentifiedElementsList<ModuleDescriptor> Modules { get; private set; }
         internal IdentifiedElementsList<AssemblyDescriptor> Assemblies { get; private set; }
         internal IdentifiedElementsList<MethodDescriptor> Methods { get; private set; }
+        internal IdentifiedElementsList<TypeDescriptor> Types { get; private set; }
+        internal VersionToleranceLevel VersionToleranceLevel { get; private set; }
 
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
-        private readonly VersionToleranceLevel versionToleranceLevel;
         private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;
         private readonly bool treatCollectionAsUserObject;
@@ -632,7 +611,6 @@ namespace Antmicro.Migrant
         private IDictionary<Type, DynamicMethod> readMethodsCache;
         private readonly Dictionary<Type, Func<Int32, object>> delegatesCache;
         private readonly PrimitiveReader reader;
-        private readonly Dictionary<int, TypeDescriptor> typeCache;
         private readonly Action<object> postDeserializationCallback;
         private readonly List<Action> postDeserializationHooks;
         private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
