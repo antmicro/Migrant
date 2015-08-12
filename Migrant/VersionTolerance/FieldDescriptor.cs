@@ -40,8 +40,8 @@ namespace Antmicro.Migrant
         {
             Name = finfo.Name;
 
-            DeclaringType = TypeDescriptor.CreateFromType(finfo.DeclaringType);
-            FieldType = TypeDescriptor.CreateFromType(finfo.FieldType);
+            DeclaringType = finfo.DeclaringType;
+            FieldType = finfo.FieldType;
             IsTransient = finfo.IsTransient();
             IsConstructor = finfo.IsConstructor();
 

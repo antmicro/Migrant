@@ -299,7 +299,7 @@ namespace Antmicro.Migrant
 
         internal int TouchAndWriteTypeId(Type type)
         {
-            var typeDescriptor = TypeDescriptor.CreateFromType(type);
+            TypeDescriptor typeDescriptor = type;
 
             int typeId;
             if(typeIndices.ContainsKey(typeDescriptor))

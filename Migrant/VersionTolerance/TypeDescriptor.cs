@@ -41,7 +41,7 @@ namespace Antmicro.Migrant
             return result;
         }
 
-        public static TypeDescriptor CreateFromType(Type type)
+        public static implicit operator TypeDescriptor(Type type)
         {
             TypeDescriptor value;
             if(!cache.TryGetValue(type, out value))
@@ -175,7 +175,7 @@ namespace Antmicro.Migrant
                 GenericAssemblyQualifiedName = UnderlyingType.GetGenericTypeDefinition().AssemblyQualifiedName;
                 foreach(var genericArgument in UnderlyingType.GetGenericArguments())
                 {
-                    genericArguments.Add(TypeDescriptor.CreateFromType(genericArgument));
+                    genericArguments.Add(genericArgument);
                 }
             }
             else
@@ -186,7 +186,7 @@ namespace Antmicro.Migrant
 
             if(t.BaseType != null)
             {
-                baseType = TypeDescriptor.CreateFromType(t.BaseType);
+                baseType = t.BaseType;
             }
 
             var fieldsToDeserialize = new List<FieldInfoOrEntryToOmit>();
@@ -245,7 +245,7 @@ namespace Antmicro.Migrant
 
             var result = new List<FieldInfoOrEntryToOmit>();
 
-            var assemblyTypeDescriptor = TypeDescriptor.CreateFromType(UnderlyingType);
+            var assemblyTypeDescriptor = ((TypeDescriptor)UnderlyingType);
             if( !(assemblyTypeDescriptor.baseType == null && baseType == null)
                 && ((assemblyTypeDescriptor.baseType == null && baseType != null) || !assemblyTypeDescriptor.baseType.Equals(baseType)) 
                 && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowInheritanceChainChange))

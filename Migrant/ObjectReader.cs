@@ -270,7 +270,7 @@ namespace Antmicro.Migrant
 
         private void UpdateFields(Type actualType, object target)
         {
-            var fieldOrTypeInfos = TypeDescriptor.CreateFromType(actualType).FieldsToDeserialize;
+            var fieldOrTypeInfos = ((TypeDescriptor)actualType).FieldsToDeserialize;
             foreach(var fieldOrTypeInfo in fieldOrTypeInfos)
             {
                 if(fieldOrTypeInfo.Field == null)
