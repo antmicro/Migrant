@@ -23,13 +23,37 @@
 //
 // *******************************************************************
 using System;
+using System.Collections.Generic;
 
 namespace Antmicro.Migrant.Utilities
 {
-    public interface IIdentifiedElement
+    public class IdentifiedElementsDictionary<T> where T : IIdentifiedElement
     {
-        void ReadFromStream(ObjectReader reader);
-        void WriteTo(ObjectWriter writer);
+        public IdentifiedElementsDictionary(ObjectWriter writer)
+        {
+            this.writer = writer;
+            dictionary = new Dictionary<T, int>();
+        }
+
+        public int TouchAndWriteId(T element)
+        {
+            int typeId;
+            if(dictionary.ContainsKey(element))
+            {
+                typeId = dictionary[element];
+                writer.PrimitiveWriter.Write(typeId);
+                return typeId;
+            }
+            typeId = nextId++;
+            dictionary.Add(element, typeId);
+            writer.PrimitiveWriter.Write(typeId);
+            element.WriteTo(writer);
+            return typeId;
+        }
+
+        private int nextId;
+        private readonly ObjectWriter writer;
+        private readonly Dictionary<T, int> dictionary;
     }
 }
 

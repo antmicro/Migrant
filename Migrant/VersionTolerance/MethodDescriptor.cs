@@ -35,6 +35,10 @@ namespace Antmicro.Migrant.VersionTolerance
         {
         }
 
+        public void WriteTo(ObjectWriter writer)
+        {
+        }
+
         public void ReadFromStream(ObjectReader reader)
         {
             var type = reader.ReadType().UnderlyingType;

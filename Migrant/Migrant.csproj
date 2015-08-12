@@ -83,6 +83,7 @@
     <Compile Include="Utilities\IIdentifiedElement.cs" />
     <Compile Include="VersionTolerance\MethodDescriptor.cs" />
     <Compile Include="TypeOrGenericTypeArgument.cs" />
+    <Compile Include="Utilities\IdentifiedElementsDictionary.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
