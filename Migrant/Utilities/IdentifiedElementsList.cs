@@ -38,12 +38,15 @@ namespace Antmicro.Migrant.Utilities
         public T Read()
         {
             var id = reader.PrimitiveReader.ReadInt32();
+            if(id == Consts.NullObjectId)
+            {
+                return default(T);
+            }
             if(list.Count <= id)
             {
                 var element = new T(); 
-                element.ReadFromStream(reader);
-
                 list.Add(element);
+                element.ReadFromStream(reader);
                 return element;
             }
 
