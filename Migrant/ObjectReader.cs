@@ -762,24 +762,6 @@ namespace Antmicro.Migrant
             DefaultCtor,
             Null
         }
-
-        private struct TypeOrGenericTypeArgument
-        {
-            public TypeOrGenericTypeArgument(Type t) : this()
-            {
-                Type = t;
-                GenericTypeArgumentIndex = -1;
-            }
-
-            public TypeOrGenericTypeArgument(int index) : this()
-            {
-                Type = null;
-                GenericTypeArgumentIndex = index;
-            }
-
-            public Type Type { get; private set; }
-            public int GenericTypeArgumentIndex { get; private set; }
-        }
     }
 }
 
