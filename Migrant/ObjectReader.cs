@@ -565,7 +565,8 @@ namespace Antmicro.Migrant
                 return typeCache[typeId];
             }
 
-            var type = TypeDescriptor.ReadFromStream(this);
+            var type = new TypeDescriptor();
+            type.ReadFromStream(this);
             typeCache.Add(typeId, type);
 
             // we need to read stamp here (i.e., after adding to typeList)

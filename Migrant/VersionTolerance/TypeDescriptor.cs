@@ -29,18 +29,12 @@ using System.Linq;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Customization;
 using System.Collections.Concurrent;
+using Antmicro.Migrant.Utilities;
 
 namespace Antmicro.Migrant
 {
-    internal class TypeDescriptor
+    internal class TypeDescriptor : IIdentifiedElement
     {
-        public static TypeDescriptor ReadFromStream(ObjectReader reader)
-        {
-            var result =  new TypeDescriptor();
-            result.ReadTypeStamp(reader);
-            return result;
-        }
-
         public static implicit operator TypeDescriptor(Type type)
         {
             TypeDescriptor value;
@@ -55,6 +49,30 @@ namespace Antmicro.Migrant
             }
 
             return value;
+        }
+
+        public TypeDescriptor()
+        {
+            fields = new List<FieldDescriptor>();
+        }
+
+        public void ReadFromStream(ObjectReader reader)
+        {
+            TypeModule = reader.Modules.Read();
+            GenericFullName = reader.PrimitiveReader.ReadString();
+            var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
+            genericArguments = new List<TypeDescriptor>();
+            for(int i = 0; i < genericArgumentsCount; i++)
+            {
+                genericArguments.Add(reader.ReadType());
+            }
+            Resolve();
+        }
+
+        public void WriteTo(ObjectWriter writer)
+        {
+            WriteTypeStamp(writer);
+            WriteStructureStampIfNeeded(writer);
         }
 
         public void ReadStructureStampIfNeeded(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
@@ -156,11 +174,6 @@ namespace Antmicro.Migrant
         public ModuleDescriptor TypeModule { get; private set; }
 
         public IEnumerable<FieldInfoOrEntryToOmit> FieldsToDeserialize { get; private set; }
-
-        private TypeDescriptor()
-        {
-            fields = new List<FieldDescriptor>();
-        }
 
         private void Init(Type t)
         {
@@ -292,19 +305,6 @@ namespace Antmicro.Migrant
             }
 
             return result;
-        }
-
-        private void ReadTypeStamp(ObjectReader reader)
-        {
-            TypeModule = reader.Modules.Read();
-            GenericFullName = reader.PrimitiveReader.ReadString();
-            var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
-            genericArguments = new List<TypeDescriptor>();
-            for(int i = 0; i < genericArgumentsCount; i++)
-            {
-                genericArguments.Add(reader.ReadType());
-            }
-            Resolve();
         }
 
         private void ReadStructureStamp(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
