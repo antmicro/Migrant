@@ -81,11 +81,6 @@ namespace Antmicro.Migrant.VersionTolerance
 
         private AssemblyDescriptor(Assembly assembly)
         {
-            if(assembly.Modules.Count() != 1)
-            {
-                throw new ArgumentException("Multimoduled assemblies are not supported yet.");
-            }
-
             UnderlyingAssembly = assembly;
 
             Name = assembly.GetName().Name;
