@@ -97,10 +97,10 @@ namespace Antmicro.Migrant
             this.isGenerating = isGenerating;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             this.surrogatesForObjects = surrogatesForObjects;
-            typeIndices = new Dictionary<TypeDescriptor, int>();
-            methodIndices = new Dictionary<MethodInfo, int>();
-            assemblyIndices = new Dictionary<AssemblyDescriptor, int>();
-            moduleIndices = new Dictionary<ModuleDescriptor, int>();
+            Types = new IdentifiedElementsDictionary<TypeDescriptor>(this);
+            Methods = new IdentifiedElementsDictionary<MethodDescriptor>(this);
+            Assemblies = new IdentifiedElementsDictionary<AssemblyDescriptor>(this);
+            Modules = new IdentifiedElementsDictionary<ModuleDescriptor>(this);
             this.preSerializationCallback = preSerializationCallback;
             this.postSerializationCallback = postSerializationCallback;
             writer = new PrimitiveWriter(stream, useBuffering);
@@ -235,117 +235,9 @@ namespace Antmicro.Migrant
             }
         }
 
-        internal int TouchAndWriteMethodId(MethodInfo info)
-        {
-            int methodId;
-            if(methodIndices.ContainsKey(info))
-            {
-                methodId = methodIndices[info];
-                writer.Write(methodId);
-                return methodId;
-            }
-            AddMissingMethod(info);
-            methodId = methodIndices[info];
-            writer.Write(methodId);
-            TouchAndWriteTypeId(info.ReflectedType);
-
-            var methodParameters = info.GetParameters();
-            if(info.IsGenericMethod)
-            {
-                var genericDefinition = info.GetGenericMethodDefinition();
-                var genericArguments = info.GetGenericArguments();
-                var genericMethodParamters = genericDefinition.GetParameters();
-
-                writer.Write(genericDefinition.Name);
-                writer.Write(genericArguments.Length);
-                for(int i = 0; i < genericArguments.Length; i++)
-                {
-                    TouchAndWriteTypeId(genericArguments[i]);
-                }
-
-                writer.Write(genericMethodParamters.Length);
-                for(int i = 0; i < genericMethodParamters.Length; i++)
-                {
-                    writer.Write(genericMethodParamters[i].ParameterType.IsGenericParameter);
-                    if(genericMethodParamters[i].ParameterType.IsGenericParameter)
-                    {
-                        writer.Write(genericMethodParamters[i].ParameterType.GenericParameterPosition);
-                    }
-                    else
-                    {
-                        TouchAndWriteTypeId(methodParameters[i].ParameterType);
-                    }
-                }
-            }
-            else
-            {
-                writer.Write(info.Name);
-                writer.Write(0); // no generic arguments
-                writer.Write(methodParameters.Length);
-
-                foreach(var p in methodParameters)
-                {
-                    TouchAndWriteTypeId(p.ParameterType);
-                }
-            }
-
-            return methodId;
-        }
-
         internal static bool HasSpecialWriteMethod(Type type)
         {
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
-        }
-
-        internal int TouchAndWriteTypeId(Type type)
-        {
-            TypeDescriptor typeDescriptor = type;
-
-            int typeId;
-            if(typeIndices.ContainsKey(typeDescriptor))
-            {
-                typeId = typeIndices[typeDescriptor];
-                writer.Write(typeId);
-                return typeId;
-            }
-            typeId = nextTypeId++;
-            typeIndices.Add(typeDescriptor, typeId);
-            writer.Write(typeId);
-            typeDescriptor.WriteTypeStamp(this);
-            typeDescriptor.WriteStructureStampIfNeeded(this);
-            return typeId;
-        }
-
-        internal int TouchAndWriteAssemblyId(AssemblyDescriptor assembly)
-        {
-            int assemblyId;
-            if(assemblyIndices.ContainsKey(assembly))
-            {
-                assemblyId = assemblyIndices[assembly];
-                writer.Write(assemblyId);
-                return assemblyId;
-            }
-            assemblyId = nextAssemblyId++;
-            assemblyIndices.Add(assembly, assemblyId);
-            writer.Write(assemblyId);
-            assembly.WriteTo(this);
-            return assemblyId;
-        }
-
-        internal int TouchAndWriteModuleId(ModuleDescriptor module)
-        {
-            int moduleId;
-            if(moduleIndices.ContainsKey(module))
-            {
-                moduleId = moduleIndices[module];
-                writer.Write(moduleId);
-                return moduleId;
-            }
-            moduleId = nextModuleId++;
-            moduleIndices.Add(module, moduleId);
-            writer.Write(moduleId);
-            module.WriteModuleStamp(this);
-            return moduleId;
         }
 
         internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
@@ -411,7 +303,7 @@ namespace Antmicro.Migrant
 
         private void WriteObjectUsingReflection(PrimitiveWriter primitiveWriter, object o)
         {
-            TouchAndWriteTypeId(o.GetType());
+            Types.TouchAndWriteId(o.GetType());
             // the primitiveWriter and parameter is not used here in fact, it is only to have
             // signature compatible with the generated method
             Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
@@ -485,7 +377,7 @@ namespace Antmicro.Migrant
                 foreach(var del in invocationList)
                 {
                     WriteField(typeof(object), del.Target);
-                    TouchAndWriteMethodId(del.Method);
+                    Methods.TouchAndWriteId(new MethodDescriptor(del.Method));
                 }
                 return true;
             }
@@ -675,11 +567,6 @@ namespace Antmicro.Migrant
             WriteObjectsFields(value, formalType);
         }
 
-        private void AddMissingMethod(MethodInfo info)
-        {
-            methodIndices.Add(info, nextMethodId++);
-        }
-
         private Action<PrimitiveWriter, object> PrepareWriteMethod(Type actualType, int surrogateId)
         {
             if(surrogateId == -1)
@@ -718,7 +605,7 @@ namespace Antmicro.Migrant
             {
                 return (y, obj) =>
                 {
-                    TouchAndWriteTypeId(actualType);
+                    Types.TouchAndWriteId(actualType);
                     y.Write((string)obj);
                 };
             }
@@ -726,7 +613,7 @@ namespace Antmicro.Migrant
             {
                 return (writer, obj) =>
                 {
-                    TouchAndWriteTypeId(actualType);
+                    Types.TouchAndWriteId(actualType);
                     var startingPosition = writer.Position;
                     ((ISpeciallySerializable)obj).Save(writer);
                     writer.Write(writer.Position - startingPosition);
@@ -736,7 +623,7 @@ namespace Antmicro.Migrant
             {
                 return (writer, objToWrite) =>
                 {
-                    TouchAndWriteTypeId(actualType);
+                    Types.TouchAndWriteId(actualType);
                     writer.Write(1); // rank of the array
                     var array = (byte[])objToWrite;
                     writer.Write(array.Length);
@@ -746,14 +633,15 @@ namespace Antmicro.Migrant
             return null;
         }
 
+        internal IdentifiedElementsDictionary<ModuleDescriptor> Modules { get; private set; }
+        internal IdentifiedElementsDictionary<AssemblyDescriptor> Assemblies { get; private set; }
+        internal IdentifiedElementsDictionary<MethodDescriptor> Methods { get; private set; }
+        internal IdentifiedElementsDictionary<TypeDescriptor> Types { get; private set; }
+
         private ObjectIdentifier identifier;
         private ObjectIdentifierContext identifierContext;
         private int objectsWrittenThisSession;
         private int identifierCountPreviousSession;
-        private int nextTypeId;
-        private int nextMethodId;
-        private int nextAssemblyId;
-        private int nextModuleId;
         private PrimitiveWriter writer;
         private readonly HashSet<int> inlineWritten;
         private readonly bool isGenerating;
@@ -762,10 +650,6 @@ namespace Antmicro.Migrant
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
         private readonly List<Action> postSerializationHooks;
-        private readonly Dictionary<TypeDescriptor, int> typeIndices;
-        private readonly Dictionary<MethodInfo, int> methodIndices;
-        private readonly Dictionary<AssemblyDescriptor, int> assemblyIndices;
-        private readonly Dictionary<ModuleDescriptor, int> moduleIndices;
         private readonly Dictionary<Type, bool> transientTypeCache;
         private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
         private readonly InheritanceAwareList<Delegate> surrogatesForObjects;

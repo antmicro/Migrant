@@ -50,8 +50,8 @@ namespace Antmicro.Migrant
 
         public void WriteTo(ObjectWriter writer)
         {
-            writer.TouchAndWriteTypeId(FieldType.UnderlyingType);
-            writer.TouchAndWriteTypeId(DeclaringType.UnderlyingType);
+            writer.Types.TouchAndWriteId(FieldType.UnderlyingType);
+            writer.Types.TouchAndWriteId(DeclaringType.UnderlyingType);
             writer.PrimitiveWriter.Write(Name);
         }
 

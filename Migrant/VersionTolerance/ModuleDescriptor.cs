@@ -51,7 +51,7 @@ namespace Antmicro.Migrant.VersionTolerance
 
         public void WriteTo(ObjectWriter writer)
         {
-            writer.TouchAndWriteAssemblyId(ModuleAssembly);
+            writer.Assemblies.TouchAndWriteId(ModuleAssembly);
             writer.PrimitiveWriter.Write(GUID);
             writer.PrimitiveWriter.Write(Name);
         }

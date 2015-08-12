@@ -80,13 +80,14 @@ namespace Antmicro.Migrant.Generators
                 return;
             }
 
-            var delegateTouchAndWriteTypeId = Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type));
             generator.Emit(OpCodes.Ldarg_0); // objectWriter
+            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectWriter, IdentifiedElementsDictionary<TypeDescriptor>>(ow => ow.Types));
 
             generator.Emit(OpCodes.Ldarg_2);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(o => o.GetType()));
+            generator.Emit(OpCodes.Call, Helpers.GetImplicitConvertionOperatorInfo<Type, TypeDescriptor>());
 
-            generator.Emit(OpCodes.Call, delegateTouchAndWriteTypeId);
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IdentifiedElementsDictionary<TypeDescriptor>, TypeDescriptor>((writer, type) => writer.TouchAndWriteId(type)));
             generator.Emit(OpCodes.Pop);
 
             // preserialization callbacks
@@ -490,9 +491,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop)
         {
-            var delegateTouchAndWriteMethodId = Helpers.GetMethodInfo<ObjectWriter, MethodInfo>((writer, method) => writer.TouchAndWriteMethodId(method));
             var delegateGetInvocationList = Helpers.GetMethodInfo<ObjectWriter, MulticastDelegate>((writer, md) => writer.GetDelegatesWithNonTransientTargets(md));
-            var delegateGetMethodInfo = typeof(MulticastDelegate).GetProperty("Method").GetGetMethod();
             var delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
 
             var array = generator.DeclareLocal(typeof(Delegate[]));
@@ -526,9 +525,13 @@ namespace Antmicro.Migrant.Generators
                 }, typeof(object));
 
                 generator.Emit(OpCodes.Ldarg_0); // objectWriter
+                generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectWriter, IdentifiedElementsDictionary<MethodDescriptor>>(ow => ow.Methods));
+
                 generator.Emit(OpCodes.Ldloc, element);
-                generator.Emit(OpCodes.Call, delegateGetMethodInfo);
-                generator.Emit(OpCodes.Call, delegateTouchAndWriteMethodId);
+                generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<MulticastDelegate, MethodInfo>(md => md.Method));
+                generator.Emit(OpCodes.Newobj, Helpers.GetConstructorInfo<MethodDescriptor>(typeof(MethodInfo)));
+
+                generator.Emit(OpCodes.Call,  Helpers.GetMethodInfo<IdentifiedElementsDictionary<MethodDescriptor>, MethodDescriptor>((writer, method) => writer.TouchAndWriteId(method)));
                 generator.Emit(OpCodes.Pop);
             });
         }

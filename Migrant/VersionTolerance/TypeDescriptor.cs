@@ -93,12 +93,12 @@ namespace Antmicro.Migrant
 
         public void WriteTypeStamp(ObjectWriter writer)
         {
-            writer.TouchAndWriteModuleId(TypeModule);
+            writer.Modules.TouchAndWriteId(TypeModule);
             writer.PrimitiveWriter.Write(GenericFullName);
             writer.PrimitiveWriter.Write(genericArguments.Count);
             foreach (var genericArgument in genericArguments)
             {
-                writer.TouchAndWriteTypeId(genericArgument.UnderlyingType);
+                writer.Types.TouchAndWriteId(genericArgument.UnderlyingType);
             }
         }
 
@@ -329,7 +329,7 @@ namespace Antmicro.Migrant
             }
             else
             {
-                writer.TouchAndWriteTypeId(baseType.UnderlyingType);
+                writer.Types.TouchAndWriteId(baseType.UnderlyingType);
             }
 
             writer.PrimitiveWriter.Write(fields.Count);

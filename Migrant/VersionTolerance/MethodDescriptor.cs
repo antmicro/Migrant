@@ -35,8 +35,54 @@ namespace Antmicro.Migrant.VersionTolerance
         {
         }
 
+        public MethodDescriptor(MethodInfo method)
+        {
+            UnderlyingMethod = method;
+        }
+
         public void WriteTo(ObjectWriter writer)
         {
+            writer.Types.TouchAndWriteId(UnderlyingMethod.ReflectedType);
+
+            var methodParameters = UnderlyingMethod.GetParameters();
+            if(UnderlyingMethod.IsGenericMethod)
+            {
+                var genericDefinition = UnderlyingMethod.GetGenericMethodDefinition();
+                var genericArguments = UnderlyingMethod.GetGenericArguments();
+                var genericMethodParamters = genericDefinition.GetParameters();
+
+                writer.PrimitiveWriter.Write(genericDefinition.Name);
+                writer.PrimitiveWriter.Write(genericArguments.Length);
+                for(int i = 0; i < genericArguments.Length; i++)
+                {
+                    writer.Types.TouchAndWriteId(genericArguments[i]);
+                }
+
+                writer.PrimitiveWriter.Write(genericMethodParamters.Length);
+                for(int i = 0; i < genericMethodParamters.Length; i++)
+                {
+                    writer.PrimitiveWriter.Write(genericMethodParamters[i].ParameterType.IsGenericParameter);
+                    if(genericMethodParamters[i].ParameterType.IsGenericParameter)
+                    {
+                        writer.PrimitiveWriter.Write(genericMethodParamters[i].ParameterType.GenericParameterPosition);
+                    }
+                    else
+                    {
+                        writer.Types.TouchAndWriteId(methodParameters[i].ParameterType);
+                    }
+                }
+            }
+            else
+            {
+                writer.PrimitiveWriter.Write(UnderlyingMethod.Name);
+                writer.PrimitiveWriter.Write(0); // no generic arguments
+                writer.PrimitiveWriter.Write(methodParameters.Length);
+
+                foreach(var p in methodParameters)
+                {
+                    writer.Types.TouchAndWriteId(p.ParameterType);
+                }
+            }
         }
 
         public void ReadFromStream(ObjectReader reader)
