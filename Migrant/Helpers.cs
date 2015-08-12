@@ -166,7 +166,7 @@ namespace Antmicro.Migrant
                 return null;
             }
 
-            return pinfo.GetGetMethod();
+            return pinfo.GetGetMethod(true);
         }
 
         public static MethodInfo GetMethodInfo(Expression<Action> expression)

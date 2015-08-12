@@ -166,7 +166,7 @@ namespace Antmicro.Migrant
         {
             UnderlyingType = t;
 
-            TypeModule = ModuleDescriptor.CreateFromModule(t.Module);
+            TypeModule = new ModuleDescriptor(t.Module);
 
             genericArguments = new List<TypeDescriptor>();
             if(UnderlyingType.IsGenericType)
@@ -296,7 +296,7 @@ namespace Antmicro.Migrant
 
         private void ReadTypeStamp(ObjectReader reader)
         {
-            TypeModule = reader.ReadModule();
+            TypeModule = reader.Modules.Read();
             GenericFullName = reader.PrimitiveReader.ReadString();
             var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
             genericArguments = new List<TypeDescriptor>();

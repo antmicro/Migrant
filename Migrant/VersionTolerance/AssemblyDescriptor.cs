@@ -26,23 +26,35 @@ using System;
 using System.Reflection;
 using System.Linq;
 using Antmicro.Migrant.Customization;
+using Antmicro.Migrant.Utilities;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
-    internal class AssemblyDescriptor
+    internal class AssemblyDescriptor : IIdentifiedElement
     {
-        public static AssemblyDescriptor ReadFromStream(ObjectReader reader)
+        public AssemblyDescriptor()
         {
-            var descriptor = new AssemblyDescriptor();
-            descriptor.ReadAssemblyStamp(reader);
-            var assemblyName = new AssemblyName(descriptor.FullName);
-            descriptor.UnderlyingAssembly = Assembly.Load(assemblyName);
-            return descriptor;
         }
 
-        public static AssemblyDescriptor CreateFromAssembly(Assembly assembly)
+        public AssemblyDescriptor(Assembly assembly)
         {
-            return new AssemblyDescriptor(assembly);
+            UnderlyingAssembly = assembly;
+
+            Name = assembly.GetName().Name;
+            Version = assembly.GetName().Version;
+            CultureName = assembly.GetName().CultureName;
+            if (CultureName == string.Empty)
+            {
+                CultureName = "neutral";
+            }
+            Token = assembly.GetName().GetPublicKeyToken();
+        }
+
+        public void ReadFromStream(ObjectReader reader)
+        {
+            ReadAssemblyStamp(reader);
+            var assemblyName = new AssemblyName(FullName);
+            UnderlyingAssembly = Assembly.Load(assemblyName);
         }
 
         public void WriteTo(ObjectWriter writer)
@@ -73,24 +85,6 @@ namespace Antmicro.Migrant.VersionTolerance
         public override int GetHashCode()
         {
             return FullName.GetHashCode();
-        }
-
-        private AssemblyDescriptor()
-        {
-        }
-
-        private AssemblyDescriptor(Assembly assembly)
-        {
-            UnderlyingAssembly = assembly;
-
-            Name = assembly.GetName().Name;
-            Version = assembly.GetName().Version;
-            CultureName = assembly.GetName().CultureName;
-            if (CultureName == string.Empty)
-            {
-                CultureName = "neutral";
-            }
-            Token = assembly.GetName().GetPublicKeyToken();
         }
 
         private void WriteAssemblyStamp(ObjectWriter writer)

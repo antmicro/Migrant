@@ -36,6 +36,7 @@ using Antmicro.Migrant.Hooks;
 using Antmicro.Migrant.Utilities;
 using System.Collections;
 using Antmicro.Migrant.Generators;
+using Antmicro.Migrant.VersionTolerance;
 
 namespace Antmicro.Migrant.Generators
 {
@@ -975,7 +976,9 @@ namespace Antmicro.Migrant.Generators
             // method returns read methodInfo (or null)
 
             generator.Emit(OpCodes.Ldarg_0); // object reader
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, MethodInfo>(or => or.ReadMethod()));
+            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectReader, IdentifiedElementsList<MethodDescriptor>>(or => or.Methods));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IdentifiedElementsList<MethodDescriptor>, MethodDescriptor>(or => or.Read()));
+            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<MethodDescriptor, MethodInfo>(md => md.UnderlyingMethod));
         }
 
         public DynamicMethod Method
