@@ -72,6 +72,7 @@ namespace Antmicro.Migrant.Generators
                 var delegateType = typeof(Func<,>).MakeGenericType(typeToGenerate, typeof(object));
                 generator.Emit(OpCodes.Castclass, delegateType);
                 generator.Emit(OpCodes.Ldarg_2);
+                generator.Emit(OpCodes.Castclass, typeToGenerate);
                 generator.Emit(OpCodes.Call, delegateType.GetMethod("Invoke"));
 
                 // jump to surrogate serialization
@@ -195,6 +196,10 @@ namespace Antmicro.Migrant.Generators
                 GenerateWriteType(gen =>
                 {
                     putValueToWriteOnTop(gen);
+                    if(!actualType.IsValueType)
+                    {
+                        gen.Emit(OpCodes.Castclass, actualType);
+                    }
                     gen.Emit(OpCodes.Ldfld, field);
                 }, field.FieldType);
             }
