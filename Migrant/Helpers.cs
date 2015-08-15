@@ -204,10 +204,10 @@ namespace Antmicro.Migrant
             return TypesWriteableByPrimitiveWriter.Contains(type);
         }
 
-        private static readonly ConcurrentDictionary<Type, bool> lookup = new ConcurrentDictionary<Type, bool>();  
+        private static readonly ConcurrentDictionary<Type, bool> AttrbuteIsDefinedLookup = new ConcurrentDictionary<Type, bool>();  
         internal static bool CheckTransientNoCache(Type type)
         {
-            return lookup.GetOrAdd(type, t => t.IsDefined(typeof(TransientAttribute), true));
+            return AttrbuteIsDefinedLookup.GetOrAdd(type, t => t.IsDefined(typeof(TransientAttribute), true));
         }
 
         internal static SerializationType GetSerializationType(Type type)
