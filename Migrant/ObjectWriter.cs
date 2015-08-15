@@ -40,6 +40,7 @@ using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.Customization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Antmicro.Migrant
 {
@@ -302,9 +303,8 @@ namespace Antmicro.Migrant
             var typeDescriptor = TypeDescriptor.CreateFromType(type);
 
             int typeId;
-            if(typeIndices.ContainsKey(typeDescriptor))
+            if (typeIndices.TryGetValue(typeDescriptor, out typeId))
             {
-                typeId = typeIndices[typeDescriptor];
                 writer.Write(typeId);
                 return typeId;
             }
@@ -319,9 +319,8 @@ namespace Antmicro.Migrant
         internal int TouchAndWriteAssemblyId(AssemblyDescriptor assembly)
         {
             int assemblyId;
-            if(assemblyIndices.ContainsKey(assembly))
+            if (assemblyIndices.TryGetValue(assembly, out assemblyId))
             {
-                assemblyId = assemblyIndices[assembly];
                 writer.Write(assemblyId);
                 return assemblyId;
             }

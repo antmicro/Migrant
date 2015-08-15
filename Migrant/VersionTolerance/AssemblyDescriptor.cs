@@ -40,6 +40,8 @@ namespace Antmicro.Migrant.VersionTolerance
             return descriptor;
         }
 
+        public int? AssemblyId { get; set; }
+
         public static AssemblyDescriptor CreateFromAssembly(Assembly assembly)
         {
             return new AssemblyDescriptor(assembly);
@@ -132,7 +134,22 @@ namespace Antmicro.Migrant.VersionTolerance
             ModuleGUID = reader.PrimitiveReader.ReadGuid();
         }
 
-        public string FullName { get { return string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, CultureName, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); } }
+        private string _fullName;
+        public string FullName
+        {
+            get
+            {
+                if (_fullName == null)
+                {
+                    _fullName = string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, CultureName,
+                   Token.Length == 0
+                       ? "null"
+                       : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x))));
+                }
+
+                return _fullName;
+            }
+        }
 
         public Guid ModuleGUID { get; private set; } 
         public Assembly UnderlyingAssembly { get; private set; }

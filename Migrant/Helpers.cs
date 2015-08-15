@@ -26,6 +26,7 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -203,9 +204,10 @@ namespace Antmicro.Migrant
             return TypesWriteableByPrimitiveWriter.Contains(type);
         }
 
+        private static readonly ConcurrentDictionary<Type, bool> lookup = new ConcurrentDictionary<Type, bool>();  
         internal static bool CheckTransientNoCache(Type type)
         {
-            return type.IsDefined(typeof(TransientAttribute), true);
+            return lookup.GetOrAdd(type, t => t.IsDefined(typeof(TransientAttribute), true));
         }
 
         internal static SerializationType GetSerializationType(Type type)
