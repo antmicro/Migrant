@@ -25,22 +25,21 @@
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
 using System;
-using System.IO;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Collections;
-using Antmicro.Migrant.Hooks;
-using Antmicro.Migrant.Generators;
 using System.Reflection.Emit;
 using System.Threading;
-using System.Diagnostics;
-using Antmicro.Migrant.VersionTolerance;
-using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.Customization;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using Antmicro.Migrant.Generators;
+using Antmicro.Migrant.Hooks;
+using Antmicro.Migrant.Utilities;
+using Antmicro.Migrant.VersionTolerance;
 
 namespace Antmicro.Migrant
 {
