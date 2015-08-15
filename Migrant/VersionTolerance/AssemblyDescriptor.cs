@@ -40,8 +40,6 @@ namespace Antmicro.Migrant.VersionTolerance
             return descriptor;
         }
 
-        public int? AssemblyId { get; set; }
-
         public static AssemblyDescriptor CreateFromAssembly(Assembly assembly)
         {
             return new AssemblyDescriptor(assembly);
