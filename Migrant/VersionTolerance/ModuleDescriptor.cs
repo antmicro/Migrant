@@ -56,6 +56,30 @@ namespace Antmicro.Migrant.VersionTolerance
             writer.PrimitiveWriter.Write(Name);
         }
 
+        public override bool Equals(object obj)
+        {
+            if(obj == null || obj.GetType() != typeof(ModuleDescriptor))
+            {
+                return false;
+            }
+            if(ReferenceEquals(this, obj))
+            {
+                return true;
+            }
+            ModuleDescriptor other = (ModuleDescriptor)obj;
+            return Name == other.Name && GUID == other.GUID && ModuleAssembly.Equals(other.ModuleAssembly);
+        }
+        
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (Name != null ? Name.GetHashCode() : 0) ^ GUID.GetHashCode() ^ (ModuleAssembly != null ? ModuleAssembly.GetHashCode() : 0);
+            }
+        }
+        
+
         public bool Equals(ModuleDescriptor obj, VersionToleranceLevel versionToleranceLevel)
         {
             if(versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowGuidChange))
