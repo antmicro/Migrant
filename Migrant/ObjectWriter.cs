@@ -302,9 +302,8 @@ namespace Antmicro.Migrant
             var typeDescriptor = TypeDescriptor.CreateFromType(type);
 
             int typeId;
-            if(typeIndices.ContainsKey(typeDescriptor))
+            if(typeIndices.TryGetValue(typeDescriptor, out typeId))
             {
-                typeId = typeIndices[typeDescriptor];
                 writer.Write(typeId);
                 return typeId;
             }
