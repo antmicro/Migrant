@@ -236,7 +236,31 @@ namespace Antmicro.Migrant
             }
             return -1;
         }
-        
+
+        internal static bool IsOpenedGenericType(Type type)
+        {
+            return type.IsGenericType && type.ContainsGenericParameters;
+        }
+
+        internal static void WriteArray(this PrimitiveWriter writer, int[] elements)
+        {
+            writer.Write(elements.Count());
+            foreach(var element in elements)
+            {
+                writer.Write(element);
+            }
+        }
+
+        internal static int[] ReadArray(this PrimitiveReader reader)
+        {
+            var result = new int[reader.ReadInt32()];
+            for(int i = 0; i < result.Length; i++)
+            {
+                result[i] = reader.ReadInt32();
+            }
+            return result;
+        }
+
         internal static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
         private static int GetBoundary(long currentPosition)

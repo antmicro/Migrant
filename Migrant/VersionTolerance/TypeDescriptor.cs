@@ -77,11 +77,6 @@ namespace Antmicro.Migrant
         {
             writer.TouchAndWriteModuleId(TypeModule);
             writer.PrimitiveWriter.Write(GenericFullName);
-            writer.PrimitiveWriter.Write(genericArguments.Count);
-            foreach (var genericArgument in genericArguments)
-            {
-                writer.TouchAndWriteTypeId(genericArgument.UnderlyingType);
-            }
         }
 
         public override int GetHashCode()
@@ -168,15 +163,10 @@ namespace Antmicro.Migrant
 
             TypeModule = ModuleDescriptor.CreateFromModule(t.Module);
 
-            genericArguments = new List<TypeDescriptor>();
-            if(UnderlyingType.IsGenericType)
+            if(UnderlyingType.IsGenericType && !Helpers.IsOpenedGenericType(UnderlyingType))
             {
                 GenericFullName = UnderlyingType.GetGenericTypeDefinition().FullName;
                 GenericAssemblyQualifiedName = UnderlyingType.GetGenericTypeDefinition().AssemblyQualifiedName;
-                foreach(var genericArgument in UnderlyingType.GetGenericArguments())
-                {
-                    genericArguments.Add(TypeDescriptor.CreateFromType(genericArgument));
-                }
             }
             else
             {
@@ -210,18 +200,6 @@ namespace Antmicro.Migrant
             }
 
             GenericAssemblyQualifiedName = type.AssemblyQualifiedName;
-
-            if(type.IsGenericType)
-            {
-                var genericTypes = new Type[genericArguments.Count];
-                var counter = 0;
-                foreach(var genArg in genericArguments)
-                {
-                    genericTypes[counter++] = genArg.UnderlyingType;
-                }
-                type = type.MakeGenericType(genericTypes);
-            }
-
             UnderlyingType = type;
         }
 
@@ -298,12 +276,7 @@ namespace Antmicro.Migrant
         {
             TypeModule = reader.ReadModule();
             GenericFullName = reader.PrimitiveReader.ReadString();
-            var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
-            genericArguments = new List<TypeDescriptor>();
-            for(int i = 0; i < genericArgumentsCount; i++)
-            {
-                genericArguments.Add(reader.ReadType());
-            }
+
             Resolve();
         }
 
@@ -325,6 +298,8 @@ namespace Antmicro.Migrant
         {
             if(baseType == null)
             {
+                writer.PrimitiveWriter.Write(false); // non-generic argument
+                writer.PrimitiveWriter.Write(0); // non-array
                 writer.PrimitiveWriter.Write(Consts.NullObjectId);
             }
             else
@@ -338,8 +313,6 @@ namespace Antmicro.Migrant
                 field.WriteTo(writer);
             }
         }
-
-        private List<TypeDescriptor> genericArguments;
 
         private TypeDescriptor baseType;
 

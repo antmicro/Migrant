@@ -356,7 +356,7 @@ namespace Antmicro.Migrant
         private readonly Dictionary<Type, DynamicMethod> readMethodCache;
         private readonly InheritanceAwareList<Delegate> surrogatesForObjects;
         private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
-        private const byte VersionNumber = 7;
+        private const byte VersionNumber = 8;
         private const byte Magic1 = 0x32;
         private const byte Magic2 = 0x66;
         private const byte Magic3 = 0x34;

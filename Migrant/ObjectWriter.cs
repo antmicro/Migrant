@@ -299,8 +299,50 @@ namespace Antmicro.Migrant
 
         internal int TouchAndWriteTypeId(Type type)
         {
-            var typeDescriptor = TypeDescriptor.CreateFromType(type);
+            var isGenericParameter = type.IsGenericParameter;
+            writer.Write(isGenericParameter);
+            if(isGenericParameter)
+            {
+                TouchAndWriteTypeId(type.DeclaringType);
+                writer.Write(type.GenericParameterPosition);
+                return 0;
+            }
 
+            if(type.IsArray)
+            {
+                var arrayDescriptor = new ArrayDescriptor(type);
+                writer.WriteArray(arrayDescriptor.Ranks);
+                return TouchAndWriteTypeId(arrayDescriptor.ElementType);
+            }
+            else
+            {
+                writer.Write(0); // scalar
+            }
+
+            if(type.IsGenericType)
+            {
+                var gtd = type.GetGenericTypeDefinition();
+                TouchAndWriteTypeIdInner(TypeDescriptor.CreateFromType(gtd));
+                var isOpen = Helpers.IsOpenedGenericType(type);
+                writer.Write(isOpen);
+                if(!isOpen)
+                {
+                    foreach(var ga in type.GetGenericArguments())
+                    {
+                        TouchAndWriteTypeId(ga);
+                    }
+                }
+
+                return 0;
+            }
+
+            var typeDescriptor = TypeDescriptor.CreateFromType(type);
+            TouchAndWriteTypeIdInner(typeDescriptor);
+            return 0;
+        }
+
+        internal int TouchAndWriteTypeIdInner(TypeDescriptor typeDescriptor)
+        {
             int typeId;
             if(typeIndices.ContainsKey(typeDescriptor))
             {
