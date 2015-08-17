@@ -27,6 +27,10 @@
 using System;
 using NUnit.Framework;
 using Antmicro.Migrant.Customization;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -182,6 +186,60 @@ namespace Antmicro.Migrant.Tests
             var result = SerializeAndDeserializeOnTwoAppDomains(type, type, vtl, false);
 
             Assert.AreEqual(vtl.HasFlag(VersionToleranceLevel.AllowGuidChange), result);
+        }
+
+        [Test]
+        public void ShouldNotStampTypeTwice()
+        {
+            var serializer = new Serializer(GetSettings());
+            var memoryStream = new MemoryStream();
+            var o = new ClassWithGenerics();
+            serializer.Serialize(o, memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var strings = GetString(memoryStream.GetBuffer());
+
+            Assert.AreEqual(1, NumberOfOccurences(strings, "System.Int32"));
+        }
+
+        [Test]
+        public void ShouldNotStampGenericTypeTwice()
+        {
+            var serializer = new Serializer(GetSettings());
+            var memoryStream = new MemoryStream();
+            var o = new ClassWithGenerics();
+            serializer.Serialize(o, memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var strings = GetString(memoryStream.GetBuffer());
+
+            Assert.AreEqual(1, NumberOfOccurences(strings, "System.Collections.Generic.List`1"));
+        }
+
+        private static string GetString(byte[] array)
+        {
+            // 32 - ' ', 126 - '~'
+            var interestingBytes = array.Where(b => b >= 32 && b <= 126).ToArray();
+            return Encoding.ASCII.GetString(interestingBytes);
+        }
+
+        private static int NumberOfOccurences(string src, string pattern)
+        {
+            var n = 0;
+            var count = 0;
+            while ((n = src.IndexOf(pattern, n)) != -1)
+            {
+               n++;
+               count++;
+            }
+            return count;
+        }
+
+        private class ClassWithGenerics
+        {
+            public int integerNumber;
+            public int secondIntegerNumber;
+            public List<int> listOfIntegerNumbers;
+            public float floatNumber;
+            public List<float> listOfFloatNumbers;
         }
     }
 }
