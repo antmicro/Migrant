@@ -39,7 +39,6 @@ using System.Diagnostics;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.Customization;
-using System.Runtime.CompilerServices;
 
 namespace Antmicro.Migrant
 {
@@ -101,6 +100,7 @@ namespace Antmicro.Migrant
             typeIndices = new Dictionary<TypeDescriptor, int>();
             methodIndices = new Dictionary<MethodInfo, int>();
             assemblyIndices = new Dictionary<AssemblyDescriptor, int>();
+            moduleIndices = new Dictionary<ModuleDescriptor, int>();
             this.preSerializationCallback = preSerializationCallback;
             this.postSerializationCallback = postSerializationCallback;
             writer = new PrimitiveWriter(stream, useBuffering);
@@ -329,6 +329,22 @@ namespace Antmicro.Migrant
             writer.Write(assemblyId);
             assembly.WriteTo(this);
             return assemblyId;
+        }
+
+        internal int TouchAndWriteModuleId(ModuleDescriptor module)
+        {
+            int moduleId;
+            if(moduleIndices.ContainsKey(module))
+            {
+                moduleId = moduleIndices[module];
+                writer.Write(moduleId);
+                return moduleId;
+            }
+            moduleId = nextModuleId++;
+            moduleIndices.Add(module, moduleId);
+            writer.Write(moduleId);
+            module.WriteModuleStamp(this);
+            return moduleId;
         }
 
         internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
@@ -736,6 +752,7 @@ namespace Antmicro.Migrant
         private int nextTypeId;
         private int nextMethodId;
         private int nextAssemblyId;
+        private int nextModuleId;
         private PrimitiveWriter writer;
         private readonly HashSet<int> inlineWritten;
         private readonly bool isGenerating;
@@ -747,6 +764,7 @@ namespace Antmicro.Migrant
         private readonly Dictionary<TypeDescriptor, int> typeIndices;
         private readonly Dictionary<MethodInfo, int> methodIndices;
         private readonly Dictionary<AssemblyDescriptor, int> assemblyIndices;
+        private readonly Dictionary<ModuleDescriptor, int> moduleIndices;
         private readonly Dictionary<Type, bool> transientTypeCache;
         private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
         private readonly InheritanceAwareList<Delegate> surrogatesForObjects;

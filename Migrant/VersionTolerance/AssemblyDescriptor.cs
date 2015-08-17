@@ -81,12 +81,7 @@ namespace Antmicro.Migrant.VersionTolerance
 
         private AssemblyDescriptor(Assembly assembly)
         {
-            if(assembly.Modules.Count() != 1)
-            {
-                throw new ArgumentException("Multimoduled assemblies are not supported yet.");
-            }
-
-            this.UnderlyingAssembly = assembly;
+            UnderlyingAssembly = assembly;
 
             Name = assembly.GetName().Name;
             Version = assembly.GetName().Version;
@@ -96,8 +91,6 @@ namespace Antmicro.Migrant.VersionTolerance
                 CultureName = "neutral";
             }
             Token = assembly.GetName().GetPublicKeyToken();
-
-            ModuleGUID = assembly.Modules.First().ModuleVersionId;
         }
 
         private void WriteAssemblyStamp(ObjectWriter writer)
@@ -107,8 +100,6 @@ namespace Antmicro.Migrant.VersionTolerance
             writer.PrimitiveWriter.Write(CultureName);
             writer.PrimitiveWriter.Write((byte)Token.Length);
             writer.PrimitiveWriter.Write(Token);
-
-            writer.PrimitiveWriter.Write(ModuleGUID);
         }
 
         private void ReadAssemblyStamp(ObjectReader reader)
@@ -128,13 +119,10 @@ namespace Antmicro.Migrant.VersionTolerance
             default:
                 throw new ArgumentException("Wrong token length!");
             }
-
-            ModuleGUID = reader.PrimitiveReader.ReadGuid();
         }
 
         public string FullName { get { return string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, CultureName, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); } }
 
-        public Guid ModuleGUID { get; private set; } 
         public Assembly UnderlyingAssembly { get; private set; }
         public string Name { get; private set; }
         public Version Version { get; private set; }

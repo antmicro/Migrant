@@ -89,12 +89,13 @@ namespace Antmicro.Migrant
         /// </param>
         public int GetId(object o)
         {
-            if(objectToId.ContainsKey(o))
+            int id;
+            if(objectToId.TryGetValue(o, out id))
             {
-                return objectToId[o];
+                return id;
             }
 
-            var id = idToObject.Count;
+            id = idToObject.Count;
             objectToId.Add(o, id);
             idToObject.Add(o);
             return id;

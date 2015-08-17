@@ -75,7 +75,7 @@ namespace Antmicro.Migrant
 
         public void WriteTypeStamp(ObjectWriter writer)
         {
-            writer.TouchAndWriteAssemblyId(TypeAssembly);
+            writer.TouchAndWriteModuleId(TypeModule);
             writer.PrimitiveWriter.Write(GenericFullName);
             writer.PrimitiveWriter.Write(genericArguments.Count);
             foreach (var genericArgument in genericArguments)
@@ -105,7 +105,7 @@ namespace Antmicro.Migrant
             if(versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
             {
                 return obj.UnderlyingType.FullName == UnderlyingType.FullName
-                    && obj.TypeAssembly.Equals(TypeAssembly, versionToleranceLevel);
+                    && obj.TypeModule.Equals(TypeModule, versionToleranceLevel);
             }
 
             return Equals(obj);
@@ -153,7 +153,7 @@ namespace Antmicro.Migrant
       
         public string GenericAssemblyQualifiedName { get; private set; }
       
-        public AssemblyDescriptor TypeAssembly { get; private set; }
+        public ModuleDescriptor TypeModule { get; private set; }
 
         public IEnumerable<FieldInfoOrEntryToOmit> FieldsToDeserialize { get; private set; }
 
@@ -166,7 +166,7 @@ namespace Antmicro.Migrant
         {
             UnderlyingType = t;
 
-            TypeAssembly = AssemblyDescriptor.CreateFromAssembly(t.Assembly);
+            TypeModule = ModuleDescriptor.CreateFromModule(t.Module);
 
             genericArguments = new List<TypeDescriptor>();
             if(UnderlyingType.IsGenericType)
@@ -203,7 +203,7 @@ namespace Antmicro.Migrant
 
         private void Resolve()
         {
-            var type = TypeAssembly.UnderlyingAssembly.GetType(GenericFullName);
+            var type = TypeModule.ModuleAssembly.UnderlyingAssembly.GetType(GenericFullName);
             if(type == null)
             {
                 throw new InvalidOperationException(string.Format("Couldn't load type '{0}'", GenericFullName));
@@ -232,7 +232,7 @@ namespace Antmicro.Migrant
 
         private List<FieldInfoOrEntryToOmit> VerifyStructure(VersionToleranceLevel versionToleranceLevel)
         {
-            if(TypeAssembly.ModuleGUID == UnderlyingType.Module.ModuleVersionId)
+            if(TypeModule.GUID == UnderlyingType.Module.ModuleVersionId)
             {
                 return StampHelpers.GetFieldsInSerializationOrder(UnderlyingType, true).Select(x => new FieldInfoOrEntryToOmit(x)).ToList();
             }
@@ -240,7 +240,7 @@ namespace Antmicro.Migrant
             if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowGuidChange))
             {
                 throw new VersionToleranceException(string.Format("The class was serialized with different module version id {0}, current one is {1}.",
-                    TypeAssembly.ModuleGUID, UnderlyingType.Module.ModuleVersionId));
+                    TypeModule.GUID, UnderlyingType.Module.ModuleVersionId));
             }
 
             var result = new List<FieldInfoOrEntryToOmit>();
@@ -253,9 +253,9 @@ namespace Antmicro.Migrant
                 throw new VersionToleranceException(string.Format("Class hierarchy changed. Expected '{1}' as base class, but found '{0}'.", baseType != null ? baseType.UnderlyingType.FullName : "null", assemblyTypeDescriptor.baseType != null ? assemblyTypeDescriptor.baseType.UnderlyingType.FullName : "null"));
             }
 
-            if(assemblyTypeDescriptor.TypeAssembly.Version != TypeAssembly.Version && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
+            if(assemblyTypeDescriptor.TypeModule.ModuleAssembly.Version != TypeModule.ModuleAssembly.Version && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
             {
-                throw new VersionToleranceException(string.Format("Assembly version changed from {0} to {1} for class {2}", TypeAssembly.Version, assemblyTypeDescriptor.TypeAssembly.Version, UnderlyingType.FullName));
+                throw new VersionToleranceException(string.Format("Assembly version changed from {0} to {1} for class {2}", TypeModule.ModuleAssembly.Version, assemblyTypeDescriptor.TypeModule.ModuleAssembly.Version, UnderlyingType.FullName));
             }
 
             var cmpResult = assemblyTypeDescriptor.CompareWith(this, versionToleranceLevel);
@@ -296,7 +296,7 @@ namespace Antmicro.Migrant
 
         private void ReadTypeStamp(ObjectReader reader)
         {
-            TypeAssembly = reader.ReadAssembly();
+            TypeModule = reader.ReadModule();
             GenericFullName = reader.PrimitiveReader.ReadString();
             var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
             genericArguments = new List<TypeDescriptor>();

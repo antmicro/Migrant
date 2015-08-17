@@ -1,4 +1,4 @@
-# Migrant 0.10.3
+# Migrant 0.10.5
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/3674/badge.svg)](https://scan.coverity.com/projects/3674)
 
@@ -185,6 +185,89 @@ project.
 As with `ISerializable` Migrant can also utilize implementation of
 `IXmlSerializable`. In that case data is written to memory stream using
 `XmlSerializer` and then taken as a binary blob (along with type name).
+
+### (De)serializing the `Type` type
+
+Directly serializing `Type` is not possible, but you can use surrogates for that purpose.
+
+One solution is to serialize the assembly qualified name of the type:
+
+```csharp
+
+class MainClass
+{ 
+	public static void Main(string[] args)
+	{
+		var serializer = new Serializer();
+		serializer.ForObject<Type>().SetSurrogate(type => new TypeSurrogate(type));
+		serializer.ForSurrogate<TypeSurrogate>().SetObject(x => x.Restore());
+
+		var typesIn = new [] { typeof(Type), typeof(int[]), typeof(MainClass) };
+
+		var stream = new MemoryStream();
+		serializer.Serialize(typesIn, stream);
+		stream.Seek(0, SeekOrigin.Begin);
+		var typesOut = serializer.Deserialize<Type[]>(stream);
+		foreach(var type in typesOut)
+		{
+			Console.WriteLine(type);
+		}
+	}
+}
+
+public class TypeSurrogate
+{
+	public TypeSurrogate(Type type)
+	{
+		assemblyQualifiedName = type.AssemblyQualifiedName;
+	}
+
+	public Type Restore()
+	{
+		return Type.GetType(assemblyQualifiedName);
+	}
+
+	private readonly string assemblyQualifiedName;
+}
+```
+
+If you would also like to use the same mechanisms of version tolerance that are used for normal types, you can go with this code:
+
+```csharp
+class MainClass
+{ 
+	public static void Main(string[] args)
+	{
+		var serializer = new Serializer();
+		serializer.ForObject<Type>().SetSurrogate(type => Activator.CreateInstance(typeof(TypeSurrogate<>).MakeGenericType(new [] { type })));
+		serializer.ForSurrogate<ITypeSurrogate>().SetObject(x => x.Restore());
+
+		var typesIn = new [] { typeof(Type), typeof(int[]), typeof(MainClass) };
+
+		var stream = new MemoryStream();
+		serializer.Serialize(typesIn, stream);
+		stream.Seek(0, SeekOrigin.Begin);
+		var typesOut = serializer.Deserialize<Type[]>(stream);
+		foreach(var type in typesOut)
+		{
+			Console.WriteLine(type);
+		}
+	}
+}
+
+public class TypeSurrogate<T> : ITypeSurrogate
+{
+	public Type Restore()
+	{
+		return typeof(T);
+	}
+}
+
+public interface ITypeSurrogate
+{
+	Type Restore();
+}
+```
 
 ## Features
 
