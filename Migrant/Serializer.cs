@@ -254,6 +254,16 @@ namespace Antmicro.Migrant
             serializer.Serialize(toClone, stream);
             var position = stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
+            #if DEBUG
+            if(DUMP_STREAM)
+            {
+                using(var f = File.OpenWrite("stream.dump"))
+                {
+                    stream.WriteTo(f);
+                }
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            #endif
             var result = serializer.Deserialize<T>(stream);
             if(position != stream.Position)
             {
@@ -350,6 +360,12 @@ namespace Antmicro.Migrant
         private const byte Magic1 = 0x32;
         private const byte Magic2 = 0x66;
         private const byte Magic3 = 0x34;
+
+        #if DEBUG
+        public static readonly bool DUMP_STREAM = true;
+        public static readonly bool DISABLE_VARINTS = true;
+        public static readonly bool DISABLE_BUFFERING = true;
+        #endif
 
         /// <summary>
         /// Lets you set a callback providing object for type of the surrogate given to method that provided

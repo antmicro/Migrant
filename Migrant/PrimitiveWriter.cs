@@ -58,6 +58,9 @@ namespace Antmicro.Migrant
         public PrimitiveWriter(Stream stream, bool buffered = true)
         {
             this.stream = stream;
+            #if DEBUG
+            buffered &= !Serializer.DISABLE_BUFFERING;
+            #endif
             if(buffered)
             {
                 buffer = new byte[BufferSize];
@@ -153,7 +156,7 @@ namespace Antmicro.Migrant
         public void Write(short value)
         {
 #if DEBUG
-            if(PrimitiveWriter.DontUseIntegerCompression)
+            if(Serializer.DISABLE_VARINTS)
             {
                 InnerWriteInteger((ushort)value, sizeof(short) + 1);
                 return;
@@ -177,7 +180,7 @@ namespace Antmicro.Migrant
         public void Write(int value)
         {
 #if DEBUG
-            if(PrimitiveWriter.DontUseIntegerCompression)
+            if(Serializer.DISABLE_VARINTS)
             {
                 InnerWriteInteger((uint)value, sizeof(int) + 1);
                 return;
@@ -201,7 +204,7 @@ namespace Antmicro.Migrant
         public void Write(long value)
         {
 #if DEBUG
-            if(PrimitiveWriter.DontUseIntegerCompression)
+            if(Serializer.DISABLE_VARINTS)
             {
                 Write((ulong)value);
                 return;
@@ -337,7 +340,7 @@ namespace Antmicro.Migrant
         {
             byte valueToWrite;
 #if DEBUG
-            if(DontUseIntegerCompression)
+            if(Serializer.DISABLE_VARINTS)
             {
                 if(buffered)
                 {
@@ -470,10 +473,6 @@ namespace Antmicro.Migrant
         private readonly Stream stream;
         private readonly bool buffered;
         private const int BufferSize = 4 * 1024;
-
-        #if DEBUG
-        internal static readonly bool DontUseIntegerCompression = false;
-        #endif
     }
 }
 

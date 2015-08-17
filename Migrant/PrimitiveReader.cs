@@ -58,6 +58,9 @@ namespace Antmicro.Migrant
         public PrimitiveReader(Stream stream, bool buffered = true)
         {
             this.stream = stream;
+            #if DEBUG
+            buffered &= !Serializer.DISABLE_BUFFERING;
+            #endif
             if(buffered)
             {
                 // buffer size is the size of the maximal padding
@@ -151,7 +154,7 @@ namespace Antmicro.Migrant
         public short ReadInt16()
         {
 #if DEBUG
-            if(PrimitiveWriter.DontUseIntegerCompression)
+            if(Serializer.DISABLE_VARINTS)
             {
                 return (short)InnerReadInteger();
             }
@@ -174,7 +177,7 @@ namespace Antmicro.Migrant
         public int ReadInt32()
         {
 #if DEBUG
-            if(PrimitiveWriter.DontUseIntegerCompression)
+            if(Serializer.DISABLE_VARINTS)
             {
                 return (int)InnerReadInteger();
             }
@@ -197,7 +200,7 @@ namespace Antmicro.Migrant
         public long ReadInt64()
         {
 #if DEBUG
-            if(PrimitiveWriter.DontUseIntegerCompression)
+            if(Serializer.DISABLE_VARINTS)
             {
                 return (long)InnerReadInteger();
             }
@@ -351,7 +354,7 @@ namespace Antmicro.Migrant
             ulong next;
             var result = 0UL;
 #if DEBUG
-            if(PrimitiveWriter.DontUseIntegerCompression)
+            if(Serializer.DISABLE_VARINTS)
             {
                 for(int i = 0; i < sizeof(ulong); ++i)
                 {
