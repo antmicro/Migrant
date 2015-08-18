@@ -225,7 +225,7 @@ namespace Antmicro.Migrant.Tests
         {
             var n = 0;
             var count = 0;
-            while ((n = src.IndexOf(pattern, n)) != -1)
+            while((n = src.IndexOf(pattern, n)) != -1)
             {
                n++;
                count++;
