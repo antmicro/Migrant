@@ -22,7 +22,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // *******************************************************************
-using System;
 using System.Collections.Generic;
 
 namespace Antmicro.Migrant.Utilities
@@ -38,9 +37,8 @@ namespace Antmicro.Migrant.Utilities
         public int TouchAndWriteId(T element)
         {
             int typeId;
-            if(dictionary.ContainsKey(element))
+            if(dictionary.TryGetValue(element, out typeId))
             {
-                typeId = dictionary[element];
                 writer.PrimitiveWriter.Write(typeId);
                 return typeId;
             }
