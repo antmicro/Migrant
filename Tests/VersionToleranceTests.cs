@@ -235,11 +235,11 @@ namespace Antmicro.Migrant.Tests
 
         private class ClassWithGenerics
         {
-            public int integerNumber;
-            public int secondIntegerNumber;
-            public List<int> listOfIntegerNumbers;
-            public float floatNumber;
-            public List<float> listOfFloatNumbers;
+            public int IntegerNumber;
+            public int SecondIntegerNumber;
+            public List<int> ListOfIntegerNumbers;
+            public float FloatNumber;
+            public List<float> ListOfFloatNumbers;
         }
     }
 }
