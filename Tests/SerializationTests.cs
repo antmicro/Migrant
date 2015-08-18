@@ -1025,11 +1025,6 @@ namespace Antmicro.Migrant.Tests
             {
                 serializer.Serialize(obj, stream);
                 stream.Seek(0, SeekOrigin.Begin);
-                using (var file = File.OpenWrite("stream.dump"))
-                {
-                    stream.WriteTo(file);
-                }
-                stream.Seek(0, SeekOrigin.Begin);
                 var copy = serializer.Deserialize<GenericClassWithNestedGenericArgument<string>>(stream);
                 Assert.IsNotNull(copy);
                 Assert.AreEqual("test", copy.field[0].field);
