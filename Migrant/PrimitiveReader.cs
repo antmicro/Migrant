@@ -59,7 +59,7 @@ namespace Antmicro.Migrant
         {
             this.stream = stream;
             #if DEBUG
-            buffered &= !Serializer.DISABLE_BUFFERING;
+            buffered &= !Serializer.DisableBuffering;
             #endif
             if(buffered)
             {
@@ -154,7 +154,7 @@ namespace Antmicro.Migrant
         public short ReadInt16()
         {
 #if DEBUG
-            if(Serializer.DISABLE_VARINTS)
+            if(Serializer.DisableVarints)
             {
                 return (short)InnerReadInteger();
             }
@@ -177,7 +177,7 @@ namespace Antmicro.Migrant
         public int ReadInt32()
         {
 #if DEBUG
-            if(Serializer.DISABLE_VARINTS)
+            if(Serializer.DisableVarints)
             {
                 return (int)InnerReadInteger();
             }
@@ -200,7 +200,7 @@ namespace Antmicro.Migrant
         public long ReadInt64()
         {
 #if DEBUG
-            if(Serializer.DISABLE_VARINTS)
+            if(Serializer.DisableVarints)
             {
                 return (long)InnerReadInteger();
             }
@@ -354,7 +354,7 @@ namespace Antmicro.Migrant
             ulong next;
             var result = 0UL;
 #if DEBUG
-            if(Serializer.DISABLE_VARINTS)
+            if(Serializer.DisableVarints)
             {
                 for(int i = 0; i < sizeof(ulong); ++i)
                 {

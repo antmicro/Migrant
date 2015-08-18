@@ -255,7 +255,7 @@ namespace Antmicro.Migrant
             var position = stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
             #if DEBUG
-            if(DUMP_STREAM)
+            if(DumpStream)
             {
                 using(var f = File.OpenWrite("stream.dump"))
                 {
@@ -362,9 +362,9 @@ namespace Antmicro.Migrant
         private const byte Magic3 = 0x34;
 
         #if DEBUG
-        public static readonly bool DUMP_STREAM = true;
-        public static readonly bool DISABLE_VARINTS = true;
-        public static readonly bool DISABLE_BUFFERING = true;
+        public static readonly bool DumpStream = true;
+        public static readonly bool DisableVarints = true;
+        public static readonly bool DisableBuffering = true;
         #endif
 
         /// <summary>

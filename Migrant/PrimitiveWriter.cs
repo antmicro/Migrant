@@ -59,7 +59,7 @@ namespace Antmicro.Migrant
         {
             this.stream = stream;
             #if DEBUG
-            buffered &= !Serializer.DISABLE_BUFFERING;
+            buffered &= !Serializer.DisableBuffering;
             #endif
             if(buffered)
             {
@@ -156,7 +156,7 @@ namespace Antmicro.Migrant
         public void Write(short value)
         {
 #if DEBUG
-            if(Serializer.DISABLE_VARINTS)
+            if(Serializer.DisableVarints)
             {
                 InnerWriteInteger((ushort)value, sizeof(short) + 1);
                 return;
@@ -180,7 +180,7 @@ namespace Antmicro.Migrant
         public void Write(int value)
         {
 #if DEBUG
-            if(Serializer.DISABLE_VARINTS)
+            if(Serializer.DisableVarints)
             {
                 InnerWriteInteger((uint)value, sizeof(int) + 1);
                 return;
@@ -204,7 +204,7 @@ namespace Antmicro.Migrant
         public void Write(long value)
         {
 #if DEBUG
-            if(Serializer.DISABLE_VARINTS)
+            if(Serializer.DisableVarints)
             {
                 Write((ulong)value);
                 return;
@@ -340,7 +340,7 @@ namespace Antmicro.Migrant
         {
             byte valueToWrite;
 #if DEBUG
-            if(Serializer.DISABLE_VARINTS)
+            if(Serializer.DisableVarints)
             {
                 if(buffered)
                 {
