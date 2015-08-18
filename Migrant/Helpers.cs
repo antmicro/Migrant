@@ -237,7 +237,7 @@ namespace Antmicro.Migrant
             return -1;
         }
 
-        internal static bool IsOpenedGenericType(Type type)
+        internal static bool IsOpenGenericType(Type type)
         {
             return type.IsGenericType && type.ContainsGenericParameters;
         }

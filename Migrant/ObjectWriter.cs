@@ -323,7 +323,7 @@ namespace Antmicro.Migrant
             {
                 var gtd = type.GetGenericTypeDefinition();
                 TouchAndWriteTypeIdInner(TypeDescriptor.CreateFromType(gtd));
-                var isOpen = Helpers.IsOpenedGenericType(type);
+                var isOpen = Helpers.IsOpenGenericType(type);
                 writer.Write(isOpen);
                 if(!isOpen)
                 {

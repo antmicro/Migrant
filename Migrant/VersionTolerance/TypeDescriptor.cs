@@ -163,7 +163,7 @@ namespace Antmicro.Migrant
 
             TypeModule = ModuleDescriptor.CreateFromModule(t.Module);
 
-            if(UnderlyingType.IsGenericType && !Helpers.IsOpenedGenericType(UnderlyingType))
+            if(UnderlyingType.IsGenericType && !Helpers.IsOpenGenericType(UnderlyingType))
             {
                 GenericFullName = UnderlyingType.GetGenericTypeDefinition().FullName;
                 GenericAssemblyQualifiedName = UnderlyingType.GetGenericTypeDefinition().AssemblyQualifiedName;
