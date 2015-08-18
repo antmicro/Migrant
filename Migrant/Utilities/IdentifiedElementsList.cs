@@ -46,7 +46,7 @@ namespace Antmicro.Migrant.Utilities
             {
                 var element = new T(); 
                 list.Add(element);
-                element.ReadFromStream(reader);
+                element.Read(reader);
                 return element;
             }
 

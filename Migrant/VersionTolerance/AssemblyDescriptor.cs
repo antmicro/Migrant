@@ -50,7 +50,7 @@ namespace Antmicro.Migrant.VersionTolerance
             Token = assembly.GetName().GetPublicKeyToken();
         }
 
-        public void ReadFromStream(ObjectReader reader)
+        public void Read(ObjectReader reader)
         {
             Name = reader.PrimitiveReader.ReadString();
             Version = reader.PrimitiveReader.ReadVersion();
@@ -72,7 +72,7 @@ namespace Antmicro.Migrant.VersionTolerance
             UnderlyingAssembly = Assembly.Load(assemblyName);
         }
 
-        public void WriteTo(ObjectWriter writer)
+        public void Write(ObjectWriter writer)
         {
             writer.PrimitiveWriter.Write(Name);
             writer.PrimitiveWriter.Write(Version);

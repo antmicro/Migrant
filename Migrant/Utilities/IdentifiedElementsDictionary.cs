@@ -47,7 +47,7 @@ namespace Antmicro.Migrant.Utilities
             typeId = nextId++;
             dictionary.Add(element, typeId);
             writer.PrimitiveWriter.Write(typeId);
-            element.WriteTo(writer);
+            element.Write(writer);
             return typeId;
         }
 

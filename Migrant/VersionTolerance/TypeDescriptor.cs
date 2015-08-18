@@ -56,7 +56,7 @@ namespace Antmicro.Migrant
             fields = new List<FieldDescriptor>();
         }
 
-        public void ReadFromStream(ObjectReader reader)
+        public void Read(ObjectReader reader)
         {
             TypeModule = reader.Modules.Read();
             GenericFullName = reader.PrimitiveReader.ReadString();
@@ -71,7 +71,7 @@ namespace Antmicro.Migrant
             ReadStructureStampIfNeeded(reader, reader.VersionToleranceLevel);
         }
 
-        public void WriteTo(ObjectWriter writer)
+        public void Write(ObjectWriter writer)
         {
             WriteTypeStamp(writer);
             WriteStructureStampIfNeeded(writer);

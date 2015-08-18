@@ -28,8 +28,8 @@ namespace Antmicro.Migrant.Utilities
 {
     public interface IIdentifiedElement
     {
-        void ReadFromStream(ObjectReader reader);
-        void WriteTo(ObjectWriter writer);
+        void Read(ObjectReader reader);
+        void Write(ObjectWriter writer);
     }
 }
 

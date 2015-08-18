@@ -42,14 +42,14 @@ namespace Antmicro.Migrant.VersionTolerance
             GUID = module.ModuleVersionId;
         }
 
-        public void ReadFromStream(ObjectReader reader)
+        public void Read(ObjectReader reader)
         {
             ModuleAssembly = reader.Assemblies.Read();
             GUID = reader.PrimitiveReader.ReadGuid();
             Name = reader.PrimitiveReader.ReadString();
         }
 
-        public void WriteTo(ObjectWriter writer)
+        public void Write(ObjectWriter writer)
         {
             writer.Assemblies.TouchAndWriteId(ModuleAssembly);
             writer.PrimitiveWriter.Write(GUID);

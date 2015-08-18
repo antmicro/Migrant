@@ -40,7 +40,7 @@ namespace Antmicro.Migrant.VersionTolerance
             UnderlyingMethod = method;
         }
 
-        public void WriteTo(ObjectWriter writer)
+        public void Write(ObjectWriter writer)
         {
             writer.Types.TouchAndWriteId(UnderlyingMethod.ReflectedType);
 
@@ -85,7 +85,7 @@ namespace Antmicro.Migrant.VersionTolerance
             }
         }
 
-        public void ReadFromStream(ObjectReader reader)
+        public void Read(ObjectReader reader)
         {
             var type = reader.Types.Read().UnderlyingType;
             var methodName = reader.PrimitiveReader.ReadString();
