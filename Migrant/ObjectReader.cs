@@ -94,17 +94,17 @@ namespace Antmicro.Migrant
             this.objectsForSurrogates = objectsForSurrogates;
             this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
             this.useGeneratedDeserialization = isGenerating;
-            typeCache = new Dictionary<int, TypeDescriptor>();
-            methodList = new List<MethodInfo>();
-            assembliesList = new List<AssemblyDescriptor>();
-            modulesList = new List<ModuleDescriptor>();
+            Types = new IdentifiedElementsList<TypeDescriptor>(this);
+            Methods = new IdentifiedElementsList<MethodDescriptor>(this);
+            Assemblies = new IdentifiedElementsList<AssemblyDescriptor>(this);
+            Modules = new IdentifiedElementsList<ModuleDescriptor>(this);
             postDeserializationHooks = new List<Action>();
             this.postDeserializationCallback = postDeserializationCallback;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             delegatesCache = new Dictionary<Type, Func<int, object>>();
             reader = new PrimitiveReader(stream, useBuffering);
             this.referencePreservation = referencePreservation;
-            this.versionToleranceLevel = versionToleranceLevel;
+            this.VersionToleranceLevel = versionToleranceLevel;
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace Antmicro.Migrant
                 deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             }
             var firstObjectId = deserializedObjects.Count;
-            var type = ReadType().UnderlyingType;
+            var type = Types.Read().UnderlyingType;
             if(useGeneratedDeserialization)
             {
                 ReadObjectInnerGenerated(type, firstObjectId);
@@ -270,7 +270,7 @@ namespace Antmicro.Migrant
 
         private void UpdateFields(Type actualType, object target)
         {
-            var fieldOrTypeInfos = TypeDescriptor.CreateFromType(actualType).FieldsToDeserialize;
+            var fieldOrTypeInfos = ((TypeDescriptor)actualType).FieldsToDeserialize;
             foreach(var fieldOrTypeInfo in fieldOrTypeInfos)
             {
                 if(fieldOrTypeInfo.Field == null)
@@ -363,7 +363,7 @@ namespace Antmicro.Migrant
                 }
                 if(refId >= deserializedObjects.Count)
                 {
-                    ReadObjectInner(ReadType().UnderlyingType, refId);
+                    ReadObjectInner(Types.Read().UnderlyingType, refId);
                 }
                 return deserializedObjects[refId];
             }
@@ -500,8 +500,8 @@ namespace Antmicro.Migrant
             for(var i = 0; i < invocationListLength; i++)
             {
                 var target = ReadField(typeof(object));
-                var method = ReadMethod();
-                var del = Delegate.CreateDelegate(type, target, method);
+                var method = Methods.Read();
+                var del = Delegate.CreateDelegate(type, target, method.UnderlyingMethod);
                 deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
             }
         }
@@ -553,115 +553,6 @@ namespace Antmicro.Migrant
             }
         }
 
-        internal TypeDescriptor ReadType()
-        {
-            var typeId = reader.ReadInt32();
-            if(typeId == Consts.NullObjectId)
-            {
-                return null;
-            }
-            if(typeCache.Any() && typeCache.Keys.Max() >= typeId)
-            {
-                return typeCache[typeId];
-            }
-
-            var type = TypeDescriptor.ReadFromStream(this);
-            typeCache.Add(typeId, type);
-
-            // we need to read stamp here (i.e., after adding to typeList)
-            // as other types from the stamp can reference this type
-            type.ReadStructureStampIfNeeded(this, versionToleranceLevel);
-            return type;
-        }
-
-        internal MethodInfo ReadMethod()
-        {
-            MethodInfo result = null;
-
-            var methodId = reader.ReadInt32();
-            if(methodList.Count <= methodId)
-            {
-                var type = ReadType().UnderlyingType;
-                var methodName = reader.ReadString();
-                var genericArgumentsCount = reader.ReadInt32();
-                var genericArguments = new Type[genericArgumentsCount];
-                for(int i = 0; i < genericArgumentsCount; i++)
-                {
-                    genericArguments[i] = ReadType().UnderlyingType;
-                }
-
-                var parametersCount = reader.ReadInt32();
-                if(genericArgumentsCount > 0)
-                {
-                    var parameters = new TypeOrGenericTypeArgument[parametersCount];
-                    for(int i = 0; i < parameters.Length; i++)
-                    {
-                        var genericType = reader.ReadBoolean();
-                        parameters[i] = genericType ? 
-                            new TypeOrGenericTypeArgument(reader.ReadInt32()) :
-                            new TypeOrGenericTypeArgument(ReadType().UnderlyingType);
-                    }
-
-                    result = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(m => 
-                        m.IsGenericMethod && 
-                        m.GetGenericMethodDefinition().Name == methodName && 
-                        m.GetGenericArguments().Length == genericArgumentsCount && 
-                        CompareGenericArguments(m.GetGenericMethodDefinition().GetParameters(), parameters));
-
-                    if(result != null)
-                    {
-                        result = result.MakeGenericMethod(genericArguments);
-                    }
-                }
-                else
-                {
-                    var types = new Type[parametersCount];
-                    for(int i = 0; i < types.Length; i++)
-                    {
-                        types[i] = ReadType().UnderlyingType;
-                    }
-
-                    result = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);
-                }
-
-                methodList.Add(result);
-            }
-            else
-            {
-                result = methodList[methodId];
-            }
-
-            return result;
-        }
-
-        internal AssemblyDescriptor ReadAssembly()
-        {
-            var assemblyId = PrimitiveReader.ReadInt32();
-            if(assembliesList.Count <= assemblyId)
-            {
-                var descriptor = AssemblyDescriptor.ReadFromStream(this);
-                assembliesList.Add(descriptor);
-                return descriptor;
-            }
-            else
-            {
-                return assembliesList[assemblyId];
-            }
-        }
-
-        internal ModuleDescriptor ReadModule()
-        {
-            var moduleId = PrimitiveReader.ReadInt32();
-            if(modulesList.Count <= moduleId)
-            {
-                var descriptor = ModuleDescriptor.ReadFromStream(this);
-                modulesList.Add(descriptor);
-                return descriptor;
-            }
-
-            return modulesList[moduleId];
-        }
-
         private object TouchObject(Type actualType, int refId)
         {
             if(deserializedObjects[refId] != null)
@@ -703,40 +594,15 @@ namespace Antmicro.Migrant
         }
 
         internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
-
         internal PrimitiveReader PrimitiveReader { get { return reader; } }
+        internal IdentifiedElementsList<ModuleDescriptor> Modules { get; private set; }
+        internal IdentifiedElementsList<AssemblyDescriptor> Assemblies { get; private set; }
+        internal IdentifiedElementsList<MethodDescriptor> Methods { get; private set; }
+        internal IdentifiedElementsList<TypeDescriptor> Types { get; private set; }
+        internal VersionToleranceLevel VersionToleranceLevel { get; private set; }
 
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
-        private static bool CompareGenericArguments(ParameterInfo[] actual, TypeOrGenericTypeArgument[] expected)
-        {
-            if(actual.Length != expected.Length)
-            {
-                return false;
-            }
-
-            for(int i = 0; i < actual.Length; i++)
-            {
-                if(actual[i].ParameterType.IsGenericParameter)
-                {
-                    if(actual[i].ParameterType.GenericParameterPosition != expected[i].GenericTypeArgumentIndex)
-                    {
-                        return false;
-                    }
-                }
-                else
-                {
-                    if(actual[i].ParameterType != expected[i].Type)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        private readonly VersionToleranceLevel versionToleranceLevel;
         private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;
         private readonly bool treatCollectionAsUserObject;
@@ -745,10 +611,6 @@ namespace Antmicro.Migrant
         private IDictionary<Type, DynamicMethod> readMethodsCache;
         private readonly Dictionary<Type, Func<Int32, object>> delegatesCache;
         private readonly PrimitiveReader reader;
-        private readonly Dictionary<int, TypeDescriptor> typeCache;
-        private readonly List<MethodInfo> methodList;
-        private readonly List<AssemblyDescriptor> assembliesList;
-        private readonly List<ModuleDescriptor> modulesList;
         private readonly Action<object> postDeserializationCallback;
         private readonly List<Action> postDeserializationHooks;
         private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
@@ -761,24 +623,6 @@ namespace Antmicro.Migrant
             Uninitialized,
             DefaultCtor,
             Null
-        }
-
-        private struct TypeOrGenericTypeArgument
-        {
-            public TypeOrGenericTypeArgument(Type t) : this()
-            {
-                Type = t;
-                GenericTypeArgumentIndex = -1;
-            }
-
-            public TypeOrGenericTypeArgument(int index) : this()
-            {
-                Type = null;
-                GenericTypeArgumentIndex = index;
-            }
-
-            public Type Type { get; private set; }
-            public int GenericTypeArgumentIndex { get; private set; }
         }
     }
 }

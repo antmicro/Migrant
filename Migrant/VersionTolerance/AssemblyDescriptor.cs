@@ -26,28 +26,59 @@ using System;
 using System.Reflection;
 using System.Linq;
 using Antmicro.Migrant.Customization;
+using Antmicro.Migrant.Utilities;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
-    internal class AssemblyDescriptor
+    internal class AssemblyDescriptor : IIdentifiedElement
     {
-        public static AssemblyDescriptor ReadFromStream(ObjectReader reader)
+        public AssemblyDescriptor()
         {
-            var descriptor = new AssemblyDescriptor();
-            descriptor.ReadAssemblyStamp(reader);
-            var assemblyName = new AssemblyName(descriptor.FullName);
-            descriptor.UnderlyingAssembly = Assembly.Load(assemblyName);
-            return descriptor;
         }
 
-        public static AssemblyDescriptor CreateFromAssembly(Assembly assembly)
+        public AssemblyDescriptor(Assembly assembly)
         {
-            return new AssemblyDescriptor(assembly);
+            UnderlyingAssembly = assembly;
+
+            Name = assembly.GetName().Name;
+            Version = assembly.GetName().Version;
+            CultureName = assembly.GetName().CultureName;
+            if (CultureName == string.Empty)
+            {
+                CultureName = "neutral";
+            }
+            Token = assembly.GetName().GetPublicKeyToken();
         }
 
-        public void WriteTo(ObjectWriter writer)
+        public void Read(ObjectReader reader)
         {
-            WriteAssemblyStamp(writer);
+            Name = reader.PrimitiveReader.ReadString();
+            Version = reader.PrimitiveReader.ReadVersion();
+            CultureName = reader.PrimitiveReader.ReadString();
+            var tokenLength = reader.PrimitiveReader.ReadByte();
+            switch(tokenLength)
+            {
+            case 0:
+                Token = new byte[0];
+                break;
+            case 8:
+                Token = reader.PrimitiveReader.ReadBytes(8);
+                break;
+            default:
+                throw new ArgumentException("Wrong token length!");
+            }
+
+            var assemblyName = new AssemblyName(FullName);
+            UnderlyingAssembly = Assembly.Load(assemblyName);
+        }
+
+        public void Write(ObjectWriter writer)
+        {
+            writer.PrimitiveWriter.Write(Name);
+            writer.PrimitiveWriter.Write(Version);
+            writer.PrimitiveWriter.Write(CultureName);
+            writer.PrimitiveWriter.Write((byte)Token.Length);
+            writer.PrimitiveWriter.Write(Token);
         }
 
         public override bool Equals(object obj)
@@ -73,52 +104,6 @@ namespace Antmicro.Migrant.VersionTolerance
         public override int GetHashCode()
         {
             return FullName.GetHashCode();
-        }
-
-        private AssemblyDescriptor()
-        {
-        }
-
-        private AssemblyDescriptor(Assembly assembly)
-        {
-            UnderlyingAssembly = assembly;
-
-            Name = assembly.GetName().Name;
-            Version = assembly.GetName().Version;
-            CultureName = assembly.GetName().CultureName;
-            if (CultureName == string.Empty)
-            {
-                CultureName = "neutral";
-            }
-            Token = assembly.GetName().GetPublicKeyToken();
-        }
-
-        private void WriteAssemblyStamp(ObjectWriter writer)
-        {
-            writer.PrimitiveWriter.Write(Name);
-            writer.PrimitiveWriter.Write(Version);
-            writer.PrimitiveWriter.Write(CultureName);
-            writer.PrimitiveWriter.Write((byte)Token.Length);
-            writer.PrimitiveWriter.Write(Token);
-        }
-
-        private void ReadAssemblyStamp(ObjectReader reader)
-        {
-            Name = reader.PrimitiveReader.ReadString();
-            Version = reader.PrimitiveReader.ReadVersion();
-            CultureName = reader.PrimitiveReader.ReadString();
-            var tokenLength = reader.PrimitiveReader.ReadByte();
-            switch(tokenLength)
-            {
-            case 0:
-                Token = new byte[0];
-                break;
-            case 8:
-                Token = reader.PrimitiveReader.ReadBytes(8);
-                break;
-            default:
-                throw new ArgumentException("Wrong token length!");
-            }
         }
 
         public string FullName { get { return string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, CultureName, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); } }

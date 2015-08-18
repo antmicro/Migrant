@@ -166,7 +166,7 @@ namespace Antmicro.Migrant
                 return null;
             }
 
-            return pinfo.GetGetMethod();
+            return pinfo.GetGetMethod(true);
         }
 
         public static MethodInfo GetMethodInfo(Expression<Action> expression)
@@ -186,6 +186,11 @@ namespace Antmicro.Migrant
             return methodCall.Method;
         }
 
+        public static MethodInfo GetImplicitConvertionOperatorInfo<TTo, TFrom>()
+        {
+            return typeof(TFrom).GetMethods(BindingFlags.Public | BindingFlags.Static).Single(x => x.Name == "op_Implicit" && x.GetParameters().Count() == 1 && x.GetParameters().ElementAt(0).ParameterType == typeof(TTo));
+        }
+
         public static MethodInfo GetMethodInfo<T>(Expression<Action<T>> expression)
         {
             var methodCall = (MethodCallExpression)expression.Body;
@@ -196,6 +201,11 @@ namespace Antmicro.Migrant
         {
             var methodCall = (MethodCallExpression)expression.Body;
             return methodCall.Method;
+        }
+
+        public static ConstructorInfo GetConstructorInfo<T>(params Type[] argumentsTypes)
+        {
+            return typeof(T).GetConstructor(argumentsTypes);
         }
 
         public static bool IsWriteableByPrimitiveWriter(Type type)

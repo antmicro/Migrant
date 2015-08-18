@@ -25,33 +25,33 @@
 using System;
 using System.Reflection;
 using Antmicro.Migrant.Customization;
+using Antmicro.Migrant.Utilities;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
-    internal class ModuleDescriptor
+    internal class ModuleDescriptor : IIdentifiedElement
     {
-        public static ModuleDescriptor CreateFromModule(Module module)
+        public ModuleDescriptor()
         {
-            return new ModuleDescriptor(module);
         }
 
-        public static ModuleDescriptor ReadFromStream(ObjectReader reader)
+        public ModuleDescriptor(Module module)
         {
-            var module = new ModuleDescriptor();
-            module.ReadModuleStamp(reader);
-            return module;
+            ModuleAssembly = new AssemblyDescriptor(module.Assembly);
+            Name = module.Name;
+            GUID = module.ModuleVersionId;
         }
 
-        public void ReadModuleStamp(ObjectReader reader)
+        public void Read(ObjectReader reader)
         {
-            ModuleAssembly = reader.ReadAssembly();
+            ModuleAssembly = reader.Assemblies.Read();
             GUID = reader.PrimitiveReader.ReadGuid();
             Name = reader.PrimitiveReader.ReadString();
         }
 
-        public void WriteModuleStamp(ObjectWriter writer)
+        public void Write(ObjectWriter writer)
         {
-            writer.TouchAndWriteAssemblyId(ModuleAssembly);
+            writer.Assemblies.TouchAndWriteId(ModuleAssembly);
             writer.PrimitiveWriter.Write(GUID);
             writer.PrimitiveWriter.Write(Name);
         }
@@ -63,17 +63,6 @@ namespace Antmicro.Migrant.VersionTolerance
                 return obj != null && obj.Name == Name && ModuleAssembly.Equals(obj.ModuleAssembly, versionToleranceLevel);
             }
             return obj != null && obj.GUID == GUID && ModuleAssembly.Equals(obj.ModuleAssembly, versionToleranceLevel);
-        }
-        
-        private ModuleDescriptor()
-        {
-        }
-
-        private ModuleDescriptor(Module module)
-        {
-            ModuleAssembly = AssemblyDescriptor.CreateFromAssembly(module.Assembly);
-            Name = module.Name;
-            GUID = module.ModuleVersionId;
         }
 
         public string Name { get; private set; }

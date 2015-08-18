@@ -36,6 +36,7 @@ using Antmicro.Migrant.Hooks;
 using Antmicro.Migrant.Utilities;
 using System.Collections;
 using Antmicro.Migrant.Generators;
+using Antmicro.Migrant.VersionTolerance;
 
 namespace Antmicro.Migrant.Generators
 {
@@ -752,7 +753,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
         {
-            var fields = TypeDescriptor.CreateFromType(formalType).FieldsToDeserialize;
+            var fields = ((TypeDescriptor)formalType).FieldsToDeserialize;
             foreach(var fieldOrType in fields)
             {
                 if(fieldOrType.Field == null)
@@ -792,7 +793,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
         {			
-            var fields = TypeDescriptor.CreateFromType(formalType).FieldsToDeserialize;
+            var fields = ((TypeDescriptor)formalType).FieldsToDeserialize;
             foreach(var field in fields)
             {
                 if(field.Field == null)
@@ -966,7 +967,8 @@ namespace Antmicro.Migrant.Generators
             // method returns read type (or null) 
 
             generator.Emit(OpCodes.Ldarg_0); // object reader
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, TypeDescriptor>(or => or.ReadType()));
+            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectReader, IdentifiedElementsList<TypeDescriptor>>(or => or.Types));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IdentifiedElementsList<TypeDescriptor>, TypeDescriptor>(t => t.Read()));
             generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<TypeDescriptor, Type>(td => td.UnderlyingType));
         }
 
@@ -975,7 +977,9 @@ namespace Antmicro.Migrant.Generators
             // method returns read methodInfo (or null)
 
             generator.Emit(OpCodes.Ldarg_0); // object reader
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, MethodInfo>(or => or.ReadMethod()));
+            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectReader, IdentifiedElementsList<MethodDescriptor>>(or => or.Methods));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IdentifiedElementsList<MethodDescriptor>, MethodDescriptor>(or => or.Read()));
+            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<MethodDescriptor, MethodInfo>(md => md.UnderlyingMethod));
         }
 
         public DynamicMethod Method

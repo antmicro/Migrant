@@ -79,6 +79,11 @@
     <Compile Include="VersionTolerance\AssemblyDescriptor.cs" />
     <Compile Include="VersionTolerance\VersionToleranceException.cs" />
     <Compile Include="VersionTolerance\ModuleDescriptor.cs" />
+    <Compile Include="Utilities\IdentifiedElementsList.cs" />
+    <Compile Include="Utilities\IIdentifiedElement.cs" />
+    <Compile Include="VersionTolerance\MethodDescriptor.cs" />
+    <Compile Include="TypeOrGenericTypeArgument.cs" />
+    <Compile Include="Utilities\IdentifiedElementsDictionary.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
