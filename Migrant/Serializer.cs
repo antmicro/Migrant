@@ -141,6 +141,11 @@ namespace Antmicro.Migrant
             return new ObjectForSurrogateSetter<TSurrogate>(this);
         }
 
+        public ObjectForSurrogateSetter ForSurrogate(Type type)
+        {
+            return new ObjectForSurrogateSetter(this, type);
+        }
+
         /// <summary>
         /// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of 
         /// the object of that type.
@@ -154,6 +159,11 @@ namespace Antmicro.Migrant
         public SurrogateForObjectSetter<TObject> ForObject<TObject>()
         {
             return new SurrogateForObjectSetter<TObject>(this);
+        }
+
+        public SurrogateForObjectSetter ForObject(Type type)
+        {
+            return new SurrogateForObjectSetter(this, type);
         }
 
         /// <summary>
@@ -351,15 +361,32 @@ namespace Antmicro.Migrant
         private const byte Magic2 = 0x66;
         private const byte Magic3 = 0x34;
 
+        public class BaseObjectForSurrogateSetter
+        {
+            protected BaseObjectForSurrogateSetter(Serializer serializer)
+            {
+                Serializer = serializer;
+            }
+
+            protected void CheckLegality()
+            {
+                if(Serializer.deserializationDone)
+                {
+                    throw new InvalidOperationException("Cannot set objects for surrogates after any deserialization is done.");
+                }
+            }
+
+            protected readonly Serializer Serializer;
+        }
+
         /// <summary>
         /// Lets you set a callback providing object for type of the surrogate given to method that provided
         /// this object on a serializer that provided this object.
         /// </summary>
-        public class ObjectForSurrogateSetter<TSurrogate>
+        public sealed class ObjectForSurrogateSetter<TSurrogate> : BaseObjectForSurrogateSetter
         {
-            internal ObjectForSurrogateSetter(Serializer serializer)
+            internal ObjectForSurrogateSetter(Serializer serializer) : base(serializer)
             {
-                this.serializer = serializer;
             }
 
             /// <summary>
@@ -375,25 +402,54 @@ namespace Antmicro.Migrant
             /// </typeparam>
             public void SetObject<TObject>(Func<TSurrogate, TObject> callback) where TObject : class
             {
-                if(serializer.deserializationDone)
-                {
-                    throw new InvalidOperationException("Cannot set objects for surrogates after any deserialization is done.");
-                }
-                serializer.objectsForSurrogates.AddOrReplace(typeof(TSurrogate), callback);
+                CheckLegality();
+                Serializer.objectsForSurrogates.AddOrReplace(typeof(TSurrogate), callback);
+            }
+        }
+
+        public sealed class ObjectForSurrogateSetter : BaseObjectForSurrogateSetter
+        {
+            internal ObjectForSurrogateSetter(Serializer serializer, Type type) : base(serializer)
+            {
+                this.type = type;
             }
 
-            private readonly Serializer serializer;
+            public void SetObject(Func<object, object> callback)
+            {
+                CheckLegality();
+                Serializer.objectsForSurrogates.AddOrReplace(type, callback);
+            }
+
+            private readonly Type type;
+        }
+
+        public class BaseSurrogateForObjectSetter
+        {
+            protected BaseSurrogateForObjectSetter(Serializer serializer)
+            {
+                this.Serializer = serializer;
+            }
+
+            protected void CheckLegality()
+            {
+                if(Serializer.serializationDone)
+                {
+                    throw new InvalidOperationException("Cannot set surrogates for objects after any serialization is done.");
+                }
+            }
+
+            protected readonly Serializer Serializer;
         }
 
         /// <summary>
         /// Lets you set a callback providing surrogate for type of the object given to method that provided
         /// this object on a serializer that provided this object.
         /// </summary>
-        public class SurrogateForObjectSetter<TObject>
+        public sealed class SurrogateForObjectSetter<TObject> : BaseSurrogateForObjectSetter
         {
-            internal SurrogateForObjectSetter(Serializer serializer)
+            internal SurrogateForObjectSetter(Serializer serializer) : base(serializer)
             {
-                this.serializer = serializer;
+
             }
 
             /// <summary>
@@ -409,14 +465,25 @@ namespace Antmicro.Migrant
             /// </typeparam>
             public void SetSurrogate<TSurrogate>(Func<TObject, TSurrogate> callback) where TSurrogate : class
             {
-                if(serializer.serializationDone)
-                {
-                    throw new InvalidOperationException("Cannot set surrogates for objects after any serialization is done.");
-                }
-                serializer.surrogatesForObjects.AddOrReplace(typeof(TObject), callback);
+                CheckLegality();
+                Serializer.surrogatesForObjects.AddOrReplace(typeof(TObject), callback);
+            }
+        }
+
+        public sealed class SurrogateForObjectSetter : BaseSurrogateForObjectSetter
+        {
+            internal SurrogateForObjectSetter(Serializer serializer, Type type) : base(serializer)
+            {
+                this.type = type;
             }
 
-            private readonly Serializer serializer;
+            public void SetSurrogate(Func<object, object> callback)
+            {
+                CheckLegality();
+                Serializer.surrogatesForObjects.AddOrReplace(type, callback);
+            }
+
+            private readonly Type type;
         }
 
         /// <summary>
