@@ -29,6 +29,7 @@ using NUnit.Framework;
 using System.IO;
 using Antmicro.Migrant;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -229,6 +230,74 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
+        [Test]
+        public void ShouldUseSurrogateAddedFirstWhenBothMatch()
+        {
+            var h = new SurrogateMockH();
+            var pseudocopy = PseudoClone(h, serializer =>
+            {
+                serializer.ForObject<ISurrogateMockG>().SetSurrogate(x => "g");
+                serializer.ForObject<ISurrogateMockE>().SetSurrogate(x => "e");
+            });
+            Assert.AreEqual("g", pseudocopy);
+        }
+
+        [Test]
+        public void ShouldSwapGenericSurrogateWithObject()
+        {
+            var f = new SurrogateMockF<string>("test");
+            var pseudocopy = PseudoClone(f, serializer => serializer.ForObject(typeof(SurrogateMockF<>)).SetSurrogate(x =>
+            {
+                var type = x.GetType();
+                return type.GetFields(BindingFlags.NonPublic | BindingFlags.Instance)[0].GetValue(x);
+            }));
+            Assert.IsInstanceOf<string>(pseudocopy);
+        }
+
+        [Test]
+        public void ShouldSwapWithNonGenericSurrogate()
+        {
+            var f = new SurrogateMockF<string>("test");
+            var pseudocopy = PseudoClone(f, serializer =>
+            {
+                serializer.ForObject(typeof(SurrogateMockF<>)).SetSurrogate(x => "general");
+                serializer.ForObject<SurrogateMockF<string>>().SetSurrogate(x => "special");
+            });
+            Assert.AreEqual("special", pseudocopy);
+        }
+
+        [Test]
+        public void ShouldUseGenericBaseSurrogateForDerivedClass()
+        {
+            var i = new SurrogateMockI<string>("something");
+            var pseudocopy = PseudoClone(i, serializer =>
+                serializer.ForObject(typeof(SurrogateMockF<>)).SetSurrogate(x => "success"));
+            Assert.AreEqual("success", pseudocopy);            
+        }
+
+        [Test]
+        public void ShouldUseMoreSpecificGenericSurrogateIfPossible()
+        {
+            var i = new SurrogateMockI<string>("something");
+            var pseudocopy = PseudoClone(i, serializer =>
+            {
+                serializer.ForObject(typeof(SurrogateMockF<>)).SetSurrogate(x => "fail");
+                serializer.ForObject(typeof(SurrogateMockI<>)).SetSurrogate(x => "success");
+            });
+            Assert.AreEqual("success", pseudocopy);
+        }
+
+        [Test]
+        public void ShouldTreatNullAsDontSurrogateThisType()
+        {
+            var d = new SurrogateMockD();
+            var pseudocopy = PseudoClone(d, serializer =>
+            {
+                serializer.ForObject(typeof(SurrogateMockC)).SetSurrogate(x => "fail");
+                serializer.ForObject(typeof(SurrogateMockD)).SetSurrogate(null);
+            });
+            Assert.IsInstanceOf<SurrogateMockD>(pseudocopy);
+        }
 	}
 
 	public class SurrogateMockA
@@ -265,5 +334,32 @@ namespace Antmicro.Migrant.Tests
 	{
 
 	}
+
+    public class SurrogateMockF<T>
+    {
+        public SurrogateMockF(T value)
+        {
+            Value = value;
+        }
+
+        public T Value { get; private set; }
+    }
+
+    public interface ISurrogateMockG
+    {
+        
+    }
+
+    public class SurrogateMockH : ISurrogateMockE, ISurrogateMockG
+    {
+        
+    }
+
+    public class SurrogateMockI<T> : SurrogateMockF<T>
+    {
+        public SurrogateMockI(T value) : base(value)
+        {
+        }        
+    }
 }
 
