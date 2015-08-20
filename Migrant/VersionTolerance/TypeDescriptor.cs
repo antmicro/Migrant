@@ -298,8 +298,6 @@ namespace Antmicro.Migrant
         {
             if(baseType == null)
             {
-                writer.PrimitiveWriter.Write(false); // non-generic argument
-                writer.PrimitiveWriter.Write(0); // non-array
                 writer.PrimitiveWriter.Write(Consts.NullObjectId);
             }
             else

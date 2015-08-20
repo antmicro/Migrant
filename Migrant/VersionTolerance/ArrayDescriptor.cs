@@ -29,6 +29,8 @@ namespace Antmicro.Migrant.VersionTolerance
 {
     public class ArrayDescriptor
     {
+        public static ArrayDescriptor EmptyRanks { get { return new ArrayDescriptor(typeof(void), new int[0]); } }
+
         public ArrayDescriptor(Type type)
         {
             var ranks = new List<int>();

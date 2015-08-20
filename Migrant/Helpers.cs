@@ -237,6 +237,15 @@ namespace Antmicro.Migrant
             return -1;
         }
 
+        internal static bool ContainsGenericArguments(Type type)
+        {
+            if(type.IsArray)
+            {
+                return ContainsGenericArguments(type.GetElementType());
+            }
+            return type.ContainsGenericParameters;
+        }
+
         internal static bool IsOpenGenericType(Type type)
         {
             return type.IsGenericType && type.ContainsGenericParameters;

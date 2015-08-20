@@ -555,41 +555,34 @@ namespace Antmicro.Migrant
 
         internal TypeDescriptor ReadType()
         {
+            TypeDescriptor type;
+            var typeIdOrPosition = reader.ReadInt32();
+            if(typeIdOrPosition == Consts.NullObjectId)
+            {
+                return null;
+            }
+
             var isGenericParameter = reader.ReadBoolean();
             if(isGenericParameter)
             {
                 var genericType = ReadType().UnderlyingType;
-                var position = reader.ReadInt32();
-                return TypeDescriptor.CreateFromType(genericType.GetGenericArguments()[position]);
-            }
-
-            var ranks = reader.ReadArray();
-            if(ranks.Length > 0)
-            {
-                var elementType = ReadType();
-                var arrayDescriptor = new ArrayDescriptor(elementType.UnderlyingType, ranks);
-                return TypeDescriptor.CreateFromType(arrayDescriptor.BuildArrayType());
-            }
-
-            var typeId = reader.ReadInt32();
-            if(typeId == Consts.NullObjectId)
-            {
-                return null;
-            }
-           
-            TypeDescriptor type;
-            if(typeCache.Any() && typeCache.Keys.Max() >= typeId)
-            {
-                type = typeCache[typeId];
+                type = TypeDescriptor.CreateFromType(genericType.GetGenericArguments()[typeIdOrPosition]);
             }
             else
             {
-                type = TypeDescriptor.ReadFromStream(this);
-                typeCache.Add(typeId, type);
+                if(typeCache.Any() && typeCache.Keys.Max() >= typeIdOrPosition)
+                {
+                    type = typeCache[typeIdOrPosition];
+                }
+                else
+                {
+                    type = TypeDescriptor.ReadFromStream(this);
+                    typeCache.Add(typeIdOrPosition, type);
 
-                // we need to read stamp here (i.e., after adding to typeList)
-                // as other types from the stamp can reference this type
-                type.ReadStructureStampIfNeeded(this, versionToleranceLevel);
+                    // we need to read stamp here (i.e., after adding to typeList)
+                    // as other types from the stamp can reference this type
+                    type.ReadStructureStampIfNeeded(this, versionToleranceLevel);
+                }
             }
 
             if(type.UnderlyingType.IsGenericType)
@@ -603,9 +596,20 @@ namespace Antmicro.Migrant
                         args[i] = ReadType().UnderlyingType;
                     }
 
-                    return TypeDescriptor.CreateFromType(type.UnderlyingType.MakeGenericType(args));
+                    type = TypeDescriptor.CreateFromType(type.UnderlyingType.MakeGenericType(args));
                 }
             }
+
+            if(Helpers.ContainsGenericArguments(type.UnderlyingType))
+            {
+                var ranks = reader.ReadArray();
+                if(ranks.Length > 0)
+                {
+                    var arrayDescriptor = new ArrayDescriptor(type.UnderlyingType, ranks);
+                    type = TypeDescriptor.CreateFromType(arrayDescriptor.BuildArrayType());
+                }
+            }
+
             return type;
         }
 

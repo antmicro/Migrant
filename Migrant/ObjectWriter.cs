@@ -299,63 +299,82 @@ namespace Antmicro.Migrant
 
         internal int TouchAndWriteTypeId(Type type)
         {
-            var isGenericParameter = type.IsGenericParameter;
-            writer.Write(isGenericParameter);
-            if(isGenericParameter)
+            var typeDescriptor = TypeDescriptor.CreateFromType(type);
+
+            ArrayDescriptor arrayDescriptor = null;
+            if(Helpers.ContainsGenericArguments(typeDescriptor.UnderlyingType))
             {
-                TouchAndWriteTypeId(type.DeclaringType);
-                writer.Write(type.GenericParameterPosition);
-                return 0;
+                if(typeDescriptor.UnderlyingType.IsArray)
+                {
+                    arrayDescriptor = new ArrayDescriptor(typeDescriptor.UnderlyingType);
+                    typeDescriptor = TypeDescriptor.CreateFromType(arrayDescriptor.ElementType);
+                }
+                else
+                {
+                    arrayDescriptor = ArrayDescriptor.EmptyRanks;
+                }
             }
 
-            if(type.IsArray)
+            if(typeDescriptor.UnderlyingType.IsGenericType)
             {
-                var arrayDescriptor = new ArrayDescriptor(type);
-                writer.WriteArray(arrayDescriptor.Ranks);
-                return TouchAndWriteTypeId(arrayDescriptor.ElementType);
-            }
-            else
-            {
-                writer.Write(0); // scalar
-            }
+                var genericTypeDefinition = typeDescriptor.UnderlyingType.GetGenericTypeDefinition();
+                var genericTypeDefinitionDescriptor = TypeDescriptor.CreateFromType(genericTypeDefinition);
 
-            if(type.IsGenericType)
-            {
-                var gtd = type.GetGenericTypeDefinition();
-                TouchAndWriteTypeIdInner(TypeDescriptor.CreateFromType(gtd));
-                var isOpen = Helpers.IsOpenGenericType(type);
+                TouchAndWriteTypeIdInner(genericTypeDefinitionDescriptor);
+
+                var isOpen = Helpers.IsOpenGenericType(typeDescriptor.UnderlyingType);
                 writer.Write(isOpen);
                 if(!isOpen)
                 {
-                    foreach(var ga in type.GetGenericArguments())
+                    foreach(var genericArgumentType in typeDescriptor.UnderlyingType.GetGenericArguments())
                     {
-                        TouchAndWriteTypeId(ga);
+                        TouchAndWriteTypeId(genericArgumentType);
                     }
                 }
 
-                return 0;
+                typeDescriptor = genericTypeDefinitionDescriptor;
+            }
+            else
+            {
+                TouchAndWriteTypeIdInner(typeDescriptor);
             }
 
-            var typeDescriptor = TypeDescriptor.CreateFromType(type);
-            TouchAndWriteTypeIdInner(typeDescriptor);
+            if(arrayDescriptor != null)
+            {
+                writer.WriteArray(arrayDescriptor.Ranks);
+            }
+
             return 0;
         }
 
         internal int TouchAndWriteTypeIdInner(TypeDescriptor typeDescriptor)
         {
-            int typeId;
-            if(typeIndices.ContainsKey(typeDescriptor))
+            if(typeDescriptor.UnderlyingType.IsGenericParameter)
             {
-                typeId = typeIndices[typeDescriptor];
+                writer.Write(typeDescriptor.UnderlyingType.GenericParameterPosition);
+                writer.Write(true);
+                return TouchAndWriteTypeId(typeDescriptor.UnderlyingType.DeclaringType);
+            }   
+            else
+            {
+                int typeId;
+                if(typeIndices.ContainsKey(typeDescriptor))
+                {
+                    typeId = typeIndices[typeDescriptor];
+                    writer.Write(typeId);
+                    writer.Write(false); // generic-argument
+                    return typeId;
+                }
+                typeId = nextTypeId++;
+                typeIndices.Add(typeDescriptor, typeId);
                 writer.Write(typeId);
+                writer.Write(false); // generic-argument
+
+                typeDescriptor.WriteTypeStamp(this);
+                typeDescriptor.WriteStructureStampIfNeeded(this);
+
                 return typeId;
             }
-            typeId = nextTypeId++;
-            typeIndices.Add(typeDescriptor, typeId);
-            writer.Write(typeId);
-            typeDescriptor.WriteTypeStamp(this);
-            typeDescriptor.WriteStructureStampIfNeeded(this);
-            return typeId;
         }
 
         internal int TouchAndWriteAssemblyId(AssemblyDescriptor assembly)
