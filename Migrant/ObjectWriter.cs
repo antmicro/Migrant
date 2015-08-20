@@ -323,6 +323,7 @@ namespace Antmicro.Migrant
                 TouchAndWriteTypeIdInner(genericTypeDefinitionDescriptor);
 
                 var isOpen = Helpers.IsOpenGenericType(typeDescriptor.UnderlyingType);
+                writer.Tag("is_open_generic_type");
                 writer.Write(isOpen);
                 if(!isOpen)
                 {
@@ -341,6 +342,7 @@ namespace Antmicro.Migrant
 
             if(arrayDescriptor != null)
             {
+                writer.Tag("array_ranks", typeDescriptor.UnderlyingType.Name);
                 writer.WriteArray(arrayDescriptor.Ranks);
             }
 
@@ -351,7 +353,9 @@ namespace Antmicro.Migrant
         {
             if(typeDescriptor.UnderlyingType.IsGenericParameter)
             {
+                writer.Tag("type_id_or_position", "generic_parameter_position");
                 writer.Write(typeDescriptor.UnderlyingType.GenericParameterPosition);
+                writer.Tag("is_generic_parameter");
                 writer.Write(true);
                 return TouchAndWriteTypeId(typeDescriptor.UnderlyingType.DeclaringType);
             }   
@@ -361,13 +365,17 @@ namespace Antmicro.Migrant
                 if(typeIndices.ContainsKey(typeDescriptor))
                 {
                     typeId = typeIndices[typeDescriptor];
+                    writer.Tag("type_id_or_position", typeDescriptor.GenericFullName);
                     writer.Write(typeId);
+                    writer.Tag("is_generic_parameter");
                     writer.Write(false); // generic-argument
                     return typeId;
                 }
                 typeId = nextTypeId++;
                 typeIndices.Add(typeDescriptor, typeId);
+                writer.Tag("type_id_or_position", typeDescriptor.GenericFullName);
                 writer.Write(typeId);
+                writer.Tag("is_generic_parameter");
                 writer.Write(false); // generic-argument
 
                 typeDescriptor.WriteTypeStamp(this);
@@ -383,11 +391,13 @@ namespace Antmicro.Migrant
             if(assemblyIndices.ContainsKey(assembly))
             {
                 assemblyId = assemblyIndices[assembly];
+                writer.Tag("assembly_id");
                 writer.Write(assemblyId);
                 return assemblyId;
             }
             assemblyId = nextAssemblyId++;
             assemblyIndices.Add(assembly, assemblyId);
+            writer.Tag("assembly_id");
             writer.Write(assemblyId);
             assembly.WriteTo(this);
             return assemblyId;
@@ -399,11 +409,13 @@ namespace Antmicro.Migrant
             if(moduleIndices.ContainsKey(module))
             {
                 moduleId = moduleIndices[module];
+                writer.Tag("module_id");
                 writer.Write(moduleId);
                 return moduleId;
             }
             moduleId = nextModuleId++;
             moduleIndices.Add(module, moduleId);
+            writer.Tag("module_id");
             writer.Write(moduleId);
             module.WriteModuleStamp(this);
             return moduleId;

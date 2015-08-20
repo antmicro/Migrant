@@ -76,6 +76,7 @@ namespace Antmicro.Migrant
         public void WriteTypeStamp(ObjectWriter writer)
         {
             writer.TouchAndWriteModuleId(TypeModule);
+            writer.PrimitiveWriter.Tag("type_generic_full_name");
             writer.PrimitiveWriter.Write(GenericFullName);
         }
 
@@ -275,6 +276,7 @@ namespace Antmicro.Migrant
         private void ReadTypeStamp(ObjectReader reader)
         {
             TypeModule = reader.ReadModule();
+            reader.PrimitiveReader.Tag("type_generic_full_name");
             GenericFullName = reader.PrimitiveReader.ReadString();
 
             Resolve();
@@ -283,6 +285,7 @@ namespace Antmicro.Migrant
         private void ReadStructureStamp(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
         {
             baseType = reader.ReadType();
+            reader.PrimitiveReader.Tag("number_of_fields");
             var noOfFields = reader.PrimitiveReader.ReadInt32();
             for(int i = 0; i < noOfFields; i++)
             {
@@ -298,6 +301,7 @@ namespace Antmicro.Migrant
         {
             if(baseType == null)
             {
+                writer.PrimitiveWriter.Tag("type_id_or_position", "base_type_id");
                 writer.PrimitiveWriter.Write(Consts.NullObjectId);
             }
             else
@@ -305,6 +309,7 @@ namespace Antmicro.Migrant
                 writer.TouchAndWriteTypeId(baseType.UnderlyingType);
             }
 
+            writer.PrimitiveWriter.Tag("number_of_fields");
             writer.PrimitiveWriter.Write(fields.Count);
             foreach(var field in fields)
             {

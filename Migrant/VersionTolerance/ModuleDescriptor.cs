@@ -45,14 +45,18 @@ namespace Antmicro.Migrant.VersionTolerance
         public void ReadModuleStamp(ObjectReader reader)
         {
             ModuleAssembly = reader.ReadAssembly();
+            reader.PrimitiveReader.Tag("module_guid");
             GUID = reader.PrimitiveReader.ReadGuid();
+            reader.PrimitiveReader.Tag("module_name");
             Name = reader.PrimitiveReader.ReadString();
         }
 
         public void WriteModuleStamp(ObjectWriter writer)
         {
             writer.TouchAndWriteAssemblyId(ModuleAssembly);
+            writer.PrimitiveWriter.Tag("module_guid");
             writer.PrimitiveWriter.Write(GUID);
+            writer.PrimitiveWriter.Tag("module_name");
             writer.PrimitiveWriter.Write(Name);
         }
 

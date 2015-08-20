@@ -52,6 +52,7 @@ namespace Antmicro.Migrant
         {
             writer.TouchAndWriteTypeId(FieldType.UnderlyingType);
             writer.TouchAndWriteTypeId(DeclaringType.UnderlyingType);
+            writer.PrimitiveWriter.Tag("field_name");
             writer.PrimitiveWriter.Write(Name);
         }
 
@@ -59,6 +60,7 @@ namespace Antmicro.Migrant
         {
             FieldType = reader.ReadType();
             DeclaringType = reader.ReadType();
+            reader.PrimitiveReader.Tag("field_name");
             Name = reader.PrimitiveReader.ReadString();
 
             UnderlyingFieldInfo = DeclaringType.UnderlyingType.GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 

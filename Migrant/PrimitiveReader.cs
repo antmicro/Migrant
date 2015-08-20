@@ -42,7 +42,7 @@ namespace Antmicro.Migrant
     /// otherwise stream position corruption can occur. Reader does not possess the stream
     /// and does not close it after dispose.
     /// </remarks>
-    public sealed class PrimitiveReader : IDisposable
+    public sealed class PrimitiveReader : PrimitiveWriterReaderBase, IDisposable
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Antmicro.Migrant.PrimitiveReader" /> class.
@@ -55,33 +55,8 @@ namespace Antmicro.Migrant
         /// then no read prefetching or padding is used. Note that corresponding PrimitiveWriter always have
         /// to have the same value for this parameter.
         /// </param>
-        public PrimitiveReader(Stream stream, bool buffered = true)
+        public PrimitiveReader(Stream stream, bool buffered = true) : base("PR", stream, buffered, Helpers.MaximalPadding)
         {
-            this.stream = stream;
-            #if DEBUG
-            buffered &= !Serializer.DisableBuffering;
-            #endif
-            if(buffered)
-            {
-                // buffer size is the size of the maximal padding
-                buffer = new byte[Helpers.MaximalPadding];
-            }
-            this.buffered = buffered;
-        }
-
-        /// <summary>
-        /// Gets the current position.
-        /// </summary>
-        /// <value>
-        /// The position, which is the number of bytes read after this object was
-        /// constructed.
-        /// </value>
-        public long Position
-        {
-            get
-            {
-                return currentPosition - currentBufferSize + currentBufferPosition;
-            }
         }
 
         /// <summary>
@@ -89,7 +64,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public double ReadDouble()
         {
-            return BitConverter.Int64BitsToDouble(ReadInt64());
+            Enter();
+            var result = BitConverter.Int64BitsToDouble(ReadInt64());
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -97,7 +75,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public float ReadSingle()
         {
-            return (float)BitConverter.Int64BitsToDouble(ReadInt64());
+            Enter();
+            var result = (float)BitConverter.Int64BitsToDouble(ReadInt64());
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -105,7 +86,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public DateTime ReadDateTime()
         {
-            return Helpers.DateTimeEpoch + ReadTimeSpan();
+            Enter();
+            var result = Helpers.DateTimeEpoch + ReadTimeSpan();
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -113,6 +97,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public TimeSpan ReadTimeSpan()
         {
+            Enter();
             var type = ReadByte();
             switch(type)
             {
@@ -121,7 +106,10 @@ namespace Antmicro.Migrant
             }
             var tms = ReadUInt16();
             var days = ReadInt32();
-            return new TimeSpan(days, type, tms / 60, tms % 60);
+
+            var result = new TimeSpan(days, type, tms / 60, tms % 60);
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -129,14 +117,19 @@ namespace Antmicro.Migrant
         /// </summary>
         public byte ReadByte()
         {
+            Enter();
+            byte result;
             if(buffered)
             {
                 CheckBuffer();
-                return buffer[currentBufferPosition++];
+                result = buffer[currentBufferPosition++];
             }
-            var result = stream.ReadByteOrThrow();
-
-            currentBufferPosition++;
+            else
+            {
+                result = stream.ReadByteOrThrow();
+                currentBufferPosition++;
+            }
+            Leave(result);
             return result;
         }
 
@@ -145,7 +138,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public sbyte ReadSByte()
         {
-            return (sbyte)ReadByte();
+            Enter();
+            var result = (sbyte)ReadByte();
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -153,14 +149,18 @@ namespace Antmicro.Migrant
         /// </summary>
         public short ReadInt16()
         {
-#if DEBUG
+            Enter();
+            var value = (short)InnerReadInteger();
+            #if DEBUG
             if(Serializer.DisableVarints)
             {
-                return (short)InnerReadInteger();
+                Leave(value);
+                return value;
             }
-#endif
-            var value = (short)InnerReadInteger();
-            return (short)(((value >> 1) & AllButMostSignificantShort) ^ -(value & 1));
+            #endif
+            value = (short)(((value >> 1) & AllButMostSignificantShort) ^ -(value & 1));
+            Leave(value);
+            return value;
         }
 
         /// <summary>
@@ -176,14 +176,18 @@ namespace Antmicro.Migrant
         /// </summary>
         public int ReadInt32()
         {
-#if DEBUG
+            Enter();
+            var value = (int)InnerReadInteger();
+            #if DEBUG
             if(Serializer.DisableVarints)
             {
-                return (int)InnerReadInteger();
+                Leave(value);
+                return value;
             }
-#endif
-            var value = (int)InnerReadInteger();
-            return ((value >> 1) & AllButMostSignificantInt) ^ -(value & 1);
+            #endif
+            value = ((value >> 1) & AllButMostSignificantInt) ^ -(value & 1);
+            Leave(value);
+            return value;
         }
 
         /// <summary>
@@ -191,7 +195,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public uint ReadUInt32()
         {
-            return (uint)InnerReadInteger();
+            Enter();
+            var result = (uint)InnerReadInteger();
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -199,14 +206,18 @@ namespace Antmicro.Migrant
         /// </summary>
         public long ReadInt64()
         {
-#if DEBUG
+            Enter();
+            var value = (long)InnerReadInteger();
+            #if DEBUG
             if(Serializer.DisableVarints)
             {
-                return (long)InnerReadInteger();
+                Leave(value);
+                return value;
             }
-#endif
-            var value = (long)InnerReadInteger();
-            return ((value >> 1) & AllButMostSignificantLong) ^ -(value & 1);
+            #endif
+            value = ((value >> 1) & AllButMostSignificantLong) ^ -(value & 1);
+            Leave(value);
+            return value;
         }
 
         /// <summary>
@@ -214,7 +225,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public ulong ReadUInt64()
         {
-            return InnerReadInteger();
+            Enter();
+            var result = InnerReadInteger();
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -222,7 +236,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public char ReadChar()
         {
-            return (char)ReadUInt16();
+            Enter();
+            var result = (char)ReadUInt16();
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -230,7 +247,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public bool ReadBoolean()
         {
-            return ReadByte() == 1;
+            Enter();
+            var result = ReadByte() == 1;
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -238,7 +258,10 @@ namespace Antmicro.Migrant
         /// </summary>
         public Guid ReadGuid()
         {
-            return new Guid(ReadBytes(16));
+            Enter();
+            var result = new Guid(ReadBytes(16));
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -246,10 +269,13 @@ namespace Antmicro.Migrant
         /// </summary>
         public string ReadString()
         {
+            Enter();
             bool fake;
             var length = ReadInt32(); // length prefix
             var chunk = InnerChunkRead(length, out fake);
-            return Encoding.UTF8.GetString(chunk.Array, chunk.Offset, chunk.Count);
+            var result = Encoding.UTF8.GetString(chunk.Array, chunk.Offset, chunk.Count);
+            Leave(result);
+            return result;
         }
 
         /// <summary>
@@ -257,14 +283,18 @@ namespace Antmicro.Migrant
         /// </summary>
         public decimal ReadDecimal()
         {
+            Enter();
             var lo = ReadInt32();
             var mid = ReadInt32();
             var hi = ReadInt32();
             var scale = ReadInt32();
-            return new Decimal(lo, mid, hi, 
+            var result = new Decimal(lo, mid, hi, 
                 (scale & DecimalSignMask) != 0,
                 (byte)((scale & DecimalScaleMask) >> DecimalScaleShift));
+            Leave(result);
+            return result;
         }
+
         /// <summary>
         /// Reads the given number of bytes.
         /// </summary>
@@ -434,12 +464,7 @@ namespace Antmicro.Migrant
         private const int DecimalScaleShift = 16;
         private const uint DecimalSignMask = 0x80000000;
 
-        private long currentPosition;
-        private readonly byte[] buffer;
         private int currentBufferSize;
-        private int currentBufferPosition;
-        private readonly Stream stream;
-        private readonly bool buffered;
     }
 }
 

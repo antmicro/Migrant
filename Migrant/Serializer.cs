@@ -365,6 +365,8 @@ namespace Antmicro.Migrant
         public static readonly bool DumpStream = true;
         public static readonly bool DisableVarints = true;
         public static readonly bool DisableBuffering = true;
+        // set it to non-null value in order to log 'tags' from primitive reader/writer
+        public static readonly string PrimitiveWriterReaderLogFile = null;
         #endif
 
         /// <summary>

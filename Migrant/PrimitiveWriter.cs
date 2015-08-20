@@ -42,7 +42,7 @@ namespace Antmicro.Migrant
     /// otherwise stream position corruption and data loss can occur. Writer does not possess the
     /// stream and does not close it after dispose.
     /// </remarks>
-    public sealed class PrimitiveWriter : IDisposable
+    public sealed class PrimitiveWriter : PrimitiveWriterReaderBase, IDisposable
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Antmicro.Migrant.PrimitiveWriter" /> class.
@@ -55,32 +55,8 @@ namespace Antmicro.Migrant
         /// the stream. With false also no final padding is used. Note that corresponding
         /// PrimitiveReader has to use the same value for this parameter.
         /// </param>
-        public PrimitiveWriter(Stream stream, bool buffered = true)
+        public PrimitiveWriter(Stream stream, bool buffered = true) : base("PW", stream, buffered, BufferSize)
         {
-            this.stream = stream;
-            #if DEBUG
-            buffered &= !Serializer.DisableBuffering;
-            #endif
-            if(buffered)
-            {
-                buffer = new byte[BufferSize];
-            }
-            this.buffered = buffered;
-        }
-
-        /// <summary>
-        /// Gets the current position.
-        /// </summary>
-        /// <value>
-        /// The position, which is the number of bytes written after this object was
-        /// constructed.
-        /// </value>
-        public long Position
-        {
-            get
-            {
-                return currentPosition + currentBufferPosition;
-            }
         }
 
         /// <summary>
@@ -88,7 +64,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(double value)
         {
+            Enter();
             Write(BitConverter.DoubleToInt64Bits(value));
+            Leave(value);
         }
 
         /// <summary>
@@ -96,7 +74,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(float value)
         {
+            Enter();
             Write(BitConverter.DoubleToInt64Bits(value));
+            Leave(value);
         }
 
         /// <summary>
@@ -104,7 +84,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(DateTime value)
         {
+            Enter();
             Write(value - Helpers.DateTimeEpoch);
+            Leave(value);
         }
 
         /// <summary>
@@ -112,6 +94,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(TimeSpan value)
         {
+            Enter();
             // first unit, then value in this unit
             if(value.Ticks % TimeSpan.TicksPerSecond != 0)
             {
@@ -123,6 +106,7 @@ namespace Antmicro.Migrant
             Write(type);
             Write((ushort)(value.Seconds + 60 * value.Minutes));
             Write(value.Days);
+            Leave(value);
         }
 
         /// <summary>
@@ -130,6 +114,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(byte value)
         {
+            Enter();
             if(buffered)
             {
                 CheckBuffer(1);
@@ -140,6 +125,7 @@ namespace Antmicro.Migrant
                 currentBufferPosition++;
                 stream.WriteByte(value);
             }
+            Leave(value);
         }
 
         /// <summary>
@@ -147,7 +133,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(sbyte value)
         {
+            Enter();
             Write((byte)value);
+            Leave(value);
         }
 
         /// <summary>
@@ -155,15 +143,18 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(short value)
         {
+            Enter();
 #if DEBUG
             if(Serializer.DisableVarints)
             {
                 InnerWriteInteger((ushort)value, sizeof(short) + 1);
+                Leave(value);
                 return;
             }
 #endif
             var valueToWrite = (value << 1) ^ (value >> 15);
             InnerWriteInteger((ushort)valueToWrite, sizeof(short) + 1);
+            Leave(value);
         }
 
         /// <summary>
@@ -171,7 +162,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(ushort value)
         {
+            Enter();
             InnerWriteInteger(value, sizeof(ushort) + 1);
+            Leave(value);
         }
 
         /// <summary>
@@ -179,15 +172,18 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(int value)
         {
+            Enter();
 #if DEBUG
             if(Serializer.DisableVarints)
             {
                 InnerWriteInteger((uint)value, sizeof(int) + 1);
+                Leave(value);
                 return;
             }
 #endif
             var valueToWrite = (value << 1) ^ (value >> 31);
             InnerWriteInteger((uint)valueToWrite, sizeof(int) + 1);
+            Leave(value);
         }
 
         /// <summary>
@@ -203,16 +199,19 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(long value)
         {
+            Enter();
 #if DEBUG
             if(Serializer.DisableVarints)
             {
                 Write((ulong)value);
+                Leave(value);
                 return;
             }
 #endif
             //zig-zag notation
             var valueToWrite = (value << 1) ^ (value >> 63);
             InnerWriteInteger((ulong)valueToWrite, sizeof(long) + 2);
+            Leave(value);
         }
 
         /// <summary>
@@ -220,7 +219,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(ulong value)
         {
+            Enter();
             InnerWriteInteger(value, sizeof(ulong) + 2);
+            Leave(value);
         }
 
         /// <summary>
@@ -228,7 +229,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(char value)
         {
+            Enter();
             Write((ushort)value);
+            Leave(value);
         }
 
         /// <summary>
@@ -236,7 +239,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(bool value)
         {
+            Enter();
             Write((byte)(value ? 1 : 0));
+            Leave(value);
         }
 
 
@@ -245,7 +250,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(Guid guid)
         {
+            Enter();
             InnerChunkWrite(guid.ToByteArray());
+            Leave(guid);
         }
 
         /// <summary>
@@ -253,9 +260,11 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(string str)
         {
+            Enter();
             var bytes = Encoding.UTF8.GetBytes(str);
             Write(bytes.Length);
             InnerChunkWrite(bytes);
+            Leave(str);
         }
 
         /// <summary>
@@ -263,11 +272,13 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(decimal value)
         {
+            Enter();
             var bytes = decimal.GetBits(value);
             Write(bytes[0]);
             Write(bytes[1]);
             Write(bytes[2]);
             Write(bytes[3]);
+            Leave(value);
         }
 
         /// <summary>
@@ -278,7 +289,9 @@ namespace Antmicro.Migrant
         /// </param>
         public void Write(byte[] bytes)
         {
+            Enter();
             InnerChunkWrite(bytes);
+            Leave(bytes);
         }
 
         /// <summary>
@@ -467,11 +480,6 @@ namespace Antmicro.Migrant
             stream.Write(pad, 0, pad.Length);
         }
 
-        private readonly byte[] buffer;
-        private int currentBufferPosition;
-        private long currentPosition;
-        private readonly Stream stream;
-        private readonly bool buffered;
         private const int BufferSize = 4 * 1024;
     }
 }

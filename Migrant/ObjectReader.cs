@@ -556,12 +556,14 @@ namespace Antmicro.Migrant
         internal TypeDescriptor ReadType()
         {
             TypeDescriptor type;
+            reader.Tag("type_id_or_position");
             var typeIdOrPosition = reader.ReadInt32();
             if(typeIdOrPosition == Consts.NullObjectId)
             {
                 return null;
             }
 
+            reader.Tag("is_generic_parameter");
             var isGenericParameter = reader.ReadBoolean();
             if(isGenericParameter)
             {
@@ -587,6 +589,7 @@ namespace Antmicro.Migrant
 
             if(type.UnderlyingType.IsGenericType)
             {
+                reader.Tag("is_open_generic_type");
                 var isOpen = reader.ReadBoolean();
                 if(!isOpen)
                 {
@@ -602,6 +605,7 @@ namespace Antmicro.Migrant
 
             if(Helpers.ContainsGenericArguments(type.UnderlyingType))
             {
+                reader.Tag("array_ranks", type.UnderlyingType.Name);
                 var ranks = reader.ReadArray();
                 if(ranks.Length > 0)
                 {
@@ -675,6 +679,7 @@ namespace Antmicro.Migrant
 
         internal AssemblyDescriptor ReadAssembly()
         {
+            PrimitiveReader.Tag("assembly_id");
             var assemblyId = PrimitiveReader.ReadInt32();
             if(assembliesList.Count <= assemblyId)
             {
@@ -690,6 +695,7 @@ namespace Antmicro.Migrant
 
         internal ModuleDescriptor ReadModule()
         {
+            PrimitiveReader.Tag("module_id");
             var moduleId = PrimitiveReader.ReadInt32();
             if(modulesList.Count <= moduleId)
             {

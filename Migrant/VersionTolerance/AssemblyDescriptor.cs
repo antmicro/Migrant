@@ -95,18 +95,27 @@ namespace Antmicro.Migrant.VersionTolerance
 
         private void WriteAssemblyStamp(ObjectWriter writer)
         {
+            writer.PrimitiveWriter.Tag("assembly_name");
             writer.PrimitiveWriter.Write(Name);
+            writer.PrimitiveWriter.Tag("assembly_version");
             writer.PrimitiveWriter.Write(Version);
+            writer.PrimitiveWriter.Tag("assembly_culture_name");
             writer.PrimitiveWriter.Write(CultureName);
+            writer.PrimitiveWriter.Tag("assembly_token_length");
             writer.PrimitiveWriter.Write((byte)Token.Length);
+            writer.PrimitiveWriter.Tag("assembly_token");
             writer.PrimitiveWriter.Write(Token);
         }
 
         private void ReadAssemblyStamp(ObjectReader reader)
         {
+            reader.PrimitiveReader.Tag("assembly_name");
             Name = reader.PrimitiveReader.ReadString();
+            reader.PrimitiveReader.Tag("assembly_version");
             Version = reader.PrimitiveReader.ReadVersion();
+            reader.PrimitiveReader.Tag("assembly_culture_name");
             CultureName = reader.PrimitiveReader.ReadString();
+            reader.PrimitiveReader.Tag("assembly_token_length");
             var tokenLength = reader.PrimitiveReader.ReadByte();
             switch(tokenLength)
             {
@@ -114,6 +123,7 @@ namespace Antmicro.Migrant.VersionTolerance
                 Token = new byte[0];
                 break;
             case 8:
+                reader.PrimitiveReader.Tag("assembly_token");
                 Token = reader.PrimitiveReader.ReadBytes(8);
                 break;
             default:
