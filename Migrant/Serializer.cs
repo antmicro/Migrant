@@ -257,7 +257,7 @@ namespace Antmicro.Migrant
             #if DEBUG
             if(DumpStream)
             {
-                using(var f = File.OpenWrite("stream.dump"))
+                using(var f = File.Open("stream.dump", FileMode.Create))
                 {
                     stream.WriteTo(f);
                 }
