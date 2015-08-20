@@ -123,6 +123,18 @@ Choose wisely.
     var anObject = serializer.Deserialize<object>(stream);
     Console.WriteLine(anObject.GetType().Name); // prints AnotherObject
 
+One can also use a `Type` based API, i.e.
+
+```csharp
+serializer.ForObject(typeof(SomeObject)).SetSurrogate(x => new AnotherObject());
+```
+
+What's the usage? The *generic surrogates*, which can match to many concrete types. Such surrogates are defined on open generic types.
+Here is an example:
+```csharp
+serializer.ForObject(typeof(Tuple<>)).SetSurrogate(x => x.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic)[0].GetValue(x));
+```
+
 ### Version tolerance
 
 What if some changes are made to the layout of the class between serialization and deserialization? Migrant can cope with that up to some extent. During creation of serializer you can specify settings, among which there is a version tolerance level. In the most restrictive (default) configuration, deserialization is possible if module ID (which is GUID generated when module is compiled) is the same as it was during serialization. In other words, serialization and deserialization must be done with the same assembly.
