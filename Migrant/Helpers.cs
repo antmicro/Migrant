@@ -223,18 +223,9 @@ namespace Antmicro.Migrant
             return SerializationType.Reference;
         }
 
-        internal static int GetSurrogateFactoryIdForType(Type type, InheritanceAwareList<Delegate> swapList)
+        internal static bool IsOpenGenericType(Type type)
         {
-            var i = 0;
-            foreach(var swapCandidate in swapList)
-            {
-                if(swapCandidate.Key.IsAssignableFrom(type))
-                {
-                    return swapCandidate.Value == null ? -1 : i;
-                }
-                i++;
-            }
-            return -1;
+            return type.IsGenericType && type.ContainsGenericParameters;
         }
         
         internal static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);

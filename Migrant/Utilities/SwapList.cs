@@ -31,15 +31,15 @@ namespace Antmicro.Migrant.Utilities
     /// Key/value pair list in which more generic types are always inserted after their
     /// specializations.
     /// </summary>
-    public sealed class InheritanceAwareList<T> : IEnumerable<KeyValuePair<Type, T>>
+    public sealed class SwapList
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Antmicro.Migrant.Utilities.InheritanceAwareList{T}"/> class.
         /// </summary>
-        public InheritanceAwareList()
+        public SwapList()
         {
             keys = new List<Type>();
-            values = new List<T>();
+            values = new List<Delegate>();
         }
 
         /// <summary>
@@ -47,12 +47,26 @@ namespace Antmicro.Migrant.Utilities
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="value">Value.</param>
-        public void AddOrReplace(Type key, T value)
+        public void AddOrReplace(Type key, Delegate value)
         {
-            var i = 0;
-            for(; i < keys.Count; i++)
+            // we put generic surrogates at the end of the list, so they will match only
+            // if there is no match with non-generic surrogates
+            int i, lastPossibleIndex;
+            if(Helpers.IsOpenGenericType(key))
             {
-                if(keys[i].IsAssignableFrom(key))
+                lastPossibleIndex = keys.Count - 1;
+                i = numberOfNonGenerics;
+            }
+            else
+            {
+                lastPossibleIndex = numberOfNonGenerics - 1;
+                i = 0;
+                numberOfNonGenerics++;
+            }
+
+            while(i <= lastPossibleIndex)
+            {
+                if(IsMatch(keys[i], key))
                 {
                     if(keys[i] == key)
                     {
@@ -60,21 +74,11 @@ namespace Antmicro.Migrant.Utilities
                     }
                     break;
                 }
+                i++;
             }
+
             keys.Insert(i, key);
             values.Insert(i, value);
-        }
-
-        /// <summary>
-        /// Returns an enumerator that iterates through a collection.
-        /// </summary>
-        /// <returns>An object that can be used to iterate through the collection.</returns>
-        public IEnumerator<KeyValuePair<Type, T>> GetEnumerator()
-        {
-            for(var i = 0; i < keys.Count; i++)
-            {
-                yield return new KeyValuePair<Type, T>(keys[i], values[i]);
-            }
         }
 
         /// <summary>
@@ -82,18 +86,61 @@ namespace Antmicro.Migrant.Utilities
         /// </summary>
         /// <returns>Value at a given index.</returns>
         /// <param name="index">The index of the element.</param>
-        public T GetByIndex(int index)
+        public Delegate GetByIndex(int index)
         {
             return values[index];
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        public int FindMatchingIndex(Type value)
         {
-            return GetEnumerator();
+            for(var i = 0; i < keys.Count; i++)
+            {
+                if(IsMatch(keys[i], value))
+                {
+                    return values[i] == null ? -1 : i;
+                }
+            }
+            return -1;
         }
 
+        private static bool IsMatch(Type candidate, Type value)
+        { 
+            if(Helpers.IsOpenGenericType(candidate) && value.IsGenericType)
+            {
+                return GenericIsMatch(candidate, value.GetGenericTypeDefinition());
+            }
+            return candidate.IsAssignableFrom(value);
+        }
+
+        private static bool GenericIsMatch(Type candidate, Type value)
+        {
+            if(candidate.IsInterface)
+            {
+                var interfaces = value.GetInterfaces();
+                if(Array.IndexOf(interfaces, candidate) != -1)
+                {
+                    return true;
+                }
+            }
+            while(value != null && value != typeof(object))
+            {
+                if(value == candidate)
+                {
+                    return true;
+                }
+                value = value.BaseType;
+                if(!value.IsGenericType)
+                {
+                    break;
+                }
+                value = value.GetGenericTypeDefinition();
+            }
+            return false;
+        }
+
+        private int numberOfNonGenerics;
         private readonly List<Type> keys;
-        private readonly List<T> values;
+        private readonly List<Delegate> values;
 
     }
 }

@@ -60,8 +60,8 @@ namespace Antmicro.Migrant
             }
             this.settings = settings;
             writeMethodCache = new Dictionary<Type, DynamicMethod>();
-            objectsForSurrogates = new InheritanceAwareList<Delegate>();
-            surrogatesForObjects = new InheritanceAwareList<Delegate>();
+            objectsForSurrogates = new SwapList();
+            surrogatesForObjects = new SwapList();
             readMethodCache = new Dictionary<Type, DynamicMethod>();
 
             if(settings.SupportForISerializable)
@@ -354,8 +354,8 @@ namespace Antmicro.Migrant
         private readonly Settings settings;
         private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
         private readonly Dictionary<Type, DynamicMethod> readMethodCache;
-        private readonly InheritanceAwareList<Delegate> surrogatesForObjects;
-        private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
+        private readonly SwapList surrogatesForObjects;
+        private readonly SwapList objectsForSurrogates;
         private const byte VersionNumber = 7;
         private const byte Magic1 = 0x32;
         private const byte Magic2 = 0x66;

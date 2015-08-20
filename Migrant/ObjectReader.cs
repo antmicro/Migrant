@@ -82,14 +82,14 @@ namespace Antmicro.Migrant
         /// Tells deserializer whether open stream serialization preserved objects identieties between serialization. Note that this option should
         /// be consistent with what was used during serialization.
         /// </param>
-        public ObjectReader(Stream stream, InheritanceAwareList<Delegate> objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
+        public ObjectReader(Stream stream, SwapList objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
                             IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
                             VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, 
                             ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             if(objectsForSurrogates == null)
             {
-                objectsForSurrogates = new InheritanceAwareList<Delegate>();
+                objectsForSurrogates = new SwapList();
             }
             this.objectsForSurrogates = objectsForSurrogates;
             this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
@@ -181,9 +181,9 @@ namespace Antmicro.Migrant
         {
             if(!readMethodsCache.ContainsKey(type))
             {
-                var surrogateId = Helpers.GetSurrogateFactoryIdForType(type, objectsForSurrogates);
+                var surrogateId = objectsForSurrogates.FindMatchingIndex(type);
                 var rmg = new ReadMethodGenerator(type, treatCollectionAsUserObject, surrogateId,
-                    Helpers.GetFieldInfo<ObjectReader, InheritanceAwareList<Delegate>>(x => x.objectsForSurrogates),
+                    Helpers.GetFieldInfo<ObjectReader, SwapList>(x => x.objectsForSurrogates),
                     Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects),
                     Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader),
                     Helpers.GetFieldInfo<ObjectReader, Action<object>>(x => x.postDeserializationCallback),
@@ -247,7 +247,7 @@ namespace Antmicro.Migrant
                 // it can happen if we deserialize delegate with empty invocation list
                 return;
             }
-            var factoryId = Helpers.GetSurrogateFactoryIdForType(obj.GetType(), objectsForSurrogates);
+            var factoryId = objectsForSurrogates.FindMatchingIndex(obj.GetType());
             if(factoryId != -1)
             {
                 deserializedObjects[objectId] = objectsForSurrogates.GetByIndex(factoryId).DynamicInvoke(new [] { obj });
@@ -751,7 +751,7 @@ namespace Antmicro.Migrant
         private readonly List<ModuleDescriptor> modulesList;
         private readonly Action<object> postDeserializationCallback;
         private readonly List<Action> postDeserializationHooks;
-        private readonly InheritanceAwareList<Delegate> objectsForSurrogates;
+        private readonly SwapList objectsForSurrogates;
         private const int InitialCapacity = 128;
         private const string InternalErrorMessage = "Internal error: should not reach here.";
         private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";

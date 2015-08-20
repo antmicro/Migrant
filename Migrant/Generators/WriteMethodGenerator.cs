@@ -66,7 +66,7 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Ldfld, surrogatesField);
                 generator.Emit(OpCodes.Ldc_I4, surrogateId);
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<InheritanceAwareList<Delegate>>(x => x.GetByIndex(0)));
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<SwapList>(x => x.GetByIndex(0)));
 
                 // call surrogate factory to obtain surrogate object
                 var delegateType = typeof(Func<,>).MakeGenericType(typeToGenerate, typeof(object));
