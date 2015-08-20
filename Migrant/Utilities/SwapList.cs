@@ -34,7 +34,7 @@ namespace Antmicro.Migrant.Utilities
     public sealed class SwapList
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.Utilities.InheritanceAwareList{T}"/> class.
+        /// Initializes a new instance of the <see cref="Antmicro.Migrant.Utilities.SwapList"/> class.
         /// </summary>
         public SwapList()
         {
@@ -82,15 +82,20 @@ namespace Antmicro.Migrant.Utilities
         }
 
         /// <summary>
-        /// Gets a value by an index.
+        /// Gets a delegate by an index.
         /// </summary>
-        /// <returns>Value at a given index.</returns>
+        /// <returns>Delegate at a given index.</returns>
         /// <param name="index">The index of the element.</param>
         public Delegate GetByIndex(int index)
         {
             return values[index];
         }
 
+        /// <summary>
+        /// Finds the index of the delegate that matches given type.
+        /// </summary>
+        /// <returns>The index of delegate taht matches given type.</returns>
+        /// <param name="value">Type to match.</param>
         public int FindMatchingIndex(Type value)
         {
             for(var i = 0; i < keys.Count; i++)

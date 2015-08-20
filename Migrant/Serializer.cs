@@ -141,6 +141,16 @@ namespace Antmicro.Migrant
             return new ObjectForSurrogateSetter<TSurrogate>(this);
         }
 
+        /// <summary>
+        /// Gives the ability to set callback providing object for surrogate of given type. The object will be provided instead of such
+        /// surrogate in the effect of deserialization.
+        /// </summary>
+        /// <returns>
+        /// Object letting you set the object for the given surrogate type.
+        /// </returns>
+        /// <param name="type">
+        /// The type for which callback will be invoked.
+        /// </param>
         public ObjectForSurrogateSetter ForSurrogate(Type type)
         {
             return new ObjectForSurrogateSetter(this, type);
@@ -161,6 +171,16 @@ namespace Antmicro.Migrant
             return new SurrogateForObjectSetter<TObject>(this);
         }
 
+        /// <summary>
+        /// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of 
+        /// the object of that type.
+        /// </summary>
+        /// <returns>
+        /// Object letting you set the surrogate for the given type.
+        /// </returns>
+        /// <param name="type">
+        /// The type for which callback will be invoked.
+        /// </param>
         public SurrogateForObjectSetter ForObject(Type type)
         {
             return new SurrogateForObjectSetter(this, type);
@@ -361,14 +381,17 @@ namespace Antmicro.Migrant
         private const byte Magic2 = 0x66;
         private const byte Magic3 = 0x34;
 
+        /// <summary>
+        /// Base class for surrogate setter.
+        /// </summary>
         public class BaseObjectForSurrogateSetter
         {
-            protected BaseObjectForSurrogateSetter(Serializer serializer)
+            internal BaseObjectForSurrogateSetter(Serializer serializer)
             {
                 Serializer = serializer;
             }
 
-            protected void CheckLegality()
+            internal void CheckLegality()
             {
                 if(Serializer.deserializationDone)
                 {
@@ -376,7 +399,7 @@ namespace Antmicro.Migrant
                 }
             }
 
-            protected readonly Serializer Serializer;
+            internal readonly Serializer Serializer;
         }
 
         /// <summary>
@@ -407,6 +430,10 @@ namespace Antmicro.Migrant
             }
         }
 
+        /// <summary>
+        /// Lets you set a callback providing object for type of the surrogate given to method that provided
+        /// this object on a serializer that provided this object.
+        /// </summary>
         public sealed class ObjectForSurrogateSetter : BaseObjectForSurrogateSetter
         {
             internal ObjectForSurrogateSetter(Serializer serializer, Type type) : base(serializer)
@@ -414,6 +441,13 @@ namespace Antmicro.Migrant
                 this.type = type;
             }
 
+            /// <summary>
+            /// Sets the callback proividing object for surrogate.
+            /// </summary>
+            /// <param name="callback">
+            /// Callback proividing object for surrogate. The callback can be null, in that case surrogate of the
+            /// appropriate type will be deserialized as is even if there is an object for the more general type.
+            /// </param>
             public void SetObject(Func<object, object> callback)
             {
                 CheckLegality();
@@ -423,14 +457,17 @@ namespace Antmicro.Migrant
             private readonly Type type;
         }
 
+        /// <summary>
+        /// Base class for object setter.
+        /// </summary>
         public class BaseSurrogateForObjectSetter
         {
-            protected BaseSurrogateForObjectSetter(Serializer serializer)
+            internal BaseSurrogateForObjectSetter(Serializer serializer)
             {
                 this.Serializer = serializer;
             }
 
-            protected void CheckLegality()
+            internal void CheckLegality()
             {
                 if(Serializer.serializationDone)
                 {
@@ -438,7 +475,7 @@ namespace Antmicro.Migrant
                 }
             }
 
-            protected readonly Serializer Serializer;
+            internal readonly Serializer Serializer;
         }
 
         /// <summary>
@@ -470,6 +507,10 @@ namespace Antmicro.Migrant
             }
         }
 
+        /// <summary>
+        /// Lets you set a callback providing surrogate for type of the object given to method that provided
+        /// this object on a serializer that provided this object.
+        /// </summary>
         public sealed class SurrogateForObjectSetter : BaseSurrogateForObjectSetter
         {
             internal SurrogateForObjectSetter(Serializer serializer, Type type) : base(serializer)
@@ -477,6 +518,13 @@ namespace Antmicro.Migrant
                 this.type = type;
             }
 
+            /// <summary>
+            /// Sets the callback providing surrogate for object.
+            /// </summary>
+            /// <param name='callback'>
+            /// Callback providing surrogate for object. The callback can be null, in that case object of the
+            /// appropriate type will be serialized as is even if there is a surrogate for the more general type.
+            /// </param>
             public void SetSurrogate(Func<object, object> callback)
             {
                 CheckLegality();
