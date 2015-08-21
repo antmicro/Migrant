@@ -280,25 +280,26 @@ namespace Antmicro.Migrant
 
         private void WriteObjectInner(object o)
         {
+            Action<PrimitiveWriter, object> writeDelegate;
+            DynamicMethod writeMethod;
             var type = o.GetType();
-            if(writeMethods.ContainsKey(type))
+            if(writeMethods.TryGetValue(type, out writeDelegate))
             {
-                writeMethods[type](writer, o);
+                writeDelegate(writer, o);
                 return;
             }
 
-            Action<PrimitiveWriter, object> writeMethod;
-            if(writeMethodCache != null && writeMethodCache.ContainsKey(type))
+            if(writeMethodCache != null && writeMethodCache.TryGetValue(type, out writeMethod))
             {
-                writeMethod = (Action<PrimitiveWriter, object>)writeMethodCache[type].CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
+                writeDelegate = (Action<PrimitiveWriter, object>)writeMethod.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
             }
             else
             {
                 var surrogateId = Helpers.GetSurrogateFactoryIdForType(type, surrogatesForObjects);
-                writeMethod = PrepareWriteMethod(type, surrogateId);
+                writeDelegate = PrepareWriteMethod(type, surrogateId);
             }
-            writeMethods.Add(type, writeMethod);
-            writeMethod(writer, o);
+            writeMethods.Add(type, writeDelegate);
+            writeDelegate(writer, o);
         }
 
         private void WriteObjectUsingReflection(PrimitiveWriter primitiveWriter, object o)

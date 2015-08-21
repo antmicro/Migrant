@@ -216,14 +216,16 @@ namespace Antmicro.Migrant
         internal void ReadObjectInnerGenerated(Type actualType, int objectId)
         {
             TouchReadMethod(actualType);
-            if(!delegatesCache.ContainsKey(actualType))
+            Func<int, object> deserializingDelegate;
+            if(!delegatesCache.TryGetValue(actualType, out deserializingDelegate))
             {
-                var func = (Func<Int32, object>)readMethodsCache[actualType].CreateDelegate(typeof(Func<Int32, object>), this);
-                delegatesCache.Add(actualType, func);
+                deserializingDelegate = (Func<Int32, object>)readMethodsCache[actualType].CreateDelegate(typeof(Func<Int32, object>), this);
+                delegatesCache.Add(actualType, deserializingDelegate);
+
             }
 
             // execution of read method of given type
-            deserializedObjects[objectId] = delegatesCache[actualType](objectId);
+            deserializedObjects[objectId] = deserializingDelegate(objectId);
         }
 
         private void ReadObjectInner(Type actualType, int objectId)

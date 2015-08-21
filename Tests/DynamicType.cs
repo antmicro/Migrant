@@ -109,9 +109,10 @@ namespace Antmicro.Migrant.Tests
 
         private Type InnerCreateType(DynamicModule module)
         {
-            if(module.CreatedTypes.ContainsKey(name))
+            Type result;
+            if(module.CreatedTypes.TryGetValue(name, out result))
             {
-                return module.CreatedTypes[name];
+                return result;
             }
 
             TypeBuilder typeBuilder = null;
@@ -163,7 +164,7 @@ namespace Antmicro.Migrant.Tests
                 }
             }
 
-            var result = typeBuilder.CreateType();
+            result = typeBuilder.CreateType();
             if(genericArgument != null)
             {
                 result = result.MakeGenericType(genericArgument.InnerCreateType(module));
