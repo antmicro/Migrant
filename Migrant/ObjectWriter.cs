@@ -331,8 +331,6 @@ namespace Antmicro.Migrant
                         TouchAndWriteTypeId(genericArgumentType);
                     }
                 }
-
-                typeDescriptor = genericTypeDefinitionDescriptor;
             }
             else
             {
