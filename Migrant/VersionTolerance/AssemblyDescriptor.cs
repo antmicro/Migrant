@@ -48,6 +48,7 @@ namespace Antmicro.Migrant.VersionTolerance
                 CultureName = "neutral";
             }
             Token = assembly.GetName().GetPublicKeyToken();
+            CreateFullName();
         }
 
         public void Read(ObjectReader reader)
@@ -68,6 +69,7 @@ namespace Antmicro.Migrant.VersionTolerance
                 throw new ArgumentException("Wrong token length!");
             }
 
+            CreateFullName();
             var assemblyName = new AssemblyName(FullName);
             UnderlyingAssembly = Assembly.Load(assemblyName);
         }
@@ -106,13 +108,18 @@ namespace Antmicro.Migrant.VersionTolerance
             return FullName.GetHashCode();
         }
 
-        public string FullName { get { return string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, CultureName, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); } }
+        public string FullName { get; private set; }
 
         public Assembly UnderlyingAssembly { get; private set; }
         public string Name { get; private set; }
         public Version Version { get; private set; }
         public string CultureName { get; private set; }
         public byte[] Token { get; private set; }
+
+        private void CreateFullName()
+        {
+            FullName = string.Format("{0}, Version={1}, Culture={2}, PublicKeyToken={3}", Name, Version, CultureName, Token.Length == 0 ? "null" : String.Join(string.Empty, Token.Select(x => string.Format("{0:x2}", x)))); 
+        }
     }
 
     internal static class PrimitiveWriterReaderExtensions
