@@ -33,6 +33,7 @@ using System.Reflection;
 using System.Linq.Expressions;
 using System.Collections.ObjectModel;
 using Antmicro.Migrant.Utilities;
+using System.Collections.Concurrent;
 
 namespace Antmicro.Migrant
 {
@@ -213,14 +214,19 @@ namespace Antmicro.Migrant
             return TypesWriteableByPrimitiveWriter.Contains(type);
         }
 
-        internal static bool CheckTransientNoCache(Type type)
+        internal static bool IsTransient(Type type)
         {
-            return type.IsDefined(typeof(TransientAttribute), true);
+            return AttrbuteIsDefinedLookup.GetOrAdd(type, t => t.IsDefined(typeof(TransientAttribute), true));
+        }
+
+        internal static bool IsTransient(object o)
+        {
+            return IsTransient(o.GetType());
         }
 
         internal static SerializationType GetSerializationType(Type type)
         {
-            if(Helpers.CheckTransientNoCache(type))
+            if(Helpers.IsTransient(type))
             {
                 return SerializationType.Transient;
             }
@@ -265,8 +271,10 @@ namespace Antmicro.Migrant
         {
             TypesWriteableByPrimitiveWriter = new HashSet<Type>(typeof(PrimitiveWriter).GetMethods().Where(x => x.Name == "Write").Select(x => x.GetParameters()[0].ParameterType));
             TypesWriteableByPrimitiveWriter.TrimExcess();
+            AttrbuteIsDefinedLookup = new ConcurrentDictionary<Type, bool>();
         }
 
+        private static readonly ConcurrentDictionary<Type, bool> AttrbuteIsDefinedLookup;
         private static readonly HashSet<Type> TypesWriteableByPrimitiveWriter;
         private static readonly int[] PaddingBoundaries = {
             128,

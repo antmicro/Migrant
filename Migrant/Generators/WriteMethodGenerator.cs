@@ -633,9 +633,8 @@ namespace Antmicro.Migrant.Generators
             var formalTypeIsActualType = (formalType.Attributes & TypeAttributes.Sealed) != 0;
             if(!formalTypeIsActualType)
             {
-                generator.Emit(OpCodes.Ldarg_0); // objectWriter
                 putValueToWriteOnTop(generator); // value to serialize
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, object>((writer, obj) => writer.CheckTransient(obj)));
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(obj => Helpers.IsTransient(obj)));
                 var isNotTransient = generator.DefineLabel();
                 generator.Emit(OpCodes.Brfalse_S, isNotTransient);
                 generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
@@ -650,7 +649,7 @@ namespace Antmicro.Migrant.Generators
             }
             else
             {
-                if(Helpers.CheckTransientNoCache(formalType))
+                if(Helpers.IsTransient(formalType))
                 {
                     generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
                     generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);

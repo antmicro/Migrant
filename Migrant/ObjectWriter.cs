@@ -90,7 +90,6 @@ namespace Antmicro.Migrant
                 surrogatesForObjects = new InheritanceAwareList<Delegate>();
             }
             currentlyWrittenTypes = new Stack<Type>();
-            transientTypeCache = new Dictionary<Type, bool>();
             writeMethods = new Dictionary<Type, Action<PrimitiveWriter, object>>();
             postSerializationHooks = new List<Action>();
             this.writeMethodCache = writeMethodCache;
@@ -120,7 +119,7 @@ namespace Antmicro.Migrant
         /// </param>
         public void WriteObject(object o)
         {
-            if(o == null || Helpers.CheckTransientNoCache(o.GetType()))
+            if(o == null || Helpers.IsTransient(o.GetType()))
             {
                 throw new ArgumentException("Cannot write a null object or a transient object.");
             }
@@ -189,24 +188,7 @@ namespace Antmicro.Migrant
 
         internal Delegate[] GetDelegatesWithNonTransientTargets(MulticastDelegate mDelegate)
         {
-            return mDelegate.GetInvocationList().Where(x => x.Target == null || !CheckTransient(x.Target)).ToArray();
-        }
-
-        internal bool CheckTransient(object o)
-        {
-            return CheckTransient(o.GetType());
-        }
-
-        internal bool CheckTransient(Type type)
-        {
-            bool result;
-            if(transientTypeCache.TryGetValue(type, out result))
-            {
-                return result;
-            }
-            var isTransient = Helpers.CheckTransientNoCache(type);
-            transientTypeCache.Add(type, isTransient);
-            return isTransient;
+            return mDelegate.GetInvocationList().Where(x => x.Target == null || !Helpers.IsTransient(x.Target)).ToArray();
         }
 
         internal static void CheckLegality(Type type, Type containingType = null, IEnumerable<Type> writtenTypes = null)
@@ -237,7 +219,7 @@ namespace Antmicro.Migrant
 
         internal static bool HasSpecialWriteMethod(Type type)
         {
-            return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
+            return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.IsTransient(type);
         }
 
         internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
@@ -505,13 +487,13 @@ namespace Antmicro.Migrant
             }
             // OK, so we should write a reference
             // a null reference maybe?
-            if(value == null || CheckTransient(value))
+            if(value == null || Helpers.IsTransient(value))
             {
                 writer.Write(Consts.NullObjectId);
                 return;
             }
             var actualType = value.GetType();
-            if(CheckTransient(actualType))
+            if(Helpers.IsTransient(actualType))
             {
                 return;
             }
@@ -651,7 +633,6 @@ namespace Antmicro.Migrant
         private readonly Action<object> preSerializationCallback;
         private readonly Action<object> postSerializationCallback;
         private readonly List<Action> postSerializationHooks;
-        private readonly Dictionary<Type, bool> transientTypeCache;
         private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
         private readonly InheritanceAwareList<Delegate> surrogatesForObjects;
         private readonly Dictionary<Type, Action<PrimitiveWriter, object>> writeMethods;

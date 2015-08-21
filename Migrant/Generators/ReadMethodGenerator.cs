@@ -600,7 +600,7 @@ namespace Antmicro.Migrant.Generators
         {
             // method returns read field value on stack
 
-            if(Helpers.CheckTransientNoCache(formalType))
+            if(Helpers.IsTransient(formalType))
             {
                 PushTypeOntoStack(formalType);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object, object>(x => Helpers.GetDefaultValue(null)));

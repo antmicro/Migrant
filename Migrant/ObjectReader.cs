@@ -210,7 +210,7 @@ namespace Antmicro.Migrant
 
         internal static bool HasSpecialReadMethod(Type type)
         {
-            return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.CheckTransientNoCache(type);
+            return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.IsTransient(type);
         }
 
         internal void ReadObjectInnerGenerated(Type actualType, int objectId)
@@ -351,7 +351,7 @@ namespace Antmicro.Migrant
 
         private object ReadField(Type formalType)
         {
-            if(Helpers.CheckTransientNoCache(formalType))
+            if(Helpers.IsTransient(formalType))
             {
                 return Helpers.GetDefaultValue(formalType);
             }
