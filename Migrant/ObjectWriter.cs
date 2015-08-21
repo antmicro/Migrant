@@ -82,12 +82,12 @@ namespace Antmicro.Migrant
         /// </param>
         public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null, 
                       Action<object> postSerializationCallback = null, IDictionary<Type, DynamicMethod> writeMethodCache = null,
-                      InheritanceAwareList<Delegate> surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false,
+                      SwapList surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false,
                       bool useBuffering = true, ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             if(surrogatesForObjects == null)
             {
-                surrogatesForObjects = new InheritanceAwareList<Delegate>();
+                surrogatesForObjects = new SwapList();
             }
             currentlyWrittenTypes = new Stack<Type>();
             writeMethods = new Dictionary<Type, Action<PrimitiveWriter, object>>();
@@ -277,7 +277,7 @@ namespace Antmicro.Migrant
             }
             else
             {
-                var surrogateId = Helpers.GetSurrogateFactoryIdForType(type, surrogatesForObjects);
+                var surrogateId = surrogatesForObjects.FindMatchingIndex(type);
                 writeDelegate = PrepareWriteMethod(type, surrogateId);
             }
             writeMethods.Add(type, writeDelegate);
@@ -572,7 +572,7 @@ namespace Antmicro.Migrant
             }
 
             var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
-                Helpers.GetFieldInfo<ObjectWriter, InheritanceAwareList<Delegate>>(x => x.surrogatesForObjects),
+                Helpers.GetFieldInfo<ObjectWriter, SwapList>(x => x.surrogatesForObjects),
                 Helpers.GetMethodInfo<ObjectWriter>(x => x.InvokeCallbacksAndWriteObject(null))).Method;
             var result = (Action<PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<PrimitiveWriter, object>), this);
             if(writeMethodCache != null)
@@ -634,7 +634,7 @@ namespace Antmicro.Migrant
         private readonly Action<object> postSerializationCallback;
         private readonly List<Action> postSerializationHooks;
         private readonly IDictionary<Type, DynamicMethod> writeMethodCache;
-        private readonly InheritanceAwareList<Delegate> surrogatesForObjects;
+        private readonly SwapList surrogatesForObjects;
         private readonly Dictionary<Type, Action<PrimitiveWriter, object>> writeMethods;
         private readonly Stack<Type> currentlyWrittenTypes;
     }

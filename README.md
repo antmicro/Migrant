@@ -1,4 +1,4 @@
-# Migrant 0.10.5
+# Migrant 0.11
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/3674/badge.svg)](https://scan.coverity.com/projects/3674)
 
@@ -122,6 +122,18 @@ Choose wisely.
 
     var anObject = serializer.Deserialize<object>(stream);
     Console.WriteLine(anObject.GetType().Name); // prints AnotherObject
+
+One can also use a `Type` based API, i.e.
+
+```csharp
+serializer.ForObject(typeof(SomeObject)).SetSurrogate(x => new AnotherObject());
+```
+
+What's the usage? The *generic surrogates*, which can match to many concrete types. Such surrogates are defined on open generic types.
+Here is an example:
+```csharp
+serializer.ForObject(typeof(Tuple<>)).SetSurrogate(x => x.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic)[0].GetValue(x));
+```
 
 ### Version tolerance
 
