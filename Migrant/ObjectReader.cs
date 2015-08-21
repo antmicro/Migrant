@@ -83,7 +83,7 @@ namespace Antmicro.Migrant
         /// be consistent with what was used during serialization.
         /// </param>
         public ObjectReader(Stream stream, SwapList objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
-                            IDictionary<Type, DynamicMethod> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
+                            IDictionary<Type, Func<ObjectReader, int, object>> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
                             VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, 
                             ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
@@ -92,7 +92,7 @@ namespace Antmicro.Migrant
                 objectsForSurrogates = new SwapList();
             }
             this.objectsForSurrogates = objectsForSurrogates;
-            this.readMethodsCache = readMethods ?? new Dictionary<Type, DynamicMethod>();
+            this.readMethodsCache = readMethods ?? new Dictionary<Type, Func<ObjectReader, int, object>>();
             this.useGeneratedDeserialization = isGenerating;
             Types = new IdentifiedElementsList<TypeDescriptor>(this);
             Methods = new IdentifiedElementsList<MethodDescriptor>(this);
@@ -101,7 +101,6 @@ namespace Antmicro.Migrant
             postDeserializationHooks = new List<Action>();
             this.postDeserializationCallback = postDeserializationCallback;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
-            delegatesCache = new Dictionary<Type, Func<int, object>>();
             reader = new PrimitiveReader(stream, useBuffering);
             this.referencePreservation = referencePreservation;
             this.VersionToleranceLevel = versionToleranceLevel;
@@ -177,21 +176,6 @@ namespace Antmicro.Migrant
             reader.Dispose();
         }
 
-        private void TouchReadMethod(Type type)
-        {
-            if(!readMethodsCache.ContainsKey(type))
-            {
-                var surrogateId = objectsForSurrogates.FindMatchingIndex(type);
-                var rmg = new ReadMethodGenerator(type, treatCollectionAsUserObject, surrogateId,
-                    Helpers.GetFieldInfo<ObjectReader, SwapList>(x => x.objectsForSurrogates),
-                    Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects),
-                    Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader),
-                    Helpers.GetFieldInfo<ObjectReader, Action<object>>(x => x.postDeserializationCallback),
-                    Helpers.GetFieldInfo<ObjectReader, List<Action>>(x => x.postDeserializationHooks));
-                readMethodsCache.Add(type, rmg.Method);
-            }
-        }
-
         private void PrepareForNextRead()
         {
             if(referencePreservation == ReferencePreservation.UseWeakReference)
@@ -215,17 +199,22 @@ namespace Antmicro.Migrant
 
         internal void ReadObjectInnerGenerated(Type actualType, int objectId)
         {
-            TouchReadMethod(actualType);
-            Func<int, object> deserializingDelegate;
-            if(!delegatesCache.TryGetValue(actualType, out deserializingDelegate))
+            Func<ObjectReader, int, object> deserializingMethod;
+            if(!readMethodsCache.TryGetValue(actualType, out deserializingMethod))
             {
-                deserializingDelegate = (Func<Int32, object>)readMethodsCache[actualType].CreateDelegate(typeof(Func<Int32, object>), this);
-                delegatesCache.Add(actualType, deserializingDelegate);
-
+                var surrogateId = objectsForSurrogates.FindMatchingIndex(actualType);
+                var rmg = new ReadMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
+                    Helpers.GetFieldInfo<ObjectReader, SwapList>(x => x.objectsForSurrogates),
+                    Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects),
+                    Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader),
+                    Helpers.GetFieldInfo<ObjectReader, Action<object>>(x => x.postDeserializationCallback),
+                    Helpers.GetFieldInfo<ObjectReader, List<Action>>(x => x.postDeserializationHooks));
+                deserializingMethod = (Func<ObjectReader, Int32, object>)rmg.Method.CreateDelegate(typeof(Func<ObjectReader, Int32, object>));
+                readMethodsCache.Add(actualType, deserializingMethod);
             }
 
             // execution of read method of given type
-            deserializedObjects[objectId] = deserializingDelegate(objectId);
+            deserializedObjects[objectId] = deserializingMethod(this, objectId);
         }
 
         private void ReadObjectInner(Type actualType, int objectId)
@@ -610,8 +599,7 @@ namespace Antmicro.Migrant
         private readonly bool treatCollectionAsUserObject;
         private ReferencePreservation referencePreservation;
         private AutoResizingList<object> deserializedObjects;
-        private IDictionary<Type, DynamicMethod> readMethodsCache;
-        private readonly Dictionary<Type, Func<Int32, object>> delegatesCache;
+        private IDictionary<Type, Func<ObjectReader, Int32, object>> readMethodsCache;
         private readonly PrimitiveReader reader;
         private readonly Action<object> postDeserializationCallback;
         private readonly List<Action> postDeserializationHooks;
