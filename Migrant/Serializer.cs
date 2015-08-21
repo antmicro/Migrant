@@ -59,7 +59,7 @@ namespace Antmicro.Migrant
                 settings = new Settings(); // default settings
             }
             this.settings = settings;
-            writeMethodCache = new Dictionary<Type, DynamicMethod>();
+            writeMethodCache = new Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>>();
             objectsForSurrogates = new SwapList();
             surrogatesForObjects = new SwapList();
             readMethodCache = new Dictionary<Type, DynamicMethod>();
@@ -372,7 +372,7 @@ namespace Antmicro.Migrant
         private bool serializationDone;
         private bool deserializationDone;
         private readonly Settings settings;
-        private readonly Dictionary<Type, DynamicMethod> writeMethodCache;
+        private readonly Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethodCache;
         private readonly Dictionary<Type, DynamicMethod> readMethodCache;
         private readonly SwapList surrogatesForObjects;
         private readonly SwapList objectsForSurrogates;
