@@ -94,7 +94,7 @@ namespace Antmicro.Migrant.Utilities
         /// <summary>
         /// Finds the index of the delegate that matches given type.
         /// </summary>
-        /// <returns>The index of delegate taht matches given type.</returns>
+        /// <returns>The index of delegate that matches given type or -1 if it could not be found.</returns>
         /// <param name="value">Type to match.</param>
         public int FindMatchingIndex(Type value)
         {
