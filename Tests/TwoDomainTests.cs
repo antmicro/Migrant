@@ -28,6 +28,7 @@ using NUnit.Framework;
 namespace Antmicro.Migrant.Tests
 {
     [TestFixture]
+    [Category("MultiAssemblyTests")]
     [TestFixture(false, false)]
     [TestFixture(true, false)]
     [TestFixture(false, true)]

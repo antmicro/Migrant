@@ -39,6 +39,7 @@ namespace Antmicro.Migrant.Tests
     [TestFixture(true, false)]
     [TestFixture(false, true)]
     [TestFixture(true, true)]
+    [Category("MultiAssemblyTests")]
     public class VersionToleranceTests : TwoDomainsDriver
     {
         public VersionToleranceTests(bool useGeneratedSerializer, bool useGeneratedDeserializer) : base(useGeneratedSerializer, useGeneratedDeserializer)
