@@ -1,4 +1,4 @@
-# Migrant 0.11.1
+# Migrant 0.11.2
 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/3674/badge.svg)](https://scan.coverity.com/projects/3674)
 
@@ -141,11 +141,13 @@ What if some changes are made to the layout of the class between serialization a
 
 However, there is a way to weaken this condition by specifing flags from a special enumeration called `VersionToleranceLevel`:
 
-- ``AllowGuidChange`` - guid values may differ between types which means that it can com from different compilations of the same library. The layout of the class (fields, base class, name) must be the same. 
+- ``AllowGuidChange`` - GUID values may differ between types which means that it can come from different compilations of the same library. This option alone effectively means that the layout of the class (fields, base class, name) does not change.
 - ``AllowFieldAddition`` - new version of the type can contain more fields than it contained during serialization. They are initialized with their default values.
 - ``AllowFieldRemoval`` - new version of the type can contain less fields than it contained during serialization.
 - ``AllowInheritanceChainChange`` - inheritance chain can change, i.e. base class can be added/removed.
 - ``AllowAssemblyVersionChange`` - assembly version (but not it's name or culture) can differ between serialized and deserializad types.
+
+As GUID numbers may vary between compilations of the same code, it is obvious that more significant changes will also cause them to change. To simplify the API, ``AllowGuidChange`` value is implied by any other option.
 
 ### Collections handling
 
