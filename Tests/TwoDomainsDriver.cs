@@ -176,7 +176,7 @@ namespace Antmicro.Migrant.Tests
                 testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(allowGuidChange ? vtl | VersionToleranceLevel.AllowGuidChange : vtl));
                 return true;
             } 
-            catch (VersionToleranceException e)
+            catch (VersionToleranceException)
             {
                 return false;
             }
