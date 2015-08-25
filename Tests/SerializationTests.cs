@@ -1358,9 +1358,10 @@ namespace Antmicro.Migrant.Tests
                 }
             }
 
+            #pragma warning disable 649
             [Constructor(false)]
-            private ManualResetEvent
-            resetEvent;
+            private ManualResetEvent resetEvent;
+            #pragma warning restore 649
         }
 
         private struct StructWithConstructorAttributeOnNestedStruct
@@ -1384,7 +1385,9 @@ namespace Antmicro.Migrant.Tests
                 field = (condition ? 5 : 0);
             }
 
+            #pragma warning disable 649
             public int field;
+            #pragma warning restore 649
         }
 
         private class WithConstructorAttribute
@@ -1397,9 +1400,10 @@ namespace Antmicro.Migrant.Tests
                 }
             }
 
+            #pragma warning disable 649
             [Constructor(false)]
-            private ManualResetEvent
-                resetEvent;
+            private ManualResetEvent resetEvent;
+            #pragma warning restore 649
         }
 
         [Transient]
