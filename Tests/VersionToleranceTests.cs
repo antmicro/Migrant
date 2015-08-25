@@ -235,11 +235,13 @@ namespace Antmicro.Migrant.Tests
 
         private class ClassWithGenerics
         {
+            #pragma warning disable 649
             public int IntegerNumber;
             public int SecondIntegerNumber;
             public List<int> ListOfIntegerNumbers;
             public float FloatNumber;
             public List<float> ListOfFloatNumbers;
+            #pragma warning restore 649
         }
     }
 }
