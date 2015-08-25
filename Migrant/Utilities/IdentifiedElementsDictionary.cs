@@ -26,7 +26,7 @@ using System.Collections.Generic;
 
 namespace Antmicro.Migrant.Utilities
 {
-    public class IdentifiedElementsDictionary<T> where T : IIdentifiedElement
+    internal class IdentifiedElementsDictionary<T> where T : IIdentifiedElement
     {
         public IdentifiedElementsDictionary(ObjectWriter writer)
         {

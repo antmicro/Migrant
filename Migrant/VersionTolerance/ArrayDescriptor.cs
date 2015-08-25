@@ -27,7 +27,7 @@ using System.Collections.Generic;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
-    public class ArrayDescriptor
+    internal class ArrayDescriptor
     {
         public static ArrayDescriptor EmptyRanks { get; private set; }
 

@@ -26,7 +26,7 @@ using System;
 
 namespace Antmicro.Migrant.Utilities
 {
-    public interface IIdentifiedElement
+    internal interface IIdentifiedElement
     {
         void Read(ObjectReader reader);
         void Write(ObjectWriter writer);
