@@ -14,6 +14,7 @@ This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and fle
 1.  Compilation
 1.  More information
 1.  Licence
+1.  Authors
 
 ## Introduction
 
@@ -156,7 +157,7 @@ way. Instead of writing to the stream all of private meta fields describing coll
 object, only items are serialized - in a similar way to arrays. During
 deserialization a collection is recreated by calling proper adders methods.
 
-This approach limits stream size and allows to easily migrate between versions 
+This approach limits stream size and allows to easily migrate between versions
 of .NET framework, as internal collection implementation may differ between them.
 
 Described mechanisms works for the following collections:
@@ -209,7 +210,7 @@ One solution is to serialize the assembly qualified name of the type:
 ```csharp
 
 class MainClass
-{ 
+{
 	public static void Main(string[] args)
 	{
 		var serializer = new Serializer();
@@ -249,7 +250,7 @@ If you would also like to use the same mechanisms of version tolerance that are 
 
 ```csharp
 class MainClass
-{ 
+{
 	public static void Main(string[] args)
 	{
 		var serializer = new Serializer();
@@ -332,8 +333,22 @@ Additional information will soon be available on our [company's website](http://
 
 We are available on [github](https://www.github.com/antmicro) and [twitter](http://twitter.com/antmicro).
 
-If you have any questions, suggestions or requests regarding the Migrant library, please do not hesitate to contact us via email: [[migrant@antmicro.com](mailto:migrant@antmicro.com)](mailto:migrant@antmicro.com).
+If you have any questions, suggestions or requests regarding the Migrant library, please do not hesitate to contact us via email: <migrant@antmicro.com>.
 
 ## Licence
 
 Migrant is released on an MIT licence, which can be found in the LICENCE file in this directory.
+
+## Authors
+
+Migrant was created at [Antmicro Ltd.](http://www.antmicro.com) by:
+
+* Konrad Kruczyński (<kkruczynski@antmicro.com>)
+* Mateusz Hołenko (<mholenko@antmicro.com>)
+* Piotr Zierhoffer (<pzierhoffer@antmicro.com>)
+* Michael Gielda (<mgielda@antmicro.com>)
+
+Other contributors, in order of first contribution:
+
+* Jeffrey Pierson (<jeffrey.pierson@gmail.com>)
+* Roger Johansson (<rogeralsing@gmail.com>)
