@@ -87,7 +87,7 @@ namespace Antmicro.Migrant.Tests
         public byte[] SerializeOnAppDomain()
         {
             var stream = new MemoryStream();
-            var serializer = new Serializer();
+            var serializer = new Serializer(GetSettings());
             serializer.Serialize(obj, stream);
             return stream.ToArray();
         }

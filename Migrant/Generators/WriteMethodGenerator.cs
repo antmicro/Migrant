@@ -82,13 +82,12 @@ namespace Antmicro.Migrant.Generators
             }
 
             generator.Emit(OpCodes.Ldarg_0); // objectWriter
-            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectWriter, IdentifiedElementsDictionary<TypeDescriptor>>(ow => ow.Types));
 
             generator.Emit(OpCodes.Ldarg_2);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(o => o.GetType()));
             generator.Emit(OpCodes.Call, Helpers.GetImplicitConvertionOperatorInfo<Type, TypeDescriptor>());
 
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IdentifiedElementsDictionary<TypeDescriptor>, TypeDescriptor>((writer, type) => writer.TouchAndWriteId(type)));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, TypeDescriptor>((writer, type) => writer.TouchAndWriteTypeId(type)));
             generator.Emit(OpCodes.Pop);
 
             // preserialization callbacks

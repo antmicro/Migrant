@@ -84,6 +84,7 @@
     <Compile Include="TypeOrGenericTypeArgument.cs" />
     <Compile Include="Utilities\IdentifiedElementsDictionary.cs" />
     <Compile Include="Utilities\SwapList.cs" />
+    <Compile Include="VersionTolerance\ArrayDescriptor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

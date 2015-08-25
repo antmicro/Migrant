@@ -967,8 +967,7 @@ namespace Antmicro.Migrant.Generators
             // method returns read type (or null) 
 
             generator.Emit(OpCodes.Ldarg_0); // object reader
-            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectReader, IdentifiedElementsList<TypeDescriptor>>(or => or.Types));
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IdentifiedElementsList<TypeDescriptor>, TypeDescriptor>(t => t.Read()));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, TypeDescriptor>(t => t.ReadType()));
             generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<TypeDescriptor, Type>(td => td.UnderlyingType));
         }
 

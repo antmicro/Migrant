@@ -50,15 +50,15 @@ namespace Antmicro.Migrant
 
         public void WriteTo(ObjectWriter writer)
         {
-            writer.Types.TouchAndWriteId(FieldType.UnderlyingType);
-            writer.Types.TouchAndWriteId(DeclaringType.UnderlyingType);
+            writer.TouchAndWriteTypeId(FieldType.UnderlyingType);
+            writer.TouchAndWriteTypeId(DeclaringType.UnderlyingType);
             writer.PrimitiveWriter.Write(Name);
         }
 
         public void ReadFrom(ObjectReader reader)
         {
-            FieldType = reader.Types.Read();
-            DeclaringType = reader.Types.Read();
+            FieldType = reader.ReadType();
+            DeclaringType = reader.ReadType();
             Name = reader.PrimitiveReader.ReadString();
 
             UnderlyingFieldInfo = DeclaringType.UnderlyingType.GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 

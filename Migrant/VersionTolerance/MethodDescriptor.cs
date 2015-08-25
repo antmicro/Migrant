@@ -42,7 +42,7 @@ namespace Antmicro.Migrant.VersionTolerance
 
         public void Write(ObjectWriter writer)
         {
-            writer.Types.TouchAndWriteId(UnderlyingMethod.ReflectedType);
+            writer.TouchAndWriteTypeId(UnderlyingMethod.ReflectedType);
 
             var methodParameters = UnderlyingMethod.GetParameters();
             if(UnderlyingMethod.IsGenericMethod)
@@ -55,7 +55,7 @@ namespace Antmicro.Migrant.VersionTolerance
                 writer.PrimitiveWriter.Write(genericArguments.Length);
                 for(int i = 0; i < genericArguments.Length; i++)
                 {
-                    writer.Types.TouchAndWriteId(genericArguments[i]);
+                    writer.TouchAndWriteTypeId(genericArguments[i]);
                 }
 
                 writer.PrimitiveWriter.Write(genericMethodParamters.Length);
@@ -68,7 +68,7 @@ namespace Antmicro.Migrant.VersionTolerance
                     }
                     else
                     {
-                        writer.Types.TouchAndWriteId(methodParameters[i].ParameterType);
+                        writer.TouchAndWriteTypeId(methodParameters[i].ParameterType);
                     }
                 }
             }
@@ -80,20 +80,20 @@ namespace Antmicro.Migrant.VersionTolerance
 
                 foreach(var p in methodParameters)
                 {
-                    writer.Types.TouchAndWriteId(p.ParameterType);
+                    writer.TouchAndWriteTypeId(p.ParameterType);
                 }
             }
         }
 
         public void Read(ObjectReader reader)
         {
-            var type = reader.Types.Read().UnderlyingType;
+            var type = reader.ReadType().UnderlyingType;
             var methodName = reader.PrimitiveReader.ReadString();
             var genericArgumentsCount = reader.PrimitiveReader.ReadInt32();
             var genericArguments = new Type[genericArgumentsCount];
             for(int i = 0; i < genericArgumentsCount; i++)
             {
-                genericArguments[i] = reader.Types.Read().UnderlyingType;
+                genericArguments[i] = reader.ReadType().UnderlyingType;
             }
 
             var parametersCount = reader.PrimitiveReader.ReadInt32();
@@ -105,7 +105,7 @@ namespace Antmicro.Migrant.VersionTolerance
                     var genericType = reader.PrimitiveReader.ReadBoolean();
                     parameters[i] = genericType ? 
                         new TypeOrGenericTypeArgument(reader.PrimitiveReader.ReadInt32()) :
-                        new TypeOrGenericTypeArgument(reader.Types.Read().UnderlyingType);
+                        new TypeOrGenericTypeArgument(reader.ReadType().UnderlyingType);
                 }
 
                 UnderlyingMethod = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(m => 
@@ -124,7 +124,7 @@ namespace Antmicro.Migrant.VersionTolerance
                 var types = new Type[parametersCount];
                 for(int i = 0; i < types.Length; i++)
                 {
-                    types[i] = reader.Types.Read().UnderlyingType;
+                    types[i] = reader.ReadType().UnderlyingType;
                 }
 
                 UnderlyingMethod = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, types, null);

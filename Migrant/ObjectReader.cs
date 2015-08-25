@@ -35,7 +35,6 @@ using System.Collections;
 using Antmicro.Migrant.Hooks;
 using Antmicro.Migrant.Utilities;
 using System.Collections.ObjectModel;
-using System.Reflection.Emit;
 using Antmicro.Migrant.Generators;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Customization;
@@ -94,7 +93,7 @@ namespace Antmicro.Migrant
             this.objectsForSurrogates = objectsForSurrogates;
             this.readMethodsCache = readMethods ?? new Dictionary<Type, Func<ObjectReader, int, object>>();
             this.useGeneratedDeserialization = isGenerating;
-            Types = new IdentifiedElementsList<TypeDescriptor>(this);
+            types = new List<TypeDescriptor>();
             Methods = new IdentifiedElementsList<MethodDescriptor>(this);
             Assemblies = new IdentifiedElementsList<AssemblyDescriptor>(this);
             Modules = new IdentifiedElementsList<ModuleDescriptor>(this);
@@ -136,7 +135,7 @@ namespace Antmicro.Migrant
                 deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             }
             var firstObjectId = deserializedObjects.Count;
-            var type = Types.Read().UnderlyingType;
+            var type = ReadType().UnderlyingType;
             if(useGeneratedDeserialization)
             {
                 ReadObjectInnerGenerated(type, firstObjectId);
@@ -354,7 +353,7 @@ namespace Antmicro.Migrant
                 }
                 if(refId >= deserializedObjects.Count)
                 {
-                    ReadObjectInner(Types.Read().UnderlyingType, refId);
+                    ReadObjectInner(ReadType().UnderlyingType, refId);
                 }
                 return deserializedObjects[refId];
             }
@@ -544,6 +543,63 @@ namespace Antmicro.Migrant
             }
         }
 
+        internal TypeDescriptor ReadType()
+        {
+            TypeDescriptor type;
+            var typeIdOrPosition = reader.ReadInt32();
+            if(typeIdOrPosition == Consts.NullObjectId)
+            {
+                return null;
+            }
+
+            var isGenericParameter = reader.ReadBoolean();
+            if(isGenericParameter)
+            {
+                var genericType = ReadType().UnderlyingType;
+                type = (TypeDescriptor)genericType.GetGenericArguments()[typeIdOrPosition];
+            }
+            else
+            {
+                if(types.Count > typeIdOrPosition)
+                {
+                    type = types[typeIdOrPosition];
+                }
+                else
+                {
+                    type = new TypeDescriptor();
+                    types.Add(type);
+                    type.Read(this);
+                }
+            }
+
+            if(type.UnderlyingType.IsGenericType)
+            {
+                var isOpen = reader.ReadBoolean();
+                if(!isOpen)
+                {
+                    var args = new Type[type.UnderlyingType.GetGenericArguments().Count()];
+                    for(int i = 0; i < args.Length; i++)
+                    {
+                        args[i] = ReadType().UnderlyingType;
+                    }
+
+                    type = (TypeDescriptor)type.UnderlyingType.MakeGenericType(args);
+                }
+            }
+
+            if(Helpers.ContainsGenericArguments(type.UnderlyingType))
+            {
+                var ranks = reader.ReadArray();
+                if(ranks.Length > 0)
+                {
+                    var arrayDescriptor = new ArrayDescriptor(type.UnderlyingType, ranks);
+                    type = (TypeDescriptor)arrayDescriptor.BuildArrayType();
+                }
+            }
+
+            return type;
+        }
+
         private object TouchObject(Type actualType, int refId)
         {
             if(deserializedObjects[refId] != null)
@@ -589,11 +645,11 @@ namespace Antmicro.Migrant
         internal IdentifiedElementsList<ModuleDescriptor> Modules { get; private set; }
         internal IdentifiedElementsList<AssemblyDescriptor> Assemblies { get; private set; }
         internal IdentifiedElementsList<MethodDescriptor> Methods { get; private set; }
-        internal IdentifiedElementsList<TypeDescriptor> Types { get; private set; }
         internal VersionToleranceLevel VersionToleranceLevel { get; private set; }
 
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
+        private List<TypeDescriptor> types;
         private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;
         private readonly bool treatCollectionAsUserObject;

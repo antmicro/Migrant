@@ -284,6 +284,16 @@ namespace Antmicro.Migrant
             serializer.Serialize(toClone, stream);
             var position = stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
+            #if DEBUG
+            if(DumpStream)
+            {
+                using(var f = File.Open("stream.dump", FileMode.Create))
+                {
+                    stream.WriteTo(f);
+                }
+            }
+            stream.Seek(0, SeekOrigin.Begin);
+            #endif
             var result = serializer.Deserialize<T>(stream);
             if(position != stream.Position)
             {
@@ -376,10 +386,16 @@ namespace Antmicro.Migrant
         private readonly Dictionary<Type, Func<ObjectReader, int, object>> readMethodCache;
         private readonly SwapList surrogatesForObjects;
         private readonly SwapList objectsForSurrogates;
-        private const byte VersionNumber = 7;
+        private const byte VersionNumber = 8;
         private const byte Magic1 = 0x32;
         private const byte Magic2 = 0x66;
         private const byte Magic3 = 0x34;
+
+        #if DEBUG
+        public static readonly bool DumpStream = true;
+        public static readonly bool DisableVarints = true;
+        public static readonly bool DisableBuffering = true;
+        #endif
 
         /// <summary>
         /// Base class for surrogate setter.

@@ -1015,6 +1015,38 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
+        [Test]
+        public void ShouldSerializeClassWithArrayOfNestedGenericArguments()
+        {
+            var serializer = new Serializer(GetSettings());
+
+            var obj = new GenericClassWithNestedGenericArgument<string>("test");
+            using(var stream = new MemoryStream())
+            {
+                serializer.Serialize(obj, stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                var copy = serializer.Deserialize<GenericClassWithNestedGenericArgument<string>>(stream);
+                Assert.IsNotNull(copy);
+                Assert.AreEqual("test", copy.field[0].field);
+            }
+        }
+
+        public class GenericClassWithNestedGenericArgument<T>
+        {
+            public GenericClassWithNestedGenericArgument(T t)
+            {
+                field = new [] { new GenericClass<T>() } ;
+                field[0].field = t;
+            }
+
+            public GenericClass<T>[] field;
+        }
+
+        public class GenericClass<T>
+        {
+            public T field;
+        }
+
         public class GenericClassWithGenericDelegate<T>
         {
             public GenericClassWithGenericDelegate()
@@ -1034,13 +1066,13 @@ namespace Antmicro.Migrant.Tests
             private readonly Action<T, string> del;
         }
 
-        public class GenericClass<T>
+        public class GenericClassWithTransient<T>
         {
             [Transient]
             public T x;
         }
 
-        public class GenericClassWithLatePostDeserializationHook : GenericClass<int>
+        public class GenericClassWithLatePostDeserializationHook : GenericClassWithTransient<int>
         {
             [LatePostDeserialization]
             public void LatePostDeserialization()

@@ -95,7 +95,7 @@ namespace Antmicro.Migrant
             this.isGenerating = isGenerating;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             this.surrogatesForObjects = surrogatesForObjects;
-            Types = new IdentifiedElementsDictionary<TypeDescriptor>(this);
+            types = new IdentifiedElementsDictionary<TypeDescriptor>(this);
             Methods = new IdentifiedElementsDictionary<MethodDescriptor>(this);
             Assemblies = new IdentifiedElementsDictionary<AssemblyDescriptor>(this);
             Modules = new IdentifiedElementsDictionary<ModuleDescriptor>(this);
@@ -219,6 +219,81 @@ namespace Antmicro.Migrant
         internal static bool HasSpecialWriteMethod(Type type)
         {
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.IsTransient(type);
+        }
+
+        internal int TouchAndWriteTypeId(TypeDescriptor typeDescriptor)
+        {
+            // stamping `Type` is different than `Module`, `Assembly`, etc. so we need a special method for that
+
+            ArrayDescriptor arrayDescriptor = null;
+            if(Helpers.ContainsGenericArguments(typeDescriptor.UnderlyingType))
+            {
+                if(typeDescriptor.UnderlyingType.IsArray)
+                {
+                    arrayDescriptor = new ArrayDescriptor(typeDescriptor.UnderlyingType);
+                    typeDescriptor = (TypeDescriptor)arrayDescriptor.ElementType;
+                }
+                else
+                {
+                    arrayDescriptor = ArrayDescriptor.EmptyRanks;
+                }
+            }
+
+            if(typeDescriptor.UnderlyingType.IsGenericType)
+            {
+                var genericTypeDefinition = typeDescriptor.UnderlyingType.GetGenericTypeDefinition();
+                var genericTypeDefinitionDescriptor = (TypeDescriptor)genericTypeDefinition;
+
+                TouchAndWriteTypeIdInner(genericTypeDefinitionDescriptor);
+
+                var isOpen = Helpers.IsOpenGenericType(typeDescriptor.UnderlyingType);
+                writer.Write(isOpen);
+                if(!isOpen)
+                {
+                    foreach(var genericArgumentType in typeDescriptor.UnderlyingType.GetGenericArguments())
+                    {
+                        TouchAndWriteTypeId(genericArgumentType);
+                    }
+                }
+            }
+            else
+            {
+                TouchAndWriteTypeIdInner(typeDescriptor);
+            }
+
+            if(arrayDescriptor != null)
+            {
+                writer.WriteArray(arrayDescriptor.Ranks);
+            }
+
+            return 0;
+        }
+
+        private int TouchAndWriteTypeIdInner(TypeDescriptor typeDescriptor)
+        {
+            if(typeDescriptor.UnderlyingType.IsGenericParameter)
+            {
+                writer.Write(typeDescriptor.UnderlyingType.GenericParameterPosition);
+                writer.Write(true);
+                return TouchAndWriteTypeId(typeDescriptor.UnderlyingType.DeclaringType);
+            }   
+            else
+            {
+                int typeId;
+                if(types.Dictionary.TryGetValue(typeDescriptor, out typeId))
+                {
+                    writer.Write(typeId);
+                    writer.Write(false); // generic-argument
+                    return typeId;
+                }
+                typeId = types.AddAndAdvanceId(typeDescriptor);
+                writer.Write(typeId);
+                writer.Write(false); // generic-argument
+
+                typeDescriptor.Write(this);
+
+                return typeId;
+            }
         }
 
         internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
@@ -549,7 +624,7 @@ namespace Antmicro.Migrant
             {
                 return (ow, pw, obj) =>
                 {
-                    ow.Types.TouchAndWriteId(actualType);
+                    ow.TouchAndWriteTypeId(actualType);
                     pw.Write((string)obj);
                 };
             }
@@ -557,7 +632,7 @@ namespace Antmicro.Migrant
             {
                 return (ow, pw, obj) =>
                 {
-                    ow.Types.TouchAndWriteId(actualType);
+                    ow.TouchAndWriteTypeId(actualType);
                     var startingPosition = pw.Position;
                     ((ISpeciallySerializable)obj).Save(pw);
                     pw.Write(pw.Position - startingPosition);
@@ -567,7 +642,7 @@ namespace Antmicro.Migrant
             {
                 return (ow, pw, objToWrite) =>
                 {
-                    ow.Types.TouchAndWriteId(actualType);
+                    ow.TouchAndWriteTypeId(actualType);
                     pw.Write(1); // rank of the array
                     var array = (byte[])objToWrite;
                     pw.Write(array.Length);
@@ -579,7 +654,7 @@ namespace Antmicro.Migrant
 
         private static void WriteObjectUsingReflection(ObjectWriter objectWriter, PrimitiveWriter primitiveWriter, object o)
         {
-            objectWriter.Types.TouchAndWriteId(o.GetType());
+            objectWriter.TouchAndWriteTypeId(o.GetType());
             // the primitiveWriter and parameter is not used here in fact, it is only to have
             // signature compatible with the generated method
             Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
@@ -607,8 +682,8 @@ namespace Antmicro.Migrant
         internal IdentifiedElementsDictionary<ModuleDescriptor> Modules { get; private set; }
         internal IdentifiedElementsDictionary<AssemblyDescriptor> Assemblies { get; private set; }
         internal IdentifiedElementsDictionary<MethodDescriptor> Methods { get; private set; }
-        internal IdentifiedElementsDictionary<TypeDescriptor> Types { get; private set; }
 
+        private IdentifiedElementsDictionary<TypeDescriptor> types;
         private ObjectIdentifier identifier;
         private ObjectIdentifierContext identifierContext;
         private int objectsWrittenThisSession;
