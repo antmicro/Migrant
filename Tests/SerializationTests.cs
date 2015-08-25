@@ -1374,8 +1374,10 @@ namespace Antmicro.Migrant.Tests
                 }
             }
 
+            #pragma warning disable 649
             [ConstructorAttribute(true)]
             private NestedStruct s;
+            #pragma warning restore 649
         }
 
         private struct NestedStruct
