@@ -26,6 +26,7 @@ using System;
 using Antmicro.Migrant.Customization;
 using System.IO;
 using System.Reflection;
+using Antmicro.Migrant.VersionTolerance;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -175,7 +176,7 @@ namespace Antmicro.Migrant.Tests
                 testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(allowGuidChange ? vtl | VersionToleranceLevel.AllowGuidChange : vtl));
                 return true;
             } 
-            catch (InvalidOperationException)
+            catch (VersionToleranceException e)
             {
                 return false;
             }

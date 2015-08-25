@@ -30,6 +30,7 @@ namespace Antmicro.Migrant.VersionTolerance
     /// <summary>
     /// Class representing exception thrown when version tolerance verification mechanism detects disallowed changes in type structures.
     /// </summary>
+    [Serializable]
     public class VersionToleranceException : Exception
     {
         /// <summary>

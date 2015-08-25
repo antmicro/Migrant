@@ -353,6 +353,7 @@ namespace Antmicro.Migrant
             case DeserializationResult.WrongVersion:
                 throw new InvalidOperationException("Could not deserialize data serialized with another version of serializer.");
             case DeserializationResult.StreamCorrupted:
+            case DeserializationResult.TypeStructureChanged:
                 throw lastException;
             default:
                 throw new ArgumentOutOfRangeException();
