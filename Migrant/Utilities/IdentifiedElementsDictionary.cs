@@ -31,27 +31,34 @@ namespace Antmicro.Migrant.Utilities
         public IdentifiedElementsDictionary(ObjectWriter writer)
         {
             this.writer = writer;
-            dictionary = new Dictionary<T, int>();
+            Dictionary = new Dictionary<T, int>();
         }
 
         public int TouchAndWriteId(T element)
         {
             int typeId;
-            if(dictionary.TryGetValue(element, out typeId))
+            if(Dictionary.TryGetValue(element, out typeId))
             {
                 writer.PrimitiveWriter.Write(typeId);
                 return typeId;
             }
-            typeId = nextId++;
-            dictionary.Add(element, typeId);
+            typeId = AddAndAdvanceId(element);
             writer.PrimitiveWriter.Write(typeId);
             element.Write(writer);
             return typeId;
         }
 
+        public int AddAndAdvanceId(T element)
+        {
+            var typeId = nextId++;
+            Dictionary.Add(element, typeId);
+            return typeId;
+        }
+
+        public Dictionary<T, int> Dictionary { get; private set; }
+
         private int nextId;
         private readonly ObjectWriter writer;
-        private readonly Dictionary<T, int> dictionary;
     }
 }
 
