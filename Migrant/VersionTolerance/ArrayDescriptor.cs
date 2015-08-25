@@ -29,7 +29,7 @@ namespace Antmicro.Migrant.VersionTolerance
 {
     public class ArrayDescriptor
     {
-        public static ArrayDescriptor EmptyRanks { get { return new ArrayDescriptor(typeof(void), new int[0]); } }
+        public static ArrayDescriptor EmptyRanks { get; private set; }
 
         public ArrayDescriptor(Type type)
         {
@@ -64,6 +64,11 @@ namespace Antmicro.Migrant.VersionTolerance
 
         public Type ElementType { get; private set; }
         public int[] Ranks { get; private set; }
+
+        static ArrayDescriptor()
+        {
+            EmptyRanks = new ArrayDescriptor(typeof(void), new int[0]);
+        }
     }
 }
 
