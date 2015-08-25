@@ -42,23 +42,27 @@ namespace Antmicro.Migrant.Customization
 
         /// <summary>
         /// The new layout can have more fields that the old one. They are initialized to their default values.
+        /// This flag implies <see cref="AllowGuidChange"/>.
         /// </summary>
-        AllowFieldAddition = 0x2,
+        AllowFieldAddition = 0x2 | AllowGuidChange,
 
         /// <summary>
         /// The new layout can have less fields that the old one. Values of the missing one are ignored.
+        /// This flag implies <see cref="AllowGuidChange"/>.
         /// </summary>
-        AllowFieldRemoval = 0x4,
+        AllowFieldRemoval = 0x4 | AllowGuidChange,
 
         /// <summary>
         /// Classes inheritance hirarchy can vary between new and old layout, e.g., base class can be removed.
+        /// This flag implies <see cref="AllowGuidChange"/>.
         /// </summary>
-        AllowInheritanceChainChange = 0x80,
+        AllowInheritanceChainChange = 0x80 | AllowGuidChange,
 
         /// <summary>
         /// Assemblies version can very between new and old layout.
+        /// This flag implies <see cref="AllowGuidChange"/>.
         /// </summary>
-        AllowAssemblyVersionChange = 0x10
+        AllowAssemblyVersionChange = 0x10 | AllowGuidChange
     }
 }
 
