@@ -107,7 +107,7 @@ namespace Antmicro.Migrant
             this.referencePreservation = referencePreservation;
             this.VersionToleranceLevel = versionToleranceLevel;
 
-            typeReader = disableStamping ? (Func<TypeDescriptor>)ReadSimpleTypeDescriptor : ReadFullTypeDescriptor;
+            readTypeMethod = disableStamping ? (Func<TypeDescriptor>)ReadSimpleTypeDescriptor : ReadFullTypeDescriptor;
         }
 
         /// <summary>
@@ -550,10 +550,8 @@ namespace Antmicro.Migrant
 
         internal TypeDescriptor ReadType()
         {
-            return typeReader();
+            return readTypeMethod();
         }
-
-        private readonly Func<TypeDescriptor> typeReader;
 
         private TypeSimpleDescriptor ReadSimpleTypeDescriptor()
         {
@@ -686,6 +684,7 @@ namespace Antmicro.Migrant
 
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
+        private readonly Func<TypeDescriptor> readTypeMethod;
         private List<TypeDescriptor> types;
         private WeakReference[] soFarDeserialized;
         private readonly bool useGeneratedDeserialization;
