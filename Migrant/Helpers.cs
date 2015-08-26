@@ -32,7 +32,6 @@ using System.Linq;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Collections.ObjectModel;
-using Antmicro.Migrant.Utilities;
 using System.Collections.Concurrent;
 
 namespace Antmicro.Migrant
