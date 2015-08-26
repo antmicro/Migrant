@@ -27,6 +27,7 @@
 using System.Runtime.Serialization;
 using System;
 using System.Reflection;
+using Antmicro.Migrant.Utilities;
 
 namespace Antmicro.Migrant.BultinSurrogates
 {
@@ -51,7 +52,7 @@ namespace Antmicro.Migrant.BultinSurrogates
 
         public object Restore()
         {
-            var type = Type.GetType(assemblyQualifiedName);
+            var type = TypeProvider.GetType(assemblyQualifiedName);
 
             var ctor = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new [] {
                 typeof(SerializationInfo),

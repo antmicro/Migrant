@@ -87,6 +87,7 @@
     <Compile Include="VersionTolerance\ArrayDescriptor.cs" />
     <Compile Include="VersionTolerance\TypeSimpleDescriptor.cs" />
     <Compile Include="VersionTolerance\TypeFullDescriptor.cs" />
+    <Compile Include="Utilities\TypeProvider.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

@@ -54,7 +54,7 @@ namespace Antmicro.Migrant.VersionTolerance
         public override void Read(ObjectReader reader)
         {
             Name = reader.PrimitiveReader.ReadString();
-            UnderlyingType = Type.GetType(Name);
+            UnderlyingType = TypeProvider.GetType(Name);
         }
 
         public override void Write(ObjectWriter writer)

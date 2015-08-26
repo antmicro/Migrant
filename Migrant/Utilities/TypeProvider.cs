@@ -1,9 +1,6 @@
 ﻿// *******************************************************************
 //
-//  Copyright (c) 2014, Antmicro Ltd
-//  Author:
-//    Konrad Kruczyński (kkruczynski@antmicro.com)
-//    jpierson (https://github.com/jpierson)
+//  Copyright (c) 2012-2014, Antmicro Ltd <antmicro.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -25,37 +22,19 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // *******************************************************************
-using System.IO;
-using System.Xml.Serialization;
-using Antmicro.Migrant.Utilities;
+using System;
+using System.Collections.Concurrent;
 
-namespace Antmicro.Migrant.BultinSurrogates
+namespace Antmicro.Migrant.Utilities
 {
-    internal sealed class SurrogateForIXmlSerializable
+    internal static class TypeProvider
     {
-        public SurrogateForIXmlSerializable(IXmlSerializable serializable)
+        public static Type GetType(string name)
         {
-            assemblyQualifiedName = serializable.GetType().AssemblyQualifiedName;
-
-            using(var stream = new MemoryStream())
-            {
-                var xmlSerializer = new XmlSerializer(serializable.GetType());
-                xmlSerializer.Serialize(stream, serializable);
-                bytes = stream.ToArray();
-            }
+            return cache.GetOrAdd(name, x => Type.GetType(x));
         }
 
-        public IXmlSerializable Restore()
-        {
-            using(var stream = new MemoryStream(bytes))
-            {
-                var xmlSerializer = new XmlSerializer(TypeProvider.GetType(assemblyQualifiedName));
-                return (IXmlSerializable)xmlSerializer.Deserialize(stream);
-            }
-        }
-
-        private readonly string assemblyQualifiedName;
-        private readonly byte[] bytes;
+        private readonly static ConcurrentDictionary<string, Type> cache = new ConcurrentDictionary<string, Type>();
     }
 }
 
