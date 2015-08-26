@@ -147,6 +147,12 @@ namespace Antmicro.Migrant
             }
         }
 
+        public void Clear()
+        {
+            idToObject.Clear();
+            objectToId.Clear();
+        }
+
         private readonly Dictionary<object, int> objectToId;
         private readonly List<object> idToObject;
     }

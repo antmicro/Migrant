@@ -45,7 +45,7 @@ namespace Antmicro.Migrant
     /// <summary>
     /// Writes the object in a format that can be later read by <see cref="Antmicro.Migrant.ObjectReader"/>.
     /// </summary>
-    public class ObjectWriter : IDisposable
+    public class ObjectWriter
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectWriter" /> class.
@@ -110,6 +110,20 @@ namespace Antmicro.Migrant
             }
         }
 
+        public void ReuseWithNewStream(Stream stream)
+        {
+            objectsWrittenThisSession = 0;
+            identifierCountPreviousSession = 0;
+            postSerializationHooks.Clear();
+            types.Clear();
+            Methods.Clear();
+            Assemblies.Clear();
+            Modules.Clear();
+            writer = new PrimitiveWriter(stream, writer.IsBuffered);
+            inlineWritten.Clear();
+            identifier.Clear();
+        }
+
         /// <summary>
         /// Writes the given object along with the ones referenced by it.
         /// </summary>
@@ -159,19 +173,9 @@ namespace Antmicro.Migrant
             }
         }
 
-        /// <summary>
-        /// Releases all resource used by the <see cref="Antmicro.Migrant.ObjectWriter"/> object. Note that this is not necessary
-        /// if buffering is not used.
-        /// </summary>
-        /// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.ObjectWriter"/>. The
-        /// <see cref="Dispose"/> method leaves the <see cref="Antmicro.Migrant.ObjectWriter"/> in an unusable state.
-        /// After calling <see cref="Dispose"/>, you must release all references to the
-        /// <see cref="Antmicro.Migrant.ObjectWriter"/> so the garbage collector can reclaim the memory that the
-        /// <see cref="Antmicro.Migrant.ObjectWriter"/> was occupying.</remarks>
-        public void Dispose()
+        public void Flush()
         {
             writer.Dispose();
-            writer = null;
         }
 
         internal void WriteObjectIdPossiblyInline(object o)

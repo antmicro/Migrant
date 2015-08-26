@@ -39,11 +39,10 @@ namespace Antmicro.Migrant.Tests
 			var strings = new [] { "One", "Two" };
 
 			var stream = new MemoryStream();
-            using(var writer = new ObjectWriter(stream))
-            {
-                writer.WriteObject(strings[0]);
-                writer.WriteObject(strings[1]);
-            }
+            var writer = new ObjectWriter(stream);
+            writer.WriteObject(strings[0]);
+            writer.WriteObject(strings[1]);
+            writer.Flush();
             var position = stream.Position;
 
 			stream.Seek(0, SeekOrigin.Begin);

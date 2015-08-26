@@ -83,6 +83,14 @@ namespace Antmicro.Migrant
             }
         }
 
+        public bool IsBuffered
+        {
+            get
+            {
+                return buffered;
+            }
+        }
+
         /// <summary>
         /// Writes the specified value of type <see cref="System.Double" />.
         /// </summary>

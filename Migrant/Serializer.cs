@@ -90,10 +90,9 @@ namespace Antmicro.Migrant
         public void Serialize(object obj, Stream stream)
         {
             WriteHeader(stream);
-            using(var writer = ObtainWriter(stream))
-            {
-                writer.WriteObject(obj);
-            }
+            TouchWriter(stream);
+            writer.WriteObject(obj);
+            writer.Flush();
             serializationDone = true;
         }
 
@@ -106,7 +105,10 @@ namespace Antmicro.Migrant
         {
             WriteHeader(stream);
             serializationDone = true;
-            return new OpenStreamSerializer(ObtainWriter(stream));
+            TouchWriter(stream, true);
+            var result = new OpenStreamSerializer(writer);
+            writer = null; // to ensure that no one will use this writer
+            return result;
         }
 
         /// <summary>
@@ -313,12 +315,16 @@ namespace Antmicro.Migrant
             stream.WriteByte(settings.ReferencePreservation == ReferencePreservation.DoNotPreserve ? (byte)0 : (byte)1);
         }
 
-        private ObjectWriter ObtainWriter(Stream stream)
+        private void TouchWriter(Stream stream, bool alwaysNew = false)
         {
-            var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
+            if(writer != null && !alwaysNew)
+            {
+                writer.ReuseWithNewStream(stream);
+                return;
+            }
+            writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
                              writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, 
                              settings.TreatCollectionAsUserObject, settings.UseBuffering, settings.ReferencePreservation);
-            return writer;
         }
 
         private DeserializationResult TryReadHeader(Stream stream, out bool preserveReferences)
@@ -382,6 +388,7 @@ namespace Antmicro.Migrant
         private Exception lastException;
         private bool serializationDone;
         private bool deserializationDone;
+        private ObjectWriter writer;
         private readonly Settings settings;
         private readonly Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethodCache;
         private readonly Dictionary<Type, Func<ObjectReader, int, object>> readMethodCache;
@@ -576,7 +583,7 @@ namespace Antmicro.Migrant
             /// </summary>
             public void Dispose()
             {
-                writer.Dispose();
+                writer.Flush();
             }
 
             private readonly ObjectWriter writer;
