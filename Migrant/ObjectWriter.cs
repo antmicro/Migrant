@@ -112,7 +112,7 @@ namespace Antmicro.Migrant
                 identifier = new ObjectIdentifier();
             }
 
-            typeToucher = disableStamping ? (Func<Type, int>)TouchAndWriteTypeIdWithSimpleStamp : TouchAndWriteTypeIdWithFullStamp;
+            touchTypeMethod = disableStamping ? (Func<Type, int>)TouchAndWriteTypeIdWithSimpleStamp : TouchAndWriteTypeIdWithFullStamp;
         }
 
         /// <summary>
@@ -228,10 +228,8 @@ namespace Antmicro.Migrant
 
         internal int TouchAndWriteTypeId(Type type)
         {
-            return typeToucher(type);
+            return touchTypeMethod(type);
         }
-
-        private readonly Func<Type, int> typeToucher;
 
         private int TouchAndWriteTypeIdWithSimpleStamp(Type type)
         {
@@ -325,10 +323,6 @@ namespace Antmicro.Migrant
                 return typeId;
             }
         }
-
-        internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
-
-        internal PrimitiveWriter PrimitiveWriter { get { return writer; } }
 
         private void PrepareForNextWrite()
         {
@@ -709,6 +703,8 @@ namespace Antmicro.Migrant
             }
         }
 
+        internal bool TreatCollectionAsUserObject { get { return treatCollectionAsUserObject; } }
+        internal PrimitiveWriter PrimitiveWriter { get { return writer; } }
         internal IdentifiedElementsDictionary<ModuleDescriptor> Modules { get; private set; }
         internal IdentifiedElementsDictionary<AssemblyDescriptor> Assemblies { get; private set; }
         internal IdentifiedElementsDictionary<MethodDescriptor> Methods { get; private set; }
@@ -719,6 +715,7 @@ namespace Antmicro.Migrant
         private int objectsWrittenThisSession;
         private int identifierCountPreviousSession;
         private PrimitiveWriter writer;
+        private readonly Func<Type, int> touchTypeMethod;
         private readonly HashSet<int> inlineWritten;
         private readonly bool isGenerating;
         private readonly bool treatCollectionAsUserObject;
