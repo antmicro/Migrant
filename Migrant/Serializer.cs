@@ -118,7 +118,8 @@ namespace Antmicro.Migrant
         public OpenStreamDeserializer ObtainOpenStreamDeserializer(Stream stream)
         {
             bool preserveReferences;
-            ThrowOnWrongResult(TryReadHeader(stream, out preserveReferences));
+            bool disableStamping;
+            ThrowOnWrongResult(TryReadHeader(stream, out preserveReferences, out disableStamping));
             if(!settings.UseBuffering)
             {
                 stream = new PeekableStream(stream);
@@ -218,12 +219,17 @@ namespace Antmicro.Migrant
         public DeserializationResult TryDeserialize<T>(Stream stream, out T obj)
         {
             bool unused;
+            bool disableStamping;
             obj = default(T);
 
-            var headerResult = TryReadHeader(stream, out unused);
+            var headerResult = TryReadHeader(stream, out unused, out disableStamping);
             if(headerResult != DeserializationResult.OK)
             {
                 return headerResult;
+            }
+            if(disableStamping != settings.DisableTypeStamping)
+            {
+                return DeserializationResult.WrongStreamConfiguration;
             }
 
             using(var objectReader = ObtainReader(stream, unused))
@@ -311,6 +317,7 @@ namespace Antmicro.Migrant
             stream.WriteByte(Magic3);
             stream.WriteByte(VersionNumber);
             stream.WriteByte(settings.ReferencePreservation == ReferencePreservation.DoNotPreserve ? (byte)0 : (byte)1);
+            stream.WriteByte(settings.DisableTypeStamping ? (byte)0 : (byte)1);
         }
 
         private ObjectWriter ObtainWriter(Stream stream)
@@ -321,9 +328,10 @@ namespace Antmicro.Migrant
             return writer;
         }
 
-        private DeserializationResult TryReadHeader(Stream stream, out bool preserveReferences)
+        private DeserializationResult TryReadHeader(Stream stream, out bool preserveReferences, out bool disableStamping)
         {
             preserveReferences = false;
+            disableStamping = false;
 
             // Read header
             var magic1 = stream.ReadByte();
@@ -339,6 +347,7 @@ namespace Antmicro.Migrant
                 return DeserializationResult.WrongVersion;
             }
             preserveReferences = stream.ReadByteOrThrow() != 0;
+            disableStamping = stream.ReadByteOrThrow() == 0;
             return DeserializationResult.OK;
         }
 
@@ -352,6 +361,8 @@ namespace Antmicro.Migrant
                 throw new InvalidOperationException("Cound not find proper magic.");
             case DeserializationResult.WrongVersion:
                 throw new InvalidOperationException("Could not deserialize data serialized with another version of serializer.");
+            case DeserializationResult.WrongStreamConfiguration:
+                throw new InvalidOperationException("Type stamping configuration does not match.");
             case DeserializationResult.StreamCorrupted:
             case DeserializationResult.TypeStructureChanged:
                 throw lastException;

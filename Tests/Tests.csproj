@@ -57,6 +57,7 @@
     <Compile Include="BlockingCollectionSerializationTests.cs" />
     <Compile Include="DynamicType.cs" />
     <Compile Include="TypeDescriptorComparisonTests.cs" />
+    <Compile Include="StampingTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

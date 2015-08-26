@@ -48,7 +48,11 @@ namespace Antmicro.Migrant
         /// <summary>
         /// Data in a stream was corrupted.
         /// </summary>
-        StreamCorrupted
+        StreamCorrupted,
+        /// <summary>
+        /// Type stamping configuration is inconsistent between stream and deserializer settings.
+        /// </summary>
+        WrongStreamConfiguration
     }
 }
 

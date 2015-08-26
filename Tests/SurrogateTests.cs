@@ -33,13 +33,17 @@ using System.Reflection;
 
 namespace Antmicro.Migrant.Tests
 {
-	[TestFixture(false, false)]
-	[TestFixture(true, false)]
-	[TestFixture(false, true)]
-	[TestFixture(true, true)]
+    [TestFixture(false, false, true)]
+    [TestFixture(true, false, true)]
+    [TestFixture(false, true, true)]
+    [TestFixture(true, true, true)]
+    [TestFixture(false, false, false)]
+    [TestFixture(true, false, false)]
+    [TestFixture(false, true, false)]
+    [TestFixture(true, true, false)]
     public class SurrogateTests : BaseTestWithSettings
-	{
-        public SurrogateTests(bool useGeneratedSerializer, bool useGeneratedDeserializer) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false)
+    {
+        public SurrogateTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false, useTypeStamping)
 		{
 
 		}
