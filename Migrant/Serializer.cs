@@ -324,7 +324,7 @@ namespace Antmicro.Migrant
         {
             var writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
                              writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, 
-                             settings.TreatCollectionAsUserObject, settings.UseBuffering, settings.ReferencePreservation);
+                             settings.TreatCollectionAsUserObject, settings.UseBuffering, settings.DisableTypeStamping, settings.ReferencePreservation);
             return writer;
         }
 
@@ -387,7 +387,7 @@ namespace Antmicro.Migrant
 
             return new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
                 settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject,
-                settings.VersionTolerance, settings.UseBuffering, eventualPreservation);
+                settings.VersionTolerance, settings.UseBuffering, settings.DisableTypeStamping, eventualPreservation);
         }
 
         private Exception lastException;

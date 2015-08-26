@@ -26,12 +26,13 @@ using System;
 using System.Reflection;
 using System.Collections.Generic;
 using Antmicro.Migrant.Customization;
+using Antmicro.Migrant.VersionTolerance;
 
 namespace Antmicro.Migrant
 {
     internal class FieldDescriptor
     {
-        public FieldDescriptor(TypeDescriptor declaringType)
+        public FieldDescriptor(TypeFullDescriptor declaringType)
         {
             DeclaringType = declaringType;
         }
@@ -57,8 +58,8 @@ namespace Antmicro.Migrant
 
         public void ReadFrom(ObjectReader reader)
         {
-            FieldType = reader.ReadType();
-            DeclaringType = reader.ReadType();
+            FieldType = (TypeFullDescriptor)reader.ReadType();
+            DeclaringType = (TypeFullDescriptor)reader.ReadType();
             Name = reader.PrimitiveReader.ReadString();
 
             UnderlyingFieldInfo = DeclaringType.UnderlyingType.GetField(Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic); 
@@ -118,9 +119,9 @@ namespace Antmicro.Migrant
 
         public string FullName { get { return string.Format("{0}:{1}", DeclaringType.UnderlyingType.FullName, Name); } }
 
-        public TypeDescriptor DeclaringType { get; private set; }
+        public TypeFullDescriptor DeclaringType { get; private set; }
 
-        public TypeDescriptor FieldType { get; private set; }
+        public TypeFullDescriptor FieldType { get; private set; }
 
         public FieldInfo UnderlyingFieldInfo { get; private set; }
 

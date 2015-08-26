@@ -85,9 +85,8 @@ namespace Antmicro.Migrant.Generators
 
             generator.Emit(OpCodes.Ldarg_2);
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(o => o.GetType()));
-            generator.Emit(OpCodes.Call, Helpers.GetImplicitConvertionOperatorInfo<Type, TypeDescriptor>());
 
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, TypeDescriptor>((writer, type) => writer.TouchAndWriteTypeId(type)));
+            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type)));
             generator.Emit(OpCodes.Pop);
 
             // preserialization callbacks

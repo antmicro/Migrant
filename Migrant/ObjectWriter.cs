@@ -77,13 +77,16 @@ namespace Antmicro.Migrant
         /// <param name="useBuffering"> 
         /// True if buffering is used. False if all writes should directly go to the stream and no padding should be used.
         /// </param>
+        /// <param name="disableStamping"> 
+        /// Specifies if type stamping should be disabled in order to improve performance and limit output stream size.
+        /// </param>
         /// <param name="referencePreservation"> 
         /// Tells serializer how to treat object identity between the calls to <see cref="Antmicro.Migrant.ObjectWriter.WriteObject" />.
         /// </param>
         public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null, 
                       Action<object> postSerializationCallback = null, IDictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethods = null,
                       SwapList surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false,
-                      bool useBuffering = true, ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
+                      bool useBuffering = true, bool disableStamping = false, ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             if(surrogatesForObjects == null)
             {
@@ -108,6 +111,8 @@ namespace Antmicro.Migrant
             {
                 identifier = new ObjectIdentifier();
             }
+
+            typeToucher = disableStamping ? (Func<Type, int>)TouchAndWriteTypeIdWithSimpleStamp : TouchAndWriteTypeIdWithFullStamp;
         }
 
         /// <summary>
@@ -221,17 +226,42 @@ namespace Antmicro.Migrant
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.IsTransient(type);
         }
 
-        internal int TouchAndWriteTypeId(TypeDescriptor typeDescriptor)
+        internal int TouchAndWriteTypeId(Type type)
         {
-            // stamping `Type` is different than `Module`, `Assembly`, etc. so we need a special method for that
+            return typeToucher(type);
+        }
 
+        private readonly Func<Type, int> typeToucher;
+
+        private int TouchAndWriteTypeIdWithSimpleStamp(Type type)
+        {
+            var typeDescriptor = (TypeSimpleDescriptor)type;
+
+            int typeId;
+            if(types.Dictionary.TryGetValue(typeDescriptor, out typeId))
+            {
+                writer.Write(typeId);
+                return typeId;
+            }
+            typeId = types.AddAndAdvanceId(typeDescriptor);
+            writer.Write(typeId);
+
+            typeDescriptor.Write(this);
+
+            return typeId;
+        }
+
+        private int TouchAndWriteTypeIdWithFullStamp(Type type)
+        {
+            var typeDescriptor = (TypeFullDescriptor)type;
+            // stamping `Type` is different than `Module`, `Assembly`, etc. so we need a special method for that
             ArrayDescriptor arrayDescriptor = null;
             if(Helpers.ContainsGenericArguments(typeDescriptor.UnderlyingType))
             {
                 if(typeDescriptor.UnderlyingType.IsArray)
                 {
                     arrayDescriptor = new ArrayDescriptor(typeDescriptor.UnderlyingType);
-                    typeDescriptor = (TypeDescriptor)arrayDescriptor.ElementType;
+                    typeDescriptor = (TypeFullDescriptor)arrayDescriptor.ElementType;
                 }
                 else
                 {
@@ -242,9 +272,9 @@ namespace Antmicro.Migrant
             if(typeDescriptor.UnderlyingType.IsGenericType)
             {
                 var genericTypeDefinition = typeDescriptor.UnderlyingType.GetGenericTypeDefinition();
-                var genericTypeDefinitionDescriptor = (TypeDescriptor)genericTypeDefinition;
+                var genericTypeDefinitionDescriptor = (TypeFullDescriptor)genericTypeDefinition;
 
-                TouchAndWriteTypeIdInner(genericTypeDefinitionDescriptor);
+                TouchAndWriteTypeIdWithFullStampInner(genericTypeDefinitionDescriptor);
 
                 var isOpen = Helpers.IsOpenGenericType(typeDescriptor.UnderlyingType);
                 writer.Write(isOpen);
@@ -252,13 +282,13 @@ namespace Antmicro.Migrant
                 {
                     foreach(var genericArgumentType in typeDescriptor.UnderlyingType.GetGenericArguments())
                     {
-                        TouchAndWriteTypeId(genericArgumentType);
+                        TouchAndWriteTypeIdWithFullStamp(genericArgumentType);
                     }
                 }
             }
             else
             {
-                TouchAndWriteTypeIdInner(typeDescriptor);
+                TouchAndWriteTypeIdWithFullStampInner(typeDescriptor);
             }
 
             if(arrayDescriptor != null)
@@ -269,13 +299,13 @@ namespace Antmicro.Migrant
             return 0;
         }
 
-        private int TouchAndWriteTypeIdInner(TypeDescriptor typeDescriptor)
+        private int TouchAndWriteTypeIdWithFullStampInner(TypeDescriptor typeDescriptor)
         {
             if(typeDescriptor.UnderlyingType.IsGenericParameter)
             {
                 writer.Write(typeDescriptor.UnderlyingType.GenericParameterPosition);
                 writer.Write(true);
-                return TouchAndWriteTypeId(typeDescriptor.UnderlyingType.DeclaringType);
+                return TouchAndWriteTypeIdWithFullStamp(typeDescriptor.UnderlyingType.DeclaringType);
             }   
             else
             {

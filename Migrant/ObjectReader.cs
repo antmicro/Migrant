@@ -77,13 +77,16 @@ namespace Antmicro.Migrant
         /// <param name="useBuffering"> 
         /// True if buffering was used with the corresponding ObjectWriter or false otherwise - i.e. when no padding and buffering is used.
         /// </param>
+        /// <param name="disableStamping"> 
+        /// Specifies if type stamping should be disabled in order to improve performance and limit output stream size.
+        /// </param>
         /// <param name="referencePreservation"> 
         /// Tells deserializer whether open stream serialization preserved objects identieties between serialization. Note that this option should
         /// be consistent with what was used during serialization.
         /// </param>
         public ObjectReader(Stream stream, SwapList objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
                             IDictionary<Type, Func<ObjectReader, int, object>> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
-                            VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, 
+                            VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, bool disableStamping = false,
                             ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             if(objectsForSurrogates == null)
@@ -103,6 +106,8 @@ namespace Antmicro.Migrant
             reader = new PrimitiveReader(stream, useBuffering);
             this.referencePreservation = referencePreservation;
             this.VersionToleranceLevel = versionToleranceLevel;
+
+            typeReader = disableStamping ? (Func<TypeDescriptor>)ReadSimpleTypeDescriptor : ReadFullTypeDescriptor;
         }
 
         /// <summary>
@@ -260,7 +265,7 @@ namespace Antmicro.Migrant
 
         private void UpdateFields(Type actualType, object target)
         {
-            var fieldOrTypeInfos = ((TypeDescriptor)actualType).FieldsToDeserialize;
+            var fieldOrTypeInfos = ((TypeFullDescriptor)actualType).FieldsToDeserialize;
             foreach(var fieldOrTypeInfo in fieldOrTypeInfos)
             {
                 if(fieldOrTypeInfo.Field == null)
@@ -545,7 +550,38 @@ namespace Antmicro.Migrant
 
         internal TypeDescriptor ReadType()
         {
-            TypeDescriptor type;
+            return typeReader();
+        }
+
+        private readonly Func<TypeDescriptor> typeReader;
+
+        private TypeSimpleDescriptor ReadSimpleTypeDescriptor()
+        {
+            TypeSimpleDescriptor type;
+            var typeId = reader.ReadInt32();
+            if(typeId == Consts.NullObjectId)
+            {
+                return null;
+            }
+           
+            if(types.Count > typeId)
+            {
+                type = (TypeSimpleDescriptor)types[typeId];
+            }
+            else
+            {
+                type = new TypeSimpleDescriptor();
+                types.Add(type);
+
+                type.Read(this);
+            }
+
+            return type;
+        }
+
+        private TypeFullDescriptor ReadFullTypeDescriptor()
+        {
+            TypeFullDescriptor type;
             var typeIdOrPosition = reader.ReadInt32();
             if(typeIdOrPosition == Consts.NullObjectId)
             {
@@ -555,19 +591,20 @@ namespace Antmicro.Migrant
             var isGenericParameter = reader.ReadBoolean();
             if(isGenericParameter)
             {
-                var genericType = ReadType().UnderlyingType;
-                type = (TypeDescriptor)genericType.GetGenericArguments()[typeIdOrPosition];
+                var genericType = ReadFullTypeDescriptor().UnderlyingType;
+                type = (TypeFullDescriptor)genericType.GetGenericArguments()[typeIdOrPosition];
             }
             else
             {
                 if(types.Count > typeIdOrPosition)
                 {
-                    type = types[typeIdOrPosition];
+                    type = (TypeFullDescriptor)types[typeIdOrPosition];
                 }
                 else
                 {
-                    type = new TypeDescriptor();
+                    type = new TypeFullDescriptor();
                     types.Add(type);
+
                     type.Read(this);
                 }
             }
@@ -580,10 +617,10 @@ namespace Antmicro.Migrant
                     var args = new Type[type.UnderlyingType.GetGenericArguments().Count()];
                     for(int i = 0; i < args.Length; i++)
                     {
-                        args[i] = ReadType().UnderlyingType;
+                        args[i] = ReadFullTypeDescriptor().UnderlyingType;
                     }
 
-                    type = (TypeDescriptor)type.UnderlyingType.MakeGenericType(args);
+                    type = (TypeFullDescriptor)type.UnderlyingType.MakeGenericType(args);
                 }
             }
 
@@ -593,7 +630,7 @@ namespace Antmicro.Migrant
                 if(ranks.Length > 0)
                 {
                     var arrayDescriptor = new ArrayDescriptor(type.UnderlyingType, ranks);
-                    type = (TypeDescriptor)arrayDescriptor.BuildArrayType();
+                    type = (TypeFullDescriptor)arrayDescriptor.BuildArrayType();
                 }
             }
 

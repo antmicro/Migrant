@@ -1,6 +1,6 @@
 ﻿// *******************************************************************
 //
-//  Copyright (c) 2012-2015, Antmicro Ltd <antmicro.com>
+//  Copyright (c) 2012-2014, Antmicro Ltd <antmicro.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -24,44 +24,43 @@
 // *******************************************************************
 using System;
 using System.Collections.Generic;
-using Antmicro.Migrant.VersionTolerance;
-using System.Collections.Concurrent;
-using Antmicro.Migrant.Utilities;
-using System.Diagnostics;
 
-namespace Antmicro.Migrant
+namespace Antmicro.Migrant.VersionTolerance
 {
-    [DebuggerDisplay("{GenericFullName}")]
-    internal abstract class TypeDescriptor : IIdentifiedElement
+    internal class TypeSimpleDescriptor : TypeDescriptor
     {
-        public string Name { get; protected set; }
-
-        public Type UnderlyingType { get; protected set; }
-
-        public IEnumerable<FieldInfoOrEntryToOmit> FieldsToDeserialize { get; protected set; }
-
-        public abstract void Read(ObjectReader reader);
-
-        public abstract void Write(ObjectWriter writer);
-
-        public override int GetHashCode()
+        public static implicit operator TypeSimpleDescriptor(Type type)
         {
-            return UnderlyingType.GetHashCode();
+            return simpleCache.GetOrAdd(type, x => new TypeSimpleDescriptor(x));
         }
 
-        public override bool Equals(object obj)
+        public TypeSimpleDescriptor()
         {
-            var objAsTypeDescriptor = obj as TypeDescriptor;
-            if(objAsTypeDescriptor != null)
+        }
+
+        public TypeSimpleDescriptor(Type t)
+        {
+            UnderlyingType = t;
+            Name = t.AssemblyQualifiedName;
+
+            var fieldsToDeserialize = new List<FieldInfoOrEntryToOmit>();
+            foreach(var field in StampHelpers.GetFieldsInSerializationOrder(UnderlyingType, true))
             {
-                return UnderlyingType == objAsTypeDescriptor.UnderlyingType;
+                fieldsToDeserialize.Add(new FieldInfoOrEntryToOmit(field));
             }
-
-            return obj != null && obj.Equals(this);
+            FieldsToDeserialize = fieldsToDeserialize;
         }
 
-        protected static ConcurrentDictionary<Type, TypeSimpleDescriptor> simpleCache = new ConcurrentDictionary<Type, TypeSimpleDescriptor>();
-        protected static ConcurrentDictionary<Type, TypeFullDescriptor> fullCache = new ConcurrentDictionary<Type, TypeFullDescriptor>();
+        public override void Read(ObjectReader reader)
+        {
+            Name = reader.PrimitiveReader.ReadString();
+            UnderlyingType = Type.GetType(Name);
+        }
+
+        public override void Write(ObjectWriter writer)
+        {
+            writer.PrimitiveWriter.Write(Name);
+        }
     }
 }
 

@@ -26,6 +26,7 @@ using System;
 using NUnit.Framework;
 using System.Linq;
 using Antmicro.Migrant.Customization;
+using Antmicro.Migrant.VersionTolerance;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -42,7 +43,7 @@ namespace Antmicro.Migrant.Tests
         public void ShouldFindNoDifferences()
         {
             var obj = DynamicType.CreateClass("C", DynamicType.CreateClass("B", DynamicType.CreateClass("A"))).Instantiate();
-            var typeDescriptor = ((TypeDescriptor)obj.GetType());
+            var typeDescriptor = ((TypeFullDescriptor)obj.GetType());
 
             var compareResult = typeDescriptor.CompareWith(typeDescriptor);
             Assert.IsTrue(compareResult.Empty);
@@ -54,8 +55,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A").Instantiate();
             var objCurr = DynamicType.CreateClass("A").WithField("a", typeof(int)).Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -72,8 +73,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A").Instantiate();
             var objCurr = DynamicType.CreateClass("A").WithTransientField("a", typeof(int)).Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -86,8 +87,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).Instantiate();
             var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).WithField("a", typeof(int)).Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -104,8 +105,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A").WithField("a", typeof(int)).Instantiate();
             var objCurr = DynamicType.CreateClass("A").Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -122,8 +123,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A").WithTransientField("a", typeof(int)).Instantiate();
             var objCurr = DynamicType.CreateClass("A").Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -136,8 +137,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).WithField("a", typeof(int)).Instantiate();
             var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -154,8 +155,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).WithField("a", typeof(int)).Instantiate();
             var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -173,8 +174,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A", DynamicType.CreateClass("Base")).WithField("a", typeof(int)).Instantiate();
             var objCurr = DynamicType.CreateClass("A", DynamicType.CreateClass("Base").WithField("a", typeof(int))).Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -192,8 +193,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A").WithField("a", typeof(int)).Instantiate();
             var objCurr = DynamicType.CreateClass("A").WithField("a", typeof(long)).Instantiate();
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev);
 
@@ -210,8 +211,8 @@ namespace Antmicro.Migrant.Tests
             var objPrev = DynamicType.CreateClass("A").WithField("a", DynamicType.CreateClass("C").WithField<int>("c")).Instantiate(new Version(1, 0));
             var objCurr = DynamicType.CreateClass("A").WithField("a", DynamicType.CreateClass("C").WithField<int>("c")).Instantiate(new Version(1, 1));
 
-            var descPrev = ((TypeDescriptor)objPrev.GetType());
-            var descCurr = ((TypeDescriptor)objCurr.GetType());
+            var descPrev = ((TypeFullDescriptor)objPrev.GetType());
+            var descCurr = ((TypeFullDescriptor)objCurr.GetType());
 
             var compareResult = descCurr.CompareWith(descPrev, VersionToleranceLevel.AllowAssemblyVersionChange);
 

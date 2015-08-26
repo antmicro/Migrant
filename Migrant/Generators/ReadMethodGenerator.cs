@@ -753,7 +753,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
         {
-            var fields = ((TypeDescriptor)formalType).FieldsToDeserialize;
+            var fields = ((TypeSimpleDescriptor)formalType).FieldsToDeserialize;
             foreach(var fieldOrType in fields)
             {
                 if(fieldOrType.Field == null)
@@ -793,7 +793,7 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
         {			
-            var fields = ((TypeDescriptor)formalType).FieldsToDeserialize;
+            var fields = ((TypeSimpleDescriptor)formalType).FieldsToDeserialize;
             foreach(var field in fields)
             {
                 if(field.Field == null)

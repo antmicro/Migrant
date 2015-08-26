@@ -79,7 +79,7 @@ namespace Antmicro.Migrant
 
         public static bool IsCollection(TypeDescriptor actualType)
         {
-            return SpeciallySerializedCollectionsAQNs.Contains(actualType.GenericAssemblyQualifiedName);
+            return SpeciallySerializedCollectionsAQNs.Contains(actualType.Name);
         }
 
         public static bool TryGetCollectionMetaToken(Type actualType, out CollectionMetaToken token)
