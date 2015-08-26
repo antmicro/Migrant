@@ -24,6 +24,8 @@
 // *******************************************************************
 using System;
 using System.Collections.Generic;
+using System.Text;
+using Antmicro.Migrant.Utilities;
 
 namespace Antmicro.Migrant.VersionTolerance
 {
@@ -42,6 +44,7 @@ namespace Antmicro.Migrant.VersionTolerance
         {
             UnderlyingType = t;
             Name = t.AssemblyQualifiedName;
+            nameAsByteArray = Encoding.UTF8.GetBytes(Name);
 
             var fieldsToDeserialize = new List<FieldInfoOrEntryToOmit>();
             foreach(var field in StampHelpers.GetFieldsInSerializationOrder(UnderlyingType, true))
@@ -53,14 +56,21 @@ namespace Antmicro.Migrant.VersionTolerance
 
         public override void Read(ObjectReader reader)
         {
-            Name = reader.PrimitiveReader.ReadString();
+            var size = reader.PrimitiveReader.ReadInt32();
+            nameAsByteArray = reader.PrimitiveReader.ReadBytes(size);
+            Name = Encoding.UTF8.GetString(nameAsByteArray);
+
             UnderlyingType = TypeProvider.GetType(Name);
         }
 
         public override void Write(ObjectWriter writer)
         {
-            writer.PrimitiveWriter.Write(Name);
+            writer.PrimitiveWriter.Write(nameAsByteArray.Length);
+            writer.PrimitiveWriter.Write(nameAsByteArray);
         }
+
+        // this field is used to store decoded string in order to improve performance of stamping
+        private byte[] nameAsByteArray;
     }
 }
 
