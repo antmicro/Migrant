@@ -84,6 +84,11 @@ namespace Antmicro.Migrant.Customization
         /// </summary>
         public ReferencePreservation ReferencePreservation { get; private set; }
 
+        /// <summary>
+        /// Specifies if type stamping should be disabled in order to improve performance and limit output stream size.
+        /// </summary>
+        /// <value><c>true</c> if disable type stamping; otherwise, <c>false</c>.</value>
+        public bool DisableTypeStamping { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class.
@@ -111,13 +116,15 @@ namespace Antmicro.Migrant.Customization
         /// True if buffering should be used, false if writes should directly go to the stream and reads should never read
         /// data in advance. Disabling buffering also disables padding.
         /// </param>
+        /// <param name="disableTypeStamping"> 
+        /// Specifies if type stamping should be disabled in order to improve performance and limit output stream size.
+        /// </param>
         /// <param name="referencePreservation"> 
         /// Tells serializer how to treat references between sessions of open stream serialization.
         /// </param>
         public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
                         bool supportForISerializable = false, bool supportForIXmlSerializable = false, bool treatCollectionAsUserObject = false,
-                        bool useBuffering = true,
-            ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
+                        bool useBuffering = true, bool disableTypeStamping = false, ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             SerializationMethod = serializationMethod;
             DeserializationMethod = deserializationMethod;
@@ -127,6 +134,7 @@ namespace Antmicro.Migrant.Customization
             TreatCollectionAsUserObject = treatCollectionAsUserObject;
             UseBuffering = useBuffering;
             ReferencePreservation = referencePreservation;
+            DisableTypeStamping = disableTypeStamping;
         }
 
         /// <summary>
@@ -152,11 +160,14 @@ namespace Antmicro.Migrant.Customization
         /// True if buffering should be used, false if writes should directly go to the stream and reads should never read
         /// data in advance. Disabling buffering also disables padding.
         /// </param>
+        /// <param name="disableTypeStamping"> 
+        /// Specifies if type stamping should be disabled in order to improve performance and limit output stream size.
+        /// </param>
         /// <param name="referencePreservation"> 
         /// Tells serializer how to treat references between sessions of open stream serialization.
         /// </param>
         public Settings With(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
-                             bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true,
+                             bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true, bool disableTypeStamping = false,
                              ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             var result = new Settings {
@@ -166,6 +177,7 @@ namespace Antmicro.Migrant.Customization
                 SupportForISerializable = supportForISerializable,
                 TreatCollectionAsUserObject = treatCollectionAsUserObject,
                 UseBuffering = useBuffering,
+                DisableTypeStamping = disableTypeStamping,
                 ReferencePreservation = referencePreservation
             };
             return result;
