@@ -90,9 +90,15 @@ namespace Antmicro.Migrant
         public void Serialize(object obj, Stream stream)
         {
             WriteHeader(stream);
-            TouchWriter(stream);
-            writer.WriteObject(obj);
-            writer.Flush();
+            try
+            {
+                TouchWriter(stream);
+                writer.WriteObject(obj);
+            }
+            finally
+            {
+                writer.Flush();
+            }
             serializationDone = true;
         }
 
