@@ -29,7 +29,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Antmicro.Migrant.Customization;
-using System.Reflection.Emit;
 using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.BultinSurrogates;
 using Antmicro.Migrant.VersionTolerance;
@@ -129,7 +128,8 @@ namespace Antmicro.Migrant
             {
                 stream = new PeekableStream(stream);
             }
-            return new OpenStreamDeserializer(ObtainReader(stream, preserveReferences), settings, stream);
+            var result = new OpenStreamDeserializer(CreateReader(stream), settings, stream);
+            return result;
         }
 
         /// <summary>
@@ -232,25 +232,28 @@ namespace Antmicro.Migrant
                 return headerResult;
             }
 
-            using(var objectReader = ObtainReader(stream, unused))
+            TouchReader(stream);
+            try
             {
-                try
-                {
-                    obj = objectReader.ReadObject<T>();
-                    deserializationDone = true;
-                    return DeserializationResult.OK;
-                }
-                catch(VersionToleranceException ex)
-                {
-                    lastException = ex;
-                    return DeserializationResult.TypeStructureChanged;
-                }
-                catch(Exception ex)
-                {
-                    lastException = ex;
-                    return DeserializationResult.StreamCorrupted;
-                }
+                obj = reader.ReadObject<T>();
+                deserializationDone = true;
+                return DeserializationResult.OK;
             }
+            catch(VersionToleranceException ex)
+            {
+                lastException = ex;
+                return DeserializationResult.TypeStructureChanged;
+            }
+            catch(Exception ex)
+            {
+                lastException = ex;
+                return DeserializationResult.StreamCorrupted;
+            }
+            finally
+            {
+                reader.Flush();
+            }
+
         }
 
         /// <summary>
@@ -375,29 +378,30 @@ namespace Antmicro.Migrant
             }
         }
 
-        private ObjectReader ObtainReader(Stream stream, bool preserveReferences)
+        private void TouchReader(Stream stream)
         {
-            // user can only tell whether to use weak or strong reference preservation
-            ReferencePreservation eventualPreservation;
-            if(!preserveReferences)
+            if(reader != null)
             {
-                eventualPreservation = ReferencePreservation.DoNotPreserve;
-            }
-            else
-            {
-                eventualPreservation = settings.ReferencePreservation == ReferencePreservation.UseWeakReference ? 
-                    ReferencePreservation.UseWeakReference : ReferencePreservation.Preserve;
+                reader.ReuseWithNewStream(stream);
+                return;
             }
 
+            reader = CreateReader(stream);
+        }
+
+        private ObjectReader CreateReader(Stream stream)
+        {
             return new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
                 settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject,
-                settings.VersionTolerance, settings.UseBuffering, eventualPreservation);
+                settings.VersionTolerance, settings.UseBuffering, settings.ReferencePreservation);
         }
+
 
         private Exception lastException;
         private bool serializationDone;
         private bool deserializationDone;
         private ObjectWriter writer;
+        private ObjectReader reader;
         private readonly Settings settings;
         private readonly Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethodCache;
         private readonly Dictionary<Type, Func<ObjectReader, int, object>> readMethodCache;
@@ -649,7 +653,7 @@ namespace Antmicro.Migrant
             /// </summary>
             public void Dispose()
             {
-                reader.Dispose();
+                reader.Flush();
             }
 
             private readonly ObjectReader reader;

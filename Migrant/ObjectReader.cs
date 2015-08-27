@@ -44,7 +44,7 @@ namespace Antmicro.Migrant
     /// <summary>
     /// Reads the object previously written by <see cref="Antmicro.Migrant.ObjectWriter" />.
     /// </summary>
-    public class ObjectReader : IDisposable
+    public class ObjectReader 
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectReader" /> class.
@@ -105,6 +105,16 @@ namespace Antmicro.Migrant
             this.VersionToleranceLevel = versionToleranceLevel;
         }
 
+        public void ReuseWithNewStream(Stream stream)
+        {
+            deserializedObjects.Clear();
+            types.Clear();
+            Methods.Clear();
+            Assemblies.Clear();
+            Modules.Clear();
+            reader = new PrimitiveReader(stream, reader.IsBuffered);
+        }
+
         /// <summary>
         /// Reads the object with the expected formal type <typeparamref name='T'/>.
         /// </summary>
@@ -161,16 +171,7 @@ namespace Antmicro.Migrant
             return (T)obj;
         }
 
-        /// <summary>
-        /// Releases all resource used by the <see cref="Antmicro.Migrant.ObjectReader"/> object. Note that this is not necessary
-        /// if buffering is not used.
-        /// </summary>
-        /// <remarks>Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.ObjectReader"/>. The
-        /// <see cref="Dispose"/> method leaves the <see cref="Antmicro.Migrant.ObjectReader"/> in an unusable state.
-        /// After calling <see cref="Dispose"/>, you must release all references to the
-        /// <see cref="Antmicro.Migrant.ObjectReader"/> so the garbage collector can reclaim the memory that the
-        /// <see cref="Antmicro.Migrant.ObjectReader"/> was occupying.</remarks>
-        public void Dispose()
+        public void Flush()
         {
             reader.Dispose();
         }
@@ -656,7 +657,7 @@ namespace Antmicro.Migrant
         private ReferencePreservation referencePreservation;
         private AutoResizingList<object> deserializedObjects;
         private IDictionary<Type, Func<ObjectReader, Int32, object>> readMethodsCache;
-        private readonly PrimitiveReader reader;
+        private PrimitiveReader reader;
         private readonly Action<object> postDeserializationCallback;
         private readonly List<Action> postDeserializationHooks;
         private readonly SwapList objectsForSurrogates;

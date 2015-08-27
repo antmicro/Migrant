@@ -46,11 +46,11 @@ namespace Antmicro.Migrant.Tests
             var position = stream.Position;
 
 			stream.Seek(0, SeekOrigin.Begin);
-            using(var reader = new ObjectReader(stream))
-            {
-                Assert.AreEqual(strings[0], reader.ReadObject<string>());
-                Assert.AreEqual(strings[1], reader.ReadObject<string>());
-            }
+            var reader = new ObjectReader(stream);
+            Assert.AreEqual(strings[0], reader.ReadObject<string>());
+            Assert.AreEqual(strings[1], reader.ReadObject<string>());
+            reader.Flush();
+
             Assert.AreEqual(position, stream.Position);
 		}
 	}
