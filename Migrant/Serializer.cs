@@ -62,7 +62,7 @@ namespace Antmicro.Migrant
             writeMethodCache = new Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>>();
             objectsForSurrogates = new SwapList();
             surrogatesForObjects = new SwapList();
-            readMethodCache = new Dictionary<Type, Func<ObjectReader, int, object>>();
+            readMethodCache = new Dictionary<Type, Action<ObjectReader, Type, int>>();
 
             if(settings.SupportForISerializable)
             {
@@ -384,7 +384,7 @@ namespace Antmicro.Migrant
         private bool deserializationDone;
         private readonly Settings settings;
         private readonly Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethodCache;
-        private readonly Dictionary<Type, Func<ObjectReader, int, object>> readMethodCache;
+        private readonly Dictionary<Type, Action<ObjectReader, Type, int>> readMethodCache;
         private readonly SwapList surrogatesForObjects;
         private readonly SwapList objectsForSurrogates;
         private const byte VersionNumber = 8;

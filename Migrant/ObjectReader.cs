@@ -82,7 +82,7 @@ namespace Antmicro.Migrant
         /// be consistent with what was used during serialization.
         /// </param>
         public ObjectReader(Stream stream, SwapList objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
-                            IDictionary<Type, Func<ObjectReader, int, object>> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
+                            IDictionary<Type, Action<ObjectReader, Type, int>> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
                             VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, 
                             ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
@@ -91,7 +91,7 @@ namespace Antmicro.Migrant
                 objectsForSurrogates = new SwapList();
             }
             this.objectsForSurrogates = objectsForSurrogates;
-            this.readMethodsCache = readMethods ?? new Dictionary<Type, Func<ObjectReader, int, object>>();
+            this.readMethodsCache = readMethods ?? new Dictionary<Type, Action<ObjectReader, Type, int>>();
             this.useGeneratedDeserialization = isGenerating;
             types = new List<TypeDescriptor>();
             Methods = new IdentifiedElementsList<MethodDescriptor>(this);
@@ -186,51 +186,57 @@ namespace Antmicro.Migrant
             return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.IsTransient(type);
         }
 
-        internal void ReadObjectInnerGenerated(Type actualType, int objectId)
+        internal void ReadObjectInner(Type actualType, int objectId)
         {
-            Func<ObjectReader, int, object> deserializingMethod;
+            Action<ObjectReader, Type, int> deserializingMethod;
             if(!readMethodsCache.TryGetValue(actualType, out deserializingMethod))
             {
-                var surrogateId = objectsForSurrogates.FindMatchingIndex(actualType);
-                var rmg = new ReadMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
-                    Helpers.GetFieldInfo<ObjectReader, SwapList>(x => x.objectsForSurrogates),
-                    Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects),
-                    Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader),
-                    Helpers.GetFieldInfo<ObjectReader, Action<object>>(x => x.postDeserializationCallback),
-                    Helpers.GetFieldInfo<ObjectReader, List<Action>>(x => x.postDeserializationHooks));
-                deserializingMethod = (Func<ObjectReader, Int32, object>)rmg.Method.CreateDelegate(typeof(Func<ObjectReader, Int32, object>));
+                if(useGeneratedDeserialization)
+                {
+                    var surrogateId = objectsForSurrogates.FindMatchingIndex(actualType);
+                    var rmg = new ReadMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
+                              Helpers.GetFieldInfo<ObjectReader, SwapList>(x => x.objectsForSurrogates),
+                              Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects),
+                              Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader),
+                              Helpers.GetFieldInfo<ObjectReader, Action<object>>(x => x.postDeserializationCallback),
+                              Helpers.GetFieldInfo<ObjectReader, List<Action>>(x => x.postDeserializationHooks));
+                    deserializingMethod = (Action<ObjectReader, Type, Int32>)rmg.Method.CreateDelegate(typeof(Action<ObjectReader, Type, Int32>));
+                }
+                else
+                {
+                    deserializingMethod = (Action<ObjectReader, Type, Int32>)ReadObjectInnerUsingReflection;
+                }
                 readMethodsCache.Add(actualType, deserializingMethod);
             }
 
-            // execution of read method of given type
-            deserializedObjects[objectId] = deserializingMethod(this, objectId);
+            deserializingMethod(this, actualType, objectId);
         }
 
-        private void ReadObjectInner(Type actualType, int objectId)
+        private static void ReadObjectInnerUsingReflection(ObjectReader objectReader, Type actualType, int objectId)
         {
-            TouchObject(actualType, objectId);
-            switch(GetCreationWay(actualType, treatCollectionAsUserObject))
+            objectReader.TouchObject(actualType, objectId);
+            switch(GetCreationWay(actualType, objectReader.treatCollectionAsUserObject))
             {
             case CreationWay.Null:
-                ReadNotPrecreated(actualType, objectId);
+                objectReader.ReadNotPrecreated(actualType, objectId);
                 break;
             case CreationWay.DefaultCtor:
-                UpdateElements(actualType, objectId);
+                objectReader.UpdateElements(actualType, objectId);
                 break;
             case CreationWay.Uninitialized:
-                UpdateFields(actualType, deserializedObjects[objectId]);
+                objectReader.UpdateFields(actualType, objectReader.deserializedObjects[objectId]);
                 break;
             }
-            var obj = deserializedObjects[objectId];
+            var obj = objectReader.deserializedObjects[objectId];
             if(obj == null)
             {
                 // it can happen if we deserialize delegate with empty invocation list
                 return;
             }
-            var factoryId = objectsForSurrogates.FindMatchingIndex(obj.GetType());
+            var factoryId = objectReader.objectsForSurrogates.FindMatchingIndex(obj.GetType());
             if(factoryId != -1)
             {
-                deserializedObjects[objectId] = objectsForSurrogates.GetByIndex(factoryId).DynamicInvoke(new [] { obj });
+                objectReader.deserializedObjects[objectId] = objectReader.objectsForSurrogates.GetByIndex(factoryId).DynamicInvoke(new [] { obj });
             }
             Helpers.InvokeAttribute(typeof(PostDeserializationAttribute), obj);
             var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostDeserializationAttribute), obj);
@@ -240,11 +246,11 @@ namespace Antmicro.Migrant
                 {
                     throw new InvalidOperationException(string.Format(ObjectReader.LateHookAndSurrogateError, actualType));
                 }
-                postDeserializationHooks.Add(postHook);
+                objectReader.postDeserializationHooks.Add(postHook);
             }
-            if(postDeserializationCallback != null)
+            if(objectReader.postDeserializationCallback != null)
             {
-                postDeserializationCallback(obj);
+                objectReader.postDeserializationCallback(obj);
             }
         }
 
@@ -645,7 +651,7 @@ namespace Antmicro.Migrant
         private readonly bool treatCollectionAsUserObject;
         private ReferencePreservation referencePreservation;
         private AutoResizingList<object> deserializedObjects;
-        private IDictionary<Type, Func<ObjectReader, Int32, object>> readMethodsCache;
+        private IDictionary<Type, Action<ObjectReader, Type, Int32>> readMethodsCache;
         private readonly PrimitiveReader reader;
         private readonly Action<object> postDeserializationCallback;
         private readonly List<Action> postDeserializationHooks;

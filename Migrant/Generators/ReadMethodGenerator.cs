@@ -55,11 +55,11 @@ namespace Antmicro.Migrant.Generators
             this.objectsForSurrogatesField = objectsForSurrogatesField;
             if(typeToGenerate.IsArray)
             {
-                dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, true);
+                dynamicMethod = new DynamicMethod("Read", typeof(void), ParameterTypes, true);
             }
             else
             {
-                dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, typeToGenerate, true);
+                dynamicMethod = new DynamicMethod("Read", typeof(void), ParameterTypes, typeToGenerate, true);
             }
             generator = dynamicMethod.GetILGenerator();
 
@@ -69,11 +69,6 @@ namespace Antmicro.Migrant.Generators
         private void GenerateDynamicCode(Type typeToGenerate)
         {
             GenerateReadObjectInner(typeToGenerate);
-			
-            PushDeserializedObjectsCollectionOntoStack();
-            generator.Emit(OpCodes.Ldarg_1);
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<AutoResizingList<object>, object>(x => x[0]));
-					    
             generator.Emit(OpCodes.Ret);
         }
 
@@ -156,7 +151,7 @@ namespace Antmicro.Migrant.Generators
             var finish = generator.DefineLabel();
             var objectIdLocal = generator.DeclareLocal(typeof(Int32));
 
-            generator.Emit(OpCodes.Ldarg_1);
+            PushObjectIdOntoStack();
             generator.Emit(OpCodes.Stloc, objectIdLocal);
 
             GenerateTouchObject(formalType);
@@ -200,7 +195,7 @@ namespace Antmicro.Migrant.Generators
             }
             foreach(var method in methods)
             {
-                generator.Emit(OpCodes.Ldarg_0);
+                PushObjectReaderOntoStack();
                 generator.Emit(OpCodes.Ldfld, postDeserializationHooksField);
 
                 PushTypeOntoStack(typeof(Action));
@@ -235,7 +230,7 @@ namespace Antmicro.Migrant.Generators
             }
 
             var callbackLocal = generator.DeclareLocal(typeof(Action<object>));
-            generator.Emit(OpCodes.Ldarg_0);
+            PushObjectReaderOntoStack();
             generator.Emit(OpCodes.Ldfld, postDeserializationCallbackField); // PROMPT
             var afterCallbackCall = generator.DefineLabel();
             generator.Emit(OpCodes.Dup);
@@ -252,12 +247,12 @@ namespace Antmicro.Migrant.Generators
             if(objectForSurrogateId != -1)
             {
                 // used (1)
-                generator.Emit(OpCodes.Ldarg_0);
+                PushObjectReaderOntoStack();
                 generator.Emit(OpCodes.Ldfld, deserializedObjectsField);
                 generator.Emit(OpCodes.Ldloc, objectIdLocal);
 
                 // obtain surrogate factory
-                generator.Emit(OpCodes.Ldarg_0);
+                PushObjectReaderOntoStack();
                 generator.Emit(OpCodes.Ldfld, objectsForSurrogatesField);
                 generator.Emit(OpCodes.Ldc_I4, objectForSurrogateId);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<SwapList>(x => x.GetByIndex(0)));
@@ -638,10 +633,10 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Ldloc, metaResultLocal);
                 generator.Emit(OpCodes.Brtrue, else1); // if no actual type on stack jump to the end
 
-                generator.Emit(OpCodes.Ldarg_0);
+                PushObjectReaderOntoStack();
                 generator.Emit(OpCodes.Ldloc, objectActualTypeLocal);
                 generator.Emit(OpCodes.Ldloc, objectIdLocal);
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader>(r => r.ReadObjectInnerGenerated(typeof(void), 0)));
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader>(r => r.ReadObjectInner(typeof(void), 0)));
 				
                 generator.MarkLabel(else1); // if CheckObjectMeta returned 1
 				
@@ -847,15 +842,25 @@ namespace Antmicro.Migrant.Generators
 
         #region Push onto stack methods and other helper methods
 
+        private void PushObjectIdOntoStack()
+        {
+            generator.Emit(OpCodes.Ldarg_2);
+        }
+
+        private void PushObjectReaderOntoStack()
+        {
+            generator.Emit(OpCodes.Ldarg_0);
+        }
+
         private void PushPrimitiveReaderOntoStack()
         {
-            generator.Emit(OpCodes.Ldarg_0); // object reader
+            PushObjectReaderOntoStack();
             generator.Emit(OpCodes.Ldfld, primitiveReaderField);
         }
 
         private void PushDeserializedObjectsCollectionOntoStack()
         {
-            generator.Emit(OpCodes.Ldarg_0); // object reader	
+            PushObjectReaderOntoStack();
             generator.Emit(OpCodes.Ldfld, deserializedObjectsField);
         }
 
@@ -928,7 +933,7 @@ namespace Antmicro.Migrant.Generators
             var objectIdLocal = generator.DeclareLocal(typeof(Int32));
             var objectTypeLocal = generator.DeclareLocal(typeof(Type));
 
-            generator.Emit(OpCodes.Ldarg_1);
+            PushObjectIdOntoStack();
             generator.Emit(OpCodes.Stloc, objectIdLocal);
 
             PushTypeOntoStack(formalType);
@@ -966,7 +971,7 @@ namespace Antmicro.Migrant.Generators
         {
             // method returns read type (or null) 
 
-            generator.Emit(OpCodes.Ldarg_0); // object reader
+            PushObjectReaderOntoStack();
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectReader, TypeDescriptor>(t => t.ReadType()));
             generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<TypeDescriptor, Type>(td => td.UnderlyingType));
         }
@@ -975,7 +980,7 @@ namespace Antmicro.Migrant.Generators
         {
             // method returns read methodInfo (or null)
 
-            generator.Emit(OpCodes.Ldarg_0); // object reader
+            PushObjectReaderOntoStack();
             generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectReader, IdentifiedElementsList<MethodDescriptor>>(or => or.Methods));
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IdentifiedElementsList<MethodDescriptor>, MethodDescriptor>(or => or.Read()));
             generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<MethodDescriptor, MethodInfo>(md => md.UnderlyingMethod));
@@ -1000,8 +1005,9 @@ namespace Antmicro.Migrant.Generators
         private readonly DynamicMethod dynamicMethod;
         private const string InternalErrorMessage = "Internal error: should not reach here.";
         private const string CouldNotFindAddErrorMessage = "Could not find suitable Add method for the type {0}.";
-        private static readonly Type[] ParameterTypes = new [] {
+        private static readonly Type[] ParameterTypes = {
             typeof(ObjectReader),
+            typeof(Type),
             typeof(Int32)
         };
     }
