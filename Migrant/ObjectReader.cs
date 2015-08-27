@@ -106,6 +106,7 @@ namespace Antmicro.Migrant
             reader = new PrimitiveReader(stream, useBuffering);
             this.referencePreservation = referencePreservation;
             this.VersionToleranceLevel = versionToleranceLevel;
+            this.disableStamping = disableStamping;
 
             readTypeMethod = disableStamping ? (Func<TypeDescriptor>)ReadSimpleTypeDescriptor : ReadFullTypeDescriptor;
         }
@@ -207,7 +208,7 @@ namespace Antmicro.Migrant
             if(!readMethodsCache.TryGetValue(actualType, out deserializingMethod))
             {
                 var surrogateId = objectsForSurrogates.FindMatchingIndex(actualType);
-                var rmg = new ReadMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
+                var rmg = new ReadMethodGenerator(actualType, treatCollectionAsUserObject, disableStamping, surrogateId,
                     Helpers.GetFieldInfo<ObjectReader, SwapList>(x => x.objectsForSurrogates),
                     Helpers.GetFieldInfo<ObjectReader, AutoResizingList<object>>(x => x.deserializedObjects),
                     Helpers.GetFieldInfo<ObjectReader, PrimitiveReader>(x => x.reader),
@@ -687,6 +688,7 @@ namespace Antmicro.Migrant
         private readonly Func<TypeDescriptor> readTypeMethod;
         private List<TypeDescriptor> types;
         private WeakReference[] soFarDeserialized;
+        private readonly bool disableStamping;
         private readonly bool useGeneratedDeserialization;
         private readonly bool treatCollectionAsUserObject;
         private ReferencePreservation referencePreservation;

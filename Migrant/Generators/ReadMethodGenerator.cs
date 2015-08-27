@@ -42,7 +42,7 @@ namespace Antmicro.Migrant.Generators
 {
     internal sealed class ReadMethodGenerator
     {
-        public ReadMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int objectForSurrogateId,
+        public ReadMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, bool disableStamping, int objectForSurrogateId,
             FieldInfo objectsForSurrogatesField, FieldInfo deserializedObjectsField, FieldInfo primitiveReaderField, FieldInfo postDeserializationCallbackField,
             FieldInfo postDeserializationHooksField)
         {
@@ -53,6 +53,7 @@ namespace Antmicro.Migrant.Generators
             this.postDeserializationHooksField = postDeserializationHooksField;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             this.objectsForSurrogatesField = objectsForSurrogatesField;
+            this.disableStamping = disableStamping;
             if(typeToGenerate.IsArray)
             {
                 dynamicMethod = new DynamicMethod("Read", typeof(object), ParameterTypes, true);
@@ -753,7 +754,10 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateFields(Type formalType, LocalBuilder objectIdLocal)
         {
-            var fields = ((TypeSimpleDescriptor)formalType).FieldsToDeserialize;
+            var fields = disableStamping 
+                ? ((TypeSimpleDescriptor)formalType).FieldsToDeserialize 
+                : ((TypeFullDescriptor)formalType).FieldsToDeserialize;
+
             foreach(var fieldOrType in fields)
             {
                 if(fieldOrType.Field == null)
@@ -793,7 +797,10 @@ namespace Antmicro.Migrant.Generators
 
         private void GenerateUpdateStructFields(Type formalType, LocalBuilder structLocal)
         {			
-            var fields = ((TypeSimpleDescriptor)formalType).FieldsToDeserialize;
+            var fields = disableStamping 
+                ? ((TypeSimpleDescriptor)formalType).FieldsToDeserialize 
+                : ((TypeFullDescriptor)formalType).FieldsToDeserialize;
+
             foreach(var field in fields)
             {
                 if(field.Field == null)
@@ -990,6 +997,7 @@ namespace Antmicro.Migrant.Generators
         }
 
         private ILGenerator generator;
+        private readonly bool disableStamping;
         private readonly int objectForSurrogateId;
         private readonly FieldInfo objectsForSurrogatesField;
         private readonly FieldInfo deserializedObjectsField;
