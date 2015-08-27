@@ -32,10 +32,11 @@ namespace Antmicro.Migrant.Tests
 {
     public class TwoDomainsDriver : MarshalByRefObject
     {
-        public TwoDomainsDriver(bool useGeneratedSerializer, bool useGeneratedDeserializer)
+        public TwoDomainsDriver(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useStamping)
         {
             this.useGeneratedDeserializer = useGeneratedDeserializer;
             this.useGeneratedSerializer = useGeneratedSerializer;
+            this.useStamping = useStamping;
 
             // this is just a little hack that allows us to debug TwoDomainTests on one domain
             // when `PrepareDomains` method is not called; when `PrepareDomains` is called
@@ -186,7 +187,8 @@ namespace Antmicro.Migrant.Tests
         {
             return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,                  
                                 useGeneratedDeserializer ? Method.Generated : Method.Reflection,                    
-                                level);
+                                level,
+                                disableTypeStamping: !useStamping);
         }
 
         protected Settings GetSettingsAllowingGuidChange(VersionToleranceLevel level = 0)
@@ -202,6 +204,7 @@ namespace Antmicro.Migrant.Tests
 
         private bool useGeneratedSerializer;
         private bool useGeneratedDeserializer;
+        private bool useStamping;
 
         protected object obj;
     }

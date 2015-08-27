@@ -29,13 +29,17 @@ namespace Antmicro.Migrant.Tests
 {
     [TestFixture]
     [Category("MultiAssemblyTests")]
-    [TestFixture(false, false)]
-    [TestFixture(true, false)]
-    [TestFixture(false, true)]
-    [TestFixture(true, true)]
+    [TestFixture(false, false, true)]
+    [TestFixture(true, false, true)]
+    [TestFixture(false, true, true)]
+    [TestFixture(true, true, true)]
+    [TestFixture(false, false, false)]
+    [TestFixture(true, false, false)]
+    [TestFixture(false, true, false)]
+    [TestFixture(true, true, false)]
     public class TwoDomainTests : TwoDomainsDriver
     {
-        public TwoDomainTests(bool useGeneratedSerialized, bool useGeneratedDeserialzer) : base(useGeneratedSerialized, useGeneratedDeserialzer)
+        public TwoDomainTests(bool useGeneratedSerialized, bool useGeneratedDeserialzer, bool useStamping) : base(useGeneratedSerialized, useGeneratedDeserialzer, useStamping)
         {
         }
 
