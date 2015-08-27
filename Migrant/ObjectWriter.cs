@@ -42,44 +42,8 @@ using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant
 {
-    /// <summary>
-    /// Writes the object in a format that can be later read by <see cref="Antmicro.Migrant.ObjectReader"/>.
-    /// </summary>
-    public class ObjectWriter
+    internal class ObjectWriter
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectWriter" /> class.
-        /// </summary>
-        /// <param name='stream'>
-        /// Stream to which data will be written.
-        /// </param>
-        /// <param name='preSerializationCallback'>
-        /// Callback which is called once on every unique object before its serialization. Contains this object in its only parameter.
-        /// </param>
-        /// <param name='postSerializationCallback'>
-        /// Callback which is called once on every unique object after its serialization. Contains this object in its only parameter.
-        /// </param>
-        /// <param name='writeMethods'>
-        /// Cache in which generated write methods are stored and reused between instances of <see cref="Antmicro.Migrant.ObjectWriter" />.
-        /// Can be null if one does not want to use the cache. Note for the life of the cache you always have to provide the same
-        /// <paramref name="surrogatesForObjects"/>.
-        /// </param>
-        /// <param name='surrogatesForObjects'>
-        /// Dictionary, containing callbacks that provide surrogate for given type. Callbacks have to be of type Func&lt;T, object&gt; where
-        /// typeof(T) is given type. Note that the list always have to be in sync with <paramref name="writeMethods"/>.
-        /// </param>			
-        /// <param name='isGenerating'>
-        /// True if write methods are to be generated, false if one wants to use reflection.
-        /// </param>
-        /// <param name = "treatCollectionAsUserObject">
-        /// True if collection objects are to be serialized without optimization (treated as normal user objects).
-        /// </param>
-        /// <param name="useBuffering"> 
-        /// True if buffering is used. False if all writes should directly go to the stream and no padding should be used.
-        /// </param>
-        /// <param name="referencePreservation"> 
-        /// Tells serializer how to treat object identity between the calls to <see cref="Antmicro.Migrant.ObjectWriter.WriteObject" />.
-        /// </param>
         public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null, 
                       Action<object> postSerializationCallback = null, IDictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethods = null,
                       SwapList surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false,
@@ -124,12 +88,6 @@ namespace Antmicro.Migrant
             identifier.Clear();
         }
 
-        /// <summary>
-        /// Writes the given object along with the ones referenced by it.
-        /// </summary>
-        /// <param name='o'>
-        /// The object to write.
-        /// </param>
         public void WriteObject(object o)
         {
             if(o == null || Helpers.IsTransient(o.GetType()))

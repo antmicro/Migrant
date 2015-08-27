@@ -41,46 +41,8 @@ using Antmicro.Migrant.Customization;
 
 namespace Antmicro.Migrant
 {
-    /// <summary>
-    /// Reads the object previously written by <see cref="Antmicro.Migrant.ObjectWriter" />.
-    /// </summary>
-    public class ObjectReader 
+    internal class ObjectReader 
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectReader" /> class.
-        /// </summary>
-        /// <param name='stream'>
-        /// Stream from which objects will be read.
-        /// </param>
-        /// <param name='objectsForSurrogates'>
-        /// Dictionary, containing callbacks that provide objects for given type of surrogate. Callbacks have to be of type Func&lt;T, object&gt; where
-        /// typeof(T) is type of surrogate. They always have to be in sync with <paramref name="readMethods"/>.
-        /// </param>
-        /// <param name='postDeserializationCallback'>
-        /// Callback which will be called after deserialization of every unique object. Deserialized
-        /// object is given in the callback's only parameter.
-        /// </param>
-        /// <param name='readMethods'>
-        /// Cache in which generated read methods are stored and reused between instances of <see cref="Antmicro.Migrant.ObjectReader" />.
-        /// Can be null if one does not want to use the cache. For the life of the cache you always have to provide the same 
-        /// <paramref name="objectsForSurrogates"/>.
-        /// </param>
-        /// <param name='isGenerating'>
-        /// True if read methods are to be generated, false if one wants to use reflection.
-        /// </param>
-        /// <param name = "treatCollectionAsUserObject">
-        /// True if collection objects are to be deserialized without optimization (treated as normal user objects).
-        /// </param>
-        /// <param name="versionToleranceLevel"> 
-        /// Describes the tolerance level of this reader when handling discrepancies in type description (new or missing fields, etc.).
-        /// </param> 
-        /// <param name="useBuffering"> 
-        /// True if buffering was used with the corresponding ObjectWriter or false otherwise - i.e. when no padding and buffering is used.
-        /// </param>
-        /// <param name="referencePreservation"> 
-        /// Tells deserializer whether open stream serialization preserved objects identieties between serialization. Note that this option should
-        /// be consistent with what was used during serialization.
-        /// </param>
         public ObjectReader(Stream stream, SwapList objectsForSurrogates = null, Action<object> postDeserializationCallback = null, 
                             IDictionary<Type, Func<ObjectReader, int, object>> readMethods = null, bool isGenerating = false, bool treatCollectionAsUserObject = false, 
                             VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, 
@@ -115,21 +77,6 @@ namespace Antmicro.Migrant
             reader = new PrimitiveReader(stream, reader.IsBuffered);
         }
 
-        /// <summary>
-        /// Reads the object with the expected formal type <typeparamref name='T'/>.
-        /// </summary>
-        /// <returns>
-        /// The object, previously written by the <see cref="Antmicro.Migrant.ObjectWriter" />.
-        /// </returns>
-        /// <typeparam name='T'>
-        /// The expected formal type of object, that is the type of the reference returned
-        /// by the method after serialization. The previously serialized object must be
-        /// convertible to this type.
-        /// </typeparam>
-        /// <remarks>
-        /// Note that this method will read the object from the stream along with other objects
-        /// referenced by it.
-        /// </remarks>
         public T ReadObject<T>()
         {
             if(soFarDeserialized != null)
