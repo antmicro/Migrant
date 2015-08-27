@@ -147,6 +147,9 @@ namespace Antmicro.Migrant
             }
         }
 
+        /// <summary>
+        /// Clears internal elements.
+        /// </summary>
         public void Clear()
         {
             idToObject.Clear();
