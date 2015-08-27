@@ -85,6 +85,18 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
+        /// Gets current buffering configuration.
+        /// </summary>
+        /// <value><c>true</c> if this the data read from stream is buffered; otherwise, <c>false</c>.</value>
+        public bool IsBuffered
+        {
+            get
+            {
+                return buffered;
+            }
+        }
+
+        /// <summary>
         /// Reads and returns <see cref="System.Double" />.
         /// </summary>
         public double ReadDouble()
