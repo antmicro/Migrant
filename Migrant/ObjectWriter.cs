@@ -102,7 +102,6 @@ namespace Antmicro.Migrant
             this.preSerializationCallback = preSerializationCallback;
             this.postSerializationCallback = postSerializationCallback;
             writer = new PrimitiveWriter(stream, useBuffering);
-            inlineWritten = new HashSet<int>();
             this.referencePreservation = referencePreservation;
             if(referencePreservation == ReferencePreservation.Preserve)
             {
@@ -122,32 +121,16 @@ namespace Antmicro.Migrant
             {
                 throw new ArgumentException("Cannot write a null object or a transient object.");
             }
-            objectsWrittenThisSession = 0;
             if(referencePreservation != ReferencePreservation.Preserve)
             {
                 identifier = identifierContext == null ? new ObjectIdentifier() : new ObjectIdentifier(identifierContext);
                 identifierContext = null;
             }
-            var identifiersCount = identifier.Count;
-            identifier.GetId(o);
-            var firstObjectIsNew = identifiersCount != identifier.Count;
 
             try
             {
                 // first object is always written
-                InvokeCallbacksAndWriteObject(o);
-                if(firstObjectIsNew)
-                {
-                    objectsWrittenThisSession++;
-                }
-                while(identifier.Count - identifierCountPreviousSession > objectsWrittenThisSession)
-                {
-                    if(!inlineWritten.Contains(identifierCountPreviousSession + objectsWrittenThisSession))
-                    {
-                        InvokeCallbacksAndWriteObject(identifier[identifierCountPreviousSession + objectsWrittenThisSession]);
-                    }
-                    objectsWrittenThisSession++;
-                }
+                WriteField(typeof(object), o);
             }
             finally
             {
@@ -174,13 +157,13 @@ namespace Antmicro.Migrant
             writer = null;
         }
 
-        internal void WriteObjectIdPossiblyInline(object o)
+        internal void WriteReference(object o)
         {
-            var refId = identifier.GetId(o);
+            bool isNew;
+            var refId = identifier.GetId(o, out isNew);
             writer.Write(refId);
-            if(WasNotWrittenYet(refId))
+            if(isNew)
             {
-                inlineWritten.Add(refId);
                 InvokeCallbacksAndWriteObject(o);
             }
         }
@@ -302,14 +285,6 @@ namespace Antmicro.Migrant
 
         private void PrepareForNextWrite()
         {
-            if(referencePreservation != ReferencePreservation.DoNotPreserve)
-            {
-                identifierCountPreviousSession = identifier.Count;
-            }
-            else
-            {
-                inlineWritten.Clear();
-            }
             currentlyWrittenTypes.Clear();
             if(referencePreservation == ReferencePreservation.UseWeakReference)
             {
@@ -538,20 +513,7 @@ namespace Antmicro.Migrant
                 return;
             }
             CheckLegality(actualType, writtenTypes: currentlyWrittenTypes);
-            var refId = identifier.GetId(value);
-            // if this is a future reference, just after the reference id,
-            // we should write inline data
-            writer.Write(refId);
-            if(WasNotWrittenYet(refId))
-            {
-                inlineWritten.Add(refId);
-                InvokeCallbacksAndWriteObject(value);
-            }
-        }
-
-        private bool WasNotWrittenYet(int referenceId)
-        {
-            return referenceId > (identifierCountPreviousSession + objectsWrittenThisSession) && !inlineWritten.Contains(referenceId);
+            WriteReference(value);
         }
 
         private void WriteValueType(Type formalType, object value)
@@ -686,10 +648,7 @@ namespace Antmicro.Migrant
         private IdentifiedElementsDictionary<TypeDescriptor> types;
         private ObjectIdentifier identifier;
         private ObjectIdentifierContext identifierContext;
-        private int objectsWrittenThisSession;
-        private int identifierCountPreviousSession;
         private PrimitiveWriter writer;
-        private readonly HashSet<int> inlineWritten;
         private readonly bool isGenerating;
         private readonly bool treatCollectionAsUserObject;
         private readonly ReferencePreservation referencePreservation;

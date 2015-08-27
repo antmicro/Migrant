@@ -644,7 +644,7 @@ namespace Antmicro.Migrant.Generators
 
                 generator.Emit(OpCodes.Ldarg_0); // objectWriter
                 putValueToWriteOnTop(generator);
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteObjectIdPossiblyInline(null)));
+                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteReference(null)));
             }
             else
             {
@@ -658,7 +658,7 @@ namespace Antmicro.Migrant.Generators
                 {
                     generator.Emit(OpCodes.Ldarg_0); // objectWriter
                     putValueToWriteOnTop(generator);
-                    generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteObjectIdPossiblyInline(null)));
+                    generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteReference(null)));
                 }
             }
 

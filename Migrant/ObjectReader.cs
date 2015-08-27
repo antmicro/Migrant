@@ -134,18 +134,8 @@ namespace Antmicro.Migrant
             {
                 deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             }
-            var firstObjectId = deserializedObjects.Count;
-            var type = ReadType().UnderlyingType;
-            if(useGeneratedDeserialization)
-            {
-                ReadObjectInnerGenerated(type, firstObjectId);
-            }
-            else
-            {
-                ReadObjectInner(type, firstObjectId);
-            }
 
-            var obj = deserializedObjects[firstObjectId];
+            var obj = ReadField(typeof(object));
             if(!(obj is T))
             {
                 throw new InvalidDataException(

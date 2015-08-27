@@ -568,7 +568,7 @@ namespace Antmicro.Migrant
             /// <param name="obj">Object.</param>
             public void Serialize(object obj)
             {
-                writer.WriteObject(new Box(obj));
+                writer.WriteObject(obj);
             }
 
             /// <summary>
@@ -601,8 +601,7 @@ namespace Antmicro.Migrant
             /// <typeparam name="T">The expected formal type of object to deserialize.</typeparam>
             public T Deserialize<T>()
             {
-                var box = reader.ReadObject<Box>();
-                return (T)box.Value;
+                return reader.ReadObject<T>();
             }
 
             /// <summary>

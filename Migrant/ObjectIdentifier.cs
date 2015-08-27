@@ -87,14 +87,16 @@ namespace Antmicro.Migrant
         /// <param name='o'>
         /// An object to give unique ID for.
         /// </param>
-        public int GetId(object o)
+        public int GetId(object o, out bool isNew)
         {
             int id;
             if(objectToId.TryGetValue(o, out id))
             {
+                isNew = false;
                 return id;
             }
 
+            isNew = true;
             id = idToObject.Count;
             objectToId.Add(o, id);
             idToObject.Add(o);
