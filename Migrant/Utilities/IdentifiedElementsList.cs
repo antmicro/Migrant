@@ -53,6 +53,11 @@ namespace Antmicro.Migrant.Utilities
             return list[id];
         }
 
+        public void Clear()
+        {
+            list.Clear();
+        }
+
         private readonly ObjectReader reader;
         private readonly List<T> list;
     }
