@@ -71,7 +71,6 @@
     <Compile Include="VersionTolerance\TypeDescriptor.cs" />
     <Compile Include="VersionTolerance\FieldDescriptor.cs" />
     <Compile Include="ObjectIdentifierContext.cs" />
-    <Compile Include="Box.cs" />
     <Compile Include="Customization\ReferencePreservation.cs" />
     <Compile Include="Utilities\PeekableStream.cs" />
     <Compile Include="BultinSurrogates\SurrogateForIXmlSerializable.cs" />
