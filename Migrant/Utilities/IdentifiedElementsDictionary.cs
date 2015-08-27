@@ -55,6 +55,12 @@ namespace Antmicro.Migrant.Utilities
             return typeId;
         }
 
+        public void Clear()
+        {
+            Dictionary.Clear();
+            nextId = 0;
+        }
+
         public Dictionary<T, int> Dictionary { get; private set; }
 
         private int nextId;

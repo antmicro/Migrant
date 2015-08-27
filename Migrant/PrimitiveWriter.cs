@@ -82,6 +82,17 @@ namespace Antmicro.Migrant
                 return currentPosition + currentBufferPosition;
             }
         }
+         /// <summary>
+        /// Gets current buffering configuration.
+        /// </summary>
+        /// <value><c>true</c> if this the data written to stream is buffered; otherwise, <c>false</c>.</value>
+        public bool IsBuffered
+        {
+            get
+            {
+                return buffered;
+            }
+        }
 
         /// <summary>
         /// Writes the specified value of type <see cref="System.Double" />.

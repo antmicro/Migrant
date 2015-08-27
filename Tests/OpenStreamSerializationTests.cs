@@ -136,7 +136,7 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
-        [Test]
+        [Test, Ignore]
         public void ShouldReadPreservationOptionFromTheStream(
             [Values(ReferencePreservation.Preserve, ReferencePreservation.DoNotPreserve)]
             ReferencePreservation referencePreservation)
