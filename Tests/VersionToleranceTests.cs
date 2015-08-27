@@ -35,22 +35,14 @@ using System.Text;
 namespace Antmicro.Migrant.Tests
 {
     [Serializable]
-    [TestFixture(false, false, true)]
-    [TestFixture(true, false, true)]
-    [TestFixture(false, true, true)]
-    [TestFixture(true, true, true)]
-    [TestFixture(false, false, false)]
-    [TestFixture(true, false, false)]
-    [TestFixture(false, true, false)]
-    [TestFixture(true, true, false)]
+    [TestFixture(false, false)]
+    [TestFixture(true, false)]
+    [TestFixture(false, true)]
+    [TestFixture(true, true)]
     [Category("MultiAssemblyTests")]
     public class VersionToleranceTests : TwoDomainsDriver
     {
-        public VersionToleranceTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, useStamping)
-        {
-        }
-
-        public VersionToleranceTests() : base(true, true, true)
+        public VersionToleranceTests(bool useGeneratedSerializer, bool useGeneratedDeserializer) : base(useGeneratedSerializer, useGeneratedDeserializer)
         {
         }
 
@@ -196,7 +188,7 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldNotStampTypeTwice()
         {
-            var serializer = new Serializer(GetSettings());
+            var serializer = new Serializer(settings.GetSettings());
             var memoryStream = new MemoryStream();
             var o = new ClassWithGenerics();
             serializer.Serialize(o, memoryStream);
@@ -209,7 +201,7 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldNotStampGenericTypeTwice()
         {
-            var serializer = new Serializer(GetSettings());
+            var serializer = new Serializer(settings.GetSettings());
             var memoryStream = new MemoryStream();
             var o = new ClassWithGenerics();
             serializer.Serialize(o, memoryStream);

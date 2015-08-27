@@ -30,24 +30,17 @@ using Antmicro.Migrant.VersionTolerance;
 
 namespace Antmicro.Migrant.Tests
 {
-    public class TwoDomainsDriver : MarshalByRefObject
+    public class TwoDomainsDriver
     {
-        public TwoDomainsDriver(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useStamping)
+        public TwoDomainsDriver(bool useGeneratedSerializer, bool useGeneratedDeserializer)
         {
-            this.useGeneratedDeserializer = useGeneratedDeserializer;
-            this.useGeneratedSerializer = useGeneratedSerializer;
-            this.useStamping = useStamping;
+            settings = new DriverSettings(useGeneratedSerializer, useGeneratedDeserializer, true);
 
             // this is just a little hack that allows us to debug TwoDomainTests on one domain
             // when `PrepareDomains` method is not called; when `PrepareDomains` is called
             // then these fields are overwritten with proper values
-            testsOnDomain1 = this;
-            testsOnDomain2 = this;
-        }
-
-        public TwoDomainsDriver()
-        {
-            DynamicType.prefix = AppDomain.CurrentDomain.FriendlyName;
+            testsOnDomain1 = new InnerDriver { Settings = settings };
+            testsOnDomain2 = testsOnDomain1;
         }
 
         public void PrepareDomains()
@@ -64,8 +57,11 @@ namespace Antmicro.Migrant.Tests
             domain1 = AppDomain.CreateDomain("domain1", null, Path.Combine(Environment.CurrentDirectory, "domain1"), string.Empty, true);
             domain2 = AppDomain.CreateDomain("domain2", null, Path.Combine(Environment.CurrentDirectory, "domain2"), string.Empty, true);
 
-            testsOnDomain1 = (TwoDomainsDriver)domain1.CreateInstanceAndUnwrap(typeof(TwoDomainsDriver).Assembly.FullName, typeof(TwoDomainsDriver).FullName);
-            testsOnDomain2 = (TwoDomainsDriver)domain2.CreateInstanceAndUnwrap(typeof(TwoDomainsDriver).Assembly.FullName, typeof(TwoDomainsDriver).FullName);
+            testsOnDomain1 = (InnerDriver)domain1.CreateInstanceAndUnwrap(typeof(InnerDriver).Assembly.FullName, typeof(InnerDriver).FullName);
+            testsOnDomain2 = (InnerDriver)domain2.CreateInstanceAndUnwrap(typeof(InnerDriver).Assembly.FullName, typeof(InnerDriver).FullName);
+
+            testsOnDomain1.Settings = settings;
+            testsOnDomain2.Settings = settings;
         }
 
         public void DisposeDomains()
@@ -80,33 +76,77 @@ namespace Antmicro.Migrant.Tests
             Directory.Delete("domain1", true);
             Directory.Delete("domain2", true);
         }
+        
+        public bool SerializeAndDeserializeOnTwoAppDomains(DynamicType domainOneType, DynamicType domainTwoType, VersionToleranceLevel vtl, bool allowGuidChange = true)
+        {
+            testsOnDomain1.CreateInstanceOnAppDomain(domainOneType);
+            testsOnDomain2.CreateInstanceOnAppDomain(domainTwoType);
+
+            var bytes = testsOnDomain1.SerializeOnAppDomain();
+            try 
+            {
+                testsOnDomain2.DeserializeOnAppDomain(bytes, settings.GetSettings(allowGuidChange ? vtl | VersionToleranceLevel.AllowGuidChange : vtl));
+                return true;
+            } 
+            catch (VersionToleranceException)
+            {
+                return false;
+            }
+        }
+
+        protected DriverSettings settings;
+
+        protected InnerDriver testsOnDomain1;
+        protected InnerDriver testsOnDomain2;
+        
+        private AppDomain domain1;
+        private AppDomain domain2;
+    }
+
+    public class DriverSettings : MarshalByRefObject
+    {
+        public DriverSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useStamping)
+        {
+            this.useGeneratedDeserializer = useGeneratedDeserializer;
+            this.useGeneratedSerializer = useGeneratedSerializer;
+            this.useStamping = useStamping;
+        }
+
+        public Settings GetSettings(VersionToleranceLevel level = 0)
+        {
+            return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,
+                                useGeneratedDeserializer ? Method.Generated : Method.Reflection,
+                                level,
+                                disableTypeStamping: !useStamping);
+        }
+
+        public Settings GetSettingsAllowingGuidChange(VersionToleranceLevel level = 0)
+        {
+            return GetSettings(level | VersionToleranceLevel.AllowGuidChange);
+        }
+
+        private bool useGeneratedSerializer;
+        private bool useGeneratedDeserializer;
+        private bool useStamping;
+    }
+    
+    public class InnerDriver : MarshalByRefObject
+    {
+        public InnerDriver()
+        {
+            DynamicType.prefix = AppDomain.CurrentDomain.FriendlyName;
+        }
 
         public void CreateInstanceOnAppDomain(DynamicType type, Version version = null)
         {
             obj = type.Instantiate(version);
         }
 
-        public byte[] SerializeOnAppDomain()
+        public void DeserializeOnAppDomain(byte[] data, Settings settings)
         {
-            var stream = new MemoryStream();
-            var serializer = new Serializer(GetSettings());
-            serializer.Serialize(obj, stream);
-            return stream.ToArray();
-        }
-
-        private Type FindClass(string className)
-        {
-            var currentClass = obj.GetType();
-            while(currentClass != null && currentClass.Name != className)
-            {
-                currentClass = currentClass.BaseType;
-            }
-            if(currentClass == null)
-            {
-                throw new ArgumentException(className);
-            }
-
-            return currentClass;
+            var stream = new MemoryStream(data);
+            var deserializer = new Serializer(settings);
+            obj = deserializer.Deserialize<object>(stream);
         }
 
         public void SetValueOnAppDomain(string className, string fieldName, object value)
@@ -122,8 +162,8 @@ namespace Antmicro.Migrant.Tests
 
         private object SetValueOnAppDomainInner(object o, string fieldName, object value)
         {
-            var elements = fieldName.Split(new [] { '.' }, 2);
-            if(elements.Length == 1)
+            var elements = fieldName.Split(new[] { '.' }, 2);
+            if (elements.Length == 1)
             {
                 var field = o.GetType().GetField(fieldName);
                 field.SetValue(o, value);
@@ -150,7 +190,7 @@ namespace Antmicro.Migrant.Tests
             var elements = fieldName.Split('.');
             FieldInfo field = null;
             object currentObject = null;
-            foreach(var element in elements)
+            foreach (var element in elements)
             {
                 currentObject = (currentObject == null) ? obj : field.GetValue(currentObject);
                 field = currentObject.GetType().GetField(element);
@@ -159,52 +199,31 @@ namespace Antmicro.Migrant.Tests
             return field.GetValue(currentObject);
         }
 
-        public void DeserializeOnAppDomain(byte[] data, Settings settings)
+        public byte[] SerializeOnAppDomain()
         {
-            var stream = new MemoryStream(data);
-            var deserializer = new Serializer(settings);
-            obj = deserializer.Deserialize<object>(stream);
+            var stream = new MemoryStream();
+            var serializer = new Serializer(Settings.GetSettings());
+            serializer.Serialize(obj, stream);
+            return stream.ToArray();
         }
-
-        public bool SerializeAndDeserializeOnTwoAppDomains(DynamicType domainOneType, DynamicType domainTwoType, VersionToleranceLevel vtl, bool allowGuidChange = true)
+            
+        private Type FindClass(string className)
         {
-            testsOnDomain1.CreateInstanceOnAppDomain(domainOneType);
-            testsOnDomain2.CreateInstanceOnAppDomain(domainTwoType);
-
-            var bytes = testsOnDomain1.SerializeOnAppDomain();
-            try 
+            var currentClass = obj.GetType();
+            while (currentClass != null && currentClass.Name != className)
             {
-                testsOnDomain2.DeserializeOnAppDomain(bytes, GetSettings(allowGuidChange ? vtl | VersionToleranceLevel.AllowGuidChange : vtl));
-                return true;
-            } 
-            catch (VersionToleranceException)
-            {
-                return false;
+                currentClass = currentClass.BaseType;
             }
+            if (currentClass == null)
+            {
+                throw new ArgumentException(className);
+            }
+
+            return currentClass;
         }
 
-        protected Settings GetSettings(VersionToleranceLevel level = 0)
-        {
-            return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,                  
-                                useGeneratedDeserializer ? Method.Generated : Method.Reflection,                    
-                                level,
-                                disableTypeStamping: !useStamping);
-        }
-
-        protected Settings GetSettingsAllowingGuidChange(VersionToleranceLevel level = 0)
-        {
-            return GetSettings(level | VersionToleranceLevel.AllowGuidChange);
-        }
-
-        protected TwoDomainsDriver testsOnDomain1;
-        protected TwoDomainsDriver testsOnDomain2;
-
-        private AppDomain domain1;
-        private AppDomain domain2;
-
-        private bool useGeneratedSerializer;
-        private bool useGeneratedDeserializer;
-        private bool useStamping;
+        public string Location { get; set; }
+        public DriverSettings Settings { get; set; }
 
         protected object obj;
     }
