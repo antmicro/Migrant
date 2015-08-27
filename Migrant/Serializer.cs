@@ -111,9 +111,7 @@ namespace Antmicro.Migrant
         {
             WriteHeader(stream);
             serializationDone = true;
-            TouchWriter(stream, true);
-            var result = new OpenStreamSerializer(writer);
-            writer = null; // to ensure that no one will use this writer
+            var result = new OpenStreamSerializer(CreateWriter(stream));
             return result;
         }
 
@@ -321,14 +319,19 @@ namespace Antmicro.Migrant
             stream.WriteByte(settings.ReferencePreservation == ReferencePreservation.DoNotPreserve ? (byte)0 : (byte)1);
         }
 
-        private void TouchWriter(Stream stream, bool alwaysNew = false)
+        private void TouchWriter(Stream stream)
         {
-            if(writer != null && !alwaysNew)
+            if(writer != null)
             {
                 writer.ReuseWithNewStream(stream);
                 return;
             }
-            writer = new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
+            writer = CreateWriter(stream);
+        }
+
+        private ObjectWriter CreateWriter(Stream stream)
+        {
+            return new ObjectWriter(stream, OnPreSerialization, OnPostSerialization, 
                              writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated, 
                              settings.TreatCollectionAsUserObject, settings.UseBuffering, settings.ReferencePreservation);
         }
