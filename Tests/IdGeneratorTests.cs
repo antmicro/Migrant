@@ -45,7 +45,8 @@ namespace Antmicro.Migrant.Tests
             var generated = new HashSet<int>();
             foreach(var obj in objects)
             {
-                var id = identifier.GetId(obj);
+                bool fake;
+                var id = identifier.GetId(obj, out fake);
                 Assert.IsTrue(generated.Add(id), "Not unique ID was generated.");
             }
         }

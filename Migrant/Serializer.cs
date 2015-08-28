@@ -61,7 +61,7 @@ namespace Antmicro.Migrant
             writeMethodCache = new Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>>();
             objectsForSurrogates = new SwapList();
             surrogatesForObjects = new SwapList();
-            readMethodCache = new Dictionary<Type, Func<ObjectReader, int, object>>();
+            readMethodCache = new Dictionary<Type, Action<ObjectReader, Type, int>>();
 
             if(settings.SupportForISerializable)
             {
@@ -415,7 +415,7 @@ namespace Antmicro.Migrant
         private ObjectReader reader;
         private readonly Settings settings;
         private readonly Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethodCache;
-        private readonly Dictionary<Type, Func<ObjectReader, int, object>> readMethodCache;
+        private readonly Dictionary<Type, Action<ObjectReader, Type, int>> readMethodCache;
         private readonly SwapList surrogatesForObjects;
         private readonly SwapList objectsForSurrogates;
         private const byte VersionNumber = 8;
@@ -599,7 +599,7 @@ namespace Antmicro.Migrant
             /// <param name="obj">Object.</param>
             public void Serialize(object obj)
             {
-                writer.WriteObject(new Box(obj));
+                writer.WriteObject(obj);
             }
 
             /// <summary>
@@ -632,8 +632,7 @@ namespace Antmicro.Migrant
             /// <typeparam name="T">The expected formal type of object to deserialize.</typeparam>
             public T Deserialize<T>()
             {
-                var box = reader.ReadObject<Box>();
-                return (T)box.Value;
+                return reader.ReadObject<T>();
             }
 
             /// <summary>
