@@ -87,6 +87,9 @@ namespace Antmicro.Migrant
         /// <param name='o'>
         /// An object to give unique ID for.
         /// </param>
+        /// <param name='isNew'>
+        /// Out parameter specifying if returned id has just been generated.
+        /// </param>
         public int GetId(object o, out bool isNew)
         {
             int id;
@@ -104,14 +107,14 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
-        /// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object)" /> method,
+        /// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method,
         /// returns an object for which this ID was generated.
         /// </summary>
         /// <returns>
         /// The object for which given ID was returned.
         /// </returns>
         /// <param name='id'>
-        /// The unique ID, previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object)" /> method.
+        /// The unique ID, previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method.
         /// </param>
         public object GetObject(int id)
         {
@@ -123,11 +126,11 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
-        /// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object)" /> method,
+        /// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method,
         /// returns an object for which this ID was generated.
         /// </summary>
         /// <param name='id'>
-        /// The unique ID, previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object)" /> method.
+        /// The unique ID, previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method.
         /// </param>
         public object this[int id]
         {
