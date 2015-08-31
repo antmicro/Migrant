@@ -136,38 +136,6 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
-        [Test, Ignore]
-        public void ShouldReadPreservationOptionFromTheStream(
-            [Values(ReferencePreservation.Preserve, ReferencePreservation.DoNotPreserve)]
-            ReferencePreservation referencePreservation)
-        {
-            var localSettings = settings.With(referencePreservation: referencePreservation);
-            var oppositeSettings = settings.With(referencePreservation: 
-                referencePreservation == ReferencePreservation.Preserve
-                ? ReferencePreservation.DoNotPreserve : ReferencePreservation.Preserve);
-
-            var someObject = Tuple.Create(0, 1);
-
-            var serializer = new Serializer(localSettings);
-            var stream = new MemoryStream();
-            using(var osSerializer = serializer.ObtainOpenStreamSerializer(stream))
-            {
-                osSerializer.Serialize(someObject);
-                osSerializer.Serialize(someObject);
-            }
-
-            stream.Seek(0, SeekOrigin.Begin);
-            serializer = new Serializer(oppositeSettings);
-
-            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream))
-            {
-                var first = osDeserializer.Deserialize<object>();
-                var second = osDeserializer.Deserialize<object>();
-                Assert.AreEqual(first, second);
-                Assert.AreEqual(first, someObject);
-            }
-        }
-
         [Test]
         public void ShouldDeserializeMany()
         {
