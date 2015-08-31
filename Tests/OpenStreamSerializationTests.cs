@@ -112,7 +112,7 @@ namespace Antmicro.Migrant.Tests
                 Assert.AreNotSame(objs[1], objs[2]);
             }
         }
-            
+
         [Test]
         public void ShouldntPreserveReferences()
         {
