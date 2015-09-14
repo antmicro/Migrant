@@ -35,6 +35,7 @@ using Antmicro.Migrant.Hooks;
 using System.Linq;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Utilities;
+using System.Runtime.CompilerServices;
 
 namespace Antmicro.Migrant.Generators
 {
@@ -60,10 +61,10 @@ namespace Antmicro.Migrant.Generators
             // surrogates
             if(surrogateId != -1)
             {
-                generator.Emit(OpCodes.Ldarg_0); // used (1)
+                PushObjectWriterOnStack();
 
                 // obtain surrogate factory
-                generator.Emit(OpCodes.Ldarg_0);
+                generator.Emit(OpCodes.Dup);
                 generator.Emit(OpCodes.Ldfld, surrogatesField);
                 generator.Emit(OpCodes.Ldc_I4, surrogateId);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<SwapList>(x => x.GetByIndex(0)));
@@ -71,7 +72,7 @@ namespace Antmicro.Migrant.Generators
                 // call surrogate factory to obtain surrogate object
                 var delegateType = typeof(Func<,>).MakeGenericType(typeToGenerate, typeof(object));
                 generator.Emit(OpCodes.Castclass, delegateType);
-                generator.Emit(OpCodes.Ldarg_2);
+                PushObjectToWriteOnStack();
                 generator.Emit(OpCodes.Castclass, typeToGenerate);
                 generator.Emit(OpCodes.Call, delegateType.GetMethod("Invoke"));
 
@@ -81,9 +82,8 @@ namespace Antmicro.Migrant.Generators
                 return;
             }
 
-            generator.Emit(OpCodes.Ldarg_0); // objectWriter
-
-            generator.Emit(OpCodes.Ldarg_2);
+            PushObjectWriterOnStack();
+            PushObjectToWriteOnStack();
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(o => o.GetType()));
 
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type)));
@@ -102,7 +102,7 @@ namespace Antmicro.Migrant.Generators
             {
                 GenerateWriteFields(gen =>
                 {
-                    gen.Emit(OpCodes.Ldarg_2);
+                    PushObjectToWriteOnStack(gen);
                 }, typeToGenerate);
             }
             if(exceptionBlockNeeded)
@@ -140,7 +140,7 @@ namespace Antmicro.Migrant.Generators
             {
                 if(!method.IsStatic)
                 {
-                    generator.Emit(OpCodes.Ldarg_2); // object to serialize
+                    PushObjectToWriteOnStack();
                 }
                 if(method.IsVirtual)
                 {
@@ -162,7 +162,7 @@ namespace Antmicro.Migrant.Generators
             var count = methodsWithAttribute.Count;
             if(count > 0)
             {
-                generator.Emit(OpCodes.Ldarg_0); // objectWriter
+                PushObjectWriterOnStack();
                 generator.Emit(OpCodes.Ldfld, typeof(ObjectWriter).GetField("postSerializationHooks", BindingFlags.NonPublic | BindingFlags.Instance)); // invoke list
             }
             for(var i = 1; i < count; i++)
@@ -178,7 +178,7 @@ namespace Antmicro.Migrant.Generators
                 }
                 else
                 {
-                    generator.Emit(OpCodes.Ldarg_2); // serialized object
+                    PushObjectToWriteOnStack();
                 }
                 generator.Emit(OpCodes.Ldftn, method);
                 generator.Emit(OpCodes.Newobj, actionCtor);
@@ -212,7 +212,7 @@ namespace Antmicro.Migrant.Generators
                 // according to protocol it is written as it would be written inlined
                 GenerateWriteValue(gen =>
                 {
-                    gen.Emit(OpCodes.Ldarg_2); // value to serialize
+                    PushObjectToWriteOnStack(gen);
                     gen.Emit(OpCodes.Unbox_Any, actualType);
                 }, actualType);
                 return true;
@@ -226,7 +226,7 @@ namespace Antmicro.Migrant.Generators
             {
                 GenerateWriteDelegate(gen =>
                 {
-                    gen.Emit(OpCodes.Ldarg_2); // value to serialize
+                    PushObjectToWriteOnStack(gen);
                 });
                 return true;
             }
@@ -257,13 +257,13 @@ namespace Antmicro.Migrant.Generators
             generator.DeclareLocal(typeof(int)); // length of the array
 
             // writing rank
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+            PushPrimitiveWriterOnStack();
             generator.Emit(OpCodes.Ldc_I4_1);
             generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
 
             // writing length
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldarg_2); // array to serialize
+            PushPrimitiveWriterOnStack();
+            PushObjectToWriteOnStack(); // array to serialize
             generator.Emit(OpCodes.Castclass, actualType);
             generator.Emit(OpCodes.Ldlen);
             generator.Emit(OpCodes.Dup);
@@ -281,7 +281,7 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Ldloc_2); // length of the array
             generator.Emit(OpCodes.Bge, loopEnd);
 
-            generator.Emit(OpCodes.Ldarg_2); // array to serialize
+            PushObjectToWriteOnStack(); // array to serialize
             generator.Emit(OpCodes.Castclass, actualType);
             generator.Emit(OpCodes.Ldloc_0); // index
             generator.Emit(OpCodes.Ldelem, elementType);
@@ -320,15 +320,15 @@ namespace Antmicro.Migrant.Generators
             }
 
             // writing rank
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+            PushPrimitiveWriterOnStack();
             generator.Emit(OpCodes.Ldc_I4, rank);
             generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
 
             // writing lengths
             for(var i = 0; i < rank; i++)
             {
-                generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-                generator.Emit(OpCodes.Ldarg_2); // array to serialize
+                PushPrimitiveWriterOnStack();
+                PushObjectToWriteOnStack();
                 generator.Emit(OpCodes.Castclass, actualType);
                 generator.Emit(OpCodes.Ldc_I4, i);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(array => array.GetLength(0)));
@@ -360,7 +360,7 @@ namespace Antmicro.Migrant.Generators
             if(currentDimension == rank - 1)
             {
                 // writing the element
-                generator.Emit(OpCodes.Ldarg_2); // array to serialize
+                PushObjectToWriteOnStack();
                 generator.Emit(OpCodes.Castclass, arrayType);
                 for(var i = 0; i < rank; i++)
                 {
@@ -415,8 +415,8 @@ namespace Antmicro.Migrant.Generators
             }
 
             // length of the collection
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldarg_2); // collection to serialize
+            PushPrimitiveWriterOnStack();
+            PushObjectToWriteOnStack();
             if(token.CountMethod.IsStatic)
             {
                 generator.Emit(OpCodes.Call, token.CountMethod);
@@ -429,7 +429,7 @@ namespace Antmicro.Migrant.Generators
 
             // elements
             var getEnumeratorMethod = enumerableType.GetMethod("GetEnumerator");
-            generator.Emit(OpCodes.Ldarg_2); // collection to serialize
+            PushObjectToWriteOnStack();
             generator.Emit(OpCodes.Call, getEnumeratorMethod);
             generator.Emit(OpCodes.Stloc_0);
             var loopBegin = generator.DefineLabel();
@@ -501,8 +501,8 @@ namespace Antmicro.Migrant.Generators
             var loopLength = generator.DeclareLocal(typeof(int));
             var element = generator.DeclareLocal(typeof(Delegate));
 
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldarg_0); // objectWriter
+            PushPrimitiveWriterOnStack();
+            PushObjectWriterOnStack();
             putValueToWriteOnTop(generator); // delegate to serialize of type MulticastDelegate
 
             generator.Emit(OpCodes.Call, delegateGetInvocationList);
@@ -527,7 +527,7 @@ namespace Antmicro.Migrant.Generators
                     gen.Emit(OpCodes.Call, delegateGetTarget);
                 }, typeof(object));
 
-                generator.Emit(OpCodes.Ldarg_0); // objectWriter
+                PushObjectWriterOnStack(generator);
                 generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectWriter, IdentifiedElementsDictionary<MethodDescriptor>>(ow => ow.Methods));
 
                 generator.Emit(OpCodes.Ldloc, element);
@@ -550,7 +550,7 @@ namespace Antmicro.Migrant.Generators
             // if this method is null, then it is a non-primitive (i.e. custom) struct
             if(writeMethod != null)
             {
-                generator.Emit(OpCodes.Ldarg_1); // primitive writer waits there
+                PushPrimitiveWriterOnStack();
                 putValueToWriteOnTop(generator);
                 generator.Emit(OpCodes.Call, writeMethod);
                 return;
@@ -561,7 +561,7 @@ namespace Antmicro.Migrant.Generators
                 var hasValue = generator.DefineLabel();
                 var finish = generator.DefineLabel();
                 var localIndex = generator.DeclareLocal(formalType).LocalIndex;
-                generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+                PushPrimitiveWriterOnStack();
                 putValueToWriteOnTop(generator);
                 generator.Emit(OpCodes.Stloc_S, localIndex);
                 generator.Emit(OpCodes.Ldloca_S, localIndex);
@@ -622,7 +622,7 @@ namespace Antmicro.Migrant.Generators
             putValueToWriteOnTop(generator);
             var isNotNull = generator.DefineLabel();
             generator.Emit(OpCodes.Brtrue_S, isNotNull);
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+            PushPrimitiveWriterOnStack();
             generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);
             generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
             generator.Emit(OpCodes.Br, finish);
@@ -635,13 +635,13 @@ namespace Antmicro.Migrant.Generators
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(obj => Helpers.IsTransient(obj)));
                 var isNotTransient = generator.DefineLabel();
                 generator.Emit(OpCodes.Brfalse_S, isNotTransient);
-                generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+                PushPrimitiveWriterOnStack();
                 generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);
                 generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
                 generator.Emit(OpCodes.Br, finish);
                 generator.MarkLabel(isNotTransient);
 
-                generator.Emit(OpCodes.Ldarg_0); // objectWriter
+                PushObjectWriterOnStack();
                 putValueToWriteOnTop(generator);
                 generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteReference(null)));
             }
@@ -649,19 +649,37 @@ namespace Antmicro.Migrant.Generators
             {
                 if(Helpers.IsTransient(formalType))
                 {
-                    generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
+                    PushPrimitiveWriterOnStack();
                     generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);
                     generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
                 }
                 else
                 {
-                    generator.Emit(OpCodes.Ldarg_0); // objectWriter
+                    PushObjectWriterOnStack();
                     putValueToWriteOnTop(generator);
                     generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteReference(null)));
                 }
             }
 
             generator.MarkLabel(finish);
+        }
+         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void PushObjectWriterOnStack(ILGenerator generatorArgument = null)
+        {
+            (generatorArgument ?? generator).Emit(OpCodes.Ldarg_0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void PushPrimitiveWriterOnStack()
+        {
+            generator.Emit(OpCodes.Ldarg_1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void PushObjectToWriteOnStack(ILGenerator generatorArgument = null)
+        {
+            (generatorArgument ?? generator).Emit(OpCodes.Ldarg_2);
         }
 
         private MethodInfo primitiveWriterWriteInteger;
