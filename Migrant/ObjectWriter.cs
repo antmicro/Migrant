@@ -45,7 +45,7 @@ namespace Antmicro.Migrant
     internal class ObjectWriter
     {
         public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null,
-                      Action<object> postSerializationCallback = null, IDictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethods = null,
+                      Action<object> postSerializationCallback = null, IDictionary<Type, WriteMethodSignature> writeMethods = null,
                       SwapList surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false,
                       bool useBuffering = true, bool disableStamping = false, ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
@@ -54,7 +54,7 @@ namespace Antmicro.Migrant
                 surrogatesForObjects = new SwapList();
             }
             currentlyWrittenTypes = new Stack<Type>();
-            this.writeMethods = writeMethods ?? new Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>>();
+            this.writeMethods = writeMethods ?? new Dictionary<Type, WriteMethodSignature>();
             postSerializationHooks = new List<Action>();
             this.isGenerating = isGenerating;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
@@ -291,11 +291,11 @@ namespace Antmicro.Migrant
 
         private void WriteObjectInner(object o)
         {
-            Action<ObjectWriter, PrimitiveWriter, object> writeMethod;
+            WriteMethodSignature writeMethod;
             var type = o.GetType();
             if(writeMethods.TryGetValue(type, out writeMethod))
             {
-                writeMethod(this, writer, o);
+                writeMethod(this, o);
                 return;
             }
 
@@ -303,7 +303,7 @@ namespace Antmicro.Migrant
             writeMethod = PrepareWriteMethod(type, surrogateId);
 
             writeMethods.Add(type, writeMethod);
-            writeMethod(this, writer, o);
+            writeMethod(this, o);
         }
 
         private void WriteObjectsFields(object o, Type type)
@@ -532,7 +532,7 @@ namespace Antmicro.Migrant
             WriteObjectsFields(value, formalType);
         }
 
-        private Action<ObjectWriter, PrimitiveWriter, object> PrepareWriteMethod(Type actualType, int surrogateId)
+        private WriteMethodSignature PrepareWriteMethod(Type actualType, int surrogateId)
         {
             if(surrogateId == -1)
             {
@@ -548,7 +548,7 @@ namespace Antmicro.Migrant
             {
                 if(surrogateId != -1)
                 {
-                    return (ow, pw, o) => ow.InvokeCallbacksAndWriteObject(surrogatesForObjects.GetByIndex(surrogateId).DynamicInvoke(new [] { o }));
+                    return (ow, o) => ow.InvokeCallbacksAndWriteObject(surrogatesForObjects.GetByIndex(surrogateId).DynamicInvoke(new [] { o }));
                 }
                 return WriteObjectUsingReflection;
             }
@@ -556,45 +556,45 @@ namespace Antmicro.Migrant
             var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
                 Helpers.GetFieldInfo<ObjectWriter, SwapList>(x => x.surrogatesForObjects),
                 Helpers.GetMethodInfo<ObjectWriter>(x => x.InvokeCallbacksAndWriteObject(null))).Method;
-            var result = (Action<ObjectWriter, PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<ObjectWriter, PrimitiveWriter, object>));
+            var result = (WriteMethodSignature)method.CreateDelegate(typeof(WriteMethodSignature));
             return result;
         }
 
-        private static Action<ObjectWriter, PrimitiveWriter, object> LinkSpecialWrite(Type actualType)
+        private static WriteMethodSignature LinkSpecialWrite(Type actualType)
         {
             if(actualType == typeof(string))
             {
-                return (ow, pw, obj) =>
+                return (ow, obj) =>
                 {
                     ow.TouchAndWriteTypeId(actualType);
-                    pw.Write((string)obj);
+                    ow.PrimitiveWriter.Write((string)obj);
                 };
             }
             if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
             {
-                return (ow, pw, obj) =>
+                return (ow, obj) =>
                 {
                     ow.TouchAndWriteTypeId(actualType);
-                    var startingPosition = pw.Position;
-                    ((ISpeciallySerializable)obj).Save(pw);
-                    pw.Write(pw.Position - startingPosition);
+                    var startingPosition = ow.PrimitiveWriter.Position;
+                    ((ISpeciallySerializable)obj).Save(ow.PrimitiveWriter);
+                    ow.PrimitiveWriter.Write(ow.PrimitiveWriter.Position - startingPosition);
                 };
             }
             if(actualType == typeof(byte[]))
             {
-                return (ow, pw, objToWrite) =>
+                return (ow, objToWrite) =>
                 {
                     ow.TouchAndWriteTypeId(actualType);
-                    pw.Write(1); // rank of the array
+                    ow.PrimitiveWriter.Write(1); // rank of the array
                     var array = (byte[])objToWrite;
-                    pw.Write(array.Length);
-                    pw.Write(array);
+                    ow.PrimitiveWriter.Write(array.Length);
+                    ow.PrimitiveWriter.Write(array);
                 };
             }
             return null;
         }
 
-        private static void WriteObjectUsingReflection(ObjectWriter objectWriter, PrimitiveWriter primitiveWriter, object o)
+        private static void WriteObjectUsingReflection(ObjectWriter objectWriter, object o)
         {
             objectWriter.TouchAndWriteTypeId(o.GetType());
             // the primitiveWriter and parameter is not used here in fact, it is only to have
@@ -639,8 +639,10 @@ namespace Antmicro.Migrant
         private readonly Action<object> postSerializationCallback;
         private readonly List<Action> postSerializationHooks;
         private readonly SwapList surrogatesForObjects;
-        private readonly IDictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethods;
+        private readonly IDictionary<Type, WriteMethodSignature> writeMethods;
         private readonly Stack<Type> currentlyWrittenTypes;
     }
+
+    internal delegate void WriteMethodSignature(ObjectWriter writer, object obj);
 }
 

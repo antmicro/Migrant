@@ -58,7 +58,7 @@ namespace Antmicro.Migrant
                 settings = new Settings(); // default settings
             }
             this.settings = settings;
-            writeMethodCache = new Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>>();
+            writeMethodCache = new Dictionary<Type, WriteMethodSignature>();
             objectsForSurrogates = new SwapList();
             surrogatesForObjects = new SwapList();
             readMethodCache = new Dictionary<Type, Action<ObjectReader, Type, int>>();
@@ -414,7 +414,7 @@ namespace Antmicro.Migrant
         private ObjectWriter writer;
         private ObjectReader reader;
         private readonly Settings settings;
-        private readonly Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethodCache;
+        private readonly Dictionary<Type, WriteMethodSignature> writeMethodCache;
         private readonly Dictionary<Type, Action<ObjectReader, Type, int>> readMethodCache;
         private readonly SwapList surrogatesForObjects;
         private readonly SwapList objectsForSurrogates;

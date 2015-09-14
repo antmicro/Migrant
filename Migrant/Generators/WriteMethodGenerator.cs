@@ -673,13 +673,14 @@ namespace Antmicro.Migrant.Generators
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PushPrimitiveWriterOnStack()
         {
-            generator.Emit(OpCodes.Ldarg_1);
+            PushObjectWriterOnStack();
+            generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectWriter, PrimitiveWriter>(x => x.PrimitiveWriter));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void PushObjectToWriteOnStack(ILGenerator generatorArgument = null)
         {
-            (generatorArgument ?? generator).Emit(OpCodes.Ldarg_2);
+            (generatorArgument ?? generator).Emit(OpCodes.Ldarg_1);
         }
 
         private MethodInfo primitiveWriterWriteInteger;
@@ -690,7 +691,6 @@ namespace Antmicro.Migrant.Generators
         private static int WriteArrayMethodCounter;
         private static readonly Type[] ParameterTypes = new [] {
             typeof(ObjectWriter),
-            typeof(PrimitiveWriter),
             typeof(object)
         };
     }
