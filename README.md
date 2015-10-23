@@ -341,7 +341,7 @@ Migrant is released on an MIT licence, which can be found in the LICENCE file in
 
 ## Authors
 
-Migrant was created at [Antmicro Ltd.](http://www.antmicro.com) by:
+Migrant was created at [Antmicro Ltd](http://www.antmicro.com) by:
 
 * Konrad Kruczyński (<kkruczynski@antmicro.com>)
 * Mateusz Hołenko (<mholenko@antmicro.com>)
