@@ -58,7 +58,7 @@ namespace Antmicro.Migrant
         public PrimitiveWriter(Stream stream, bool buffered = true)
         {
             this.stream = stream;
-            #if DEBUG
+            #if DEBUG_FORMAT
             buffered &= !Serializer.DisableBuffering;
             #endif
             if(buffered)
@@ -166,7 +166,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(short value)
         {
-#if DEBUG
+#if DEBUG_FORMAT
             if(Serializer.DisableVarints)
             {
                 InnerWriteInteger((ushort)value, sizeof(short) + 1);
@@ -190,7 +190,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(int value)
         {
-#if DEBUG
+#if DEBUG_FORMAT
             if(Serializer.DisableVarints)
             {
                 InnerWriteInteger((uint)value, sizeof(int) + 1);
@@ -214,7 +214,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public void Write(long value)
         {
-#if DEBUG
+#if DEBUG_FORMAT
             if(Serializer.DisableVarints)
             {
                 Write((ulong)value);
@@ -350,7 +350,7 @@ namespace Antmicro.Migrant
         private void InnerWriteInteger(ulong value, int sizeInBytes)
         {
             byte valueToWrite;
-#if DEBUG
+#if DEBUG_FORMAT
             if(Serializer.DisableVarints)
             {
                 if(buffered)

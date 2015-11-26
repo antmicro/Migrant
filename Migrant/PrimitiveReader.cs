@@ -58,7 +58,7 @@ namespace Antmicro.Migrant
         public PrimitiveReader(Stream stream, bool buffered = true)
         {
             this.stream = stream;
-            #if DEBUG
+            #if DEBUG_FORMAT
             buffered &= !Serializer.DisableBuffering;
             #endif
             if(buffered)
@@ -165,7 +165,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public short ReadInt16()
         {
-#if DEBUG
+#if DEBUG_FORMAT
             if(Serializer.DisableVarints)
             {
                 return (short)InnerReadInteger();
@@ -188,7 +188,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public int ReadInt32()
         {
-#if DEBUG
+#if DEBUG_FORMAT
             if(Serializer.DisableVarints)
             {
                 return (int)InnerReadInteger();
@@ -211,7 +211,7 @@ namespace Antmicro.Migrant
         /// </summary>
         public long ReadInt64()
         {
-#if DEBUG
+#if DEBUG_FORMAT
             if(Serializer.DisableVarints)
             {
                 return (long)InnerReadInteger();
@@ -365,7 +365,7 @@ namespace Antmicro.Migrant
         {
             ulong next;
             var result = 0UL;
-#if DEBUG
+#if DEBUG_FORMAT
             if(Serializer.DisableVarints)
             {
                 for(int i = 0; i < sizeof(ulong); ++i)

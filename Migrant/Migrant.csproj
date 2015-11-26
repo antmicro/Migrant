@@ -30,6 +30,13 @@
     <ConsolePause>False</ConsolePause>
     <DocumentationFile>bin\Release\Migrant.xml</DocumentationFile>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'DebugFormat|AnyCPU' ">
+    <Optimize>false</Optimize>
+    <OutputPath>bin\DebugFormat</OutputPath>
+    <WarningLevel>4</WarningLevel>
+    <DebugSymbols>true</DebugSymbols>
+    <DefineConstants>DEBUG_FORMAT; DEBUG</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />

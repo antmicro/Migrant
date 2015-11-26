@@ -299,7 +299,7 @@ namespace Antmicro.Migrant
             serializer.Serialize(toClone, stream);
             var position = stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
-            #if DEBUG
+            #if DEBUG_FORMAT
             if(DumpStream)
             {
                 using(var f = File.Open("stream.dump", FileMode.Create))
@@ -423,7 +423,7 @@ namespace Antmicro.Migrant
         private const byte Magic2 = 0x66;
         private const byte Magic3 = 0x34;
 
-        #if DEBUG
+        #if DEBUG_FORMAT
         public static readonly bool DumpStream = true;
         public static readonly bool DisableVarints = true;
         public static readonly bool DisableBuffering = true;
