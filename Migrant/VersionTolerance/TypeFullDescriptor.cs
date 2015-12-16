@@ -209,8 +209,8 @@ namespace Antmicro.Migrant.VersionTolerance
 
             if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowGuidChange))
             {
-                throw new VersionToleranceException(string.Format("The class was serialized with different module version id {0}, current one is {1}.",
-                    TypeModule.GUID, UnderlyingType.Module.ModuleVersionId));
+                throw new VersionToleranceException(string.Format("The class {2} was serialized with different module version id {0}, current one is {1}.",
+                    TypeModule.GUID, UnderlyingType.Module.ModuleVersionId, UnderlyingType.FullName));
             }
 
             var result = new List<FieldInfoOrEntryToOmit>();
@@ -220,28 +220,32 @@ namespace Antmicro.Migrant.VersionTolerance
                 && ((assemblyTypeDescriptor.baseType == null && baseType != null) || !assemblyTypeDescriptor.baseType.Equals(baseType)) 
                 && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowInheritanceChainChange))
             {
-                throw new VersionToleranceException(string.Format("Class hierarchy changed. Expected '{1}' as base class, but found '{0}'.", baseType != null ? baseType.UnderlyingType.FullName : "null", assemblyTypeDescriptor.baseType != null ? assemblyTypeDescriptor.baseType.UnderlyingType.FullName : "null"));
+                throw new VersionToleranceException(string.Format("Class hierarchy for {2} changed. Expected '{1}' as base class, but found '{0}'.", 
+                    baseType != null ? baseType.UnderlyingType.FullName : "null", 
+                    assemblyTypeDescriptor.baseType != null ? assemblyTypeDescriptor.baseType.UnderlyingType.FullName : "null",
+                    UnderlyingType.FullName));
             }
 
             if(assemblyTypeDescriptor.TypeModule.ModuleAssembly.Version != TypeModule.ModuleAssembly.Version && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowAssemblyVersionChange))
             {
-                throw new VersionToleranceException(string.Format("Assembly version changed from {0} to {1} for class {2}", TypeModule.ModuleAssembly.Version, assemblyTypeDescriptor.TypeModule.ModuleAssembly.Version, UnderlyingType.FullName));
+                throw new VersionToleranceException(string.Format("Assembly version changed from {0} to {1} for class {2}", 
+                    TypeModule.ModuleAssembly.Version, assemblyTypeDescriptor.TypeModule.ModuleAssembly.Version, UnderlyingType.FullName));
             }
 
             var cmpResult = assemblyTypeDescriptor.CompareWith(this, versionToleranceLevel);
 
             if(cmpResult.FieldsChanged.Any())
             {
-                throw new VersionToleranceException(string.Format("Field {0} type changed.", cmpResult.FieldsChanged[0].Name));
+                throw new VersionToleranceException(string.Format("Field {0} type changed in class {1}.", cmpResult.FieldsChanged[0].Name, UnderlyingType.FullName));
             }
 
             if(cmpResult.FieldsAdded.Any() && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowFieldAddition))
             {
-                throw new VersionToleranceException(string.Format("Field added: {0}.", cmpResult.FieldsAdded[0].Name));
+                throw new VersionToleranceException(string.Format("Field {0} added to class {1}.", cmpResult.FieldsAdded[0].Name, UnderlyingType.FullName));
             }
             if(cmpResult.FieldsRemoved.Any() && !versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowFieldRemoval))
             {
-                throw new VersionToleranceException(string.Format("Field removed: {0}.", cmpResult.FieldsRemoved[0].Name));
+                throw new VersionToleranceException(string.Format("Field {0} removed from class {1}.", cmpResult.FieldsRemoved[0].Name, UnderlyingType.FullName));
             }
 
             foreach(var field in fields)
