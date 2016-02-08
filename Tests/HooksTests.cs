@@ -29,6 +29,7 @@ using NUnit.Framework;
 using System.IO;
 using System;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -45,6 +46,62 @@ namespace Antmicro.Migrant.Tests
     {
         public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false, useTypeStamping)
         {
+        }
+
+        [Test]
+        public void ShouldInvokeChainOfHooksInCorrectOrder()
+        {
+            ClassWithTheReference.Reset();
+            var array = new ClassWithTheReference[6];
+            for(var i = 0; i < array.Length; i++)
+            {
+                array[i] = new ClassWithTheReference(i);
+            }
+
+            array[0].refOne = array[1];
+            array[0].refTwo = array[2];
+            array[1].refOne = array[3];
+            array[1].refTwo = array[4];
+            array[2].refOne = array[1];
+            array[2].refTwo = array[5];
+
+            var copy = SerializerClone(array);
+
+            Assert.AreEqual(1, copy[3].value);
+            Assert.AreEqual(2, copy[4].value);
+            Assert.AreEqual(3, copy[1].value);
+            Assert.AreEqual(4, copy[5].value);
+            Assert.AreEqual(5, copy[2].value);
+            Assert.AreEqual(6, copy[0].value);
+        }
+
+        private class ClassWithTheReference
+        {
+            public ClassWithTheReference(int id)
+            {
+                this.id = id;
+            }
+
+            // we don't use array/list here to avoid additional objects
+            public ClassWithTheReference refOne;
+            public ClassWithTheReference refTwo;
+
+            public int value;
+
+            public int id;
+
+            [PostDeserialization]
+            private void PostDeserializationMethod()
+            {
+                value = ++counter;
+            }
+
+            public static void Reset()
+            {
+                counter = 0;
+            }
+
+            private static int counter = 0;
         }
 
         [Test]
