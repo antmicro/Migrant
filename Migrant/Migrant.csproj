@@ -93,6 +93,8 @@
     <Compile Include="VersionTolerance\TypeSimpleDescriptor.cs" />
     <Compile Include="VersionTolerance\TypeFullDescriptor.cs" />
     <Compile Include="Utilities\TypeProvider.cs" />
+    <Compile Include="Utilities\OneToManyMap.cs" />
+    <Compile Include="Utilities\OneToOneMap.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
