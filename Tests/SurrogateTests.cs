@@ -44,142 +44,143 @@ namespace Antmicro.Migrant.Tests
     public class SurrogateTests : BaseTestWithSettings
     {
         public SurrogateTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false, useTypeStamping)
-		{
+        {
 
-		}
+        }
 
-		[Test]
-		public void ShouldPlaceObjectForSurrogate()
-		{
-			var b = new SurrogateMockB();
-			var pseudocopy = PseudoClone(b, serializer =>
-			{
-				serializer.ForSurrogate<SurrogateMockB>().SetObject(x => new SurrogateMockA(999));
-			});
-			var a = pseudocopy as SurrogateMockA;
-			Assert.IsNotNull(a);
-			Assert.AreEqual(999, a.Field);
-		}
+        [Test]
+        public void ShouldPlaceObjectForSurrogate()
+        {
+            var b = new SurrogateMockB();
+            var pseudocopy = PseudoClone(b, serializer =>
+            {
+                serializer.ForSurrogate<SurrogateMockB>().SetObject(x => new SurrogateMockA(999));
+            });
+            var a = pseudocopy as SurrogateMockA;
+            Assert.IsNotNull(a);
+            Assert.AreEqual(999, a.Field);
+        }
 
-		[Test]
-		public void ShouldPlaceObjectForSurrogatePreservingIdentity()
-		{
-			var b = new SurrogateMockB();
-			var list = new List<object> { b, new List<object> { b }, new SurrogateMockB() };
-			var counter = 0;
-			var pseudocopy = PseudoClone(list, serializer =>
-			{
-				serializer.ForSurrogate<SurrogateMockB>().SetObject(x => new SurrogateMockA(counter++));
-			});
-			list = pseudocopy as List<object>;
-			Assert.IsNotNull(list);
-			var sublist = list[1] as List<object>;
-			Assert.IsNotNull(sublist);
-			Assert.AreSame(list[0], sublist[0]);
-			Assert.AreNotSame(list[0], list[2]);
-			var a = list[0] as SurrogateMockA;
-			Assert.IsNotNull(a);
-			Assert.AreEqual(counter - 2, a.Field);
-			var secondA = list[2] as SurrogateMockA;
-			Assert.IsNotNull(secondA);
-			Assert.AreEqual(counter - 1, secondA.Field);
-		}
+        [Test]
+        public void ShouldPlaceObjectForSurrogatePreservingIdentity()
+        {
+            var b = new SurrogateMockB();
+            var list = new List<object> { b, new List<object> { b }, new SurrogateMockB() };
+            var counter = 0;
+            var pseudocopy = PseudoClone(list, serializer =>
+            {
+                serializer.ForSurrogate<SurrogateMockB>().SetObject(x => new SurrogateMockA(counter++));
+            });
+            list = pseudocopy as List<object>;
+            Assert.IsNotNull(list);
+            var sublist = list[1] as List<object>;
+            Assert.IsNotNull(sublist);
+            Assert.AreSame(list[0], sublist[0]);
+            Assert.AreNotSame(list[0], list[2]);
+            var a = list[0] as SurrogateMockA;
+            Assert.IsNotNull(a);
+            Assert.AreEqual(counter - 2, a.Field);
+            var secondA = list[2] as SurrogateMockA;
+            Assert.IsNotNull(secondA);
+            Assert.AreEqual(counter - 1, secondA.Field);
+        }
 
-		[Test]
-		public void ShouldPlaceSurrogateForObject()
-		{
-			var b = new SurrogateMockB();
-			var pseudocopy = PseudoClone(b, serializer =>
-			{
-				serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(1));
-			});
-			var a = pseudocopy as SurrogateMockA;
-			Assert.IsNotNull(a);
-			Assert.AreEqual(1, a.Field);
-		}
+        [Test]
+        public void ShouldPlaceSurrogateForObject()
+        {
+            var b = new SurrogateMockB();
+            var pseudocopy = PseudoClone(b, serializer =>
+            {
+                serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(1));
+            });
+            var a = pseudocopy as SurrogateMockA;
+            Assert.IsNotNull(a);
+            Assert.AreEqual(1, a.Field);
+        }
 
-		[Test]
-		public void ShouldPlaceSurrogateForObjectPreservingIdentity()
-		{
-			var b = new SurrogateMockB();
-			var counter = 0;
-			var list = new List<object> { b, new SurrogateMockB(), b };
-			var pseudocopy = PseudoClone(list, serializer =>
-			{
-				serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(counter++));
-			});
-			list = pseudocopy as List<object>;
-			Assert.IsNotNull(list);
-			Assert.AreSame(list[0], list[2]);
-			Assert.AreNotSame(list[0], list[1]);
-			var a = list[0] as SurrogateMockA;
-			Assert.IsNotNull(a);
-			Assert.AreEqual(counter - 2, a.Field);
-			var secondA = list[1] as SurrogateMockA;
-			Assert.IsNotNull(secondA);
-			Assert.AreEqual(counter - 1, secondA.Field);
-		}
+        [Test]
+        public void ShouldPlaceSurrogateForObjectPreservingIdentity()
+        {
+            var b = new SurrogateMockB();
+            var counter = 0;
+            var list = new List<object> { b, new SurrogateMockB(), b };
+            var pseudocopy = PseudoClone(list, serializer =>
+            {
+                serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(counter++));
+            });
+            list = pseudocopy as List<object>;
+            Assert.IsNotNull(list);
+            Assert.AreSame(list[0], list[2]);
+            Assert.AreNotSame(list[0], list[1]);
+            var a = list[0] as SurrogateMockA;
+            Assert.IsNotNull(a);
+            Assert.AreEqual(counter - 2, a.Field);
+            var secondA = list[1] as SurrogateMockA;
+            Assert.IsNotNull(secondA);
+            Assert.AreEqual(counter - 1, secondA.Field);
+        }
 
-		[Test]
-		public void ShouldDoSurrogateObjectSwap()
-		{
-			var b = new SurrogateMockB();
-			var pseudocopy = PseudoClone(b, serializer =>
-			{
-				serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(1));
-				serializer.ForSurrogate<SurrogateMockA>().SetObject(x => new SurrogateMockC());
-			});
-			var c = pseudocopy as SurrogateMockC;
-			Assert.IsNotNull(c);
-		}
+        [Test]
+        [Test]
+        public void ShouldDoSurrogateObjectSwap()
+        {
+            var b = new SurrogateMockB();
+            var pseudocopy = PseudoClone(b, serializer =>
+            {
+                serializer.ForObject<SurrogateMockB>().SetSurrogate(x => new SurrogateMockA(1));
+                serializer.ForSurrogate<SurrogateMockA>().SetObject(x => new SurrogateMockC());
+            });
+            var c = pseudocopy as SurrogateMockC;
+            Assert.IsNotNull(c);
+        }
 
-		[Test]
-		public void ShouldPlaceObjectForDerivedSurrogate()
-		{
-			var d = new SurrogateMockD();
-			var pseudocopy = PseudoClone(d, serializer =>
-			{
-				serializer.ForSurrogate<SurrogateMockC>().SetObject(x => new SurrogateMockB());
-			});
-			var b = pseudocopy as SurrogateMockB;
-			Assert.IsNotNull(b);
-		}
+        [Test]
+        public void ShouldPlaceObjectForDerivedSurrogate()
+        {
+            var d = new SurrogateMockD();
+            var pseudocopy = PseudoClone(d, serializer =>
+            {
+                serializer.ForSurrogate<SurrogateMockC>().SetObject(x => new SurrogateMockB());
+            });
+            var b = pseudocopy as SurrogateMockB;
+            Assert.IsNotNull(b);
+        }
 
-		[Test]
-		public void ShouldPlaceSurrogateForDerivedObject()
-		{
-			var d = new SurrogateMockD();
-			var pseudocopy = PseudoClone(d, serializer =>
-			{
-				serializer.ForObject<SurrogateMockC>().SetSurrogate(x => new SurrogateMockB());
-			});
-			var b = pseudocopy as SurrogateMockB;
-			Assert.IsNotNull(b);
-		}
+        [Test]
+        public void ShouldPlaceSurrogateForDerivedObject()
+        {
+            var d = new SurrogateMockD();
+            var pseudocopy = PseudoClone(d, serializer =>
+            {
+                serializer.ForObject<SurrogateMockC>().SetSurrogate(x => new SurrogateMockB());
+            });
+            var b = pseudocopy as SurrogateMockB;
+            Assert.IsNotNull(b);
+        }
 
-		[Test]
-		public void ShouldPlaceObjectForSurrogateImplementingInterface()
-		{
-			var e = new SurrogateMockE();
-			var pseudocopy = PseudoClone(e, serializer =>
-			{
-				serializer.ForSurrogate<ISurrogateMockE>().SetObject(x => new SurrogateMockB());
-			});
-			var b = pseudocopy as SurrogateMockB;
-			Assert.IsNotNull(b);
-		}
+        [Test]
+        public void ShouldPlaceObjectForSurrogateImplementingInterface()
+        {
+            var e = new SurrogateMockE();
+            var pseudocopy = PseudoClone(e, serializer =>
+            {
+                serializer.ForSurrogate<ISurrogateMockE>().SetObject(x => new SurrogateMockB());
+            });
+            var b = pseudocopy as SurrogateMockB;
+            Assert.IsNotNull(b);
+        }
 
-		[Test]
-		public void ShouldPlaceSurrogateForObjectImplementingInterface()
-		{
-			var e = new SurrogateMockE();
-			var pseudocopy = PseudoClone(e, serializer =>
-			{
-				serializer.ForObject<ISurrogateMockE>().SetSurrogate(x => new SurrogateMockB());
-			});
-			var b = pseudocopy as SurrogateMockB;
-			Assert.IsNotNull(b);
-		}
+        [Test]
+        public void ShouldPlaceSurrogateForObjectImplementingInterface()
+        {
+            var e = new SurrogateMockE();
+            var pseudocopy = PseudoClone(e, serializer =>
+            {
+                serializer.ForObject<ISurrogateMockE>().SetSurrogate(x => new SurrogateMockB());
+            });
+            var b = pseudocopy as SurrogateMockB;
+            Assert.IsNotNull(b);
+        }
 
         [Test]
         public void ShouldUseMoreSpecificSurrogateIfPossible()
@@ -194,24 +195,24 @@ namespace Antmicro.Migrant.Tests
             Assert.IsNotNull(b);
         }
 
-		[Test]
-		public void ShouldThrowWhenSettingSurrogatesAfterSerialization()
-		{
+        [Test]
+        public void ShouldThrowWhenSettingSurrogatesAfterSerialization()
+        {
             var serializer = new Serializer(GetSettings());
-			serializer.Serialize(new object(), Stream.Null);
-			Assert.Throws<InvalidOperationException>(() => serializer.ForObject<object>().SetSurrogate(x => new object()));
-		}
+            serializer.Serialize(new object(), Stream.Null);
+            Assert.Throws<InvalidOperationException>(() => serializer.ForObject<object>().SetSurrogate(x => new object()));
+        }
 
-		[Test]
-		public void ShouldThrowWhenSettingObjectForSurrogateAfterDeserialization()
-		{
+        [Test]
+        public void ShouldThrowWhenSettingObjectForSurrogateAfterDeserialization()
+        {
             var serializer = new Serializer(GetSettings());
-			var stream = new MemoryStream();
-			serializer.Serialize(new object(), stream);
-			stream.Seek(0, SeekOrigin.Begin);
-			serializer.Deserialize<object>(stream);
-			Assert.Throws<InvalidOperationException>(() => serializer.ForSurrogate<object>().SetObject(x => new object()));
-		}
+            var stream = new MemoryStream();
+            serializer.Serialize(new object(), stream);
+            stream.Seek(0, SeekOrigin.Begin);
+            serializer.Deserialize<object>(stream);
+            Assert.Throws<InvalidOperationException>(() => serializer.ForSurrogate<object>().SetObject(x => new object()));
+        }
 
         [Test]
         public void ShouldDoSurrogateObjectSwapTwoTimes()
@@ -276,7 +277,7 @@ namespace Antmicro.Migrant.Tests
             var i = new SurrogateMockI<string>("something");
             var pseudocopy = PseudoClone(i, serializer =>
                 serializer.ForObject(typeof(SurrogateMockF<>)).SetSurrogate(x => "success"));
-            Assert.AreEqual("success", pseudocopy);            
+            Assert.AreEqual("success", pseudocopy);
         }
 
         [Test]
@@ -304,40 +305,41 @@ namespace Antmicro.Migrant.Tests
         }
 	}
 
-	public class SurrogateMockA
-	{
-		public SurrogateMockA(int field)
-		{
-			Field = field;
-		}
 
-		public int Field { get; private set; }
-	}
+    public class SurrogateMockA
+    {
+        public SurrogateMockA(int field)
+        {
+            Field = field;
+        }
 
-	public class SurrogateMockB
-	{
+        public int Field { get; private set; }
+    }
 
-	}
+    public class SurrogateMockB
+    {
 
-	public class SurrogateMockC
-	{
+    }
 
-	}
+    public class SurrogateMockC
+    {
 
-	public class SurrogateMockD : SurrogateMockC
-	{
+    }
 
-	}
+    public class SurrogateMockD : SurrogateMockC
+    {
 
-	public interface ISurrogateMockE
-	{
+    }
 
-	}
+    public interface ISurrogateMockE
+    {
 
-	public class SurrogateMockE : ISurrogateMockE
-	{
+    }
 
-	}
+    public class SurrogateMockE : ISurrogateMockE
+    {
+
+    }
 
     public class SurrogateMockF<T>
     {
@@ -351,19 +353,19 @@ namespace Antmicro.Migrant.Tests
 
     public interface ISurrogateMockG
     {
-        
+
     }
 
     public class SurrogateMockH : ISurrogateMockE, ISurrogateMockG
     {
-        
+
     }
 
     public class SurrogateMockI<T> : SurrogateMockF<T>
     {
         public SurrogateMockI(T value) : base(value)
         {
-        }        
+        }
     }
 }
 
