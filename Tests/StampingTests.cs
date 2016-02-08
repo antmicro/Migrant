@@ -29,16 +29,30 @@ using System.IO;
 
 namespace Antmicro.Migrant.Tests
 {
-    [TestFixture(true, true)]
-    [TestFixture(true, false)]
-    [TestFixture(true, true)]
-    [TestFixture(false, false)]
+    [TestFixture(false, false, true, true)]
+    [TestFixture(false, false, true, false)]
+    [TestFixture(false, false, false, true)]
+    [TestFixture(false, false, false, false)]
+    [TestFixture(false, true, true, true)]
+    [TestFixture(false, true, true, false)]
+    [TestFixture(false, true, false, true)]
+    [TestFixture(false, true, false, false)]
+    [TestFixture(true, false, true, true)]
+    [TestFixture(true, false, true, false)]
+    [TestFixture(true, false, false, true)]
+    [TestFixture(true, false, false, false)]
+    [TestFixture(true, true, true, true)]
+    [TestFixture(true, true, true, false)]
+    [TestFixture(true, true, false, true)]
+    [TestFixture(true, true, false, false)]
     public class StampingTests
     {
-        public StampingTests(bool serializeWithStamps, bool deserializeWithStamps)
+        public StampingTests(bool useGeneratedSerialization, bool useGeneratedDeserialization, bool serializeWithStamps, bool deserializeWithStamps)
         {
             this.serializeWithStamps = serializeWithStamps;
             this.deserializeWithStamps = deserializeWithStamps;
+            this.useGeneratedSerialization = useGeneratedSerialization;
+            this.useGeneratedDeserialization = useGeneratedDeserialization;
         }
 
         [Test]
@@ -70,16 +84,22 @@ namespace Antmicro.Migrant.Tests
 
         private Serializer CreateSerializer()
         {
-            return new Serializer(new Settings(disableTypeStamping: !serializeWithStamps));
+            return new Serializer(new Settings(
+                useGeneratedSerialization ? Method.Generated : Method.Reflection,
+                disableTypeStamping: !serializeWithStamps));
         }
 
         private Serializer CreateDeserializer()
         {
-            return new Serializer(new Settings(disableTypeStamping: !deserializeWithStamps));
+            return new Serializer(new Settings(
+                deserializationMethod: useGeneratedDeserialization ? Method.Generated : Method.Reflection,
+                disableTypeStamping: !deserializeWithStamps));
         }
 
         private readonly bool serializeWithStamps;
         private readonly bool deserializeWithStamps;
+        private readonly bool useGeneratedSerialization;
+        private readonly bool useGeneratedDeserialization;
 
         private class TestClass
         {
