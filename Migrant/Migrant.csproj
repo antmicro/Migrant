@@ -95,6 +95,7 @@
     <Compile Include="Utilities\TypeProvider.cs" />
     <Compile Include="Utilities\OneToManyMap.cs" />
     <Compile Include="Utilities\OneToOneMap.cs" />
+    <Compile Include="Utilities\WaitCollection.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
