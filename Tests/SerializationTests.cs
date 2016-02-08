@@ -235,7 +235,7 @@ namespace Antmicro.Migrant.Tests
             var copy = SerializerClone(list);
             for(var i = 0; i < 2; i++)
             {
-                CollectionAssert.AreEqual(list[0], copy[0]);
+                CollectionAssert.AreEqual(list[i], copy[i]);
             }
         }
 
