@@ -1046,6 +1046,67 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
+        [Test]
+        public void ShouldHandleEventWithBackreference()
+        {
+            var machine = new BoxingClass();
+            var copy = SerializerClone(machine);
+
+            Assert.IsNotNull(copy);
+            for(var i = 0; i < copy.objectWithItems.items.Length; i++)
+            {
+                Assert.IsFalse(copy.objectWithItems.items [i].ActionIsNull, string.Format("Array element: {0}", i));
+            }
+        }
+
+        private class BoxingClass
+        {
+            // it is necessary for fields to be serialized in proper order
+            // to detect a problem;
+            // as fileds are ordered alphabetically, please be
+            // carefull while renaming them
+            public ClassWithAction objectWithAction;
+            public ClassWithItems objectWithItems;
+
+            public BoxingClass()
+            {
+                objectWithItems = new ClassWithItems(this);
+            }
+        }
+
+        private class ClassWithItems
+        {
+            public ClassWithItems(BoxingClass mach)
+            {
+                items = new ClassWithAction[2];
+                for(var i = 0; i < items.Length; i++)
+                {
+                    items[i] = new ClassWithAction(mach);
+                    // passing 'i' variable to the method is crucial here
+                    items[i].Action += () => Method(i);
+                }
+            }
+
+            private void Method(int i) { }
+
+            public ClassWithAction[] items;
+        }
+
+        private class ClassWithAction
+        {
+            public ClassWithAction(BoxingClass box)
+            {
+                box.objectWithAction = this;
+            }
+
+            public event Action Action;
+
+            public bool ActionIsNull
+            {
+                get { return Action == null; }
+            }
+        }
+
         public class GenericClassWithNestedGenericArgument<T>
         {
             public GenericClassWithNestedGenericArgument(T t)
