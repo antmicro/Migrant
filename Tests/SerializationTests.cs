@@ -1047,6 +1047,39 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
+        public void ShouldSerializeDeepGraph()
+        {
+            var obj = new ClassWithReferenceToTheObjectOfTheSameType();
+            var current = obj;
+            for(int i = 0; i < 45000; i++)
+            {
+                current.reference = new ClassWithReferenceToTheObjectOfTheSameType();
+                current = current.reference;
+            }
+
+            var serializer = new Serializer(GetSettings());
+
+            ClassWithReferenceToTheObjectOfTheSameType copy;
+            using(var stream = new MemoryStream())
+            {
+                serializer.Serialize(obj, stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                copy = serializer.Deserialize<ClassWithReferenceToTheObjectOfTheSameType>(stream);
+            }
+
+            Assert.IsNotNull(copy);
+            var depth = 0;
+            current = copy;
+            while(current.reference != null)
+            {
+                depth++;
+                current = current.reference;
+            }
+
+             Assert.AreEqual(45000, depth);
+        }
+
+        [Test]
         public void ShouldHandleEventWithBackreference()
         {
             var machine = new BoxingClass();
@@ -1105,6 +1138,11 @@ namespace Antmicro.Migrant.Tests
             {
                 get { return Action == null; }
             }
+        }
+
+        public class ClassWithReferenceToTheObjectOfTheSameType
+        {
+            public ClassWithReferenceToTheObjectOfTheSameType reference;
         }
 
         public class GenericClassWithNestedGenericArgument<T>
