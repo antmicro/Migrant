@@ -62,7 +62,6 @@
     <Compile Include="Customization\Settings.cs" />
     <Compile Include="Customization\Method.cs" />
     <Compile Include="Generators\WriteMethodGenerator.cs" />
-    <Compile Include="Utilities\ListWithHash.cs" />
     <Compile Include="Hooks\LatePostDeserializationAttribute.cs" />
     <Compile Include="Hooks\LatePostSerializationAttribute.cs" />
     <Compile Include="Hooks\PostSerializationAttribute.cs" />
