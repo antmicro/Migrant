@@ -32,6 +32,7 @@ using Antmicro.Migrant.Customization;
 using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.BultinSurrogates;
 using Antmicro.Migrant.VersionTolerance;
+using System.Collections.ObjectModel;
 
 namespace Antmicro.Migrant
 {
@@ -75,6 +76,9 @@ namespace Antmicro.Migrant
                 ForObject<System.Xml.Serialization.IXmlSerializable>().SetSurrogate(x => new SurrogateForIXmlSerializable(x));
                 ForSurrogate<SurrogateForIXmlSerializable>().SetObject(x => x.Restore());
             }
+
+            ForObject(typeof(ReadOnlyCollection<>)).SetSurrogate(x => new SurrogateForReadOnlyCollection((System.Collections.IEnumerable)x));
+            ForSurrogate<SurrogateForReadOnlyCollection>().SetObject(x => x.Restore());
         }
 
         /// <summary>

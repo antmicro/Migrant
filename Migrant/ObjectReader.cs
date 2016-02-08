@@ -248,10 +248,6 @@ namespace Antmicro.Migrant
             {
                 ReadDelegate(type, objectId);
             }
-            else if(type.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
-            {
-                ReadReadOnlyCollection(type, objectId);
-            }
             else
             {
                 throw new InvalidOperationException(InternalErrorMessage);
@@ -442,17 +438,6 @@ namespace Antmicro.Migrant
             }
         }
 
-        private void ReadReadOnlyCollection(Type type, int objectId)
-        {
-            var elementFormalType = type.GetGenericArguments()[0];
-            var length = reader.ReadInt32();
-            var array = Array.CreateInstance(elementFormalType, length);
-            for(var i = 0; i < length; i++)
-            {
-                array.SetValue(ReadField(elementFormalType), i);
-            }
-            deserializedObjects[objectId] = Activator.CreateInstance(type, array);
-        }
 
         private void FillArrayRowRecursive(Array array, int currentDimension, int[] position, Type elementFormalType)
         {
