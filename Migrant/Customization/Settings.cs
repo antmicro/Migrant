@@ -166,19 +166,19 @@ namespace Antmicro.Migrant.Customization
         /// <param name="referencePreservation"> 
         /// Tells serializer how to treat references between sessions of open stream serialization.
         /// </param>
-        public Settings With(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
-                             bool supportForISerializable = false, bool treatCollectionAsUserObject = false, bool useBuffering = true, bool disableTypeStamping = false,
-                             ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
+        public Settings With(Method? serializationMethod = null, Method? deserializationMethod = null, VersionToleranceLevel? versionTolerance = null,
+                             bool? supportForISerializable = null, bool? treatCollectionAsUserObject = null, bool? useBuffering = null, bool? disableTypeStamping = null,
+                             ReferencePreservation? referencePreservation = null)
         {
             var result = new Settings {
-                SerializationMethod = serializationMethod,
-                DeserializationMethod = deserializationMethod,
-                VersionTolerance = versionTolerance,
-                SupportForISerializable = supportForISerializable,
-                TreatCollectionAsUserObject = treatCollectionAsUserObject,
-                UseBuffering = useBuffering,
-                DisableTypeStamping = disableTypeStamping,
-                ReferencePreservation = referencePreservation
+                SerializationMethod = serializationMethod ?? SerializationMethod,
+                DeserializationMethod = deserializationMethod ?? DeserializationMethod,
+                VersionTolerance = versionTolerance ?? VersionTolerance,
+                SupportForISerializable = supportForISerializable ?? SupportForISerializable,
+                TreatCollectionAsUserObject = treatCollectionAsUserObject ?? TreatCollectionAsUserObject,
+                UseBuffering = useBuffering ?? UseBuffering,
+                DisableTypeStamping = disableTypeStamping ?? DisableTypeStamping,
+                ReferencePreservation = referencePreservation ?? ReferencePreservation
             };
             return result;
         }
