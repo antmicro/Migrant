@@ -73,6 +73,7 @@ namespace Antmicro.Migrant.Tests
     {
         public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, supportForISerializable, false, useTypeStamping)
         {
+            useGeneratedSerialization = useGeneratedSerializer;
         }
 
         [Test]
@@ -877,9 +878,12 @@ namespace Antmicro.Migrant.Tests
             {
                 exception = e;
             }
-            Assert.IsTrue(exception.Message.Contains(toClone.GetType().Name));
-            Assert.IsTrue(exception.Message.Contains(toClone.Element.GetType().Name));
-            Assert.IsTrue(exception.Message.Contains(toClone.Element.WithIntPtr.GetType().Name));
+            if(!useGeneratedSerialization)
+            {
+                Assert.IsTrue(exception.Message.Contains(toClone.GetType().Name));
+                Assert.IsTrue(exception.Message.Contains(toClone.Element.GetType().Name));
+                Assert.IsTrue(exception.Message.Contains(toClone.Element.WithIntPtr.GetType().Name));
+            }
         }
 
         [Test]
@@ -1736,6 +1740,8 @@ namespace Antmicro.Migrant.Tests
                 Invoked = true;
             }
         }
+
+        private readonly bool useGeneratedSerialization;
     }
 
     public static class CompanionExtensions
