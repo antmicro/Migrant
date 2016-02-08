@@ -32,7 +32,7 @@ namespace Antmicro.Migrant.Tests
     [TestFixture(false, false)]
     [TestFixture(true, false)]
     [TestFixture(true, true)]
-    [TestFixture(false, false)]
+    [TestFixture(false, true)]
     public class TwoDomainTests : TwoDomainsDriver
     {
         public TwoDomainTests(bool useGeneratedSerialized, bool useGeneratedDeserialzer) : base(useGeneratedSerialized, useGeneratedDeserialzer)
