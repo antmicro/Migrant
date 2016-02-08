@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012-2016 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -28,11 +28,11 @@ using System;
 
 namespace Antmicro.Migrant
 {
-	internal enum SerializationType
-	{
-		Transient,
-		Value,
-		Reference
-	}
+    internal enum SerializationType
+    {
+        Transient,
+        Value,
+        Reference
+    }
 }
 

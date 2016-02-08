@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012-2016 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -28,14 +28,13 @@ using System;
 
 namespace Antmicro.Migrant
 {
-	/// <summary>
-	/// When used on a class, it prevents the serialization of all fields which have the type of
-	/// that class. When used on a field, it prevents the serialization of this field.
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Event)]
-	public class TransientAttribute : Attribute
-	{
-		
-	}
+    /// <summary>
+    /// When used on a class, it prevents the serialization of all fields which have the type of
+    /// that class. When used on a field, it prevents the serialization of this field.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Event)]
+    public class TransientAttribute : Attribute
+    {
+    }
 }
 
