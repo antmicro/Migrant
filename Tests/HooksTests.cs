@@ -186,13 +186,13 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
-        public void ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerializationEarly()
+        public void ShouldInvokePostSerializationEvenIfExceptionWasThrownDuringSerializationEarly()
         {
             ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization(new PrePostSerializationMock());
         }
 
         [Test]
-        public void ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerializationLate()
+        public void ShouldInvokePostSerializationEvenIfExceptionWasThrownDuringSerializationLate()
         {
             ShouldInvokePostDeserializationEvenIfExceptionWasThrownDuringSerialization(new LatePrePostSerializationMock());
         }
