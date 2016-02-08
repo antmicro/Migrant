@@ -1,9 +1,10 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012-2016 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
+   * Mateusz Holenko (mholenko@antmicro.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -121,6 +122,33 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
+        public void ShouldAllowBoxedValueTypeSurrogation()
+        {
+            int a = 199;
+            var pseudocopy = PseudoClone(a, serializer =>
+            {
+                serializer.ForObject<int>().SetSurrogate(x => new IntSurrogate(x));
+                serializer.ForSurrogate<IntSurrogate>().SetObject(x => (object)(x.cwi.field));
+            });
+            var b = pseudocopy as object;
+            Assert.AreEqual(299, b);
+        }
+
+        private class ClassWithInteger
+        {
+            public int field;
+        }
+
+        private class IntSurrogate
+        {
+            public IntSurrogate(int value)
+            {
+                cwi = new ClassWithInteger { field = value + 100 };
+            }
+
+            public ClassWithInteger cwi;
+        }
+
         [Test]
         public void ShouldDoSurrogateObjectSwap()
         {
@@ -303,8 +331,25 @@ namespace Antmicro.Migrant.Tests
             });
             Assert.IsInstanceOf<SurrogateMockD>(pseudocopy);
         }
-	}
 
+        [Test]
+        public void ShouldDeserializeSurrogatePointingToItself()
+        {
+            var obj = new object();
+            var pseudocopy = PseudoClone(obj, serializer =>
+            {
+                serializer.ForSurrogate(typeof(object)).SetObject(x =>
+                {
+                    var j = new SurrogateMockJ();
+                    j.field = j;
+                    return j;
+                });
+            });
+
+            Assert.IsInstanceOf<SurrogateMockJ>(pseudocopy);
+            Assert.AreEqual(pseudocopy, ((SurrogateMockJ)pseudocopy).field);
+        }
+    }
 
     public class SurrogateMockA
     {
@@ -366,6 +411,11 @@ namespace Antmicro.Migrant.Tests
         public SurrogateMockI(T value) : base(value)
         {
         }
+    }
+
+    public class SurrogateMockJ
+    {
+        public SurrogateMockJ field;
     }
 }
 
