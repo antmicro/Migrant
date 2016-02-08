@@ -1080,6 +1080,27 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
+        public void ShouldSerializeListOfInterfaces()
+        {
+            var serializer = new Serializer(GetSettings());
+
+            var obj = new ClassWithTheListOfInterfaces();
+            obj.list = new List<IInterface>();
+            for(int i = 0; i < 100; i++)
+            {
+                obj.list.Add(i % 2 == 0 ? (IInterface)new ImplementingInterfaceOne() : (IInterface)new ImplementingInterfaceTwo());
+            }
+            using(var stream = new MemoryStream())
+            {
+                serializer.Serialize(obj, stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                var copy = serializer.Deserialize<ClassWithTheListOfInterfaces>(stream);
+                Assert.IsNotNull(copy);
+                Assert.AreEqual(100, copy.list.Count);
+            }
+        }
+
+        [Test]
         public void ShouldHandleEventWithBackreference()
         {
             var machine = new BoxingClass();
@@ -1138,6 +1159,26 @@ namespace Antmicro.Migrant.Tests
             {
                 get { return Action == null; }
             }
+        }
+
+        public class ClassWithTheListOfInterfaces
+        {
+            public List<IInterface> list;
+        }
+
+        public interface IInterface
+        {
+            void Method();
+        }
+
+        public class ImplementingInterfaceOne : IInterface
+        {
+            public void Method() {}
+        }
+
+        public class ImplementingInterfaceTwo : IInterface
+        {
+            public void Method() {}
         }
 
         public class ClassWithReferenceToTheObjectOfTheSameType
