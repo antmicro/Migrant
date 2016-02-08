@@ -107,6 +107,42 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
+        /// For a given object, returns its unique ID. The new ID is used if object was
+        /// not presented to this class earlier, otherwise the previously returned is used.
+        /// </summary>
+        /// <returns>
+        /// The object's unique ID.
+        /// </returns>
+        /// <param name='o'>
+        /// An object to give unique ID for.
+        /// </param>
+        public int GetId(object o)
+        {
+            bool fake;
+            return GetId(o, out fake);
+        }
+
+        /// <summary>
+        /// Sets new identifier for object.
+        /// 
+        /// REMARK: Setting new mapping of object to id 
+        /// does not remove the old one. As a reuslt,
+        /// after this operation asking for id of old
+        /// object and new object results in returing
+        /// the same identifier. This behaviour is intended
+        /// to support surrogated objects.
+        /// 
+        /// </summary>
+        /// <returns>The new identifier for object.</returns>
+        /// <param name="o">Object</param>
+        /// <param name="id">Identifier</param>
+        public void SetIdentifierForObject(object o, int id)
+        {
+            objectToId[o] = id;
+            idToObject[id] = o;
+        }
+
+        /// <summary>
         /// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method,
         /// returns an object for which this ID was generated.
         /// </summary>
