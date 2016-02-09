@@ -46,10 +46,6 @@ namespace Antmicro.Migrant.Generators
 
             GenerateCallPostDeserializationHooks(context, factoryId);
             GenerateDesurrogate(context, factoryId);
-
-            context.PushObjectReaderOntoStack();
-            context.PushObjectIdOntoStack();
-            context.Generator.Call<ObjectReader>(x => x.InformWaitingObjects(0));
         }
 
         private void GenerateCallPostDeserializationHooks(ReaderGenerationContext context, int factoryId)

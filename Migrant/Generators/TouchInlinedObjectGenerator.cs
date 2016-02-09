@@ -110,10 +110,6 @@ namespace Antmicro.Migrant.Generators
                 context.Generator.Call<ObjectReader>(x => x.SetObjectByReferenceId(0, null));
 
                 context.PushObjectReaderOntoStack();
-                context.PushObjectIdOntoStack();
-                context.Generator.Call<ObjectReader>(x => x.Completed(0));
-
-                context.PushObjectReaderOntoStack();
                 context.Generator.Emit(OpCodes.Ldfld, typeof(ObjectReader).GetField("objectsWrittenInline", BindingFlags.Instance | BindingFlags.NonPublic));
                 context.PushObjectIdOntoStack();
                 context.Generator.Call<HashSet<int>>(x => x.Add(0));

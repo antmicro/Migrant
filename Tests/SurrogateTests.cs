@@ -80,10 +80,10 @@ namespace Antmicro.Migrant.Tests
             Assert.AreNotSame(list[0], list[2]);
             var a = list[0] as SurrogateMockA;
             Assert.IsNotNull(a);
-            Assert.AreEqual(counter - 2, a.Field);
+            Assert.AreEqual(3, a.Field);
             var secondA = list[2] as SurrogateMockA;
             Assert.IsNotNull(secondA);
-            Assert.AreEqual(counter - 1, secondA.Field);
+            Assert.AreEqual(2, secondA.Field);
         }
 
         [Test]

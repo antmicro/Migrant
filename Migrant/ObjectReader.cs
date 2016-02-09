@@ -63,8 +63,6 @@ namespace Antmicro.Migrant
 
             objectsWrittenInline = new HashSet<int>();
             surrogatesWhileReading = new OneToOneMap<int, object>();
-            waitingList = new WaitCollection<int>();
-            completedObjects = new Queue<int>();
 
             readTypeMethod = disableStamping ? (Func<TypeDescriptor>)ReadSimpleTypeDescriptor : ReadFullTypeDescriptor;
         }
@@ -102,14 +100,27 @@ namespace Antmicro.Migrant
                 var after = deserializedObjects.Count;
                 if(before < after - objectsWrittenInline.Count)
                 {
+                    int refId;
+                    int maxNonInlinedReferenceId;
                     do
                     {
-                        var refId = reader.ReadInt32();
+                        refId = reader.ReadInt32();
                         var type = GetObjectByReferenceId(refId).GetType();
                         readMethods.readMethodsProvider.GetOrCreate(type)(this, type, refId);
+
+                        maxNonInlinedReferenceId = deserializedObjects.Count - 1;
+                        while(objectsWrittenInline.Contains(maxNonInlinedReferenceId))
+                        {
+                            maxNonInlinedReferenceId--;
+                        }
                     }
-                    while(waitingList.Count > 0);
+                    while(refId < maxNonInlinedReferenceId);
                 }
+            }
+
+            for(var i = deserializedObjects.Count - 1; i >= 0; i--)
+            {
+                Completed(i);
             }
 
             var obj = deserializedObjects[theRefId];
@@ -185,41 +196,6 @@ namespace Antmicro.Migrant
                 // it can happen if we deserialize delegate with empty invocation list
                 return;
             }
-
-            objectReader.UpdateWaitingList(objectId);
-        }
-
-        internal void UpdateWaitingList(int objectId)
-        {
-            var idOfObjectToWaitFor = MaxAskedReferenceId;
-
-            // if we've just deserialized some inlined objects,
-            // e.g., strings, we should not wait for them, but
-            // for the one before them
-            while(objectsWrittenInline.Contains(idOfObjectToWaitFor))
-            {
-                idOfObjectToWaitFor--;
-            }
-
-            if(objectId >= idOfObjectToWaitFor)
-            {
-                if(!waitingList.HasElementsWaitingForLaterThan(objectId))
-                {
-                    Completed(objectId);
-                    return;
-                }
-
-                // we need to ensure that this object is completed
-                // after all previous one are completed
-                idOfObjectToWaitFor = MaxAskedReferenceId + 1;
-                while(objectsWrittenInline.Contains(idOfObjectToWaitFor))
-                {
-                    idOfObjectToWaitFor++;
-                }
-            }
-
-            // it means we wait for some other objects, so we should store this information in waiting list
-            waitingList.WaitFor(idOfObjectToWaitFor, objectId);
         }
 
         private void UpdateFields(Type actualType, object target)
@@ -249,13 +225,14 @@ namespace Antmicro.Migrant
 
         internal void Completed(int refId)
         {
-            completedObjects.Enqueue(refId);
-            while(completedObjects.Count > 0)
+            var currentObject = GetObjectByReferenceId(refId);
+            if(currentObject == null)
             {
-                var currentReferenceId = completedObjects.Dequeue();
-                var type = GetObjectByReferenceId(currentReferenceId).GetType();
-                readMethods.completeMethodsProvider.GetOrCreate(type)(this, currentReferenceId);
+                // this may happen with empty delegates
+                return;
             }
+            var type = currentObject.GetType();
+            readMethods.completeMethodsProvider.GetOrCreate(type)(this, refId);
         }
 
         internal void CompletedInnerUsingReflection(int refId)
@@ -287,22 +264,6 @@ namespace Antmicro.Migrant
                 CloneContentUsingReflection(desurrogated, deserializedObjects[refId]);
                 obj = deserializedObjects[refId];
                 surrogatesWhileReading.Remove(refId);
-            }
-
-            // (3) inform waiting objects
-            InformWaitingObjects(refId);
-        }
-
-        internal void InformWaitingObjects(int refId)
-        {
-            List<int> list;
-            if(waitingList.TryGetElementsWaitingFor(refId, out list))
-            {
-                foreach(var element in list)
-                {
-                    completedObjects.Enqueue(element);
-                }
-                waitingList.RemoveWaitingListFor(refId);
             }
         }
 
@@ -498,8 +459,6 @@ namespace Antmicro.Migrant
             {
                 var result = reader.ReadString();
                 SetObjectByReferenceId(objectId, result);
-                // this is needed to call post deserialization hooks...
-                Completed(objectId);
                 objectsWrittenInline.Add(objectId);
                 return true;
             }
@@ -824,8 +783,6 @@ namespace Antmicro.Migrant
         internal readonly Serializer.ReadMethods readMethods;
 
         private readonly HashSet<int> objectsWrittenInline;
-        private readonly WaitCollection<int> waitingList;
-        private readonly Queue<int> completedObjects;
         private readonly Func<TypeDescriptor> readTypeMethod;
         private List<TypeDescriptor> types;
         private WeakReference[] soFarDeserialized;
