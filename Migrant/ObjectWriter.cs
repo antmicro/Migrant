@@ -642,7 +642,7 @@ namespace Antmicro.Migrant
                     var startingPosition = ow.writer.Position;
                     ((ISpeciallySerializable)obj).Save(ow.writer);
                     ow.writer.Write(ow.writer.Position - startingPosition);
-                    ow.Completed(obj);
+                    ow.HandleObjectWritten(obj);
                 };
             }
             if(actualType == typeof(byte[]))
@@ -691,7 +691,16 @@ namespace Antmicro.Migrant
 
             if(thisObjectIdentifier == idOfObjectToWaitFor)
             {
-                Completed(o);
+                // we need to ensure that the object is completed after all previous
+                // ones are completed as they can use it's value
+                if(waitingList.HasElementsWaitingForEarlierThan(thisObjectIdentifier))
+                {
+                    waitingList.WaitFor(thisObjectIdentifier - 1, o);
+                }
+                else
+                {
+                    Completed(o);
+                }
             }
             else
             {
