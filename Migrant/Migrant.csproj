@@ -96,7 +96,6 @@
     <Compile Include="Utilities\OneToManyMap.cs" />
     <Compile Include="BultinSurrogates\SurrogateForReadOnlyCollection.cs" />
     <Compile Include="Utilities\OneToOneMap.cs" />
-    <Compile Include="Utilities\WaitCollection.cs" />
     <Compile Include="Generators\CreateObjectGenerator.cs" />
     <Compile Include="Generators\TouchInlinedObjectGenerator.cs" />
     <Compile Include="Generators\ReaderGenerationContext.cs" />
