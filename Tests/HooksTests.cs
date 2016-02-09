@@ -67,11 +67,11 @@ namespace Antmicro.Migrant.Tests
 
             var copy = SerializerClone(array);
 
-            Assert.AreEqual(1, copy[3].value);
+            Assert.AreEqual(1, copy[5].value);
             Assert.AreEqual(2, copy[4].value);
-            Assert.AreEqual(3, copy[1].value);
-            Assert.AreEqual(4, copy[5].value);
-            Assert.AreEqual(5, copy[2].value);
+            Assert.AreEqual(3, copy[3].value);
+            Assert.AreEqual(4, copy[2].value);
+            Assert.AreEqual(5, copy[1].value);
             Assert.AreEqual(6, copy[0].value);
         }
 

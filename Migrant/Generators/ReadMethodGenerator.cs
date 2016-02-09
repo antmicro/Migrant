@@ -135,9 +135,6 @@ namespace Antmicro.Migrant.Generators
             context.PushDeserializedObjectOntoStack(objectIdLocal);
             context.Generator.Emit(OpCodes.Brfalse, finish);
 
-            context.PushObjectReaderOntoStack();
-            context.PushObjectIdOntoStack();
-            context.Generator.Call<ObjectReader>(x => x.UpdateWaitingList(0));
             context.Generator.MarkLabel(finish);
         }
 
