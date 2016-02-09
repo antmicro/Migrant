@@ -203,8 +203,19 @@ namespace Antmicro.Migrant
 
             if(objectId >= idOfObjectToWaitFor)
             {
-                Completed(objectId);
-                return;
+                if(!waitingList.HasElementsWaitingForLaterThan(objectId))
+                {
+                    Completed(objectId);
+                    return;
+                }
+
+                // we need to ensure that this object is completed
+                // after all previous one are completed
+                idOfObjectToWaitFor = MaxAskedReferenceId + 1;
+                while(objectsWrittenInline.Contains(idOfObjectToWaitFor))
+                {
+                    idOfObjectToWaitFor++;
+                }
             }
 
             // it means we wait for some other objects, so we should store this information in waiting list

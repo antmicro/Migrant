@@ -56,6 +56,18 @@ namespace Antmicro.Migrant.Utilities
         {
             waitingList.Remove(idOfObject);
         }
+        
+        public bool HasElementsWaitingForLaterThan(int objectId)
+        {
+            // TODO: any better ideas
+            return waitingList.Keys.Any(x => x > objectId);
+        }
+        
+        public bool HasElementsWaitingForEarlierThan(int objectId)
+        {
+            // TODO: any better ideas
+            return waitingList.Keys.Any(x => x < objectId);
+        }
 
         public IEnumerable<T> WaitingElements { get { return waitingList.Values.SelectMany(x => x).Distinct(); } }
 
