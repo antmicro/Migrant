@@ -69,8 +69,6 @@ namespace Antmicro.Migrant
             }
             touchTypeMethod = disableStamping ? (Func<Type, int>)TouchAndWriteTypeIdWithSimpleStamp : TouchAndWriteTypeIdWithFullStamp;
             objectsWrittenInline = new HashSet<int>();
-            waitingList = new WaitCollection<object>();
-            completedObjects = new Queue<object>();
         }
 
         public void ReuseWithNewStream(Stream stream)
@@ -120,18 +118,9 @@ namespace Antmicro.Migrant
             }
             finally
             {
-                // waiting list should be non-empty here only
-                // when an exception was thrown during serialization;
-                // in such case we should call post serialization
-                // hooks anyway - thankfully waiting list contains
-                // all unfinished objects
-                foreach(var item in waitingList.WaitingElements)
+                for(var i = identifier.Count - 1; i >= 0; i--)
                 {
-                    var method = writeMethods.callPostSerializationHooksMethodsProvider.GetOrCreate(item.GetType());
-                    if(method != null)
-                    {
-                        method(this, item);
-                    }
+                    Completed(identifier.GetObject(i));
                 }
 
                 foreach(var postHook in postSerializationHooks)
@@ -647,7 +636,6 @@ namespace Antmicro.Migrant
                     var startingPosition = ow.writer.Position;
                     ((ISpeciallySerializable)obj).Save(ow.writer);
                     ow.writer.Write(ow.writer.Position - startingPosition);
-                    ow.HandleObjectWritten(obj);
                 };
             }
             if(actualType == typeof(byte[]))
@@ -670,76 +658,19 @@ namespace Antmicro.Migrant
         /// <param name="o">Object to serialize</param>
         internal static void WriteObjectUsingReflection(ObjectWriter objectWriter, object o)
         {
-            try
+            Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
+            if(!objectWriter.WriteSpecialObject(o, !objectWriter.treatCollectionAsUserObject))
             {
-                Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
-                if(!objectWriter.WriteSpecialObject(o, !objectWriter.treatCollectionAsUserObject))
-                {
-                    objectWriter.WriteObjectsFields(o, o.GetType());
-                }
-            }
-            finally
-            {
-                objectWriter.HandleObjectWritten(o);
-            }
-        }
-
-        internal void HandleObjectWritten(object o)
-        {
-            var thisObjectIdentifier = identifier.GetId(o);
-            var idOfObjectToWaitFor = identifier.Count - 1;
-
-            while(objectsWrittenInline.Contains(idOfObjectToWaitFor))
-            {
-                idOfObjectToWaitFor--;
-            }
-
-            if(thisObjectIdentifier == idOfObjectToWaitFor)
-            {
-                // we need to ensure that the object is completed after all previous
-                // ones are completed as they can use it's value
-                if(waitingList.HasElementsWaitingForEarlierThan(thisObjectIdentifier))
-                {
-                    waitingList.WaitFor(thisObjectIdentifier - 1, o);
-                }
-                else
-                {
-                    Completed(o);
-                }
-            }
-            else
-            {
-                waitingList.WaitFor(idOfObjectToWaitFor, o);
+                objectWriter.WriteObjectsFields(o, o.GetType());
             }
         }
 
         private void Completed(object o)
         {
-            completedObjects.Enqueue(o);
-            while(completedObjects.Count > 0)
-            {
-                CompletedInner();
-            }
-        }
-
-        private void CompletedInner()
-        {
-            var o = completedObjects.Dequeue();
             var method = writeMethods.callPostSerializationHooksMethodsProvider.GetOrCreate(o.GetType());
             if(method != null)
             {
                 method(this, o);   
-            }
-
-            var index = identifier.GetId(o);
-            List<object> list;
-            if(waitingList.TryGetElementsWaitingFor(index, out list))
-            {
-                foreach(var element in list)
-                {
-                    completedObjects.Enqueue(element);
-                }
-                waitingList.RemoveWaitingListFor(index);
             }
         }
 
@@ -774,8 +705,6 @@ namespace Antmicro.Migrant
         private readonly bool treatCollectionAsUserObject;
         private readonly ReferencePreservation referencePreservation;
         private readonly Dictionary<object, object> parentObjects;
-        private readonly WaitCollection<object> waitingList;
-        private readonly Queue<object> completedObjects;
         private readonly Serializer.WriteMethods writeMethods;
     }
 

@@ -93,10 +93,6 @@ namespace Antmicro.Migrant.Generators
                 context.Generator.BeginFinallyBlock();
             }
 
-            context.PushObjectWriterOntoStack();
-            context.Generator.PushVariableOntoStack(objectToSerialize);
-            context.Generator.Call<ObjectWriter>(x => x.HandleObjectWritten(null));
-
             if(exceptionBlockNeeded)
             {
                 context.Generator.EndExceptionBlock();
