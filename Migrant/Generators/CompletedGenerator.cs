@@ -34,10 +34,11 @@ namespace Antmicro.Migrant.Generators
 {
     internal class CompletedGenerator : DynamicReadMethodGenerator<CompleteMethodDelegate>
     {
-        public CompletedGenerator(Type type, SwapList objectsForSurrogates, bool disableStamping, bool treatCollectionAsUserObject)
+        public CompletedGenerator(Type type, SwapList objectsForSurrogates, bool disableStamping, bool treatCollectionAsUserObject, bool callPostDeserializationCallback)
             : base(type, "ObjectCompleted", disableStamping, treatCollectionAsUserObject, OpCodes.Ldarg_1, OpCodes.Ldarg_0)
         {
             this.objectsForSurrogates = objectsForSurrogates;
+            this.callPostDeserializationCallback = callPostDeserializationCallback;
         }
 
         protected override void InnerGenerate(ReaderGenerationContext context)
@@ -111,19 +112,13 @@ namespace Antmicro.Migrant.Generators
                 context.Generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<List<Action>>(x => x.Add(null)));
             }
 
-            var callbackLocal = context.Generator.DeclareLocal(typeof(Action<object>));
-            context.PushObjectReaderOntoStack();
-            context.Generator.PushFieldValueOntoStack<ObjectReader, Action<object>>(x => x.postDeserializationCallback);
-
-            var afterCallbackCall = context.Generator.DefineLabel();
-            context.Generator.Emit(OpCodes.Dup);
-            context.Generator.StoreLocalValueFromStack(callbackLocal);
-            context.Generator.Emit(OpCodes.Brfalse, afterCallbackCall);
-            context.Generator.PushLocalValueOntoStack(callbackLocal);
-
-            context.PushDeserializedObjectOntoStack(context.PushObjectIdOntoStack);
-            context.Generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Action<object>>(x => x.Invoke(null)));
-            context.Generator.MarkLabel(afterCallbackCall);
+            if(callPostDeserializationCallback)
+            {
+                context.PushObjectReaderOntoStack();
+                context.Generator.PushFieldValueOntoStack<ObjectReader, Action<object>>(x => x.postDeserializationCallback);
+                context.PushDeserializedObjectOntoStack(context.PushObjectIdOntoStack);
+                context.Generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Action<object>>(x => x.Invoke(null)));
+            }
         }
 
         private void GenerateDesurrogate(ReaderGenerationContext context, int factoryId)
@@ -169,6 +164,7 @@ namespace Antmicro.Migrant.Generators
         }
 
         private readonly SwapList objectsForSurrogates;
+        private readonly bool callPostDeserializationCallback;
     }
 }
 

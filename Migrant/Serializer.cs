@@ -499,7 +499,7 @@ namespace Antmicro.Migrant
 
                 readMethods.completeMethodsProvider = new DynamicMethodProvider<CompleteMethodDelegate>(t =>
                 {
-                    var generator = new CompletedGenerator(t, objectsForSurrogates, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    var generator = new CompletedGenerator(t, objectsForSurrogates, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject, OnPostDeserialization != null);
                     return generator.Generate();
                 });
 
