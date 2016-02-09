@@ -147,8 +147,13 @@ namespace Antmicro.Migrant
             writer.Dispose();
         }
 
-        private void CheckForNullOrTransientnessAndWriteDeferredReference(object o)
-        { 
+        // It is necessary to pass `objectType` when `o` is null.
+        private void CheckForNullOrTransientnessAndWriteDeferredReference (object o, Type objectFormalType = null)
+        {
+            if(objectFormalType != null && Helpers.IsTransient(objectFormalType)) 
+            {
+                return;
+            }
             if(o == null || Helpers.IsTransient(o))
             {
                 writer.Write(Consts.NullObjectId);
@@ -431,7 +436,7 @@ namespace Antmicro.Migrant
                 }
                 else
                 {
-                    CheckForNullOrTransientnessAndWriteDeferredReference(value);
+                    CheckForNullOrTransientnessAndWriteDeferredReference(value, formalType);
                 }
             }
         }
@@ -585,7 +590,7 @@ namespace Antmicro.Migrant
                 WriteValueType(formalType, value);
                 break;
             case SerializationType.Reference:
-                CheckForNullOrTransientnessAndWriteDeferredReference(value);
+                CheckForNullOrTransientnessAndWriteDeferredReference(value, formalType);
                 break;
             }
         }
