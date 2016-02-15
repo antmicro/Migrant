@@ -320,12 +320,6 @@ namespace Antmicro.Migrant
                 throw new InvalidOperationException(InternalErrorMessage);
             }
 
-            if(token.IsDictionary)
-            {
-                FillDictionary(token, objectId);
-                return;
-            }
-
             // so we can assume it is ICollection<T> or ICollection
             FillCollection(token.FormalElementType, objectId);
         }
@@ -514,45 +508,6 @@ namespace Antmicro.Migrant
                     var value = ReadField(elementFormalType);
                     addDelegate.DynamicInvoke(value);
                 }
-            }
-        }
-
-        private void FillDictionary(CollectionMetaToken token, int objectId)
-        {
-            var obj = GetObjectByReferenceId(objectId);
-            var dictionaryType = obj.GetType();
-            var count = reader.ReadInt32();
-            var addMethodArgumentTypes = new[] {
-                token.FormalKeyType,
-                token.FormalValueType
-            };
-            var addMethod = dictionaryType.GetMethod("Add", addMethodArgumentTypes) ??
-                   dictionaryType.GetMethod("TryAdd", addMethodArgumentTypes);
-            if(addMethod == null)
-            {
-                throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage,
-                    dictionaryType));
-            }
-            Type delegateType;
-            if(addMethod.ReturnType == typeof(void))
-            {
-                delegateType = typeof(Action<,>).MakeGenericType(addMethodArgumentTypes);
-            }
-            else
-            {
-                delegateType = typeof(Func<,,>).MakeGenericType(new[] {
-                    addMethodArgumentTypes[0],
-                    addMethodArgumentTypes[1],
-                    addMethod.ReturnType
-                });
-            }
-            var addDelegate = Delegate.CreateDelegate(delegateType, obj, addMethod);
-            for(var i = 0; i < count; i++)
-            {
-                var key = ReadField(addMethodArgumentTypes[0]);
-                var value = ReadField(addMethodArgumentTypes[1]);
-
-                addDelegate.DynamicInvoke(new[] { key, value });
             }
         }
 

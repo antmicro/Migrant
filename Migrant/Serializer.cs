@@ -34,6 +34,7 @@ using Antmicro.Migrant.BultinSurrogates;
 using Antmicro.Migrant.VersionTolerance;
 using System.Collections.ObjectModel;
 using Antmicro.Migrant.Generators;
+using System.Collections;
 
 namespace Antmicro.Migrant
 {
@@ -77,8 +78,17 @@ namespace Antmicro.Migrant
                 ForSurrogate<SurrogateForIXmlSerializable>().SetObject(x => x.Restore());
             }
 
-            ForObject(typeof(ReadOnlyCollection<>)).SetSurrogate(x => new SurrogateForReadOnlyCollection((System.Collections.IEnumerable)x));
-            ForSurrogate<SurrogateForReadOnlyCollection>().SetObject(x => x.Restore());
+            ForObject(typeof(Hashtable)).SetSurrogate(x => new SurrogateForHashtable((Hashtable)x));
+            ForSurrogate<SurrogateForHashtable>().SetObject(x => x.Restore());
+
+            ForObject(typeof(ReadOnlyCollection<>)).SetSurrogateGenericType(typeof(SurrogateForReadOnlyCollection<>));
+            ForSurrogate(typeof(SurrogateForReadOnlyCollection<>)).SetObject(x => ((ISurrogateRestorer)x).Restore());
+
+            ForObject(typeof(Dictionary<,>)).SetSurrogateGenericType(typeof(SurrogateForDictionary<,>));
+            ForSurrogate(typeof(SurrogateForDictionary<,>)).SetObject(x => ((ISurrogateRestorer)x).Restore());
+
+            ForObject(typeof(HashSet<>)).SetSurrogateGenericType(typeof(SurrogateForHashSet<>));
+            ForSurrogate(typeof(SurrogateForHashSet<>)).SetObject(x => ((ISurrogateRestorer)x).Restore());
         }
 
         /// <summary>
@@ -739,6 +749,26 @@ namespace Antmicro.Migrant
             {
                 CheckLegality();
                 Serializer.surrogatesForObjects.AddOrReplace(type, callback);
+            }
+
+            public void SetSurrogateGenericType(Type t)
+            {
+                if(!type.IsGenericType || !t.IsGenericType)
+                {
+                    throw new ArgumentException("Expected generic types");
+                }
+
+                if(type.GetGenericArguments().Length != t.GetGenericArguments().Length)
+                {
+                    throw new ArgumentException("Generic arguments count mismatch");
+                }
+                    
+                Serializer.surrogatesForObjects.AddOrReplace(type, new Func<object, object>(x =>
+                {
+                    // TODO: this might be sub-optimal solution, as we use reflection to create generic type
+                    var finalType = t.MakeGenericType(x.GetType().GetGenericArguments());
+                    return Activator.CreateInstance(finalType, x);
+                }));
             }
 
             private readonly Type type;

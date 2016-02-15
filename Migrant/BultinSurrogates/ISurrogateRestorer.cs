@@ -1,6 +1,6 @@
 ﻿// *******************************************************************
 //
-//  Copyright (c) 2012-2016, Antmicro Ltd <antmicro.com>
+//  Copyright (c) 2012-2014, Antmicro Ltd <antmicro.com>
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -23,25 +23,12 @@
 //
 // *******************************************************************
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace Antmicro.Migrant.BultinSurrogates
 {
-    internal class SurrogateForReadOnlyCollection<T> : ISurrogateRestorer
+    public interface ISurrogateRestorer
     {
-        public SurrogateForReadOnlyCollection(ReadOnlyCollection<T> readOnlyCollection)
-        {
-            content = new List<T>(readOnlyCollection);
-        }
-
-        public object Restore()
-        {
-            return new ReadOnlyCollection<T>(content);
-        }
-
-        private readonly List<T> content;
+        object Restore();
     }
 }
 

@@ -112,6 +112,10 @@
     <Compile Include="Generators\DynamicWriteMethodGenerator.cs" />
     <Compile Include="Generators\DynamicReadMethodGenerator.cs" />
     <Compile Include="Generators\CloneContentMethodGenerator.cs" />
+    <Compile Include="BultinSurrogates\SurrogateForDictionary.cs" />
+    <Compile Include="BultinSurrogates\ISurrogateRestorer.cs" />
+    <Compile Include="BultinSurrogates\SurrogateForHashSet.cs" />
+    <Compile Include="BultinSurrogates\SurrogateForHashtable.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

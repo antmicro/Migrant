@@ -25,23 +25,36 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace Antmicro.Migrant.BultinSurrogates
 {
-    internal class SurrogateForReadOnlyCollection<T> : ISurrogateRestorer
+    public class SurrogateForHashtable
     {
-        public SurrogateForReadOnlyCollection(ReadOnlyCollection<T> readOnlyCollection)
+        public SurrogateForHashtable(Hashtable hashtable)
         {
-            content = new List<T>(readOnlyCollection);
+            keys = new List<object>();
+            values = new List<object>();
+
+            foreach(var key in hashtable.Keys)
+            {
+                keys.Add(key);
+                values.Add(hashtable[key]);
+            }
         }
 
         public object Restore()
         {
-            return new ReadOnlyCollection<T>(content);
+            var result = new Hashtable();
+            for(var i = 0; i < keys.Count; i++)
+            {
+                result.Add(keys[i], values[i]);
+            }
+
+            return result;
         }
 
-        private readonly List<T> content;
+        private readonly List<object> keys;
+        private readonly List<object> values;
     }
 }
 

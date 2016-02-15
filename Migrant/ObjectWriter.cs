@@ -472,14 +472,7 @@ namespace Antmicro.Migrant
                                 (int)collectionToken.CountMethod.Invoke(null, new[] { o }) : 
                                 (int)collectionToken.CountMethod.Invoke(o, null); 
 
-                    if(collectionToken.IsDictionary)
-                    {
-                        WriteDictionary(collectionToken, count, o);
-                    }
-                    else
-                    {
-                        WriteEnumerable(collectionToken.FormalElementType, count, (IEnumerable)o);
-                    }
+                    WriteEnumerable(collectionToken.FormalElementType, count, (IEnumerable)o);
                     return true;
                 }
             }
@@ -492,41 +485,6 @@ namespace Antmicro.Migrant
             foreach(var element in collection)
             {
                 WriteField(elementFormalType, element);
-            }
-        }
-
-        private void WriteDictionary(CollectionMetaToken collectionToken, int count, object dictionary)
-        {
-            writer.Write(count);
-            if(collectionToken.IsGeneric)
-            {
-                var enumeratorMethod = typeof(IEnumerable<>).MakeGenericType(typeof(KeyValuePair<,>).MakeGenericType(collectionToken.FormalKeyType, collectionToken.FormalValueType)).GetMethod("GetEnumerator");
-                var enumerator = enumeratorMethod.Invoke(dictionary, null);
-                var enumeratorType = enumeratorMethod.ReturnType;
-
-                var moveNext = Helpers.GetMethodInfo<IEnumerator>(x => x.MoveNext());
-                var currentField = enumeratorType.GetProperty("Current");
-                var current = currentField.GetGetMethod();
-                var currentType = current.ReturnType;
-                var key = currentType.GetProperty("Key").GetGetMethod();
-                var value = currentType.GetProperty("Value").GetGetMethod();
-                while((bool)moveNext.Invoke(enumerator, null))
-                {
-                    var currentValue = current.Invoke(enumerator, null);
-                    var keyValue = key.Invoke(currentValue, null);
-                    var valueValue = value.Invoke(currentValue, null);
-                    WriteField(collectionToken.FormalKeyType, keyValue);
-                    WriteField(collectionToken.FormalValueType, valueValue);
-                }
-            }
-            else
-            {
-                var castDictionary = (IDictionary)dictionary;
-                foreach(DictionaryEntry element in castDictionary)
-                {
-                    WriteField(typeof(object), element.Key);
-                    WriteField(typeof(object), element.Value);
-                }
             }
         }
 
