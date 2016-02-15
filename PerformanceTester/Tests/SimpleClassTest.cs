@@ -38,7 +38,7 @@ namespace Antmicro.Migrant.PerformanceTester.Tests
                 var classArray = new SimpleClass[900000];
                 for(var i = 0; i < classArray.Length; i++)
                 {
-                    var simpleClass = new SimpleClass { A = i, B = 1.0/i };
+                    var simpleClass = new SimpleClass { A = i, B = 1.0 / (i + 1) };
                     classArray[i] = simpleClass;
                 }
                 return classArray;
