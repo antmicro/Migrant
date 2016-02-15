@@ -39,7 +39,7 @@ namespace Antmicro.Migrant.PerformanceTester.Tests
                 for(var i = 0; i < structArray.Length; i++)
                 {
                     structArray[i].A = i;
-                    structArray[i].B = 1.0 / i;
+                    structArray[i].B = 1.0 / (i + 1);
                 }
                 return structArray;
             }
