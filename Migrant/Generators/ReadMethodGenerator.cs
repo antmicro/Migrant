@@ -156,47 +156,7 @@ namespace Antmicro.Migrant.Generators
                 throw new InvalidOperationException(InternalErrorMessage);
             }
 
-            if(collectionToken.IsDictionary)
-            {
-                GenerateFillDictionary(context, collectionToken, formalType, objectIdLocal);
-                return;
-            }
-
             GenerateFillCollection(context, collectionToken.FormalElementType, formalType, objectIdLocal);
-        }
-
-        private static void GenerateFillDictionary(ReaderGenerationContext context, CollectionMetaToken collectionToken, Type dictionaryType, LocalBuilder objectIdLocal)
-        {
-            var countLocal = context.Generator.DeclareLocal(typeof(int));
-
-            GenerateReadPrimitive(context, typeof(int));
-            context.Generator.StoreLocalValueFromStack(countLocal); // read dictionary elements count
-
-            var addMethodArgumentTypes = new[] {
-                collectionToken.FormalKeyType,
-                collectionToken.FormalValueType
-            };
-            var addMethod = dictionaryType.GetMethod("Add", addMethodArgumentTypes) ??
-                   dictionaryType.GetMethod("TryAdd", addMethodArgumentTypes);
-            if(addMethod == null)
-            {
-                throw new InvalidOperationException(string.Format(CouldNotFindAddErrorMessage, dictionaryType));
-            }
-
-            GeneratorHelper.GenerateLoop(context, countLocal, lc =>
-            {
-                context.PushDeserializedObjectOntoStack(objectIdLocal);
-                context.Generator.Emit(OpCodes.Castclass, dictionaryType);
-
-                GenerateReadField(context, collectionToken.FormalKeyType, false);
-                GenerateReadField(context, collectionToken.FormalValueType, false);
-
-                context.Generator.Emit(OpCodes.Callvirt, addMethod);
-                if(addMethod.ReturnType != typeof(void))
-                {
-                    context.Generator.Emit(OpCodes.Pop); // remove returned unused value from stack
-                }
-            });
         }
 
         private static void GenerateFillCollection(ReaderGenerationContext context, Type elementFormalType, Type collectionType, LocalBuilder objectIdLocal)

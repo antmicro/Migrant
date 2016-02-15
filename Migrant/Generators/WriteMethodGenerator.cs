@@ -192,14 +192,7 @@ namespace Antmicro.Migrant.Generators
                 CollectionMetaToken collectionToken;
                 if(CollectionMetaToken.TryGetCollectionMetaToken(actualType, out collectionToken))
                 {
-                    if(collectionToken.IsDictionary)
-                    {
-                        GenerateWriteDictionary(context, value, collectionToken);
-                    }
-                    else
-                    {
-                        GenerateWriteEnumerable(context, value, collectionToken);
-                    }
+                    GenerateWriteEnumerable(context, value, collectionToken);
                     return true;
                 }
             }
@@ -322,90 +315,6 @@ namespace Antmicro.Migrant.Generators
             context.Generator.Emit(OpCodes.Br, loopBegin);
 
             context.Generator.MarkLabel(finish);
-        }
-
-        private static void GenerateWriteDictionary(WriterGenerationContext context, Variable valueLocal, CollectionMetaToken token)
-        {
-            var genericTypes = new[] { token.FormalKeyType, token.FormalValueType };
-
-            var kvpType = typeof(KeyValuePair<,>).MakeGenericType(genericTypes);
-            var enumerableType = token.IsGeneric ? typeof(Dictionary<,>).MakeGenericType(genericTypes) : typeof(IDictionary);
-            var enumeratorType = token.IsGeneric ? typeof(Dictionary<,>.Enumerator).MakeGenericType(genericTypes) : typeof(IDictionaryEnumerator);
-
-            var kvpLocal = context.Generator.DeclareLocal(kvpType);
-            var iteratorLocal = context.Generator.DeclareLocal(enumeratorType);
-            var currentKeyLocal = context.Generator.DeclareLocal(token.FormalKeyType);
-            var currentValueLocal = context.Generator.DeclareLocal(token.FormalValueType);
-            var currentKeyVariable = new Variable(currentKeyLocal);
-            var currentValueVariable = new Variable(currentValueLocal);
-
-            var loopBeginLabel = context.Generator.DefineLabel();
-            var finishLabel = context.Generator.DefineLabel();
-
-            // write dictionary length
-            context.PushPrimitiveWriterOntoStack();
-            context.Generator.PushVariableOntoStack(valueLocal);
-            context.Generator.Emit(token.CountMethod.IsStatic ? OpCodes.Call : OpCodes.Callvirt, token.CountMethod);
-            context.Generator.Call<PrimitiveWriter>(x => x.Write(0));
-
-            context.Generator.PushVariableOntoStack(valueLocal);
-            context.Generator.Emit(OpCodes.Call, enumerableType.GetMethod("GetEnumerator"));
-            context.Generator.StoreLocalValueFromStack(iteratorLocal);
-
-            context.Generator.MarkLabel(loopBeginLabel);
-
-            if(token.IsGeneric)
-            {
-                context.Generator.PushLocalAddressOntoStack(iteratorLocal);
-                context.Generator.Emit(OpCodes.Call, enumeratorType.GetMethod("MoveNext"));
-            }
-            else
-            {
-                context.Generator.PushLocalValueOntoStack(iteratorLocal);
-                context.Generator.Call<IEnumerator>(x => x.MoveNext());
-            }
-            context.Generator.Emit(OpCodes.Brfalse, finishLabel);
-
-            if(token.IsGeneric)
-            {
-                context.Generator.PushLocalAddressOntoStack(iteratorLocal);
-                context.Generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Current").GetGetMethod());
-                context.Generator.StoreLocalValueFromStack(kvpLocal);
-            }
-
-            // key
-            if(token.IsGeneric)
-            {
-                context.Generator.PushLocalAddressOntoStack(kvpLocal);
-                context.Generator.Emit(OpCodes.Call, kvpType.GetProperty("Key").GetGetMethod());
-            }
-            else
-            {
-                context.Generator.PushLocalValueOntoStack(iteratorLocal);
-                context.Generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Key").GetGetMethod());
-                context.Generator.Emit(OpCodes.Unbox_Any, token.FormalKeyType);
-            }
-            context.Generator.StoreLocalValueFromStack(currentKeyLocal);
-            GenerateWriteField(context, currentKeyVariable, token.FormalKeyType);
-
-            // value
-            if(token.IsGeneric)
-            {
-                context.Generator.PushLocalAddressOntoStack(kvpLocal);
-                context.Generator.Emit(OpCodes.Call, kvpType.GetProperty("Value").GetGetMethod());
-            }
-            else
-            {
-                context.Generator.PushLocalValueOntoStack(iteratorLocal);
-                context.Generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Value").GetGetMethod());
-                context.Generator.Emit(OpCodes.Unbox_Any, token.FormalKeyType);
-            }
-            context.Generator.StoreLocalValueFromStack(currentValueLocal);
-            GenerateWriteField(context, currentValueVariable, token.FormalValueType);
-
-            context.Generator.Emit(OpCodes.Br, loopBeginLabel);
-
-            context.Generator.MarkLabel(finishLabel);
         }
 
         private static void GenerateWriteField(WriterGenerationContext context, Variable valueLocal, Type formalType)

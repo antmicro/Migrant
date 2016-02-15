@@ -25,23 +25,36 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace Antmicro.Migrant.BultinSurrogates
 {
-    internal class SurrogateForReadOnlyCollection<T> : ISurrogateRestorer
+    public class SurrogateForDictionary<TKey, TVal> : ISurrogateRestorer
     {
-        public SurrogateForReadOnlyCollection(ReadOnlyCollection<T> readOnlyCollection)
+        public SurrogateForDictionary(Dictionary<TKey, TVal> dic)
         {
-            content = new List<T>(readOnlyCollection);
+            keys = new List<TKey>(dic.Keys.Count);
+            values = new List<TVal>(dic.Keys.Count);
+
+            foreach(var key in dic.Keys)
+            {
+                keys.Add(key);
+                values.Add(dic[key]);
+            }
         }
 
         public object Restore()
         {
-            return new ReadOnlyCollection<T>(content);
+            var result = new Dictionary<TKey, TVal>();
+            for(var i = 0; i < keys.Count; i++)
+            {
+                result.Add(keys[i], values[i]);
+            }
+
+            return result;
         }
 
-        private readonly List<T> content;
+        private readonly List<TKey> keys;
+        private readonly List<TVal> values;
     }
 }
 

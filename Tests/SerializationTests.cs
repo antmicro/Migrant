@@ -1117,6 +1117,46 @@ namespace Antmicro.Migrant.Tests
             }
         }
 
+        [Test]
+        public void ShouldSerializeDictionaryWithCustomObject()
+        {
+            var dic = new Dictionary<CustomObject, string>();
+            dic.Add(new CustomObject(new object()), "test1");
+            dic.Add(new CustomObject(new object()), "test2");
+            dic.Add(new CustomObject(new object()), "test3");
+
+            var copy = SerializerClone(dic);
+
+            Assert.AreEqual(3, copy.Count);
+        }
+
+        [Test]
+        public void ShouldSerializeHashsetWithCustomObject()
+        {
+            var hset = new HashSet<CustomObject>();
+            hset.Add(new CustomObject(new object()));
+            hset.Add(new CustomObject(new object()));
+            hset.Add(new CustomObject(new object()));
+
+            var copy = SerializerClone(hset);
+            Assert.AreEqual(3, copy.Count);
+        }
+
+        private class CustomObject
+        {
+            public CustomObject(object field)
+            {
+                this.field = field;
+            }
+
+            public override int GetHashCode()
+            {
+                return field.GetHashCode();
+            }
+
+            private object field;
+        }
+
         private class BoxingClass
         {
             // it is necessary for fields to be serialized in proper order

@@ -25,20 +25,19 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace Antmicro.Migrant.BultinSurrogates
 {
-    internal class SurrogateForReadOnlyCollection<T> : ISurrogateRestorer
+    internal class SurrogateForHashSet<T> : ISurrogateRestorer
     {
-        public SurrogateForReadOnlyCollection(ReadOnlyCollection<T> readOnlyCollection)
+        public SurrogateForHashSet(HashSet<T> set)
         {
-            content = new List<T>(readOnlyCollection);
+            content = new List<T>(set);
         }
 
         public object Restore()
         {
-            return new ReadOnlyCollection<T>(content);
+            return new HashSet<T>(content);
         }
 
         private readonly List<T> content;
