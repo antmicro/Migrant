@@ -564,13 +564,19 @@ namespace Antmicro.Migrant
             return readMethods;
         }
 
+        internal static object CreateGenericSurrogateUsingReflection(Type t, object obj)
+        {
+            var finalType = t.MakeGenericType(obj.GetType().GetGenericArguments());
+            return Activator.CreateInstance(finalType, obj);
+        }
+
         private Exception lastException;
         private bool serializationDone;
         private bool deserializationDone;
         private ObjectWriter writer;
         private ObjectReader reader;
         private readonly Settings settings;
-        private readonly SwapList surrogatesForObjects;
+        internal readonly SwapList surrogatesForObjects;
         private readonly SwapList objectsForSurrogates;
         private const byte VersionNumber = 9;
         private const byte Magic1 = 0x32;
@@ -582,6 +588,8 @@ namespace Antmicro.Migrant
         public static readonly bool DisableVarints = true;
         public static readonly bool DisableBuffering = true;
         #endif
+
+        internal delegate object CreateGenericSurrogateDelegate(Type t, object o);
 
         internal struct WriteMethods
         {
@@ -762,13 +770,28 @@ namespace Antmicro.Migrant
                 {
                     throw new ArgumentException("Generic arguments count mismatch");
                 }
-                    
-                Serializer.surrogatesForObjects.AddOrReplace(type, new Func<object, object>(x =>
+
+                if(Serializer.settings.SerializationMethod == Method.Reflection)
                 {
-                    // TODO: this might be sub-optimal solution, as we use reflection to create generic type
-                    var finalType = t.MakeGenericType(x.GetType().GetGenericArguments());
-                    return Activator.CreateInstance(finalType, x);
-                }));
+                    Serializer.surrogatesForObjects.AddOrReplace(type, new Func<object, object>(x =>
+                    {
+                        return CreateGenericSurrogateUsingReflection(t, x);
+                    }));
+                }
+                else
+                {
+                    Serializer.surrogatesForObjects.AddOrReplace(type, new Func<object, object>(x =>
+                    {
+                        var xType = x.GetType();
+                        var finalType = t.MakeGenericType(xType.GetGenericArguments());
+                        var generator = new CreateGenericSurrogateMethodGenerator(xType, finalType);
+                        var method = generator.Generate();
+
+                        Serializer.surrogatesForObjects.AddOrReplace(xType, new Func<object, object>(y => method(null, y)));
+
+                        return method(null, x);
+                    }));
+                }
             }
 
             private readonly Type type;

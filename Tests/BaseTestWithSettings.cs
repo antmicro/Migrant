@@ -70,7 +70,8 @@ namespace Antmicro.Migrant.Tests
             return serializer.Deserialize<object>(mStream);
         }
 
-        private readonly bool useGeneratedSerializer;
+        protected readonly bool useGeneratedSerializer;
+
         private readonly bool useGeneratedDeserializer;
         private readonly bool treatCollectionsAsUserObjects;
         private readonly bool supportForISerializable;

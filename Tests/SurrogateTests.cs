@@ -349,6 +349,44 @@ namespace Antmicro.Migrant.Tests
             Assert.IsInstanceOf<SurrogateMockJ>(pseudocopy);
             Assert.AreEqual(pseudocopy, ((SurrogateMockJ)pseudocopy).field);
         }
+
+        [Test]
+        public void ShouldNotGenerateGenericSurrogateTwice()
+        {
+            var d = new ClassWithGenericSurrogates();
+            Serializer serializerInstance = null;
+            int surrogatesBeforeSerialization = 0;
+            var pseudocopy = PseudoClone(d, serializer =>
+            {
+                serializer.ForObject(typeof(ClassToBeSurrogated<>)).SetSurrogateGenericType(typeof(SurrogatingClass<>));
+                serializerInstance = serializer;
+                surrogatesBeforeSerialization = serializer.surrogatesForObjects.Count;
+            });
+
+            Assert.IsInstanceOf<ClassWithGenericSurrogates>(pseudocopy);
+            Assert.IsInstanceOf<SurrogatingClass<int>>(((ClassWithGenericSurrogates)pseudocopy).fieldA);
+            Assert.IsInstanceOf<SurrogatingClass<float>>(((ClassWithGenericSurrogates)pseudocopy).fieldB);
+            Assert.IsInstanceOf<SurrogatingClass<int>>(((ClassWithGenericSurrogates)pseudocopy).fieldC);
+            Assert.AreEqual(useGeneratedSerializer ? 2 : 0, serializerInstance.surrogatesForObjects.Count - surrogatesBeforeSerialization);
+        }
+
+        private class ClassWithGenericSurrogates
+        {
+            internal object fieldA = new ClassToBeSurrogated<int>();
+            internal object fieldB = new ClassToBeSurrogated<float>();
+            internal object fieldC = new ClassToBeSurrogated<int>();
+        }
+
+        private class ClassToBeSurrogated<T>
+        {
+        }
+
+        private class SurrogatingClass<T>
+        {
+            public SurrogatingClass(ClassToBeSurrogated<T> x)
+            {
+            }
+        }
     }
 
     public class SurrogateMockA
