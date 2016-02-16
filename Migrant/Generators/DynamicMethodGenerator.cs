@@ -30,7 +30,7 @@ namespace Antmicro.Migrant.Generators
 {
     internal abstract class DynamicMethodGenerator<T> where T : class
     {
-        protected DynamicMethodGenerator(Type type, bool disableStamping, bool treatCollectionAsUserObject)
+        protected DynamicMethodGenerator(Type type, bool disableStamping = false, bool treatCollectionAsUserObject = false)
         {
             this.type = type;
             this.disableStamping = disableStamping;
