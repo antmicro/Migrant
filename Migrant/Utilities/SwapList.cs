@@ -38,8 +38,8 @@ namespace Antmicro.Migrant.Utilities
         /// </summary>
         public SwapList()
         {
-            keys = new List<Type>();
-            values = new List<Delegate>();
+            items = new List<SwapListItem>();
+            headIndex = -1;
         }
 
         /// <summary>
@@ -49,36 +49,37 @@ namespace Antmicro.Migrant.Utilities
         /// <param name="value">Value.</param>
         public void AddOrReplace(Type key, Delegate value)
         {
-            // we put generic surrogates at the end of the list, so they will match only
-            // if there is no match with non-generic surrogates
-            int i, lastPossibleIndex;
-            if(Helpers.IsOpenGenericType(key))
+            var previousIndex = -1;
+            var currentIndex = headIndex;
+            while(currentIndex != -1)
             {
-                lastPossibleIndex = keys.Count - 1;
-                i = numberOfNonGenerics;
-            }
-            else
-            {
-                lastPossibleIndex = numberOfNonGenerics - 1;
-                i = 0;
-                numberOfNonGenerics++;
-            }
-
-            while(i <= lastPossibleIndex)
-            {
-                if(IsMatch(keys[i], key))
+                var current = items[currentIndex];
+                
+                if(IsMatch(current.Key, key))
                 {
-                    if(keys[i] == key)
+                    if(current.Key == key)
                     {
+                        items[currentIndex] = current.With(value: value);
                         return;
                     }
                     break;
                 }
-                i++;
+                previousIndex = currentIndex;
+                currentIndex = current.NextElementIndex;
             }
 
-            keys.Insert(i, key);
-            values.Insert(i, value);
+            var newItem = new SwapListItem(key, value, items.Count);
+            if(previousIndex == -1)
+            {
+                newItem.NextElementIndex = headIndex;
+                headIndex = newItem.Id;
+            }
+            else
+            {
+                newItem.NextElementIndex = items[previousIndex].NextElementIndex;
+                items[previousIndex] = items[previousIndex].With(nextElementIndex: newItem.Id);
+            }
+            items.Add(newItem);
         }
 
         /// <summary>
@@ -88,7 +89,7 @@ namespace Antmicro.Migrant.Utilities
         /// <param name="index">The index of the element.</param>
         public Delegate GetByIndex(int index)
         {
-            return values[index];
+            return items[index].Value;
         }
 
         /// <summary>
@@ -98,15 +99,21 @@ namespace Antmicro.Migrant.Utilities
         /// <param name="value">Type to match.</param>
         public int FindMatchingIndex(Type value)
         {
-            for(var i = 0; i < keys.Count; i++)
+            var currentIndex = headIndex;
+            while(currentIndex != -1)
             {
-                if(IsMatch(keys[i], value))
+                var current = items[currentIndex];
+                
+                if(IsMatch(current.Key, value))
                 {
-                    return values[i] == null ? -1 : i;
+                    return current.Value == null ? -1 : current.Id;
                 }
+                currentIndex = current.NextElementIndex;
             }
             return -1;
         }
+
+        internal int Count { get { return items.Count; } }
 
         private static bool IsMatch(Type candidate, Type value)
         { 
@@ -143,10 +150,29 @@ namespace Antmicro.Migrant.Utilities
             return false;
         }
 
-        private int numberOfNonGenerics;
-        private readonly List<Type> keys;
-        private readonly List<Delegate> values;
+        private int headIndex;
+        private readonly List<SwapListItem> items;
 
+        private struct SwapListItem
+        {
+            public SwapListItem(Type key, Delegate value, int id) : this()
+            {
+                Key = key;
+                Value = value;
+                Id = id;
+                NextElementIndex = -1;
+            }
+
+            public SwapListItem With(int? nextElementIndex = null, Delegate value = null)
+            {
+                return new SwapListItem(Key, value ?? Value, Id) { NextElementIndex = nextElementIndex ?? -1 };
+            }
+
+            public Type Key { get; private set; }
+            public Delegate Value { get; set; }
+            public int NextElementIndex { get; set; }
+            public int Id { get; private set; }
+        }
     }
 }
 
