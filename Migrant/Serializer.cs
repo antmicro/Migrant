@@ -780,16 +780,11 @@ namespace Antmicro.Migrant
                 }
                 else
                 {
-                    Serializer.surrogatesForObjects.AddOrReplace(type, new Func<object, object>(x =>
+                    Serializer.surrogatesForObjects.AddGenericTemplate(type, new Func<Type, Delegate>(lt =>
                     {
-                        var xType = x.GetType();
-                        var finalType = t.MakeGenericType(xType.GetGenericArguments());
-                        var generator = new CreateGenericSurrogateMethodGenerator(xType, finalType);
-                        var method = generator.Generate();
-
-                        Serializer.surrogatesForObjects.AddOrReplace(xType, new Func<object, object>(y => method(null, y)));
-
-                        return method(null, x);
+                        var finalType = t.MakeGenericType(lt.GetGenericArguments());
+                        var generator = new CreateGenericSurrogateMethodGenerator(lt, finalType);
+                        return new Func<object, object>(o => generator.Generate()(null, o));
                     }));
                 }
             }
