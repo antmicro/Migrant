@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 - 2015 Antmicro <www.antmicro.com>
+  Copyright (c) 2012 - 2016 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -29,50 +29,48 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Collections;
 using Antmicro.Migrant.Hooks;
 using Antmicro.Migrant.Generators;
-using System.Reflection.Emit;
 using System.Threading;
-using System.Diagnostics;
 using Antmicro.Migrant.VersionTolerance;
 using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.Customization;
+using System.Text;
+using System.Reflection;
 
 namespace Antmicro.Migrant
 {
     internal class ObjectWriter
     {
-        public ObjectWriter(Stream stream, Action<object> preSerializationCallback = null,
-                      Action<object> postSerializationCallback = null, IDictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethods = null,
-                      SwapList surrogatesForObjects = null, bool isGenerating = true, bool treatCollectionAsUserObject = false,
-                      bool useBuffering = true, bool disableStamping = false, ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
+        public ObjectWriter(Stream stream, Serializer.WriteMethods writeMethods, Action<object> preSerializationCallback = null,
+                            Action<object> postSerializationCallback = null, SwapList surrogatesForObjects = null, SwapList objectsForSurrogates = null, 
+                            bool treatCollectionAsUserObject = false, bool useBuffering = true, bool disableStamping = false, 
+                            ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
-            if(surrogatesForObjects == null)
-            {
-                surrogatesForObjects = new SwapList();
-            }
-            currentlyWrittenTypes = new Stack<Type>();
-            this.writeMethods = writeMethods ?? new Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>>();
-            postSerializationHooks = new List<Action>();
-            this.isGenerating = isGenerating;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
-            this.surrogatesForObjects = surrogatesForObjects;
+            this.objectsForSurrogates = objectsForSurrogates;
+            this.referencePreservation = referencePreservation;
+            this.preSerializationCallback = preSerializationCallback;
+            this.postSerializationCallback = postSerializationCallback;
+            this.writeMethods = writeMethods;
+            this.surrogatesForObjects = surrogatesForObjects ?? new SwapList();
+
+            parentObjects = new Dictionary<object, object>();
+            postSerializationHooks = new List<Action>();
             types = new IdentifiedElementsDictionary<TypeDescriptor>(this);
             Methods = new IdentifiedElementsDictionary<MethodDescriptor>(this);
             Assemblies = new IdentifiedElementsDictionary<AssemblyDescriptor>(this);
             Modules = new IdentifiedElementsDictionary<ModuleDescriptor>(this);
-            this.preSerializationCallback = preSerializationCallback;
-            this.postSerializationCallback = postSerializationCallback;
             writer = new PrimitiveWriter(stream, useBuffering);
-            this.referencePreservation = referencePreservation;
             if(referencePreservation == ReferencePreservation.Preserve)
             {
                 identifier = new ObjectIdentifier();
             }
-
             touchTypeMethod = disableStamping ? (Func<Type, int>)TouchAndWriteTypeIdWithSimpleStamp : TouchAndWriteTypeIdWithFullStamp;
+            objectsWrittenInline = new HashSet<int>();
+            waitingList = new WaitCollection<object>();
+            completedObjects = new Queue<object>();
         }
 
         public void ReuseWithNewStream(Stream stream)
@@ -100,11 +98,42 @@ namespace Antmicro.Migrant
 
             try
             {
-                // first object is always written
-                WriteField(typeof(object), o);
+                var writtenBefore = identifier.Count;
+                writeMethods.writeReferenceMethodsProvider.GetOrCreate(typeof(object))(this, o);
+
+                if(writtenBefore != identifier.Count)
+                {
+                    var refId = identifier.GetId(o);
+                    do
+                    {
+                        if(!objectsWrittenInline.Contains(refId))
+                        {
+                            var obj = identifier.GetObject(refId);
+                            writer.Write(refId);
+                            InvokeCallbacksAndExecute(obj, WriteObjectInner);
+                        }
+
+                        refId++;
+                    }
+                    while(identifier.Count > refId);
+                }
             }
             finally
             {
+                // waiting list should be non-empty here only
+                // when an exception was thrown during serialization;
+                // in such case we should call post serialization
+                // hooks anyway - thankfully waiting list contains
+                // all unfinished objects
+                foreach(var item in waitingList.WaitingElements)
+                {
+                    var method = writeMethods.callPostSerializationHooksMethodsProvider.GetOrCreate(item.GetType());
+                    if(method != null)
+                    {
+                        method(this, item);
+                    }
+                }
+
                 foreach(var postHook in postSerializationHooks)
                 {
                     postHook();
@@ -118,15 +147,89 @@ namespace Antmicro.Migrant
             writer.Dispose();
         }
 
-        internal void WriteReference(object o)
+        private void CheckForNullOrTransientnessAndWriteDeferredReference(object o)
+        { 
+            if(o == null || Helpers.IsTransient(o))
+            {
+                writer.Write(Consts.NullObjectId);
+                return;
+            }
+
+            CheckLegalityAndWriteDeferredReference(o);
+        }
+
+        internal void CheckLegalityAndWriteDeferredReference(object o)
+        {
+            CheckLegality(o, parentObjects);
+            WriteDeferredReference(o);
+        }
+
+        internal void WriteDeferredReference(object o)
         {
             bool isNew;
             var refId = identifier.GetId(o, out isNew);
             writer.Write(refId);
             if(isNew)
             {
-                InvokeCallbacksAndWriteObject(o);
+                var method = writeMethods.surrogateObjectIfNeededMethodsProvider.GetOrCreate(o.GetType());
+                if(method != null)
+                {
+                    o = method(this, o, refId);
+                }
+                // we should write a type reference here!
+                // and some special data in case of some types, i.e. surrogates or arrays
+                var type = o.GetType();
+                TouchAndWriteTypeId(type);
+                writeMethods.handleNewReferenceMethodsProvider.GetOrCreate(type)(this, o, refId);
             }
+        }
+
+        internal object SurrogateObjectIfNeeded(object o, int refId)
+        {
+            var surrogateId = surrogatesForObjects.FindMatchingIndex(o.GetType());
+            if(surrogateId != -1)
+            {
+                o = surrogatesForObjects.GetByIndex(surrogateId).DynamicInvoke(new[] { o });
+                // special case - surrogation!
+                // setting identifier for new object does not remove original one from the mapping
+                // thanks to that behaviour surrogation preserves identity
+                identifier.SetIdentifierForObject(o, refId);
+            }
+
+            return o;
+        }
+
+        internal void HandleNewReference(object o, int refId)
+        {
+            var objectForSurrogatesIndex = objectsForSurrogates == null ? -1 : objectsForSurrogates.FindMatchingIndex(o.GetType());
+            writer.Write(objectForSurrogatesIndex != -1);
+            if(objectForSurrogatesIndex != -1)
+            {
+                // we use counter-surrogate here just to determine the type of final object
+                // bare in mind that it does not have to be the same as initial type of an object
+                var restoredObject = objectsForSurrogates.GetByIndex(objectForSurrogatesIndex).DynamicInvoke(new[] { o });
+                TouchAndWriteTypeId(restoredObject.GetType());
+            }
+            if(TryWriteObjectInline(o))
+            {
+                objectsWrittenInline.Add(refId);
+            }
+        }
+
+        internal bool TryWriteObjectInline(object o)
+        {
+            var type = o.GetType();
+            if(type.IsArray)
+            {
+                WriteArrayMetadata((Array)o);
+                return false;
+            }
+            if(type == typeof(string))
+            {
+                InvokeCallbacksAndExecute(o, s => writer.Write((string)s));
+                return true;
+            }
+            return WriteSpecialObject(o, false);
         }
 
         internal Delegate[] GetDelegatesWithNonTransientTargets(MulticastDelegate mDelegate)
@@ -134,35 +237,42 @@ namespace Antmicro.Migrant
             return mDelegate.GetInvocationList().Where(x => x.Target == null || !Helpers.IsTransient(x.Target)).ToArray();
         }
 
-        internal static void CheckLegality(Type type, Type containingType = null, IEnumerable<Type> writtenTypes = null)
+        internal static void CheckLegality(Type type)
         {
-            // containing type is a hint in case of 
-            if(type.IsPointer || type == typeof(IntPtr) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ThreadLocal<>)) || type == typeof(SpinLock))
+            if(IsTypeIllegal(type))
             {
-                IEnumerable<string> typeNames;
-                if(writtenTypes == null)
-                {
-                    var stackTrace = new StackTrace();
-                    var methods = stackTrace.GetFrames().Select(x => x.GetMethod()).ToArray();
-                    var topType = containingType != null ? new [] { containingType.Name } : (new string[0]);
-                    typeNames = topType.Union(
-                        methods
-							.Where(x => (x.Name.StartsWith("Write_") || x.Name.StartsWith("WriteArray")) && x.GetParameters()[0].ParameterType == typeof(ObjectWriter))
-							.Select(x => x.Name.Substring(x.Name.IndexOf('_') + 1)));
-                }
-                else
-                {
-                    typeNames = writtenTypes.Select(x => x.Name);
-                }
+                throw new InvalidOperationException("Pointer or ThreadLocal or SpinLock encountered during serialization. In order to obtain detailed information including classes path that lead here, please use generated version of serializer.");
+            }
+        }
 
-                var path = typeNames.Reverse().Aggregate((x, y) => x + " => " + y);
+        internal static void CheckLegality(object obj, Dictionary<object, object> parents)
+        {
+            if(obj == null)
+            {
+                return;
+            }
+            var type = obj.GetType();
+            // containing type is a hint in case of 
+            if(IsTypeIllegal(type))
+            {
+                var path = new StringBuilder();
+                var current = obj;
+                while(parents.ContainsKey(current))
+                {
+                    path.Insert(0, " => ");
+                    path.Insert(0, current.GetType().Name);
+                    current = parents[current];
+                }
+                path.Insert(0, " => ");
+                path.Insert(0, current.GetType().Name);
+
                 throw new InvalidOperationException("Pointer or ThreadLocal or SpinLock encountered during serialization. The classes path that lead to it was: " + path);
             }
         }
 
-        internal static bool HasSpecialWriteMethod(Type type)
+        private static bool IsTypeIllegal(Type type)
         {
-            return type == typeof(string) || typeof(ISpeciallySerializable).IsAssignableFrom(type) || Helpers.IsTransient(type);
+            return type.IsPointer || type == typeof(IntPtr) || type == typeof(Pointer) || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ThreadLocal<>)) || type == typeof(SpinLock);
         }
 
         internal int TouchAndWriteTypeId(Type type)
@@ -265,7 +375,9 @@ namespace Antmicro.Migrant
 
         private void PrepareForNextWrite()
         {
-            currentlyWrittenTypes.Clear();
+            objectsWrittenInline.Clear();
+            parentObjects.Clear();
+
             if(referencePreservation == ReferencePreservation.UseWeakReference)
             {
                 identifierContext = identifier.GetContext();
@@ -276,34 +388,28 @@ namespace Antmicro.Migrant
             }
         }
 
-        private void InvokeCallbacksAndWriteObject(object o)
+        private void InvokeCallbacksAndExecute(object o, Action<object> action)
         {
-            if(preSerializationCallback != null)
+            try
             {
-                preSerializationCallback(o);
+                if(preSerializationCallback != null)
+                {
+                    preSerializationCallback(o);
+                }
+                action(o);
             }
-            WriteObjectInner(o);
-            if(postSerializationCallback != null)
+            finally
             {
-                postSerializationCallback(o);
+                if(postSerializationCallback != null)
+                {
+                    postSerializationCallback(o);
+                }
             }
         }
 
         private void WriteObjectInner(object o)
         {
-            Action<ObjectWriter, PrimitiveWriter, object> writeMethod;
-            var type = o.GetType();
-            if(writeMethods.TryGetValue(type, out writeMethod))
-            {
-                writeMethod(this, writer, o);
-                return;
-            }
-
-            var surrogateId = surrogatesForObjects.FindMatchingIndex(type);
-            writeMethod = PrepareWriteMethod(type, surrogateId);
-
-            writeMethods.Add(type, writeMethod);
-            writeMethod(this, writer, o);
+            writeMethods.writeMethodsProvider.GetOrCreate(o.GetType())(this, o);
         }
 
         private void WriteObjectsFields(object o, Type type)
@@ -312,13 +418,25 @@ namespace Antmicro.Migrant
             var fields = StampHelpers.GetFieldsInSerializationOrder(type);
             foreach(var field in fields)
             {
-                var fieldType = field.FieldType;
+                var formalType = field.FieldType;
                 var value = field.GetValue(o);
-                WriteField(fieldType, value);
+                if(value != null)
+                {
+                    parentObjects[value] = o;
+                }
+
+                if(Helpers.IsTypeWritableDirectly(formalType))
+                {
+                    WriteValueType(formalType, value);
+                }
+                else
+                {
+                    CheckForNullOrTransientnessAndWriteDeferredReference(value);
+                }
             }
         }
 
-        private bool WriteSpecialObject(object o)
+        private bool WriteSpecialObject(object o, bool checkForCollections)
         {
             // if the object here is value type, it is in fact boxed
             // value type - the reference layout is fine, we should
@@ -327,23 +445,6 @@ namespace Antmicro.Migrant
             if(type.IsValueType)
             {
                 WriteField(type, o);
-                return true;
-            }
-            var speciallySerializable = o as ISpeciallySerializable;
-            if(speciallySerializable != null)
-            {
-                var startingPosition = writer.Position;
-                speciallySerializable.Save(writer);
-                writer.Write(writer.Position - startingPosition);
-                return true;
-            }
-            if(type.IsArray)
-            {
-                var elementType = type.GetElementType();
-                var array = o as Array;
-                var rank = array.Rank;
-                writer.Write(rank);
-                WriteArray(elementType, array);
                 return true;
             }
             var mDelegate = o as MulticastDelegate;
@@ -359,14 +460,15 @@ namespace Antmicro.Migrant
                 }
                 return true;
             }
-            var str = o as string;
-            if(str != null)
+            if(type.IsArray)
             {
-                writer.Write(str);
+                var elementType = type.GetElementType();
+                var array = o as Array;
+                WriteArray(elementType, array);
                 return true;
-            }
+            } 
 
-            if(!treatCollectionAsUserObject)
+            if(checkForCollections)
             {
                 CollectionMetaToken collectionToken; 
                 if (CollectionMetaToken.TryGetCollectionMetaToken(o.GetType(), out collectionToken))
@@ -434,14 +536,19 @@ namespace Antmicro.Migrant
             }
         }
 
-        private void WriteArray(Type elementFormalType, Array array)
+        private void WriteArrayMetadata(Array array)
         {
             var rank = array.Rank;
+            writer.Write(rank);
             for(var i = 0; i < rank; i++)
             {
                 writer.Write(array.GetLength(i));
             }
-            var position = new int[rank];
+        }
+
+        private void WriteArray(Type elementFormalType, Array array)
+        {
+            var position = new int[array.Rank];
             WriteArrayRowRecursive(array, 0, elementFormalType, position);
         }
 
@@ -473,32 +580,19 @@ namespace Antmicro.Migrant
             switch(serializationType)
             {
             case SerializationType.Transient:
-                return;
+                break;
             case SerializationType.Value:
                 WriteValueType(formalType, value);
-                return;
+                break;
             case SerializationType.Reference:
+                CheckForNullOrTransientnessAndWriteDeferredReference(value);
                 break;
             }
-            // OK, so we should write a reference
-            // a null reference maybe?
-            if(value == null || Helpers.IsTransient(value))
-            {
-                writer.Write(Consts.NullObjectId);
-                return;
-            }
-            var actualType = value.GetType();
-            if(Helpers.IsTransient(actualType))
-            {
-                return;
-            }
-            CheckLegality(actualType, writtenTypes: currentlyWrittenTypes);
-            WriteReference(value);
         }
 
         private void WriteValueType(Type formalType, object value)
         {
-            CheckLegality(formalType, writtenTypes: currentlyWrittenTypes);
+            CheckLegality(value, parentObjects);
             // value type -> actual type is the formal type
             if(formalType.IsEnum)
             {
@@ -532,92 +626,116 @@ namespace Antmicro.Migrant
             WriteObjectsFields(value, formalType);
         }
 
-        private Action<ObjectWriter, PrimitiveWriter, object> PrepareWriteMethod(Type actualType, int surrogateId)
-        {
-            if(surrogateId == -1)
-            {
-                var specialWrite = LinkSpecialWrite(actualType);
-                if(specialWrite != null)
-                {
-                    // linked methods are not added to writeMethodCache, there's no point
-                    return specialWrite;
-                }
-            }
-
-            if(!isGenerating)
-            {
-                if(surrogateId != -1)
-                {
-                    return (ow, pw, o) => ow.InvokeCallbacksAndWriteObject(surrogatesForObjects.GetByIndex(surrogateId).DynamicInvoke(new [] { o }));
-                }
-                return WriteObjectUsingReflection;
-            }
-
-            var method = new WriteMethodGenerator(actualType, treatCollectionAsUserObject, surrogateId,
-                Helpers.GetFieldInfo<ObjectWriter, SwapList>(x => x.surrogatesForObjects),
-                Helpers.GetMethodInfo<ObjectWriter>(x => x.InvokeCallbacksAndWriteObject(null))).Method;
-            var result = (Action<ObjectWriter, PrimitiveWriter, object>)method.CreateDelegate(typeof(Action<ObjectWriter, PrimitiveWriter, object>));
-            return result;
-        }
-
-        private static Action<ObjectWriter, PrimitiveWriter, object> LinkSpecialWrite(Type actualType)
+        internal static WriteMethodDelegate LinkSpecialWrite(Type actualType)
         {
             if(actualType == typeof(string))
             {
-                return (ow, pw, obj) =>
+                return (ow, obj) =>
                 {
-                    ow.TouchAndWriteTypeId(actualType);
-                    pw.Write((string)obj);
+                    ow.writer.Write((string)obj);
                 };
             }
             if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
             {
-                return (ow, pw, obj) =>
+                return (ow, obj) =>
                 {
-                    ow.TouchAndWriteTypeId(actualType);
-                    var startingPosition = pw.Position;
-                    ((ISpeciallySerializable)obj).Save(pw);
-                    pw.Write(pw.Position - startingPosition);
+                    var startingPosition = ow.writer.Position;
+                    ((ISpeciallySerializable)obj).Save(ow.writer);
+                    ow.writer.Write(ow.writer.Position - startingPosition);
+                    ow.Completed(obj);
                 };
             }
             if(actualType == typeof(byte[]))
             {
-                return (ow, pw, objToWrite) =>
+                return (ow, objToWrite) =>
                 {
-                    ow.TouchAndWriteTypeId(actualType);
-                    pw.Write(1); // rank of the array
                     var array = (byte[])objToWrite;
-                    pw.Write(array.Length);
-                    pw.Write(array);
+                    ow.writer.Write(array);
                 };
             }
             return null;
         }
 
-        private static void WriteObjectUsingReflection(ObjectWriter objectWriter, PrimitiveWriter primitiveWriter, object o)
+        /// <summary>
+        /// Writes the object using reflection.
+        /// 
+        /// REMARK: this method is not thread-safe!
+        /// </summary>
+        /// <param name="objectWriter">Object writer's object</param>
+        /// <param name="o">Object to serialize</param>
+        internal static void WriteObjectUsingReflection(ObjectWriter objectWriter, object o)
         {
-            objectWriter.TouchAndWriteTypeId(o.GetType());
-            // the primitiveWriter and parameter is not used here in fact, it is only to have
-            // signature compatible with the generated method
-            Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
             try
             {
-                var type = o.GetType();
-                objectWriter.currentlyWrittenTypes.Push(type);
-                if(!objectWriter.WriteSpecialObject(o))
+                Helpers.InvokeAttribute(typeof(PreSerializationAttribute), o);
+                if(!objectWriter.WriteSpecialObject(o, !objectWriter.treatCollectionAsUserObject))
                 {
-                    objectWriter.WriteObjectsFields(o, type);
+                    objectWriter.WriteObjectsFields(o, o.GetType());
                 }
-                objectWriter.currentlyWrittenTypes.Pop();
             }
             finally
             {
-                Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
-                var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostSerializationAttribute), o);
-                if(postHook != null)
+                objectWriter.HandleObjectWritten(o);
+            }
+        }
+
+        internal void HandleObjectWritten(object o)
+        {
+            var thisObjectIdentifier = identifier.GetId(o);
+            var idOfObjectToWaitFor = identifier.Count - 1;
+
+            while(objectsWrittenInline.Contains(idOfObjectToWaitFor))
+            {
+                idOfObjectToWaitFor--;
+            }
+
+            if(thisObjectIdentifier == idOfObjectToWaitFor)
+            {
+                Completed(o);
+            }
+            else
+            {
+                waitingList.WaitFor(idOfObjectToWaitFor, o);
+            }
+        }
+
+        private void Completed(object o)
+        {
+            completedObjects.Enqueue(o);
+            while(completedObjects.Count > 0)
+            {
+                CompletedInner();
+            }
+        }
+
+        private void CompletedInner()
+        {
+            var o = completedObjects.Dequeue();
+            var method = writeMethods.callPostSerializationHooksMethodsProvider.GetOrCreate(o.GetType());
+            if(method != null)
+            {
+                method(this, o);   
+            }
+
+            var index = identifier.GetId(o);
+            List<object> list;
+            if(waitingList.TryGetElementsWaitingFor(index, out list))
+            {
+                foreach(var element in list)
                 {
-                    objectWriter.postSerializationHooks.Add(postHook);
+                    completedObjects.Enqueue(element);
                 }
+                waitingList.RemoveWaitingListFor(index);
+            }
+        }
+
+        internal void CallPostSerializationHooksUsingReflection(object o)
+        {
+            Helpers.InvokeAttribute(typeof(PostSerializationAttribute), o);
+            var postHook = Helpers.GetDelegateWithAttribute(typeof(LatePostSerializationAttribute), o);
+            if(postHook != null)
+            {
+                postSerializationHooks.Add(postHook);
             }
         }
 
@@ -627,20 +745,31 @@ namespace Antmicro.Migrant
         internal IdentifiedElementsDictionary<AssemblyDescriptor> Assemblies { get; private set; }
         internal IdentifiedElementsDictionary<MethodDescriptor> Methods { get; private set; }
 
+        internal ObjectIdentifier identifier;
+        internal PrimitiveWriter writer;
+        internal readonly Action<object> preSerializationCallback;
+        internal readonly Action<object> postSerializationCallback;
+        internal readonly List<Action> postSerializationHooks;
+        internal readonly SwapList surrogatesForObjects;
+        internal readonly SwapList objectsForSurrogates;
+        internal readonly HashSet<int> objectsWrittenInline;
+
         private IdentifiedElementsDictionary<TypeDescriptor> types;
-        private ObjectIdentifier identifier;
         private ObjectIdentifierContext identifierContext;
-        private PrimitiveWriter writer;
         private readonly Func<Type, int> touchTypeMethod;
-        private readonly bool isGenerating;
         private readonly bool treatCollectionAsUserObject;
         private readonly ReferencePreservation referencePreservation;
-        private readonly Action<object> preSerializationCallback;
-        private readonly Action<object> postSerializationCallback;
-        private readonly List<Action> postSerializationHooks;
-        private readonly SwapList surrogatesForObjects;
-        private readonly IDictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethods;
-        private readonly Stack<Type> currentlyWrittenTypes;
+        private readonly Dictionary<object, object> parentObjects;
+        private readonly WaitCollection<object> waitingList;
+        private readonly Queue<object> completedObjects;
+        private readonly Serializer.WriteMethods writeMethods;
     }
+
+    internal delegate void WriteMethodDelegate(ObjectWriter writer, object obj);
+    internal delegate object SurrogateObjectIfNeededDelegate(ObjectWriter writer, object obj, int referenceId);
+    internal delegate void HandleNewReferenceMethodDelegate(ObjectWriter writer, object obj, int referenceId);
+    internal delegate void WriteReferenceMethodDelegate(ObjectWriter writer, object obj);
+
+    internal delegate void CallPostSerializationHooksMethodDelegate(ObjectWriter writer, object o);
 }
 

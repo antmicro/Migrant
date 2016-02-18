@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 - 2015 Antmicro <www.antmicro.com>
+  Copyright (c) 2012 - 2016 Antmicro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -38,643 +38,626 @@ using Antmicro.Migrant.Utilities;
 
 namespace Antmicro.Migrant.Generators
 {
-    internal class WriteMethodGenerator
+    internal class WriteMethodGenerator : DynamicMethodGenerator<WriteMethodDelegate>
     {
-        internal WriteMethodGenerator(Type typeToGenerate, bool treatCollectionAsUserObject, int surrogateId, FieldInfo surrogatesField, MethodInfo writeObjectMethod)
+        internal WriteMethodGenerator(Type typeToGenerate, bool disableStamping, bool treatCollectionAsUserObject)
+            : base(typeToGenerate, disableStamping, treatCollectionAsUserObject)
         {
-            typeWeAreGeneratingFor = typeToGenerate;
             ObjectWriter.CheckLegality(typeToGenerate);
-            InitializeMethodInfos();
-            if(!typeToGenerate.IsArray)
+        }
+
+        protected override MethodInfo GenerateInner()
+        {
+            DynamicMethod dynamicMethod = null;
+            if(!type.IsArray)
             {
-                dynamicMethod = new DynamicMethod(string.Format("Write_{0}", typeToGenerate.Name), MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
-                    typeof(void), ParameterTypes, typeToGenerate, true);
+                dynamicMethod = new DynamicMethod(string.Format("Write_{0}", type.Name), returnType, parameterTypes, type, true);
             }
             else
             {
                 var methodNo = Interlocked.Increment(ref WriteArrayMethodCounter);
-                dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}_{1}", methodNo, typeToGenerate.Name), null, ParameterTypes, true);
+                dynamicMethod = new DynamicMethod(string.Format("WriteArray{0}_{1}", methodNo, type.Name), returnType, parameterTypes, true);
             }
-            generator = dynamicMethod.GetILGenerator();
+            var generator = dynamicMethod.GetILGenerator();
+            var context = new WriterGenerationContext(generator, false, treatCollectionAsUserObject, OpCodes.Ldarg_0);
 
-            // surrogates
-            if(surrogateId != -1)
-            {
-                generator.Emit(OpCodes.Ldarg_0); // used (1)
+#if DEBUG_FORMAT
+            GeneratorHelper.DumpToLibrary<WriteMethodDelegate>(context, c => GenerateDynamicCode((WriterGenerationContext)c, type), type.Name);
+#endif
+            GenerateDynamicCode(context, type);
 
-                // obtain surrogate factory
-                generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(OpCodes.Ldfld, surrogatesField);
-                generator.Emit(OpCodes.Ldc_I4, surrogateId);
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<SwapList>(x => x.GetByIndex(0)));
+            return dynamicMethod;
+        }
 
-                // call surrogate factory to obtain surrogate object
-                var delegateType = typeof(Func<,>).MakeGenericType(typeToGenerate, typeof(object));
-                generator.Emit(OpCodes.Castclass, delegateType);
-                generator.Emit(OpCodes.Ldarg_2);
-                generator.Emit(OpCodes.Castclass, typeToGenerate);
-                generator.Emit(OpCodes.Call, delegateType.GetMethod("Invoke"));
-
-                // jump to surrogate serialization
-                generator.Emit(OpCodes.Call, writeObjectMethod); // (1) here
-                generator.Emit(OpCodes.Ret);
-                return;
-            }
-
-            generator.Emit(OpCodes.Ldarg_0); // objectWriter
-
-            generator.Emit(OpCodes.Ldarg_2);
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(o => o.GetType()));
-
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter, Type>((writer, type) => writer.TouchAndWriteTypeId(type)));
-            generator.Emit(OpCodes.Pop);
+        private void GenerateDynamicCode(WriterGenerationContext context, Type typeToGenerate)
+        {
+            var objectToSerialize = new Variable(1, typeToGenerate);
 
             // preserialization callbacks
-            GenerateInvokeCallback(typeToGenerate, typeof(PreSerializationAttribute));
             var exceptionBlockNeeded = Helpers.GetMethodsWithAttribute(typeof(PostSerializationAttribute), typeToGenerate).Any() ||
-                                       Helpers.GetMethodsWithAttribute(typeof(LatePostSerializationAttribute), typeToGenerate).Any();
+                                              Helpers.GetMethodsWithAttribute(typeof(LatePostSerializationAttribute), typeToGenerate).Any();
             if(exceptionBlockNeeded)
             {
-                generator.BeginExceptionBlock();
+                context.Generator.BeginExceptionBlock();
             }
 
-            if(!GenerateSpecialWrite(typeToGenerate, treatCollectionAsUserObject))
+            GenerateInvokeCallback(context, objectToSerialize, typeToGenerate, typeof(PreSerializationAttribute));
+
+            if(!GenerateSpecialWrite(context, typeToGenerate, objectToSerialize, !treatCollectionAsUserObject))
             {
-                GenerateWriteFields(gen =>
-                {
-                    gen.Emit(OpCodes.Ldarg_2);
-                }, typeToGenerate);
+                GenerateWriteFields(context, objectToSerialize, typeToGenerate);
             }
+
             if(exceptionBlockNeeded)
             {
-                generator.BeginFinallyBlock();
+                context.Generator.BeginFinallyBlock();
             }
-            // postserialization callbacks
-            GenerateInvokeCallback(typeToGenerate, typeof(PostSerializationAttribute));
-            GenerateAddCallbackToInvokeList(typeToGenerate, typeof(LatePostSerializationAttribute));
+
+            context.PushObjectWriterOntoStack();
+            context.Generator.PushVariableOntoStack(objectToSerialize);
+            context.Generator.Call<ObjectWriter>(x => x.HandleObjectWritten(null));
+
             if(exceptionBlockNeeded)
             {
-                generator.EndExceptionBlock();
+                context.Generator.EndExceptionBlock();
             }
-            generator.Emit(OpCodes.Ret);
+            context.Generator.Emit(OpCodes.Ret);
         }
 
-        internal DynamicMethod Method
-        {
-            get
-            {
-                return dynamicMethod;
-            }
-        }
-
-        private void InitializeMethodInfos()
-        {
-            primitiveWriterWriteInteger = Helpers.GetMethodInfo<PrimitiveWriter>(writer => writer.Write(0));
-            primitiveWriterWriteBoolean = Helpers.GetMethodInfo<PrimitiveWriter>(writer => writer.Write(false));
-        }
-
-        private void GenerateInvokeCallback(Type actualType, Type attributeType)
+        private void GenerateInvokeCallback(WriterGenerationContext context, Variable value, Type actualType, Type attributeType)
         {
             var methodsWithAttribute = Helpers.GetMethodsWithAttribute(attributeType, actualType);
             foreach(var method in methodsWithAttribute)
             {
                 if(!method.IsStatic)
                 {
-                    generator.Emit(OpCodes.Ldarg_2); // object to serialize
+                    context.Generator.PushVariableOntoStack(value);
                 }
-                if(method.IsVirtual)
-                {
-                    generator.Emit(OpCodes.Callvirt, method);
-                }
-                else
-                {
-                    generator.Emit(OpCodes.Call, method);
-                }
+
+                context.Generator.Emit(method.IsVirtual ? OpCodes.Callvirt : OpCodes.Call, method);
             }
         }
 
-        private void GenerateAddCallbackToInvokeList(Type actualType, Type attributeType)
+        private void GenerateAddCallbackToInvokeList(WriterGenerationContext context, LocalBuilder valueLocal, Type actualType, Type attributeType)
         {
-            var actionCtor = typeof(Action).GetConstructor(new [] { typeof(object), typeof(IntPtr) });
-            var stackPush = Helpers.GetMethodInfo<List<Action>>(x => x.Add(null));
+            var actionCtor = typeof(Action).GetConstructor(new[] { typeof(object), typeof(IntPtr) });
+            var addToListMethod = Helpers.GetMethodInfo<List<Action>>(x => x.Add(null));
 
             var methodsWithAttribute = Helpers.GetMethodsWithAttribute(attributeType, actualType).ToList();
             var count = methodsWithAttribute.Count;
             if(count > 0)
             {
-                generator.Emit(OpCodes.Ldarg_0); // objectWriter
-                generator.Emit(OpCodes.Ldfld, typeof(ObjectWriter).GetField("postSerializationHooks", BindingFlags.NonPublic | BindingFlags.Instance)); // invoke list
+                context.PushObjectWriterOntoStack();
+                context.Generator.PushFieldValueOntoStack<ObjectWriter, List<Action>>(x => x.postSerializationHooks);
             }
             for(var i = 1; i < count; i++)
             {
-                generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Dup);
             }
             foreach(var method in methodsWithAttribute)
             {
                 // let's make the delegate
                 if(method.IsStatic)
                 {
-                    generator.Emit(OpCodes.Ldnull);
+                    context.Generator.Emit(OpCodes.Ldnull);
                 }
                 else
                 {
-                    generator.Emit(OpCodes.Ldarg_2); // serialized object
+                    context.Generator.PushLocalValueOntoStack(valueLocal);
                 }
-                generator.Emit(OpCodes.Ldftn, method);
-                generator.Emit(OpCodes.Newobj, actionCtor);
+                context.Generator.Emit(OpCodes.Ldftn, method);
+                context.Generator.Emit(OpCodes.Newobj, actionCtor);
                 // and add it to invoke list
-                generator.Emit(OpCodes.Call, stackPush);
+                context.Generator.Emit(OpCodes.Call, addToListMethod);
             }
         }
 
-        private void GenerateWriteFields(Action<ILGenerator> putValueToWriteOnTop, Type actualType)
+        private static void GenerateWriteFields(WriterGenerationContext context, Variable value, Type actualType)
         {
             var fields = StampHelpers.GetFieldsInSerializationOrder(actualType);
             foreach(var field in fields)
             {
-                GenerateWriteType(gen =>
+                var fieldValueLocal = context.Generator.DeclareLocal(field.FieldType);
+                var fieldValue = new Variable(fieldValueLocal);
+                
+                context.Generator.PushVariableOntoStack(value);
+                if(!actualType.IsValueType)
                 {
-                    putValueToWriteOnTop(gen);
-                    if(!actualType.IsValueType)
-                    {
-                        gen.Emit(OpCodes.Castclass, actualType);
-                    }
-                    gen.Emit(OpCodes.Ldfld, field);
-                }, field.FieldType);
+                    context.Generator.Emit(OpCodes.Castclass, actualType);
+                }
+                context.Generator.Emit(OpCodes.Ldfld, field);
+                context.Generator.StoreLocalValueFromStack(fieldValueLocal);
+
+                GenerateWriteField(context, fieldValue, field.FieldType);
             }
         }
 
-        private bool GenerateSpecialWrite(Type actualType, bool treatCollectionAsUserObject)
+        internal static bool GenerateSpecialWrite(WriterGenerationContext context, Type actualType, Variable value, bool checkForCollections)
         {
             if(actualType.IsValueType)
             {
                 // value type encountered here means it is in fact boxed value type
                 // according to protocol it is written as it would be written inlined
-                GenerateWriteValue(gen =>
-                {
-                    gen.Emit(OpCodes.Ldarg_2); // value to serialize
-                    gen.Emit(OpCodes.Unbox_Any, actualType);
-                }, actualType);
+                GenerateWriteValue(context, value, actualType);
                 return true;
             }
             if(actualType.IsArray)
             {
-                GenerateWriteArray(actualType);
+                GenerateWriteArray(context, value, actualType);
                 return true;
             }
             if(typeof(MulticastDelegate).IsAssignableFrom(actualType))
             {
-                GenerateWriteDelegate(gen =>
-                {
-                    gen.Emit(OpCodes.Ldarg_2); // value to serialize
-                });
+                GenerateWriteDelegate(context, value);
                 return true;
             }
-            if(!treatCollectionAsUserObject)
+            if(checkForCollections)
             {
                 CollectionMetaToken collectionToken;
                 if(CollectionMetaToken.TryGetCollectionMetaToken(actualType, out collectionToken))
                 {
-                    GenerateWriteCollection(collectionToken);
+                    if(collectionToken.IsDictionary)
+                    {
+                        GenerateWriteDictionary(context, value, collectionToken);
+                    }
+                    else
+                    {
+                        GenerateWriteEnumerable(context, value, collectionToken);
+                    }
                     return true;
                 }
             }
             return false;
         }
 
-        private void GenerateWriteArray(Type actualType)
+        private static void GenerateWriteArray(WriterGenerationContext context, Variable arrayLocal, Type actualType)
         {
-            var elementType = actualType.GetElementType();
             var rank = actualType.GetArrayRank();
             if(rank != 1)
             {
-                GenerateWriteMultidimensionalArray(actualType, elementType);
+                GenerateWriteMultidimensionalArray(context, arrayLocal, actualType, rank);
                 return;
             }
 
-            generator.DeclareLocal(typeof(int)); // this is for counter
-            generator.DeclareLocal(elementType); // this is for the current element
-            generator.DeclareLocal(typeof(int)); // length of the array
+            var elementType = actualType.GetElementType();
+            var currentElementLocal = context.Generator.DeclareLocal(elementType);
+            var lengthLocal = context.Generator.DeclareLocal(typeof(int));
+            var currentElementVariable = new Variable(currentElementLocal);
 
-            // writing rank
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldc_I4_1);
-            generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+            context.Generator.PushVariableOntoStack(arrayLocal);
+            context.Generator.Emit(OpCodes.Ldlen);
+            context.Generator.StoreLocalValueFromStack(lengthLocal);
 
-            // writing length
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldarg_2); // array to serialize
-            generator.Emit(OpCodes.Castclass, actualType);
-            generator.Emit(OpCodes.Ldlen);
-            generator.Emit(OpCodes.Dup);
-            generator.Emit(OpCodes.Stloc_2);
-            generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
-
-            var loopEnd = generator.DefineLabel();
-            var loopBegin = generator.DefineLabel();
-            // writing elements
-            generator.Emit(OpCodes.Ldc_I4_0);
-            generator.Emit(OpCodes.Stloc_0);
-
-            generator.MarkLabel(loopBegin);
-            generator.Emit(OpCodes.Ldloc_0);
-            generator.Emit(OpCodes.Ldloc_2); // length of the array
-            generator.Emit(OpCodes.Bge, loopEnd);
-
-            generator.Emit(OpCodes.Ldarg_2); // array to serialize
-            generator.Emit(OpCodes.Castclass, actualType);
-            generator.Emit(OpCodes.Ldloc_0); // index
-            generator.Emit(OpCodes.Ldelem, elementType);
-            generator.Emit(OpCodes.Stloc_1); // we put current element to local variable
-
-            GenerateWriteType(gen =>
+            GeneratorHelper.GenerateLoop(context, lengthLocal, c =>
             {
-                gen.Emit(OpCodes.Ldloc_1); // current element
-            }, elementType);
+                context.Generator.PushVariableOntoStack(arrayLocal);
+                context.Generator.PushLocalValueOntoStack(c);
 
-            // loop book keeping
-            generator.Emit(OpCodes.Ldloc_0); // current index, which will be increased by 1
-            generator.Emit(OpCodes.Ldc_I4_1);
-            generator.Emit(OpCodes.Add);
-            generator.Emit(OpCodes.Stloc_0);
-            generator.Emit(OpCodes.Br, loopBegin);
-            generator.MarkLabel(loopEnd);
+                context.Generator.Emit(OpCodes.Ldelem, elementType);
+                context.Generator.StoreLocalValueFromStack(currentElementLocal);
+
+                GenerateWriteField(context, currentElementVariable, elementType);
+            });
         }
 
-        private void GenerateWriteMultidimensionalArray(Type actualType, Type elementType)
+        private static void GenerateWriteMultidimensionalArray(WriterGenerationContext context, Variable arrayLocal, Type actualType, int rank)
         {
-            var rank = actualType.GetArrayRank();
-            // local for current element
-            generator.DeclareLocal(elementType);
-            // locals for indices
-            var indexLocals = new int[rank];
-            for(var i = 0; i < rank; i++)
-            {
-                indexLocals[i] = generator.DeclareLocal(typeof(int)).LocalIndex;
-            }
-            // locals for lengths
-            var lengthLocals = new int[rank];
-            for(var i = 0; i < rank; i++)
-            {
-                lengthLocals[i] = generator.DeclareLocal(typeof(int)).LocalIndex;
-            }
+            var elementType = actualType.GetElementType();
 
-            // writing rank
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldc_I4, rank);
-            generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+            var indexLocals = new LocalBuilder[rank];
+            var lengthLocals = new LocalBuilder[rank];
 
-            // writing lengths
             for(var i = 0; i < rank; i++)
             {
-                generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-                generator.Emit(OpCodes.Ldarg_2); // array to serialize
-                generator.Emit(OpCodes.Castclass, actualType);
-                generator.Emit(OpCodes.Ldc_I4, i);
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<Array>(array => array.GetLength(0)));
-                generator.Emit(OpCodes.Dup);
-                generator.Emit(OpCodes.Stloc, lengthLocals[i]);
-                generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+                indexLocals[i] = context.Generator.DeclareLocal(typeof(int));
+                lengthLocals[i] = context.Generator.DeclareLocal(typeof(int));
+
+                context.Generator.PushIntegerOntoStack(0);
+                context.Generator.StoreLocalValueFromStack(indexLocals[i]);
+
+                context.Generator.PushVariableOntoStack(arrayLocal);
+                context.Generator.PushIntegerOntoStack(i);
+                context.Generator.Call<Array>(x => x.GetLength(0));
+                context.Generator.StoreLocalValueFromStack(lengthLocals[i]);
             }
 
             // writing elements
-            GenerateArrayWriteLoop(0, rank, indexLocals, lengthLocals, actualType, elementType);
+            var currentElementLocal = context.Generator.DeclareLocal(elementType);
+            var currentElementVariable = new Variable(currentElementLocal);
+            GenerateArrayWriteLoop(context, 0, rank, indexLocals, lengthLocals, arrayLocal, currentElementVariable, actualType, elementType);
         }
 
-        private void GenerateArrayWriteLoop(int currentDimension, int rank, int[] indexLocals, int[] lengthLocals, Type arrayType, Type elementType)
+        private static void GenerateArrayWriteLoop(WriterGenerationContext context, int currentDimension, int rank, LocalBuilder[] indexLocals, LocalBuilder[] lengthLocals, Variable arrayLocal, Variable currentElementVariable, Type arrayType, Type elementType)
         {
-            var arrayWrittenLabel = generator.DefineLabel();
-
-            // check all the lengths and return if at least one is zero
-            for(var i = 0; i < rank; i++)
+            GeneratorHelper.GenerateLoop(context, lengthLocals[currentDimension], indexLocals[currentDimension], () =>
             {
-                generator.Emit(OpCodes.Ldloc, lengthLocals[i]);
-                generator.Emit(OpCodes.Brfalse, arrayWrittenLabel);
-            }
-
-            // initalization
-            generator.Emit(OpCodes.Ldc_I4_0);
-            generator.Emit(OpCodes.Stloc, indexLocals[currentDimension]);
-            var loopBegin = generator.DefineLabel();
-            generator.MarkLabel(loopBegin);
-            if(currentDimension == rank - 1)
-            {
-                // writing the element
-                generator.Emit(OpCodes.Ldarg_2); // array to serialize
-                generator.Emit(OpCodes.Castclass, arrayType);
-                for(var i = 0; i < rank; i++)
+                if(currentDimension == rank - 1)
                 {
-                    generator.Emit(OpCodes.Ldloc, indexLocals[i]);
+                    context.Generator.PushVariableOntoStack(arrayLocal);
+                    for(var i = 0; i < rank; i++)
+                    {
+                        context.Generator.PushLocalValueOntoStack(indexLocals[i]);
+                    }
+                    // jeśli to nie zadziała to użyć:
+                    context.Generator.Emit(OpCodes.Call, arrayType.GetMethod("Get"));
+                    context.Generator.StoreVariableValueFromStack(currentElementVariable);
+                    GenerateWriteField(context, currentElementVariable, elementType);
                 }
-                generator.Emit(OpCodes.Call, arrayType.GetMethod("Get"));
-                generator.Emit(OpCodes.Stloc_0);
-                GenerateWriteType(gen => gen.Emit(OpCodes.Ldloc_0), elementType);
-            }
-            else
-            {
-                GenerateArrayWriteLoop(currentDimension + 1, rank, indexLocals, lengthLocals, arrayType, elementType);
-            }
-            // incremeting index and loop exit condition check
-            generator.Emit(OpCodes.Ldloc, indexLocals[currentDimension]);
-            generator.Emit(OpCodes.Ldc_I4_1);
-            generator.Emit(OpCodes.Add);
-            generator.Emit(OpCodes.Dup);
-            generator.Emit(OpCodes.Stloc, indexLocals[currentDimension]);
-            generator.Emit(OpCodes.Ldloc, lengthLocals[currentDimension]);
-            generator.Emit(OpCodes.Blt, loopBegin);
-
-            generator.MarkLabel(arrayWrittenLabel);
+                else
+                {
+                    GenerateArrayWriteLoop(context, currentDimension + 1, rank, indexLocals, lengthLocals, arrayLocal, currentElementVariable, arrayType, elementType);
+                }
+            });
         }
 
-        private void GenerateWriteCollection(CollectionMetaToken token)
+        private static void GenerateWriteEnumerable(WriterGenerationContext context, Variable valueLocal, CollectionMetaToken token)
         {
-            Type enumerableType;
-            Type enumeratorType;
-            if(token.IsDictionary)
-            {
-                enumerableType = typeof(IDictionary);
-                enumeratorType = typeof(IDictionaryEnumerator);
-            }
-            else
-            {
-                var genericTypes = new [] { token.FormalElementType };
+            var genericTypes = new[] { token.FormalElementType };
+            var enumerableType = token.IsGeneric ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
+            var enumeratorType = token.IsGeneric ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
 
-                enumerableType = token.IsGenericallyIterable ? typeof(IEnumerable<>).MakeGenericType(genericTypes) : typeof(IEnumerable);
-                enumeratorType = token.IsGenericallyIterable ? typeof(IEnumerator<>).MakeGenericType(genericTypes) : typeof(IEnumerator);
-            }
+            var iteratorLocal = context.Generator.DeclareLocal(enumeratorType);
+            var currentElementLocal = context.Generator.DeclareLocal(token.FormalElementType);
+            var elementVariable = new Variable(currentElementLocal);
 
-            generator.DeclareLocal(enumeratorType); // iterator
-            if(token.IsDictionary)
-            {
-                generator.DeclareLocal(token.FormalKeyType);
-                generator.DeclareLocal(token.FormalValueType);
-            }
-            else
-            {
-                generator.DeclareLocal(token.FormalElementType);
-            }
+            var loopBegin = context.Generator.DefineLabel();
+            var finish = context.Generator.DefineLabel();
 
-            // length of the collection
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldarg_2); // collection to serialize
-            if(token.CountMethod.IsStatic)
-            {
-                generator.Emit(OpCodes.Call, token.CountMethod);
-            }
-            else
-            {
-                generator.Emit(OpCodes.Callvirt, token.CountMethod);
-            }
-            generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+            context.PushPrimitiveWriterOntoStack();
+            context.Generator.PushVariableOntoStack(valueLocal);
+            context.Generator.Emit(token.CountMethod.IsStatic ? OpCodes.Call : OpCodes.Callvirt, token.CountMethod);
+            context.Generator.Call<PrimitiveWriter>(x => x.Write(0));
 
-            // elements
             var getEnumeratorMethod = enumerableType.GetMethod("GetEnumerator");
-            generator.Emit(OpCodes.Ldarg_2); // collection to serialize
-            generator.Emit(OpCodes.Call, getEnumeratorMethod);
-            generator.Emit(OpCodes.Stloc_0);
-            var loopBegin = generator.DefineLabel();
-            generator.MarkLabel(loopBegin);
-            generator.Emit(OpCodes.Ldloc_0);
-            var finish = generator.DefineLabel();
-            generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<IEnumerator>(x => x.MoveNext()));
-            generator.Emit(OpCodes.Brfalse, finish);
-            generator.Emit(OpCodes.Ldloc_0);
-            if(token.IsDictionary)
-            {
-                // key
-                generator.Emit(OpCodes.Nop);
-                generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Key").GetGetMethod());
-                generator.Emit(OpCodes.Unbox_Any, token.FormalKeyType);
-                generator.Emit(OpCodes.Stloc_1);
-                GenerateWriteType(gen => gen.Emit(OpCodes.Ldloc_1), token.FormalKeyType);
+            context.Generator.PushVariableOntoStack(valueLocal);
+            context.Generator.Emit(OpCodes.Call, getEnumeratorMethod);
+            context.Generator.StoreLocalValueFromStack(iteratorLocal);
 
-                // value
-                generator.Emit(OpCodes.Ldloc_0);
-                generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Value").GetGetMethod());
-                generator.Emit(OpCodes.Unbox_Any, token.FormalValueType);
-                generator.Emit(OpCodes.Stloc_2);
-                GenerateWriteType(gen => gen.Emit(OpCodes.Ldloc_2), token.FormalValueType);
+            context.Generator.MarkLabel(loopBegin);
+            context.Generator.PushLocalValueOntoStack(iteratorLocal);
+            context.Generator.Call<IEnumerator>(x => x.MoveNext());
+            context.Generator.Emit(OpCodes.Brfalse, finish);
+
+            context.Generator.PushLocalValueOntoStack(iteratorLocal);
+            context.Generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Current").GetGetMethod());
+            context.Generator.StoreLocalValueFromStack(currentElementLocal);
+
+            GenerateWriteField(context, elementVariable, token.FormalElementType);
+            context.Generator.Emit(OpCodes.Br, loopBegin);
+
+            context.Generator.MarkLabel(finish);
+        }
+
+        private static void GenerateWriteDictionary(WriterGenerationContext context, Variable valueLocal, CollectionMetaToken token)
+        {
+            var genericTypes = new[] { token.FormalKeyType, token.FormalValueType };
+
+            var kvpType = typeof(KeyValuePair<,>).MakeGenericType(genericTypes);
+            var enumerableType = token.IsGeneric ? typeof(Dictionary<,>).MakeGenericType(genericTypes) : typeof(IDictionary);
+            var enumeratorType = token.IsGeneric ? typeof(Dictionary<,>.Enumerator).MakeGenericType(genericTypes) : typeof(IDictionaryEnumerator);
+
+            var kvpLocal = context.Generator.DeclareLocal(kvpType);
+            var iteratorLocal = context.Generator.DeclareLocal(enumeratorType);
+            var currentKeyLocal = context.Generator.DeclareLocal(token.FormalKeyType);
+            var currentValueLocal = context.Generator.DeclareLocal(token.FormalValueType);
+            var currentKeyVariable = new Variable(currentKeyLocal);
+            var currentValueVariable = new Variable(currentValueLocal);
+
+            var loopBeginLabel = context.Generator.DefineLabel();
+            var finishLabel = context.Generator.DefineLabel();
+
+            // write dictionary length
+            context.PushPrimitiveWriterOntoStack();
+            context.Generator.PushVariableOntoStack(valueLocal);
+            context.Generator.Emit(token.CountMethod.IsStatic ? OpCodes.Call : OpCodes.Callvirt, token.CountMethod);
+            context.Generator.Call<PrimitiveWriter>(x => x.Write(0));
+
+            context.Generator.PushVariableOntoStack(valueLocal);
+            context.Generator.Emit(OpCodes.Call, enumerableType.GetMethod("GetEnumerator"));
+            context.Generator.StoreLocalValueFromStack(iteratorLocal);
+
+            context.Generator.MarkLabel(loopBeginLabel);
+
+            if(token.IsGeneric)
+            {
+                context.Generator.PushLocalAddressOntoStack(iteratorLocal);
+                context.Generator.Emit(OpCodes.Call, enumeratorType.GetMethod("MoveNext"));
             }
             else
             {
-                generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Current").GetGetMethod());
-                generator.Emit(OpCodes.Stloc_1);
-	
-                // operation on current element
-                GenerateWriteTypeLocal1(token.FormalElementType);
+                context.Generator.PushLocalValueOntoStack(iteratorLocal);
+                context.Generator.Call<IEnumerator>(x => x.MoveNext());
+            }
+            context.Generator.Emit(OpCodes.Brfalse, finishLabel);
+
+            if(token.IsGeneric)
+            {
+                context.Generator.PushLocalAddressOntoStack(iteratorLocal);
+                context.Generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Current").GetGetMethod());
+                context.Generator.StoreLocalValueFromStack(kvpLocal);
             }
 
-            generator.Emit(OpCodes.Br, loopBegin);
-            generator.MarkLabel(finish);
-        }
-
-        private void GenerateWriteTypeLocal1(Type formalElementType)
-        {
-            GenerateWriteType(gen =>
+            // key
+            if(token.IsGeneric)
             {
-                gen.Emit(OpCodes.Ldloc_1);
-            }, formalElementType);
+                context.Generator.PushLocalAddressOntoStack(kvpLocal);
+                context.Generator.Emit(OpCodes.Call, kvpType.GetProperty("Key").GetGetMethod());
+            }
+            else
+            {
+                context.Generator.PushLocalValueOntoStack(iteratorLocal);
+                context.Generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Key").GetGetMethod());
+                context.Generator.Emit(OpCodes.Unbox_Any, token.FormalKeyType);
+            }
+            context.Generator.StoreLocalValueFromStack(currentKeyLocal);
+            GenerateWriteField(context, currentKeyVariable, token.FormalKeyType);
+
+            // value
+            if(token.IsGeneric)
+            {
+                context.Generator.PushLocalAddressOntoStack(kvpLocal);
+                context.Generator.Emit(OpCodes.Call, kvpType.GetProperty("Value").GetGetMethod());
+            }
+            else
+            {
+                context.Generator.PushLocalValueOntoStack(iteratorLocal);
+                context.Generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Value").GetGetMethod());
+                context.Generator.Emit(OpCodes.Unbox_Any, token.FormalKeyType);
+            }
+            context.Generator.StoreLocalValueFromStack(currentValueLocal);
+            GenerateWriteField(context, currentValueVariable, token.FormalValueType);
+
+            context.Generator.Emit(OpCodes.Br, loopBeginLabel);
+
+            context.Generator.MarkLabel(finishLabel);
         }
 
-        private void GenerateWriteType(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+        private static void GenerateWriteField(WriterGenerationContext context, Variable valueLocal, Type formalType)
         {
             switch(Helpers.GetSerializationType(formalType))
             {
             case SerializationType.Transient:
-				// just omit it
+                // just omit it
                 return;
             case SerializationType.Value:
-                GenerateWriteValue(putValueToWriteOnTop, formalType);
+                GenerateWriteValue(context, valueLocal, formalType);
                 break;
             case SerializationType.Reference:
-                GenerateWriteReference(putValueToWriteOnTop, formalType);
+                GenerateWriteDeferredReference(context, valueLocal, formalType);
                 break;
             }
         }
 
-        private void GenerateWriteDelegate(Action<ILGenerator> putValueToWriteOnTop)
+        private static void GenerateWriteDelegate(WriterGenerationContext context, Variable valueLocal)
         {
-            var delegateGetInvocationList = Helpers.GetMethodInfo<ObjectWriter, MulticastDelegate>((writer, md) => writer.GetDelegatesWithNonTransientTargets(md));
-            var delegateGetTarget = typeof(MulticastDelegate).GetProperty("Target").GetGetMethod();
+            var array = context.Generator.DeclareLocal(typeof(Delegate[]));
+            var loopLength = context.Generator.DeclareLocal(typeof(int));
+            var element = context.Generator.DeclareLocal(typeof(Delegate));
+            var delegateTargetLocal = context.Generator.DeclareLocal(typeof(object));
+            var delegateTargetVariable = new Variable(delegateTargetLocal);
 
-            var array = generator.DeclareLocal(typeof(Delegate[]));
-            var loopLength = generator.DeclareLocal(typeof(int));
-            var element = generator.DeclareLocal(typeof(Delegate));
+            context.PushPrimitiveWriterOntoStack();
 
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldarg_0); // objectWriter
-            putValueToWriteOnTop(generator); // delegate to serialize of type MulticastDelegate
+            context.PushObjectWriterOntoStack();
+            context.Generator.PushVariableOntoStack(valueLocal);
+            context.Generator.Call<ObjectWriter>(x => x.GetDelegatesWithNonTransientTargets(null));
+            context.Generator.Emit(OpCodes.Castclass, typeof(Delegate[]));
+            context.Generator.Emit(OpCodes.Dup);
+            context.Generator.StoreLocalValueFromStack(array);
 
-            generator.Emit(OpCodes.Call, delegateGetInvocationList);
-            generator.Emit(OpCodes.Castclass, typeof(Delegate[]));
-            generator.Emit(OpCodes.Dup);
-            generator.Emit(OpCodes.Stloc_S, array.LocalIndex);
-            generator.Emit(OpCodes.Ldlen);
-            generator.Emit(OpCodes.Dup);
-            generator.Emit(OpCodes.Stloc_S, loopLength.LocalIndex);
-            generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+            // array refrence should be on the top of stack here
+            context.Generator.Emit(OpCodes.Ldlen);
+            context.Generator.Emit(OpCodes.Dup);
+            context.Generator.StoreLocalValueFromStack(loopLength);
 
-            GeneratorHelper.GenerateLoop(generator, loopLength, c =>
+            // primitive writer should be on the stack
+            // array length should be on the stack
+            context.Generator.Call<PrimitiveWriter>(x => x.Write(0));
+
+            GeneratorHelper.GenerateLoop(context, loopLength, c =>
             {
-                generator.Emit(OpCodes.Ldloc, array);
-                generator.Emit(OpCodes.Ldloc, c);
-                generator.Emit(OpCodes.Ldelem, element.LocalType);
-                generator.Emit(OpCodes.Stloc, element);
+                context.Generator.PushLocalValueOntoStack(array);
+                context.Generator.PushLocalValueOntoStack(c);
+                context.Generator.Emit(OpCodes.Ldelem, element.LocalType);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.StoreLocalValueFromStack(element);
 
-                GenerateWriteReference(gen =>
-                {
-                    gen.Emit(OpCodes.Ldloc, element);
-                    gen.Emit(OpCodes.Call, delegateGetTarget);
-                }, typeof(object));
+                // element reference should be on the stack
+                context.Generator.PushPropertyValueOntoStack<MulticastDelegate, object>(x => x.Target);
+                context.Generator.StoreLocalValueFromStack(delegateTargetLocal);
 
-                generator.Emit(OpCodes.Ldarg_0); // objectWriter
-                generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<ObjectWriter, IdentifiedElementsDictionary<MethodDescriptor>>(ow => ow.Methods));
+                GenerateWriteDeferredReference(context, delegateTargetVariable, typeof(object));
 
-                generator.Emit(OpCodes.Ldloc, element);
-                generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo<MulticastDelegate, MethodInfo>(md => md.Method));
-                generator.Emit(OpCodes.Newobj, Helpers.GetConstructorInfo<MethodDescriptor>(typeof(MethodInfo)));
-
-                generator.Emit(OpCodes.Call,  Helpers.GetMethodInfo<IdentifiedElementsDictionary<MethodDescriptor>, MethodDescriptor>((writer, method) => writer.TouchAndWriteId(method)));
-                generator.Emit(OpCodes.Pop);
+                context.PushObjectWriterOntoStack();
+                context.Generator.PushPropertyValueOntoStack<ObjectWriter, IdentifiedElementsDictionary<MethodDescriptor>>(x => x.Methods);
+                context.Generator.PushLocalValueOntoStack(element);
+                context.Generator.PushPropertyValueOntoStack<MulticastDelegate, MethodInfo>(x => x.Method);
+                context.Generator.Emit(OpCodes.Newobj, Helpers.GetConstructorInfo<MethodDescriptor>(typeof(MethodInfo)));
+                context.Generator.Call<IdentifiedElementsDictionary<MethodDescriptor>>(x => x.TouchAndWriteId(null));
+                context.Generator.Emit(OpCodes.Pop);
             });
         }
 
-        private void GenerateWriteValue(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+        private static void GenerateWriteValue(WriterGenerationContext context, Variable valueLocal, Type formalType)
         {
-            ObjectWriter.CheckLegality(formalType, typeWeAreGeneratingFor);
+            ObjectWriter.CheckLegality(formalType);
             if(formalType.IsEnum)
             {
                 formalType = Enum.GetUnderlyingType(formalType);
             }
-            var writeMethod = typeof(PrimitiveWriter).GetMethod("Write", new [] { formalType });
+            var writeMethod = typeof(PrimitiveWriter).GetMethod("Write", new[] { formalType });
             // if this method is null, then it is a non-primitive (i.e. custom) struct
             if(writeMethod != null)
             {
-                generator.Emit(OpCodes.Ldarg_1); // primitive writer waits there
-                putValueToWriteOnTop(generator);
-                generator.Emit(OpCodes.Call, writeMethod);
+                context.PushPrimitiveWriterOntoStack();
+                context.Generator.PushVariableOntoStack(valueLocal);
+                context.Generator.Emit(OpCodes.Call, writeMethod);
                 return;
             }
             var nullableUnderlyingType = Nullable.GetUnderlyingType(formalType);
             if(nullableUnderlyingType != null)
             {
-                var hasValue = generator.DefineLabel();
-                var finish = generator.DefineLabel();
-                var localIndex = generator.DeclareLocal(formalType).LocalIndex;
-                generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-                putValueToWriteOnTop(generator);
-                generator.Emit(OpCodes.Stloc_S, localIndex);
-                generator.Emit(OpCodes.Ldloca_S, localIndex);
-                generator.Emit(OpCodes.Call, formalType.GetProperty("HasValue").GetGetMethod());
-                generator.Emit(OpCodes.Brtrue_S, hasValue);
-                generator.Emit(OpCodes.Ldc_I4_0);
-                generator.Emit(OpCodes.Call, primitiveWriterWriteBoolean);
-                generator.Emit(OpCodes.Br, finish);
-                generator.MarkLabel(hasValue);
-                generator.Emit(OpCodes.Ldc_I4_1);
-                generator.Emit(OpCodes.Call, primitiveWriterWriteBoolean);
-                GenerateWriteValue(gen =>
-                {
-                    generator.Emit(OpCodes.Ldloca_S, localIndex);
-                    generator.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
-                }, nullableUnderlyingType);
-                generator.MarkLabel(finish);
+                var hasValueLabel = context.Generator.DefineLabel();
+                var finishLabel = context.Generator.DefineLabel();
+
+                var underlyingValueLocal = context.Generator.DeclareLocal(nullableUnderlyingType);
+                var underlyingVariable = new Variable(underlyingValueLocal);
+                
+                context.PushPrimitiveWriterOntoStack();
+                context.Generator.PushVariableAddressOntoStack(valueLocal);
+                context.Generator.Emit(OpCodes.Call, formalType.GetProperty("HasValue").GetGetMethod());
+                context.Generator.Emit(OpCodes.Brtrue_S, hasValueLabel);
+                context.Generator.PushIntegerOntoStack(0);
+                context.Generator.Call<PrimitiveWriter>(x => x.Write(false));
+                context.Generator.Emit(OpCodes.Br_S, finishLabel);
+
+                context.Generator.MarkLabel(hasValueLabel);
+                context.Generator.PushIntegerOntoStack(1);
+                context.Generator.Call<PrimitiveWriter>(x => x.Write(false));
+
+                context.Generator.PushVariableAddressOntoStack(valueLocal);
+                context.Generator.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
+                context.Generator.StoreLocalValueFromStack(underlyingValueLocal);
+
+                GenerateWriteValue(context, underlyingVariable, nullableUnderlyingType);
+
+                context.Generator.MarkLabel(finishLabel);
                 return;
             }
 
-            if(formalType.IsGenericType && formalType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-            {
-                var keyValueTypes = formalType.GetGenericArguments();
-                var localIndex = generator.DeclareLocal(formalType).LocalIndex;
-                GenerateWriteType(gen =>
-                {
-                    putValueToWriteOnTop(gen);
-                    // TODO: is there a better method of getting address?
-                    // don't think so, looking at
-                    // http://stackoverflow.com/questions/76274/
-                    // we *may* do a little optimization if this value write takes
-                    // place when dictionary is serialized (current KVP is stored in
-                    // local 1 in such situation); the KVP may be, however, written
-                    // independently
-                    gen.Emit(OpCodes.Stloc_S, localIndex);
-                    gen.Emit(OpCodes.Ldloca_S, localIndex);
-                    gen.Emit(OpCodes.Call, formalType.GetProperty("Key").GetGetMethod());
-                }, keyValueTypes[0]);
-                GenerateWriteType(gen =>
-                {
-                    // we assume here that the key write was invoked earlier (it should be
-                    // if we're conforming to the protocol), so KeyValuePair is already
-                    // stored as local
-                    gen.Emit(OpCodes.Ldloca_S, localIndex);
-                    gen.Emit(OpCodes.Call, formalType.GetProperty("Value").GetGetMethod());
-                }, keyValueTypes[1]);
-            }
-            else
-            {
-                GenerateWriteFields(putValueToWriteOnTop, formalType);
-            }
+            GenerateWriteFields(context, valueLocal, formalType);
         }
 
-        private void GenerateWriteReference(Action<ILGenerator> putValueToWriteOnTop, Type formalType)
+        internal static void GenerateWriteDeferredReference(WriterGenerationContext context, Variable valueLocal, Type formalType)
         {
-            var finish = generator.DefineLabel();
+            var finish = context.Generator.DefineLabel();
+            var isNotNull = context.Generator.DefineLabel();
+            var isNotTransient = context.Generator.DefineLabel();
 
-            putValueToWriteOnTop(generator);
-            var isNotNull = generator.DefineLabel();
-            generator.Emit(OpCodes.Brtrue_S, isNotNull);
-            generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-            generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);
-            generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
-            generator.Emit(OpCodes.Br, finish);
-            generator.MarkLabel(isNotNull);
+            context.Generator.PushVariableOntoStack(valueLocal);
+            context.Generator.Emit(OpCodes.Brtrue_S, isNotNull);
 
+            context.PushNullReferenceOnStack();
+            context.Generator.Emit(OpCodes.Br, finish);
+
+            context.Generator.MarkLabel(isNotNull);
             var formalTypeIsActualType = (formalType.Attributes & TypeAttributes.Sealed) != 0;
             if(!formalTypeIsActualType)
             {
-                putValueToWriteOnTop(generator); // value to serialize
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<object>(obj => Helpers.IsTransient(obj)));
-                var isNotTransient = generator.DefineLabel();
-                generator.Emit(OpCodes.Brfalse_S, isNotTransient);
-                generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-                generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);
-                generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
-                generator.Emit(OpCodes.Br, finish);
-                generator.MarkLabel(isNotTransient);
+                context.Generator.PushVariableOntoStack(valueLocal);
+                context.Generator.Call(() => Helpers.IsTransient((object)null));
 
-                generator.Emit(OpCodes.Ldarg_0); // objectWriter
-                putValueToWriteOnTop(generator);
-                generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteReference(null)));
+                context.Generator.Emit(OpCodes.Brfalse_S, isNotTransient);
+                context.PushNullReferenceOnStack();
+                context.Generator.Emit(OpCodes.Br, finish);
+
+                context.Generator.MarkLabel(isNotTransient);
+                context.PushObjectWriterOntoStack();
+                context.Generator.PushVariableOntoStack(valueLocal);
+                context.Generator.Call<ObjectWriter>(x => x.WriteDeferredReference(null));
             }
             else
             {
                 if(Helpers.IsTransient(formalType))
                 {
-                    generator.Emit(OpCodes.Ldarg_1); // primitiveWriter
-                    generator.Emit(OpCodes.Ldc_I4, Consts.NullObjectId);
-                    generator.Emit(OpCodes.Call, primitiveWriterWriteInteger);
+                    context.PushNullReferenceOnStack();
                 }
                 else
                 {
-                    generator.Emit(OpCodes.Ldarg_0); // objectWriter
-                    putValueToWriteOnTop(generator);
-                    generator.Emit(OpCodes.Call, Helpers.GetMethodInfo<ObjectWriter>(writer => writer.WriteReference(null)));
+                    context.PushObjectWriterOntoStack();
+                    context.Generator.PushVariableOntoStack(valueLocal);
+                    context.Generator.Call<ObjectWriter>(x => x.WriteDeferredReference(null));
                 }
             }
-
-            generator.MarkLabel(finish);
+            context.Generator.MarkLabel(finish);
         }
 
-        private MethodInfo primitiveWriterWriteInteger;
-        private MethodInfo primitiveWriterWriteBoolean;
-        private readonly ILGenerator generator;
-        private readonly DynamicMethod dynamicMethod;
-        private readonly Type typeWeAreGeneratingFor;
+        internal static bool GenerateTryWriteObjectInline(WriterGenerationContext context, bool generatePreSerializationCallback, bool generatePostSerializationCallback, Variable valueLocal, Type actualType)
+        {
+            if(actualType.IsArray)
+            {
+                var rank = actualType.GetArrayRank();
+
+                // write rank
+                context.PushPrimitiveWriterOntoStack();
+                context.Generator.PushIntegerOntoStack(rank);
+                context.Generator.Call<PrimitiveWriter>(x => x.Write(0));
+
+                if(rank == 1)
+                {
+                    // write length
+                    context.PushPrimitiveWriterOntoStack();
+                    context.Generator.PushVariableOntoStack(valueLocal);
+                    context.Generator.Emit(OpCodes.Castclass, actualType);
+                    context.Generator.Emit(OpCodes.Ldlen);
+                    context.Generator.Call<PrimitiveWriter>(x => x.Write(0));
+                }
+                else
+                {
+                    // write lengths in loop
+                    for(var i = 0; i < rank; i++)
+                    {
+                        context.PushPrimitiveWriterOntoStack();
+                        context.Generator.PushVariableOntoStack(valueLocal);
+                        context.Generator.PushIntegerOntoStack(i);
+                        context.Generator.Call<Array>(x => x.GetLength(0));
+                        context.Generator.Call<PrimitiveWriter>(x => x.Write(0));
+                    }
+                }
+                return false;
+            }
+            if(actualType == typeof(string))
+            {
+                GenerateInvokeCallbacksAndExecute(context, generatePreSerializationCallback, generatePostSerializationCallback, valueLocal, actualType, c =>
+                {
+                    c.PushPrimitiveWriterOntoStack();
+                    c.Generator.PushVariableOntoStack(valueLocal);
+                    c.Generator.Call<PrimitiveWriter>(x => x.Write((string)null));
+                });
+
+                return true;
+            }
+
+            return GenerateSpecialWrite(context, actualType, valueLocal, false);
+        }
+
+        private static void GenerateInvokeCallbacksAndExecute(WriterGenerationContext context, bool generatePreSerializationCallback, bool generatePostSerializationCallback, Variable valueLocal, Type type, Action<WriterGenerationContext> bodyBuilder)
+        {
+            if(generatePreSerializationCallback || generatePostSerializationCallback)
+            {
+                context.Generator.BeginExceptionBlock();
+            }
+
+            if(generatePreSerializationCallback)
+            {
+                context.PushObjectWriterOntoStack();
+                context.Generator.PushFieldValueOntoStack<ObjectWriter, Action<object>>(x => x.preSerializationCallback);
+                context.Generator.PushVariableOntoStack(valueLocal);
+                context.Generator.Call<Action<object>>(x => x.Invoke(null));
+            }
+
+            bodyBuilder(context);
+
+            if(generatePreSerializationCallback || generatePostSerializationCallback)
+            {
+                context.Generator.BeginFinallyBlock();
+            }
+
+            if(generatePostSerializationCallback)
+            {
+                context.PushObjectWriterOntoStack();
+                context.Generator.PushFieldValueOntoStack<ObjectWriter, Action<object>>(x => x.postSerializationCallback);
+                context.Generator.PushVariableOntoStack(valueLocal);
+                context.Generator.Call<Action<object>>(x => x.Invoke(null));
+            }
+
+            if(generatePreSerializationCallback || generatePostSerializationCallback)
+            {
+                context.Generator.EndExceptionBlock();
+            }
+        }
+
         private static int WriteArrayMethodCounter;
-        private static readonly Type[] ParameterTypes = new [] {
-            typeof(ObjectWriter),
-            typeof(PrimitiveWriter),
-            typeof(object)
-        };
     }
 }
 

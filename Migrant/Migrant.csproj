@@ -97,6 +97,22 @@
     <Compile Include="BultinSurrogates\SurrogateForReadOnlyCollection.cs" />
     <Compile Include="Utilities\OneToOneMap.cs" />
     <Compile Include="Utilities\WaitCollection.cs" />
+    <Compile Include="Generators\CreateObjectGenerator.cs" />
+    <Compile Include="Generators\TouchInlinedObjectGenerator.cs" />
+    <Compile Include="Generators\ReaderGenerationContext.cs" />
+    <Compile Include="Generators\CompletedGenerator.cs" />
+    <Compile Include="Utilities\DynamicMethodProvider.cs" />
+    <Compile Include="Generators\DynamicMethodGenerator.cs" />
+    <Compile Include="Generators\WriterGenerationContext.cs" />
+    <Compile Include="Generators\GenerationContextBase.cs" />
+    <Compile Include="Generators\SurrogateObjectIfNeededMethodGenerator.cs" />
+    <Compile Include="Generators\HandleNewReferenceMethodGenerator.cs" />
+    <Compile Include="Generators\WriteReferenceMethodGenerator.cs" />
+    <Compile Include="Utilities\Variable.cs" />
+    <Compile Include="Generators\CallPostSerializationHooksMethodGenerator.cs" />
+    <Compile Include="Generators\DynamicWriteMethodGenerator.cs" />
+    <Compile Include="Generators\DynamicReadMethodGenerator.cs" />
+    <Compile Include="Generators\CloneContentMethodGenerator.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

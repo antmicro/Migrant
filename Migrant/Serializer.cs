@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2012 Ant Micro <www.antmicro.com>
+  Copyright (c) 2012-2016 Ant Micro <www.antmicro.com>
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -33,6 +33,7 @@ using Antmicro.Migrant.Utilities;
 using Antmicro.Migrant.BultinSurrogates;
 using Antmicro.Migrant.VersionTolerance;
 using System.Collections.ObjectModel;
+using Antmicro.Migrant.Generators;
 
 namespace Antmicro.Migrant
 {
@@ -59,10 +60,9 @@ namespace Antmicro.Migrant
                 settings = new Settings(); // default settings
             }
             this.settings = settings;
-            writeMethodCache = new Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>>();
+
             objectsForSurrogates = new SwapList();
             surrogatesForObjects = new SwapList();
-            readMethodCache = new Dictionary<Type, Action<ObjectReader, Type, int>>();
 
             if(settings.SupportForISerializable)
             {
@@ -345,9 +345,85 @@ namespace Antmicro.Migrant
 
         private ObjectWriter CreateWriter(Stream stream)
         {
-            return new ObjectWriter(stream, OnPreSerialization, OnPostSerialization,
-                             writeMethodCache, surrogatesForObjects, settings.SerializationMethod == Method.Generated,
-                             settings.TreatCollectionAsUserObject, settings.UseBuffering, settings.DisableTypeStamping, settings.ReferencePreservation);
+            WriteMethods writeMethods;
+
+            if(settings.SerializationMethod == Method.Generated)
+            {
+                writeMethods.writeMethodsProvider = new DynamicMethodProvider<WriteMethodDelegate>(t =>
+                {
+                    var specialWrite = ObjectWriter.LinkSpecialWrite(t);
+                    if(specialWrite != null)
+                    {
+                        return specialWrite;
+                    }
+
+                    var generator = new WriteMethodGenerator(t, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    return generator.Generate();
+                });
+
+                writeMethods.handleNewReferenceMethodsProvider = new DynamicMethodProvider<HandleNewReferenceMethodDelegate>(t =>
+                {
+                    var generator = new HandleNewReferenceMethodGenerator(t, objectsForSurrogates, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject, OnPreSerialization != null, OnPostSerialization != null);
+                    return generator.Generate();
+                });
+
+                writeMethods.surrogateObjectIfNeededMethodsProvider = new DynamicMethodProvider<SurrogateObjectIfNeededDelegate>(t =>
+                {
+                    var generator = new SurrogateObjectIfNeededMethodGenerator(t, surrogatesForObjects, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    return generator.Generate();
+                });
+
+                writeMethods.writeReferenceMethodsProvider = new DynamicMethodProvider<WriteReferenceMethodDelegate>(t =>
+                {
+                    var generator = new WriteReferenceMethodGenerator(t, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    return generator.Generate();
+                });
+
+                writeMethods.callPostSerializationHooksMethodsProvider = new DynamicMethodProvider<CallPostSerializationHooksMethodDelegate>(t =>
+                {
+                    var generator = new CallPostSerializationHooksMethodGenerator(t, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    return generator.Generate();
+                });
+            }
+            else
+            {
+                writeMethods = GetReflectionBasedWriteMethods();
+            }
+
+            return new ObjectWriter(stream, writeMethods, OnPreSerialization, OnPostSerialization,
+                             surrogatesForObjects, objectsForSurrogates, settings.TreatCollectionAsUserObject, 
+                             settings.UseBuffering, settings.DisableTypeStamping, settings.ReferencePreservation);
+        }
+
+        internal static WriteMethods GetReflectionBasedWriteMethods()
+        {
+            WriteMethods writeMethods;
+            writeMethods.writeMethodsProvider = new DynamicMethodProvider<WriteMethodDelegate>(t =>
+            {
+                var specialWrite = ObjectWriter.LinkSpecialWrite(t);
+                return specialWrite ?? ObjectWriter.WriteObjectUsingReflection;
+            });
+
+            writeMethods.handleNewReferenceMethodsProvider = new DynamicMethodProvider<HandleNewReferenceMethodDelegate>(t =>
+            {
+                return (ow, o, refId) => ow.HandleNewReference(o, refId);
+            });
+
+            writeMethods.surrogateObjectIfNeededMethodsProvider = new DynamicMethodProvider<SurrogateObjectIfNeededDelegate>(t =>
+            {
+                return (ow, o, refId) => ow.SurrogateObjectIfNeeded(o, refId);
+            });
+
+            writeMethods.writeReferenceMethodsProvider = new DynamicMethodProvider<WriteReferenceMethodDelegate>(t =>
+            {
+                return (ow, o) => ow.CheckLegalityAndWriteDeferredReference(o);
+            });
+
+            writeMethods.callPostSerializationHooksMethodsProvider = new DynamicMethodProvider<CallPostSerializationHooksMethodDelegate>(t =>
+            {
+                return (ow, o) => ow.CallPostSerializationHooksUsingReflection(o);
+            });
+            return writeMethods;
         }
 
         private DeserializationResult TryReadHeader(Stream stream, out bool preserveReferences, out bool disableStamping)
@@ -406,11 +482,77 @@ namespace Antmicro.Migrant
 
         private ObjectReader CreateReader(Stream stream)
         {
-            return new ObjectReader(stream, objectsForSurrogates, OnPostDeserialization, readMethodCache,
-                settings.DeserializationMethod == Method.Generated, settings.TreatCollectionAsUserObject,
-                settings.VersionTolerance, settings.UseBuffering, settings.DisableTypeStamping, settings.ReferencePreservation);
+            ReadMethods readMethods = new ReadMethods();
+            if(settings.DeserializationMethod == Method.Generated)
+            {
+                readMethods.readMethodsProvider = new DynamicMethodProvider<ReadMethodDelegate>(t =>
+                {
+                    var generator = new ReadMethodGenerator(t, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    return generator.Generate();
+                });
+
+                readMethods.touchInlinedObjectMethodsProvider = new DynamicMethodProvider<TouchInlinedObjectMethodDelegate>(t =>
+                {
+                    var generator = new TouchInlinedObjectGenerator(t, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    return generator.Generate();
+                });
+
+                readMethods.completeMethodsProvider = new DynamicMethodProvider<CompleteMethodDelegate>(t =>
+                {
+                    var generator = new CompletedGenerator(t, objectsForSurrogates, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    return generator.Generate();
+                });
+
+                readMethods.createObjectMethodsProvider = new DynamicMethodProvider<CreateObjectMethodDelegate>(t =>
+                {
+                    var generator = new CreateObjectGenerator(t, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
+                    return generator.Generate();
+                });
+
+                readMethods.cloneContentMehtodsProvider = new DynamicMethodProvider<CloneMethodDelegate>(t =>
+                {
+                    if(t.IsValueType)
+                    {
+                        return ObjectReader.CloneContentUsingReflection;
+                    }
+                    var generator = new CloneContentMethodGenerator(t);
+                    return generator.Generate();
+                });
+            }
+            else
+            {
+                readMethods = GetReflectionBasedReadMethods(settings.TreatCollectionAsUserObject);
+            }
+
+            return new ObjectReader(stream, readMethods, objectsForSurrogates, OnPostDeserialization,
+                settings.TreatCollectionAsUserObject, settings.VersionTolerance, settings.UseBuffering,
+                settings.DisableTypeStamping, settings.ReferencePreservation);
         }
 
+        internal static ReadMethods GetReflectionBasedReadMethods(bool treatCollectionAsUserObject)
+        {
+            ReadMethods readMethods = new ReadMethods();
+            readMethods.readMethodsProvider = new DynamicMethodProvider<ReadMethodDelegate>(t =>
+            {
+                return ObjectReader.ReadObjectInnerUsingReflection;
+            });
+
+            readMethods.touchInlinedObjectMethodsProvider = new DynamicMethodProvider<TouchInlinedObjectMethodDelegate>(t =>
+            {
+                return (or, refId) => or.TryTouchInlinedObjectUsingReflection(t, refId);
+            });
+
+            readMethods.completeMethodsProvider = new DynamicMethodProvider<CompleteMethodDelegate>(t =>
+            {
+                return (or, refId) => or.CompletedInnerUsingReflection(refId);
+            });
+
+            readMethods.createObjectMethodsProvider = new DynamicMethodProvider<CreateObjectMethodDelegate>(t =>
+            {
+                return () => ObjectReader.CreateObjectUsingReflection(t, treatCollectionAsUserObject);
+            });
+            return readMethods;
+        }
 
         private Exception lastException;
         private bool serializationDone;
@@ -418,11 +560,9 @@ namespace Antmicro.Migrant
         private ObjectWriter writer;
         private ObjectReader reader;
         private readonly Settings settings;
-        private readonly Dictionary<Type, Action<ObjectWriter, PrimitiveWriter, object>> writeMethodCache;
-        private readonly Dictionary<Type, Action<ObjectReader, Type, int>> readMethodCache;
         private readonly SwapList surrogatesForObjects;
         private readonly SwapList objectsForSurrogates;
-        private const byte VersionNumber = 8;
+        private const byte VersionNumber = 9;
         private const byte Magic1 = 0x32;
         private const byte Magic2 = 0x66;
         private const byte Magic3 = 0x34;
@@ -432,6 +572,24 @@ namespace Antmicro.Migrant
         public static readonly bool DisableVarints = true;
         public static readonly bool DisableBuffering = true;
         #endif
+
+        internal struct WriteMethods
+        {
+            public DynamicMethodProvider<CallPostSerializationHooksMethodDelegate> callPostSerializationHooksMethodsProvider;
+            public DynamicMethodProvider<WriteReferenceMethodDelegate> writeReferenceMethodsProvider;
+            public DynamicMethodProvider<SurrogateObjectIfNeededDelegate> surrogateObjectIfNeededMethodsProvider;
+            public DynamicMethodProvider<HandleNewReferenceMethodDelegate> handleNewReferenceMethodsProvider;
+            public DynamicMethodProvider<WriteMethodDelegate> writeMethodsProvider;
+        }
+
+        internal struct ReadMethods
+        {
+            public DynamicMethodProvider<ReadMethodDelegate> readMethodsProvider;
+            public DynamicMethodProvider<CompleteMethodDelegate> completeMethodsProvider;
+            public DynamicMethodProvider<CreateObjectMethodDelegate> createObjectMethodsProvider;
+            public DynamicMethodProvider<TouchInlinedObjectMethodDelegate> touchInlinedObjectMethodsProvider;
+            public DynamicMethodProvider<CloneMethodDelegate> cloneContentMehtodsProvider;
+        }
 
         /// <summary>
         /// Base class for surrogate setter.

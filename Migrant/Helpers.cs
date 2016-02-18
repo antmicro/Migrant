@@ -38,10 +38,9 @@ namespace Antmicro.Migrant
 {
     internal static class Helpers
     {
-        public static bool CanBeCreatedWithDataOnly(Type actualType, bool treatCollectionAsUserObject = false)
+        public static bool CanBeCreatedWithDataOnly(Type actualType)
         {
-            return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType)
-            || (!treatCollectionAsUserObject && (actualType.IsGenericType && typeof(ReadOnlyCollection<>).IsAssignableFrom(actualType.GetGenericTypeDefinition())));
+            return actualType == typeof(string) || actualType.IsValueType || actualType.IsArray || typeof(MulticastDelegate).IsAssignableFrom(actualType);
         }
 
         public static int GetCurrentPaddingValue(long currentPosition)
@@ -225,12 +224,12 @@ namespace Antmicro.Migrant
 
         internal static SerializationType GetSerializationType(Type type)
         {
-            if(Helpers.IsTransient(type))
+            if(IsTransient(type))
             {
                 return SerializationType.Transient;
             }
-            // treat pointer as a value type so that it is immediately check
-            // for legality (which should fail)
+            // Pointer is considered a value type just to 
+            // make it verified and filtered-out later.
             if(type.IsValueType || type.IsPointer)
             {
                 return SerializationType.Value;
@@ -271,6 +270,11 @@ namespace Antmicro.Migrant
             return result;
         }
 
+        internal static bool IsTypeWritableDirectly(Type fieldType)
+        {
+            return IsWriteableByPrimitiveWriter(fieldType) || (GetSerializationType(fieldType) == SerializationType.Value);
+        }
+
         internal static readonly DateTime DateTimeEpoch = new DateTime(2000, 1, 1);
 
         private static int GetBoundary(long currentPosition)
@@ -287,7 +291,8 @@ namespace Antmicro.Migrant
 
         static Helpers()
         {
-            TypesWriteableByPrimitiveWriter = new HashSet<Type>(typeof(PrimitiveWriter).GetMethods().Where(x => x.Name == "Write").Select(x => x.GetParameters()[0].ParameterType));
+            TypesWriteableByPrimitiveWriter = new HashSet<Type>(
+                typeof(PrimitiveWriter).GetMethods().Where(x => x.Name == "Write").Select(x => x.GetParameters()[0].ParameterType).Where(x => x != typeof(string) && x != typeof(byte[])));
             TypesWriteableByPrimitiveWriter.TrimExcess();
             AttrbuteIsDefinedLookup = new ConcurrentDictionary<Type, bool>();
         }
