@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2015 Antmicro <www.antmicro.com>
+  Copyright (c) 2015-2016 Antmicro <www.antmicro.com>
 
   Authors:
    * Mateusz Holenko (mholenko@antmicro.com)
@@ -38,8 +38,6 @@ namespace Antmicro.Migrant
         public bool IsDictionary { get; private set; }
 
         public bool IsGeneric { get; private set; }
-
-        public bool IsGenericallyIterable { get; private set; }
 
         public Type FormalElementType { get; private set; }
 
@@ -131,13 +129,12 @@ namespace Antmicro.Migrant
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(ICollection<>),
                 (iface, cmt) => {
                     cmt.IsGeneric = true;
-                    cmt.IsGenericallyIterable = true;
                     cmt.FormalElementType = iface.GetGenericArguments()[0];
                     cmt.CountMethod = iface.GetProperty("Count").GetGetMethod();
                 }),
             Tuple.Create<Type, Action<Type, CollectionMetaToken>>(typeof(IEnumerable<>),
                 (iface, cmt) => {
-                    cmt.IsGenericallyIterable = true;
+                    cmt.IsGeneric = true;
                     cmt.FormalElementType = iface.GetGenericArguments()[0];
                     cmt.CountMethod = typeof(Enumerable).GetMethods().Single(m => m.GetParameters().Length == 1 && m.Name == "Count").MakeGenericMethod(iface.GetGenericArguments()[0]);
                 }),
