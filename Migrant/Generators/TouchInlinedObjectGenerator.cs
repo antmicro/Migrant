@@ -23,8 +23,6 @@
 //
 // *******************************************************************
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Reflection.Emit;
 using Antmicro.Migrant.Utilities;
 
@@ -109,21 +107,27 @@ namespace Antmicro.Migrant.Generators
                 ReadMethodGenerator.GenerateReadPrimitive(context, typeof(string));
                 context.Generator.Call<ObjectReader>(x => x.SetObjectByReferenceId(0, null));
 
+                var field = Helpers.GetFieldInfo<ObjectReader, int>(x => x.objectsWrittenInlineCount);
+
                 context.PushObjectReaderOntoStack();
-                context.Generator.Emit(OpCodes.Ldfld, typeof(ObjectReader).GetField("objectsWrittenInline", BindingFlags.Instance | BindingFlags.NonPublic));
-                context.PushObjectIdOntoStack();
-                context.Generator.Call<HashSet<int>>(x => x.Add(0));
-                context.Generator.Emit(OpCodes.Pop);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Ldfld, field);
+                context.Generator.PushIntegerOntoStack(1);
+                context.Generator.Emit(OpCodes.Add);
+                context.Generator.Emit(OpCodes.Stfld, field);
             }
             else
             {
                 ReadMethodGenerator.GenerateReadNotPrecreated(context, type, context.PushObjectIdOntoStack);
 
+                var field = Helpers.GetFieldInfo<ObjectReader, int>(x => x.objectsWrittenInlineCount);
+
                 context.PushObjectReaderOntoStack();
-                context.Generator.Emit(OpCodes.Ldfld, typeof(ObjectReader).GetField("objectsWrittenInline", BindingFlags.Instance | BindingFlags.NonPublic));
-                context.PushObjectIdOntoStack();
-                context.Generator.Call<HashSet<int>>(x => x.Add(0));
-                context.Generator.Emit(OpCodes.Pop);
+                context.Generator.Emit(OpCodes.Dup);
+                context.Generator.Emit(OpCodes.Ldfld, field);
+                context.Generator.PushIntegerOntoStack(1);
+                context.Generator.Emit(OpCodes.Add);
+                context.Generator.Emit(OpCodes.Stfld, field);
             }
 
             context.Generator.MarkLabel(finish);
