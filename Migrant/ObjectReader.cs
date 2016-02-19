@@ -171,7 +171,6 @@ namespace Antmicro.Migrant
         internal static void ReadObjectInnerUsingReflection(ObjectReader objectReader, Type actualType, int objectId)
         {
             objectReader.TryTouchObject(actualType, objectId);
-            objectReader.ResetMaxAskedReferenceId();
 
             switch(GetCreationWay(actualType, objectReader.treatCollectionAsUserObject))
             {
@@ -313,23 +312,8 @@ namespace Antmicro.Migrant
             FillCollection(token.FormalElementType, objectId);
         }
 
-        public int MaxAskedReferenceId
-        {
-            get; private set;
-        }
-
-        public void ResetMaxAskedReferenceId()
-        {
-            MaxAskedReferenceId = -1;
-        }
-
         internal object GetObjectByReferenceId(int refId, bool forceDeserializedObject = false)
         {
-            if(refId > MaxAskedReferenceId)
-            {
-                MaxAskedReferenceId = refId;
-            }
-
             object obj;
             if(!forceDeserializedObject && surrogatesWhileReading.TryGetValue(refId, out obj))
             {

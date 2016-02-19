@@ -115,8 +115,6 @@ namespace Antmicro.Migrant.Generators
             context.Generator.StoreLocalValueFromStack(objectIdLocal);
 
             GenerateTouchObject(context, formalType);
-            context.PushObjectReaderOntoStack();
-            context.Generator.Call<ObjectReader>(x => x.ResetMaxAskedReferenceId());
 
             switch(ObjectReader.GetCreationWay(formalType, context.TreatCollectionAsUserObject))
             {
