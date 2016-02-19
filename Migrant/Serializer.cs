@@ -759,6 +759,13 @@ namespace Antmicro.Migrant
                 Serializer.surrogatesForObjects.AddOrReplace(type, callback);
             }
 
+            /// <summary>
+            /// Sets the generic surrogate type that should be used to replace the original one.
+            /// 
+            /// It is required for the type to be generic, has the same amount of parameters as the original
+            /// one and to has a constructor accepting one parameter of the original type.
+            /// </summary>
+            /// <param name="t">Generic type.</param>
             public void SetSurrogateGenericType(Type t)
             {
                 if(!type.IsGenericType || !t.IsGenericType)
