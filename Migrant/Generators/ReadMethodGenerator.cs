@@ -109,7 +109,6 @@ namespace Antmicro.Migrant.Generators
 
         private static void GenerateReadObjectInner(ReaderGenerationContext context, Type formalType)
         {
-            var finish = context.Generator.DefineLabel();
             var objectIdLocal = context.Generator.DeclareLocal(typeof(int));
 
             context.PushObjectIdOntoStack();
@@ -131,11 +130,6 @@ namespace Antmicro.Migrant.Generators
                 GenerateUpdateFields(context, formalType, objectIdLocal);
                 break;
             }
-
-            context.PushDeserializedObjectOntoStack(objectIdLocal);
-            context.Generator.Emit(OpCodes.Brfalse, finish);
-
-            context.Generator.MarkLabel(finish);
         }
 
         private static void GenerateUpdateElements(ReaderGenerationContext context, Type formalType, LocalBuilder objectIdLocal)

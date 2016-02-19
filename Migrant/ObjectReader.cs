@@ -185,12 +185,6 @@ namespace Antmicro.Migrant
                 objectReader.UpdateFields(actualType, objectReader.GetObjectByReferenceId(objectId));
                 break;
             }
-            var obj = objectReader.GetObjectByReferenceId(objectId);
-            if(obj == null)
-            {
-                // it can happen if we deserialize delegate with empty invocation list
-                return;
-            }
         }
 
         private void UpdateFields(Type actualType, object target)
