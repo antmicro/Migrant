@@ -51,7 +51,12 @@ namespace Antmicro.Migrant.Utilities
         {
             InnerAddOrReplace(key, value, null);
         }
-        
+
+        /// <summary>
+        /// Adds new key/dynamically generated pair or replaces one if the key already exists.
+        /// </summary>
+        /// <param name="genericType">Key.</param>
+        /// <param name="actualDelegateGenerator">Function generating final value.</param>
         public void AddGenericTemplate(Type genericType, Func<Type, Delegate> actualDelegateGenerator)
         {
             InnerAddOrReplace(genericType, null, actualDelegateGenerator);
