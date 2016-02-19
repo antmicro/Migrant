@@ -156,13 +156,13 @@ namespace Antmicro.Migrant
             var mexpr = expression.Body as MemberExpression;
             if(mexpr == null)
             {
-                return null;
+                throw new ArgumentException("Expression does not point to class member.");
             }
 
             var pinfo = mexpr.Member as PropertyInfo;
             if(pinfo == null)
             {
-                return null;
+                throw new ArgumentException("Expression does not point to a property.");
             }
 
             return pinfo.GetGetMethod(true);
@@ -204,7 +204,12 @@ namespace Antmicro.Migrant
 
         public static ConstructorInfo GetConstructorInfo<T>(params Type[] argumentsTypes)
         {
-            return typeof(T).GetConstructor(argumentsTypes);
+            var result = typeof(T).GetConstructor(argumentsTypes);
+            if(result == null)
+            {
+                throw new ArgumentException("Constructor not found.");
+            }
+            return result;
         }
 
         public static bool IsWriteableByPrimitiveWriter(Type type)

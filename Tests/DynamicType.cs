@@ -180,6 +180,10 @@ namespace Antmicro.Migrant.Tests
                 new AssemblyName(string.Format("{0}-{1}-{2}", AssemblyName.Name, "xxx", counter)) { Version = version }, 
                 AssemblyBuilderAccess.RunAndSave);
             var builtType = CreateType(assemblyBuilder, dllName);
+            if(builtType == null)
+            {
+                throw new InvalidOperationException("Could not create type.");
+            }
             assemblyBuilder.Save(dllName);
             if(!string.IsNullOrWhiteSpace(prefix))
             {
