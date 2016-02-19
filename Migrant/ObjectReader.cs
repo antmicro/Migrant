@@ -60,8 +60,6 @@ namespace Antmicro.Migrant
             postDeserializationHooks = new List<Action>();
 
             reader = new PrimitiveReader(stream, useBuffering);
-
-            objectsWrittenInline = new HashSet<int>();
             surrogatesWhileReading = new OneToOneMap<int, object>();
 
             readTypeMethod = disableStamping ? (Func<TypeDescriptor>)ReadSimpleTypeDescriptor : ReadFullTypeDescriptor;
@@ -92,29 +90,26 @@ namespace Antmicro.Migrant
                 deserializedObjects = new AutoResizingList<object>(InitialCapacity);
             }
 
-            objectsWrittenInline.Clear();
+            objectsWrittenInlineCount = 0;
             var before = deserializedObjects.Count;
             var theRefId = ReadAndTouchReference();
             if(theRefId == before)
             {
                 var after = deserializedObjects.Count;
-                if(before < after - objectsWrittenInline.Count)
+                if(before < after - objectsWrittenInlineCount)
                 {
-                    int refId;
-                    int maxNonInlinedReferenceId;
+                    int prevRefId;
+                    int refId = -1;
                     do
                     {
+                        prevRefId = refId;
                         refId = reader.ReadInt32();
                         var type = GetObjectByReferenceId(refId).GetType();
                         readMethods.readMethodsProvider.GetOrCreate(type)(this, type, refId);
-
-                        maxNonInlinedReferenceId = deserializedObjects.Count - 1;
-                        while(objectsWrittenInline.Contains(maxNonInlinedReferenceId))
-                        {
-                            maxNonInlinedReferenceId--;
-                        }
+                        // this is to compensate objects written inline that has been already counted
+                        objectsWrittenInlineCount -= (refId - prevRefId - 1);
                     }
-                    while(refId < maxNonInlinedReferenceId);
+                    while(deserializedObjects.Count - before - refId - objectsWrittenInlineCount > 1);
                 }
             }
 
@@ -395,7 +390,7 @@ namespace Antmicro.Migrant
                 if(!TryRecreateObjectUsingAdditionalMetadata(type, refId))
                 {
                     ReadNotPrecreated(type, refId);
-                    objectsWrittenInline.Add(refId);
+                    objectsWrittenInlineCount++;
                 }
             }
         }
@@ -453,7 +448,7 @@ namespace Antmicro.Migrant
             {
                 var result = reader.ReadString();
                 SetObjectByReferenceId(objectId, result);
-                objectsWrittenInline.Add(objectId);
+                objectsWrittenInlineCount++;
                 return true;
             }
             return false;
@@ -736,8 +731,8 @@ namespace Antmicro.Migrant
         internal AutoResizingList<object> deserializedObjects;
         internal readonly OneToOneMap<int, object> surrogatesWhileReading;
         internal readonly Serializer.ReadMethods readMethods;
+        internal int objectsWrittenInlineCount;
 
-        private readonly HashSet<int> objectsWrittenInline;
         private readonly Func<TypeDescriptor> readTypeMethod;
         private List<TypeDescriptor> types;
         private WeakReference[] soFarDeserialized;
