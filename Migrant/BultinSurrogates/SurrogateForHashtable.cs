@@ -22,13 +22,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // *******************************************************************
-using System;
 using System.Collections;
 using System.Collections.Generic;
 
 namespace Antmicro.Migrant.BultinSurrogates
 {
-    public class SurrogateForHashtable
+    internal class SurrogateForHashtable
     {
         public SurrogateForHashtable(Hashtable hashtable)
         {
