@@ -619,8 +619,8 @@ namespace Antmicro.Migrant
 
             if(type.UnderlyingType.IsGenericType)
             {
-                var isOpen = reader.ReadBoolean();
-                if(!isOpen)
+                var containsAnyFixedGenericArguments = reader.ReadBoolean();
+                if(containsAnyFixedGenericArguments)
                 {
                     var args = new Type[type.UnderlyingType.GetGenericArguments().Count()];
                     for(int i = 0; i < args.Length; i++)

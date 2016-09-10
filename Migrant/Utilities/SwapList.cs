@@ -137,7 +137,13 @@ namespace Antmicro.Migrant.Utilities
 
         private static bool IsMatch(Type candidate, Type value)
         { 
-            if(Helpers.IsOpenGenericType(candidate) && value.IsGenericType)
+            var typeOfCandidateType = Helpers.GetTypeOfGenericType(candidate);
+            if(typeOfCandidateType == Helpers.TypeOfGenericType.FixedNestedGenericType || typeOfCandidateType == Helpers.TypeOfGenericType.PartiallyFixedNestedGenericType)
+            {
+                throw new ArgumentException("Wrong candidate type");
+            }
+
+            if(typeOfCandidateType == Helpers.TypeOfGenericType.OpenGenericType && value.IsGenericType)
             {
                 return GenericIsMatch(candidate, value.GetGenericTypeDefinition());
             }

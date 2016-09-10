@@ -154,8 +154,7 @@ namespace Antmicro.Migrant.VersionTolerance
             UnderlyingType = t;
 
             TypeModule = new ModuleDescriptor(t.Module);
-
-            if(UnderlyingType.IsGenericType && !Helpers.IsOpenGenericType(UnderlyingType))
+            if(UnderlyingType.IsGenericType)
             {
                 GenericFullName = UnderlyingType.GetGenericTypeDefinition().FullName;
                 Name = UnderlyingType.GetGenericTypeDefinition().AssemblyQualifiedName;

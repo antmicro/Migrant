@@ -317,14 +317,22 @@ namespace Antmicro.Migrant
 
                 TouchAndWriteTypeIdWithFullStampInner(genericTypeDefinitionDescriptor);
 
-                var isOpen = Helpers.IsOpenGenericType(typeDescriptor.UnderlyingType);
-                writer.Write(isOpen);
-                if(!isOpen)
+                var typeOfUnderlyingType = Helpers.GetTypeOfGenericType(typeDescriptor.UnderlyingType);
+                if(typeOfUnderlyingType == Helpers.TypeOfGenericType.OpenGenericType)
                 {
+                    writer.Write(false);
+                }
+                else if(typeOfUnderlyingType == Helpers.TypeOfGenericType.ClosedGenericType || typeOfUnderlyingType == Helpers.TypeOfGenericType.FixedNestedGenericType)
+                {
+                    writer.Write(true);
                     foreach(var genericArgumentType in typeDescriptor.UnderlyingType.GetGenericArguments())
                     {
                         TouchAndWriteTypeIdWithFullStamp(genericArgumentType);
                     }
+                }
+                else
+                {
+                    throw new ArgumentException(string.Format("Unexpected generic type: {0}", typeDescriptor.UnderlyingType));
                 }
             }
             else

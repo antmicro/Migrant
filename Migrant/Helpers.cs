@@ -242,9 +242,68 @@ namespace Antmicro.Migrant
             return SerializationType.Reference;
         }
 
-        internal static bool IsOpenGenericType(Type type)
+        internal enum TypeOfGenericType
         {
-            return type.IsGenericType && type.ContainsGenericParameters;
+            // The type is not generic at all
+            NonGenericType,
+            // The type is generic and none of its generic arguments is set
+            OpenGenericType,
+            // The type is an internal type of other generic type and all its generic arguments are set, but some of them
+            // points to generic arguments of parent type
+            FixedNestedGenericType,
+            // The type is an internal type of other generic type and some of its generic arguments points to generic
+            // arguments of parent type, the rest is not set
+            PartiallyFixedNestedGenericType,
+            // The type is generic and all of its generic arguments are set
+            ClosedGenericType
+        }
+
+        internal static TypeOfGenericType GetTypeOfGenericType(Type type)
+        {
+            if(!type.IsGenericType)
+            {
+                return TypeOfGenericType.NonGenericType;
+            }
+
+            var hasGenericArgumentsPointingToParent = false;
+            var hasGenericArgumentsNotPointingToParent = false;
+            foreach(var genericParameter in type.GetGenericArguments())
+            {
+                if(genericParameter.IsGenericParameter)
+                {
+                    if(genericParameter.DeclaringType == type)
+                    {
+                        hasGenericArgumentsNotPointingToParent = true;
+                    }
+                    else
+                    {
+                        hasGenericArgumentsPointingToParent = true;
+                    }
+                }
+            }
+
+            if(hasGenericArgumentsPointingToParent)
+            {
+                if(hasGenericArgumentsNotPointingToParent)
+                {
+                    return TypeOfGenericType.PartiallyFixedNestedGenericType;
+                }
+                else
+                {
+                    return TypeOfGenericType.FixedNestedGenericType;
+                }
+            }
+            else
+            {
+                if(hasGenericArgumentsNotPointingToParent)
+                {
+                    return TypeOfGenericType.OpenGenericType;
+                }
+                else
+                {
+                    return TypeOfGenericType.ClosedGenericType;
+                }
+            }
         }
 
         internal static bool ContainsGenericArguments(Type type)
