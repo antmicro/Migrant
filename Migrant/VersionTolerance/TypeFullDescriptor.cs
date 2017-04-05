@@ -59,7 +59,7 @@ namespace Antmicro.Migrant.VersionTolerance
         public override void Read(ObjectReader reader)
         {
             ReadStamp(reader);
-            ReadStructureStampIfNeeded(reader, reader.VersionToleranceLevel);
+            ReadStructureStampIfNeeded(reader, reader.VersionToleranceLevel, reader.ForceStampVerification);
         }
 
         public void ReadStamp(ObjectReader reader)
@@ -76,11 +76,11 @@ namespace Antmicro.Migrant.VersionTolerance
             WriteStructureStampIfNeeded(writer);
         }
 
-        public void ReadStructureStampIfNeeded(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
+        public void ReadStructureStampIfNeeded(ObjectReader reader, VersionToleranceLevel versionToleranceLevel, bool forceStampVerification = false)
         {
             if(StampHelpers.IsStampNeeded(this, reader.TreatCollectionAsUserObject))
             {
-                ReadStructureStamp(reader, versionToleranceLevel);
+                ReadStructureStamp(reader, versionToleranceLevel, forceStampVerification);
             }
         }
 
@@ -199,17 +199,19 @@ namespace Antmicro.Migrant.VersionTolerance
             return FieldsToDeserialize.Where(x => x.Field != null && x.Field.IsConstructor());
         }
 
-        private List<FieldInfoOrEntryToOmit> VerifyStructure(VersionToleranceLevel versionToleranceLevel)
+        private List<FieldInfoOrEntryToOmit> VerifyStructure(VersionToleranceLevel versionToleranceLevel, bool forceStampVerification)
         {
-            if(TypeModule.GUID == UnderlyingType.Module.ModuleVersionId)
+            if(TypeModule.GUID != UnderlyingType.Module.ModuleVersionId)
+            {
+                if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowGuidChange))
+                {
+                    throw new VersionToleranceException(string.Format("The class {2} was serialized with different module version id {0}, current one is {1}.",
+                        TypeModule.GUID, UnderlyingType.Module.ModuleVersionId, UnderlyingType.FullName));
+                }
+            }
+            else if(!forceStampVerification)
             {
                 return StampHelpers.GetFieldsInSerializationOrder(UnderlyingType, true).Select(x => new FieldInfoOrEntryToOmit(x)).ToList();
-            }
-
-            if(!versionToleranceLevel.HasFlag(VersionToleranceLevel.AllowGuidChange))
-            {
-                throw new VersionToleranceException(string.Format("The class {2} was serialized with different module version id {0}, current one is {1}.",
-                    TypeModule.GUID, UnderlyingType.Module.ModuleVersionId, UnderlyingType.FullName));
             }
 
             var result = new List<FieldInfoOrEntryToOmit>();
@@ -267,7 +269,7 @@ namespace Antmicro.Migrant.VersionTolerance
             return result;
         }
 
-        private void ReadStructureStamp(ObjectReader reader, VersionToleranceLevel versionToleranceLevel)
+        private void ReadStructureStamp(ObjectReader reader, VersionToleranceLevel versionToleranceLevel, bool forceStampVerification)
         {
             baseType = (TypeFullDescriptor)reader.ReadType();
             var noOfFields = reader.PrimitiveReader.ReadInt32();
@@ -277,7 +279,7 @@ namespace Antmicro.Migrant.VersionTolerance
                 fieldDescriptor.ReadFrom(reader);
                 fields.Add(fieldDescriptor);
             }
-            FieldsToDeserialize = VerifyStructure(versionToleranceLevel);
+            FieldsToDeserialize = VerifyStructure(versionToleranceLevel, forceStampVerification);
             // TODO: do we need this line?
             fullCache[UnderlyingType] = this;
         }

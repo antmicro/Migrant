@@ -44,7 +44,8 @@ namespace Antmicro.Migrant
         public ObjectReader(Stream stream, Serializer.ReadMethods readMethods, SwapList objectsForSurrogates = null, Action<object> postDeserializationCallback = null,
                             bool treatCollectionAsUserObject = false,
                             VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, bool disableStamping = false,
-                            ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
+                            ReferencePreservation referencePreservation = ReferencePreservation.Preserve,
+                            bool forceStampVerification = false)
         {
             this.readMethods = readMethods;
             this.postDeserializationCallback = postDeserializationCallback;
@@ -63,6 +64,7 @@ namespace Antmicro.Migrant
             surrogatesWhileReading = new OneToOneMap<int, object>();
 
             readTypeMethod = disableStamping ? (Func<TypeDescriptor>)ReadSimpleTypeDescriptor : ReadFullTypeDescriptor;
+            ForceStampVerification = forceStampVerification;
         }
 
         public void ReuseWithNewStream(Stream stream)
@@ -700,6 +702,7 @@ namespace Antmicro.Migrant
         internal IdentifiedElementsList<AssemblyDescriptor> Assemblies { get; private set; }
         internal IdentifiedElementsList<MethodDescriptor> Methods { get; private set; }
         internal VersionToleranceLevel VersionToleranceLevel { get; private set; }
+        internal bool ForceStampVerification { get; private set; }
 
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 

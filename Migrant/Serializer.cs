@@ -536,7 +536,7 @@ namespace Antmicro.Migrant
 
             return new ObjectReader(stream, readMethods, objectsForSurrogates, OnPostDeserialization,
                 settings.TreatCollectionAsUserObject, settings.VersionTolerance, settings.UseBuffering,
-                settings.DisableTypeStamping, settings.ReferencePreservation);
+                settings.DisableTypeStamping, settings.ReferencePreservation, settings.ForceStampVerification);
         }
 
         internal static ReadMethods GetReflectionBasedReadMethods(bool treatCollectionAsUserObject)

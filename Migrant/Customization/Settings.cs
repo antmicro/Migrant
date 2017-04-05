@@ -91,6 +91,12 @@ namespace Antmicro.Migrant.Customization
         public bool DisableTypeStamping { get; private set; }
 
         /// <summary>
+        /// Specifies if type stamps should be compared even when GUID has not changed.
+        /// This is used in internal framework's tests.
+        /// </summary>
+        public bool ForceStampVerification { get; private set ;}
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Antmicro.Migrant.Customization.Settings"/> class.
         /// </summary>
         /// <param name='serializationMethod'>
@@ -122,9 +128,12 @@ namespace Antmicro.Migrant.Customization
         /// <param name="referencePreservation"> 
         /// Tells serializer how to treat references between sessions of open stream serialization.
         /// </param>
+        /// <param name="forceStampVerification">
+        /// Specifies if type stamps should be compared even when GUID has not changed.
+        /// </param>
         public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
                         bool supportForISerializable = false, bool supportForIXmlSerializable = false, bool treatCollectionAsUserObject = false,
-                        bool useBuffering = true, bool disableTypeStamping = false, ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
+                        bool useBuffering = true, bool disableTypeStamping = false, ReferencePreservation referencePreservation = ReferencePreservation.Preserve, bool forceStampVerification = false)
         {
             SerializationMethod = serializationMethod;
             DeserializationMethod = deserializationMethod;
@@ -135,6 +144,7 @@ namespace Antmicro.Migrant.Customization
             UseBuffering = useBuffering;
             ReferencePreservation = referencePreservation;
             DisableTypeStamping = disableTypeStamping;
+            ForceStampVerification = forceStampVerification;
         }
 
         /// <summary>
@@ -166,9 +176,12 @@ namespace Antmicro.Migrant.Customization
         /// <param name="referencePreservation"> 
         /// Tells serializer how to treat references between sessions of open stream serialization.
         /// </param>
+        /// <param name="forceStampVerification">
+        /// Specifies if type stamps should be compared even when GUID has not changed.
+        /// </param>
         public Settings With(Method? serializationMethod = null, Method? deserializationMethod = null, VersionToleranceLevel? versionTolerance = null,
                              bool? supportForISerializable = null, bool? treatCollectionAsUserObject = null, bool? useBuffering = null, bool? disableTypeStamping = null,
-                             ReferencePreservation? referencePreservation = null)
+                             ReferencePreservation? referencePreservation = null, bool? forceStampVerification = null)
         {
             var result = new Settings {
                 SerializationMethod = serializationMethod ?? SerializationMethod,
@@ -178,7 +191,8 @@ namespace Antmicro.Migrant.Customization
                 TreatCollectionAsUserObject = treatCollectionAsUserObject ?? TreatCollectionAsUserObject,
                 UseBuffering = useBuffering ?? UseBuffering,
                 DisableTypeStamping = disableTypeStamping ?? DisableTypeStamping,
-                ReferencePreservation = referencePreservation ?? ReferencePreservation
+                ReferencePreservation = referencePreservation ?? ReferencePreservation,
+                ForceStampVerification = forceStampVerification ?? ForceStampVerification
             };
             return result;
         }
