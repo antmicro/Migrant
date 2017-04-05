@@ -48,7 +48,7 @@ namespace Antmicro.Migrant.Tests
     public class BuiltinSurrogatesTests : BaseTestWithSettings
     {
         public BuiltinSurrogatesTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping)
-            : base(useGeneratedSerializer, useGeneratedDeserializer, false, true, true, useTypeStamping)
+            : base(useGeneratedSerializer, useGeneratedDeserializer, false, true, true, useTypeStamping, true)
         {
 
         }

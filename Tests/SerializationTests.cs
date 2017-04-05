@@ -71,7 +71,7 @@ namespace Antmicro.Migrant.Tests
     [TestFixture(true, true, true, true, false)]
     public class SerializationTests : BaseTestWithSettings
     {
-        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, supportForISerializable, false, useTypeStamping)
+        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, supportForISerializable, false, useTypeStamping, true)
         {
             useGeneratedSerialization = useGeneratedSerializer;
         }

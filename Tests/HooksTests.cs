@@ -44,7 +44,7 @@ namespace Antmicro.Migrant.Tests
     [TestFixture(true, true, false)]
     public class HooksTests : BaseTestWithSettings
     {
-        public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false, useTypeStamping)
+        public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false, useTypeStamping, true)
         {
         }
 

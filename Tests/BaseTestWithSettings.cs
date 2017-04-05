@@ -33,7 +33,7 @@ namespace Antmicro.Migrant.Tests
     public abstract class BaseTestWithSettings
     {
         protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable,
-            bool supportForIXmlSerializable, bool useTypeStamping)
+            bool supportForIXmlSerializable, bool useTypeStamping, bool forceStampVerification)
         {
             this.useGeneratedSerializer = useGeneratedSerializer;
             this.useGeneratedDeserializer = useGeneratedDeserializer;
@@ -41,6 +41,7 @@ namespace Antmicro.Migrant.Tests
             this.supportForISerializable = supportForISerializable;
             this.supportForIXmlSerializable = supportForIXmlSerializable;
             this.useTypeStamping = useTypeStamping;
+            this.forceStampVerification = forceStampVerification;
         }
 
         protected Settings GetSettings(VersionToleranceLevel level = 0)
@@ -51,7 +52,8 @@ namespace Antmicro.Migrant.Tests
                 supportForISerializable,
                 supportForIXmlSerializable,
                 treatCollectionsAsUserObjects,
-                disableTypeStamping: !useTypeStamping);
+                disableTypeStamping: !useTypeStamping,
+                forceStampVerification: forceStampVerification);
         }
 
         protected T SerializerClone<T>(T toClone)
@@ -77,5 +79,6 @@ namespace Antmicro.Migrant.Tests
         private readonly bool supportForISerializable;
         private readonly bool supportForIXmlSerializable;
         private readonly bool useTypeStamping;
+        private readonly bool forceStampVerification;
     }
 }

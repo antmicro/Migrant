@@ -68,7 +68,7 @@ namespace Antmicro.Migrant.Tests
             bool supportForISerializable,
             bool supportForIXmlSerializable,
             bool useTypeStamping) : 
-        base(useGeneratedSerializer, useGeneratedDeserializer, false, supportForISerializable, supportForIXmlSerializable, useTypeStamping)
+        base(useGeneratedSerializer, useGeneratedDeserializer, false, supportForISerializable, supportForIXmlSerializable, useTypeStamping, true)
         {
         }
 
