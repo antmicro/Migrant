@@ -234,15 +234,7 @@ namespace Antmicro.Migrant.Generators
                         context.Generator.PushFieldInfoOntoStack(field);
                         context.PushDeserializedObjectOntoStack(objectIdLocal);
 
-                        context.Generator.GenerateCodeCall<FieldInfo, object>((fi, target) =>
-                        {
-                            // this code is done using reflection and not generated due to
-                            // small estimated profit and lot of code to write:
-                            // * copying constructor attributes from generating to generated code
-                            // * calculating optimal constructor to call based on a collection of arguments
-                            var ctorAttribute = (ConstructorAttribute)fi.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
-                            fi.SetValue(target, Activator.CreateInstance(fi.FieldType, ctorAttribute.Parameters));
-                        });
+                        context.Generator.GenerateCodeCall<FieldInfo, object>(GenerateUpdateFieldsStaticHelper);
                     }
                     continue;
                 }
@@ -251,6 +243,17 @@ namespace Antmicro.Migrant.Generators
                 GenerateReadField(context, field.FieldType, false);
                 context.Generator.Emit(OpCodes.Stfld, field);
             }
+        }
+
+        private static void GenerateUpdateFieldsStaticHelper(FieldInfo fi, object target)
+        {
+            // this code is done using reflection and not generated due to
+            // small estimated profit and lot of code to write:
+            // * copying constructor attributes from generating to generated code
+            // * calculating optimal constructor to call based on a collection of arguments
+
+            var ctorAttribute = (ConstructorAttribute)fi.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
+            fi.SetValue(target, Activator.CreateInstance(fi.FieldType, ctorAttribute.Parameters));
         }
 
         private static void SaveNewDeserializedObject(ReaderGenerationContext context, LocalBuilder objectIdLocal, Action generateNewObject)
@@ -453,17 +456,10 @@ namespace Antmicro.Migrant.Generators
                     {
                         context.Generator.PushLocalAddressOntoStack(structLocal);
                         context.Generator.PushFieldInfoOntoStack(field.Field);
-                        context.Generator.GenerateCodeFCall<FieldInfo, object>(fi =>
-                        {
-                            // this code is done using reflection and not generated due to
-                            // small estimated profit and lot of code to write:
-                            // * copying constructor attributes from generating to generated code
-                            // * calculating optimal constructor to call based on a collection of arguments
-                            var ctorAttribute = (ConstructorAttribute)fi.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
-                            return Activator.CreateInstance(fi.FieldType, ctorAttribute.Parameters);
-                        });
 
-                        if(field.Field.FieldType.IsValueType)
+                        context.Generator.GenerateCodeFCall<FieldInfo, object>(GenerateUpdateStructFieldsStaticHelper);
+
+                        if (field.Field.FieldType.IsValueType)
                         {
                             context.Generator.Emit(OpCodes.Unbox_Any, field.Field.FieldType);
                         }
@@ -487,6 +483,16 @@ namespace Antmicro.Migrant.Generators
                     context.Generator.Emit(OpCodes.Pop); // read value
                 }
             }
+        }
+
+        private static object GenerateUpdateStructFieldsStaticHelper(FieldInfo fi)
+        {
+            // this code is done using reflection and not generated due to
+            // small estimated profit and lot of code to write:
+            // * copying constructor attributes from generating to generated code
+            // * calculating optimal constructor to call based on a collection of arguments
+            var ctorAttribute = (ConstructorAttribute)fi.GetCustomAttributes(false).First(x => x is ConstructorAttribute);
+            return Activator.CreateInstance(fi.FieldType, ctorAttribute.Parameters);
         }
 
         private static void GenerateReadArray(ReaderGenerationContext context, Type arrayType, Action pushObjectIdOntoStackAction)
@@ -582,24 +588,7 @@ namespace Antmicro.Migrant.Generators
                 context.Generator.PushLocalValueOntoStack(lengthsLocal);
                 context.Generator.PushLocalValueOntoStack(rankLocal);
 
-                context.Generator.GenerateCodeFCall<int[], int[], int, bool>((counter, sizes, ranks) =>
-                {
-                    var currentRank = ranks - 1;
-
-                    while(currentRank >= 0)
-                    {
-                        counter[currentRank]++;
-                        if(counter[currentRank] < sizes[currentRank])
-                        {
-                            return true;
-                        }
-
-                        counter[currentRank] = 0;
-                        currentRank--;
-                    }
-
-                    return false;
-                });
+                context.Generator.GenerateCodeFCall<int[], int[], int, bool>(GenerateReadArrayStaticHelper);
             }
             else
             {
@@ -616,6 +605,25 @@ namespace Antmicro.Migrant.Generators
 
             context.Generator.Emit(OpCodes.Br, loopBeginLabel);
             context.Generator.MarkLabel(loopEndLabel);
+        }
+
+        private static bool GenerateReadArrayStaticHelper(int[] counter, int[] sizes, int ranks)
+        {
+            var currentRank = ranks - 1;
+
+            while (currentRank >= 0)
+            {
+                counter[currentRank]++;
+                if (counter[currentRank] < sizes[currentRank])
+                {
+                    return true;
+                }
+
+                counter[currentRank] = 0;
+                currentRank--;
+            }
+
+            return false;
         }
 
         private static void GenerateReadDelegate(ReaderGenerationContext context, Type type, Action pushObjectIdOntoStackAction)
@@ -637,12 +645,14 @@ namespace Antmicro.Migrant.Generators
                 context.PushDeserializedObjectsCollectionOntoStack();
                 pushObjectIdOntoStackAction();
 
-                context.Generator.GenerateCodeCall<MethodInfo, Type, object, AutoResizingList<object>, int>((method, t, target, deserializedObjects, objectId) =>
-                {
-                    var del = Delegate.CreateDelegate(t, target, method);
-                    deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
-                });
+                context.Generator.GenerateCodeCall<MethodInfo, Type, object, AutoResizingList<object>, int>(GenerateReadDelegateStaticHelper);
             });
+        }
+
+        private static void GenerateReadDelegateStaticHelper(MethodInfo method, Type t, object target, AutoResizingList<object> deserializedObjects, int objectId)
+        {
+            var del = Delegate.CreateDelegate(t, target, method);
+            deserializedObjects[objectId] = Delegate.Combine((Delegate)deserializedObjects[objectId], del);
         }
 
         private static void GenerateReadMethod(ReaderGenerationContext context)
