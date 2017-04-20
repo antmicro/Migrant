@@ -27,6 +27,7 @@ using Antmicro.Migrant.Customization;
 using System.IO;
 using System.Reflection;
 using Antmicro.Migrant.VersionTolerance;
+using System.Linq;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -45,17 +46,18 @@ namespace Antmicro.Migrant.Tests
 
         public void PrepareDomains()
         {
-            foreach(var domain in new [] { "domain1", "domain2" })
+            var pathBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            foreach (var domain in new[] { "domain1", "domain2" }.Select(x => Path.Combine(pathBase, x)))
             {
                 Directory.CreateDirectory(domain);
                 foreach(var file in new[] { "Tests.dll", "Migrant.dll" })
                 {
-                    File.Copy(file, Path.Combine(domain, file), true);
+                    File.Copy(Path.Combine(pathBase, file), Path.Combine(domain, file), true);
                 }
             }
 
-            domain1 = AppDomain.CreateDomain("domain1", null, Path.Combine(Environment.CurrentDirectory, "domain1"), string.Empty, true);
-            domain2 = AppDomain.CreateDomain("domain2", null, Path.Combine(Environment.CurrentDirectory, "domain2"), string.Empty, true);
+            domain1 = AppDomain.CreateDomain("domain1", null, Path.Combine(pathBase, "domain1"), string.Empty, false);
+            domain2 = AppDomain.CreateDomain("domain2", null, Path.Combine(pathBase, "domain2"), string.Empty, false);
 
             testsOnDomain1 = (InnerDriver)domain1.CreateInstanceAndUnwrap(typeof(InnerDriver).Assembly.FullName, typeof(InnerDriver).FullName);
             testsOnDomain2 = (InnerDriver)domain2.CreateInstanceAndUnwrap(typeof(InnerDriver).Assembly.FullName, typeof(InnerDriver).FullName);
@@ -73,8 +75,10 @@ namespace Antmicro.Migrant.Tests
             domain1 = null;
             domain2 = null;
 
-            Directory.Delete("domain1", true);
-            Directory.Delete("domain2", true);
+            var pathBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            Directory.Delete(Path.Combine(pathBase, "domain1"), true);
+            Directory.Delete(Path.Combine(pathBase, "domain2"), true);
         }
         
         public bool SerializeAndDeserializeOnTwoAppDomains(DynamicType domainOneType, DynamicType domainTwoType, VersionToleranceLevel vtl, bool allowGuidChange = true)

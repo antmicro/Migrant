@@ -174,22 +174,19 @@ namespace Antmicro.Migrant.Tests
         }
 
         public object Instantiate(Version version = null)
-        {
-            var dllName = string.Format("{0}-{1}-{2}.dll", AssemblyName.Name, "xxx", "0");
+        {            
+            var pathBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dllName = string.Format("{0}-{1}-{2}.dll", AssemblyName.Name, "xxx", counter);
             var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(
                 new AssemblyName(string.Format("{0}-{1}-{2}", AssemblyName.Name, "xxx", counter)) { Version = version }, 
-                AssemblyBuilderAccess.RunAndSave);
+                AssemblyBuilderAccess.RunAndSave, pathBase);
             var builtType = CreateType(assemblyBuilder, dllName);
             if(builtType == null)
             {
                 throw new InvalidOperationException("Could not create type.");
             }
+            
             assemblyBuilder.Save(dllName);
-            if(!string.IsNullOrWhiteSpace(prefix))
-            {
-                File.Delete(Path.Combine(prefix, dllName));
-                File.Move(dllName, Path.Combine(prefix, dllName));
-            }
             var result = Activator.CreateInstance(builtType);
             foreach(var field in fields.Where(x => x.Value.DynamicType != null))
             {
