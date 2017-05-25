@@ -33,6 +33,6 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyCompany("Antmicro")]
 [assembly: AssemblyCopyright("Copyright by Antmicro 2012 - 2016")]
 
-[assembly: AssemblyVersion("0.13")]
+[assembly: AssemblyVersion("0.14")]
 
 [assembly: InternalsVisibleTo("Tests")]
