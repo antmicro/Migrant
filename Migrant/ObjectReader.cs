@@ -58,7 +58,7 @@ namespace Antmicro.Migrant
             Methods = new IdentifiedElementsList<MethodDescriptor>(this);
             Assemblies = new IdentifiedElementsList<AssemblyDescriptor>(this);
             Modules = new IdentifiedElementsList<ModuleDescriptor>(this);
-            postDeserializationHooks = new List<Action>();
+            latePostDeserializationHooks = new List<Action>();
 
             reader = new PrimitiveReader(stream, useBuffering);
             surrogatesWhileReading = new OneToOneMap<int, object>();
@@ -115,23 +115,30 @@ namespace Antmicro.Migrant
                 }
             }
 
-            for(var i = deserializedObjects.Count - 1; i >= 0; i--)
-            {
-                Completed(i);
-            }
-
             var obj = deserializedObjects[theRefId];
-            if(!(obj is T))
+            try
             {
-                throw new InvalidDataException(
-                    string.Format("Type {0} requested to be deserialized, however type {1} encountered in the stream.",
-                        typeof(T), obj.GetType()));
-            }
+                for(var i = deserializedObjects.Count - 1; i >= 0; i--)
+                {
+                    Completed(i);
+                }
 
-            PrepareForNextRead();
-            foreach(var hook in postDeserializationHooks)
+                if(!(obj is T))
+                {
+                    throw new InvalidDataException(
+                        string.Format("Type {0} requested to be deserialized, however type {1} encountered in the stream.",
+                            typeof(T), obj.GetType()));
+                }
+
+                PrepareForNextRead();
+                foreach(var hook in latePostDeserializationHooks)
+                {
+                    hook();
+                }
+            }
+            finally
             {
-                hook();
+                latePostDeserializationHooks.Clear();
             }
             return (T)obj;
         }
@@ -239,7 +246,7 @@ namespace Antmicro.Migrant
                 {
                     throw new InvalidOperationException(string.Format(LateHookAndSurrogateError, obj.GetType()));
                 }
-                postDeserializationHooks.Add(postHook);
+                latePostDeserializationHooks.Add(postHook);
             }
             if(postDeserializationCallback != null)
             {
@@ -707,7 +714,7 @@ namespace Antmicro.Migrant
         internal const string LateHookAndSurrogateError = "Type {0}: late post deserialization callback cannot be used in conjunction with surrogates.";
 
         internal readonly Action<object> postDeserializationCallback;
-        internal readonly List<Action> postDeserializationHooks;
+        internal readonly List<Action> latePostDeserializationHooks;
         internal readonly SwapList objectsForSurrogates;
         internal AutoResizingList<object> deserializedObjects;
         internal readonly OneToOneMap<int, object> surrogatesWhileReading;

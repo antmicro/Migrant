@@ -79,7 +79,7 @@ namespace Antmicro.Migrant.Generators
             foreach(var method in methods)
             {
                 context.PushObjectReaderOntoStack();
-                context.Generator.PushFieldValueOntoStack<ObjectReader, List<Action>>(x => x.postDeserializationHooks);
+                context.Generator.PushFieldValueOntoStack<ObjectReader, List<Action>>(x => x.latePostDeserializationHooks);
 
                 context.Generator.PushTypeOntoStack(typeof(Action));
                 if(method.IsStatic)
