@@ -70,7 +70,8 @@ namespace Antmicro.Migrant.Generators
             switch(creationWay)
             {
                 case ObjectReader.CreationWay.DefaultCtor:
-                generator.Call(() => Activator.CreateInstance(type));
+                generator.PushIntegerOntoStack(1);
+                generator.Call(() => Activator.CreateInstance(type, default(bool)));
                 break;
                 case ObjectReader.CreationWay.Uninitialized:
                 generator.Call(() => FormatterServices.GetUninitializedObject(type));

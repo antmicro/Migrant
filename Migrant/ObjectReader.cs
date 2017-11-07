@@ -677,7 +677,7 @@ namespace Antmicro.Migrant
                 case CreationWay.Null:
                 break;
                 case CreationWay.DefaultCtor:
-                result = Activator.CreateInstance(type);
+                result = Activator.CreateInstance(type, true);
                 break;
                 case CreationWay.Uninitialized:
                 result = FormatterServices.GetUninitializedObject(type);
