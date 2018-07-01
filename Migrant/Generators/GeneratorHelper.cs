@@ -304,6 +304,7 @@ namespace Antmicro.Migrant.Generators
             });
         }
 
+#if NET45
         [Conditional("DEBUG")]
         public static void DumpToLibrary<T>(GenerationContextBase context, Action<GenerationContextBase> generateCodeAction, string postfix = null)
         {
@@ -341,6 +342,14 @@ namespace Antmicro.Migrant.Generators
         }
 
         private static int counter;
+#elif NETSTANDARD2_0
+        [Obsolete("Not available in .NET Standard 2.0")]
+        [Conditional("DEBUG")]
+        public static void DumpToLibrary<T>(GenerationContextBase context, Action<GenerationContextBase> generateCodeAction, string postfix = null)
+        {
+            throw new NotImplementedException();
+        }
+#endif
     }
 }
 

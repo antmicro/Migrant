@@ -1,74 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{6109E322-4AC0-496C-89A2-012232A047E3}</ProjectGuid>
-    <OutputType>Library</OutputType>
     <RootNamespace>Antmicro.Migrant.Tests</RootNamespace>
     <AssemblyName>Tests</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFramework>net45</TargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>False</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Externalconsole>True</Externalconsole>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
-    <Optimize>True</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Externalconsole>True</Externalconsole>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.3.6.1\lib\net40\nunit.framework.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="NUnit" Version="3.10.1" />
+    <PackageReference Include="NUnit.ConsoleRunner" Version="3.8.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Helpers.cs" />
-    <Compile Include="HooksTests.cs" />
-    <Compile Include="IdGeneratorTests.cs" />
-    <Compile Include="ObjectReaderWriterTests.cs" />
-    <Compile Include="PrimitiveReaderWriterTests.cs" />
-    <Compile Include="SerializationTests.cs" />
-    <Compile Include="SurrogateTests.cs" />
-    <Compile Include="VersionToleranceTests.cs" />
-    <Compile Include="BaseTestWithSettings.cs" />
-    <Compile Include="BuiltinSurrogatesTests.cs" />
-    <Compile Include="TwoDomainsDriver.cs" />
-    <Compile Include="TwoDomainTests.cs" />
-    <Compile Include="OpenStreamSerializationTests.cs" />
-    <Compile Include="BlockingCollectionSerializationTests.cs" />
-    <Compile Include="DynamicType.cs" />
-    <Compile Include="TypeDescriptorComparisonTests.cs" />
-    <Compile Include="StampingTests.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <ProjectReference Include="..\Migrant\Migrant.csproj">
-      <Project>{5F87C357-09FB-4F53-BE37-41FE5BD88957}</Project>
-      <Name>Migrant</Name>
-    </ProjectReference>
-    <ProjectReference Include="SecondModule\TestsSecondModule.csproj">
-      <Project>{560B93C1-E336-47DA-A879-4E9C5B75A927}</Project>
-      <Name>TestsSecondModule</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\Migrant\Migrant.csproj" />
+    <ProjectReference Include="..\TestsSecondModule\TestsSecondModule.csproj" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
@@ -83,7 +34,4 @@
       </Properties>
     </MonoDevelop>
   </ProjectExtensions>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>
