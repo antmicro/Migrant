@@ -132,7 +132,7 @@ namespace Antmicro.Migrant.Customization
         /// Specifies if type stamps should be compared even when GUID has not changed.
         /// </param>
         public Settings(Method serializationMethod = Method.Generated, Method deserializationMethod = Method.Generated, VersionToleranceLevel versionTolerance = 0,
-                        bool supportForISerializable = false, bool supportForIXmlSerializable = false, bool treatCollectionAsUserObject = false,
+                        bool supportForISerializable = false, bool supportForIXmlSerializable = false, bool treatCollectionAsUserObject = true,
                         bool useBuffering = true, bool disableTypeStamping = false, ReferencePreservation referencePreservation = ReferencePreservation.Preserve, bool forceStampVerification = false)
         {
             SerializationMethod = serializationMethod;
