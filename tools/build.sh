@@ -20,12 +20,15 @@ then
     ROOT_PATH="`dirname \`realpath $0\``"
 fi
 
-while getopts ":cth" opt
+while getopts ":cdth" opt
 do
     case $opt in
         c)
             TARGET=Clean
             CLEAN=true
+            ;;
+        d)
+            TARGET=Debug
             ;;
         t)
             TESTS=true
