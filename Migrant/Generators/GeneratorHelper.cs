@@ -339,8 +339,8 @@ namespace Antmicro.Migrant.Generators
             assembly.SetCustomAttribute(customAttribute);
 
             var module = assembly.DefineDynamicModule(aname.Name, aname.Name + ".dll", true);
-            var type = module.DefineType("T");
-            var method = type.DefineMethod("M", MethodAttributes.Public, returnType, argumentTypes);
+            var type = module.DefineType(typeof(T).Name);
+            var method = type.DefineMethod(invokeMethod.Name, MethodAttributes.Public | MethodAttributes.Static, returnType, argumentTypes);
 
             var generator = method.GetILGenerator();
             generateCodeAction(context.WithGenerator(generator));
