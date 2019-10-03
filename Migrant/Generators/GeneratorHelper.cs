@@ -125,6 +125,16 @@ namespace Antmicro.Migrant.Generators
             generator.Emit(OpCodes.Call, Helpers.GetMethodInfo(expression));
         }
 
+        public static void Callvirt(this ILGenerator generator, Expression<Action> expression)
+        {
+            generator.Emit(OpCodes.Callvirt, Helpers.GetMethodInfo(expression));
+        }
+
+        public static void Callvirt<T>(this ILGenerator generator, Expression<Action<T>> expression)
+        {
+            generator.Emit(OpCodes.Callvirt, Helpers.GetMethodInfo(expression));
+        }
+
         public static void PushPropertyValueOntoStack<T, TResult>(this ILGenerator generator, Expression<Func<T, TResult>> expression)
         {
             generator.Emit(OpCodes.Call, Helpers.GetPropertyGetterInfo(expression));
