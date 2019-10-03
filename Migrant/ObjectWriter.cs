@@ -44,8 +44,8 @@ namespace Antmicro.Migrant
     internal class ObjectWriter
     {
         public ObjectWriter(Stream stream, Serializer.WriteMethods writeMethods, Action<object> preSerializationCallback = null,
-                            Action<object> postSerializationCallback = null, SwapList surrogatesForObjects = null, SwapList objectsForSurrogates = null, 
-                            bool treatCollectionAsUserObject = false, bool useBuffering = true, bool disableStamping = false, 
+                            Action<object> postSerializationCallback = null, SwapList surrogatesForObjects = null, SwapList objectsForSurrogates = null,
+                            bool treatCollectionAsUserObject = false, bool useBuffering = true, bool disableStamping = false,
                             ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
         {
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
@@ -139,7 +139,7 @@ namespace Antmicro.Migrant
         // It is necessary to pass `objectType` when `o` is null.
         private void CheckForNullOrTransientnessAndWriteDeferredReference (object o, Type objectFormalType = null)
         {
-            if(objectFormalType != null && Helpers.IsTransient(objectFormalType)) 
+            if(objectFormalType != null && Helpers.IsTransient(objectFormalType))
             {
                 return;
             }
@@ -246,7 +246,7 @@ namespace Antmicro.Migrant
                 return;
             }
             var type = obj.GetType();
-            // containing type is a hint in case of 
+            // containing type is a hint in case of
             if(IsTypeIllegal(type))
             {
                 var path = new StringBuilder();
@@ -355,7 +355,7 @@ namespace Antmicro.Migrant
                 writer.Write(typeDescriptor.UnderlyingType.GenericParameterPosition);
                 writer.Write(true);
                 return TouchAndWriteTypeIdWithFullStamp(typeDescriptor.UnderlyingType.DeclaringType);
-            }   
+            }
             else
             {
                 int typeId;
@@ -468,17 +468,17 @@ namespace Antmicro.Migrant
                 var array = o as Array;
                 WriteArray(elementType, array);
                 return true;
-            } 
+            }
 
             if(checkForCollections)
             {
-                CollectionMetaToken collectionToken; 
+                CollectionMetaToken collectionToken;
                 if (CollectionMetaToken.TryGetCollectionMetaToken(o.GetType(), out collectionToken))
                 {
                     // here we can have normal or extension method that needs to be treated differently
-                    int count = collectionToken.CountMethod.IsStatic ? 
-                                (int)collectionToken.CountMethod.Invoke(null, new[] { o }) : 
-                                (int)collectionToken.CountMethod.Invoke(o, null); 
+                    int count = collectionToken.CountMethod.IsStatic ?
+                                (int)collectionToken.CountMethod.Invoke(null, new[] { o }) :
+                                (int)collectionToken.CountMethod.Invoke(o, null);
 
                     WriteEnumerable(collectionToken.FormalElementType, count, (IEnumerable)o);
                     return true;
@@ -617,7 +617,7 @@ namespace Antmicro.Migrant
 
         /// <summary>
         /// Writes the object using reflection.
-        /// 
+        ///
         /// REMARK: this method is not thread-safe!
         /// </summary>
         /// <param name="objectWriter">Object writer's object</param>
@@ -636,7 +636,7 @@ namespace Antmicro.Migrant
             var method = writeMethods.callPostSerializationHooksMethodsProvider.GetOrCreate(o.GetType());
             if(method != null)
             {
-                method(this, o);   
+                method(this, o);
             }
         }
 

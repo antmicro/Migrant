@@ -155,7 +155,7 @@ namespace Antmicro.Migrant.Generators
             {
                 var fieldValueLocal = context.Generator.DeclareLocal(field.FieldType);
                 var fieldValue = new Variable(fieldValueLocal);
-                
+
                 context.Generator.PushVariableOntoStack(value);
                 if(!actualType.IsValueType)
                 {
@@ -407,7 +407,7 @@ namespace Antmicro.Migrant.Generators
 
                 var underlyingValueLocal = context.Generator.DeclareLocal(nullableUnderlyingType);
                 var underlyingVariable = new Variable(underlyingValueLocal);
-                
+
                 context.PushPrimitiveWriterOntoStack();
                 context.Generator.PushVariableAddressOntoStack(valueLocal);
                 context.Generator.Emit(OpCodes.Call, formalType.GetProperty("HasValue").GetGetMethod());

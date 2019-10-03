@@ -137,7 +137,7 @@ namespace Antmicro.Migrant
         }
 
         public static IEnumerable<FieldInfo> GetAllFields(this Type t, bool recursive = true)
-        {            
+        {
             if(t == null)
             {
                 return Enumerable.Empty<FieldInfo>();
@@ -233,7 +233,7 @@ namespace Antmicro.Migrant
             {
                 return SerializationType.Transient;
             }
-            // Pointer is considered a value type just to 
+            // Pointer is considered a value type just to
             // make it verified and filtered-out later.
             if(type.IsValueType || type.IsPointer)
             {

@@ -178,7 +178,7 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
-        /// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of 
+        /// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of
         /// the object of that type.
         /// </summary>
         /// <returns>
@@ -193,7 +193,7 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
-        /// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of 
+        /// Gives the ability to set callback providing surrogate for objects of given type. The surrogate will be serialized instead of
         /// the object of that type.
         /// </summary>
         /// <returns>
@@ -401,7 +401,7 @@ namespace Antmicro.Migrant
             }
 
             return new ObjectWriter(stream, writeMethods, OnPreSerialization, OnPostSerialization,
-                             surrogatesForObjects, objectsForSurrogates, settings.TreatCollectionAsUserObject, 
+                             surrogatesForObjects, objectsForSurrogates, settings.TreatCollectionAsUserObject,
                              settings.UseBuffering, settings.DisableTypeStamping, settings.ReferencePreservation);
         }
 
@@ -761,7 +761,7 @@ namespace Antmicro.Migrant
 
             /// <summary>
             /// Sets the generic surrogate type that should be used to replace the original one.
-            /// 
+            ///
             /// It is required for the type to be generic, has the same amount of parameters as the original
             /// one and to has a constructor accepting one parameter of the original type.
             /// </summary>

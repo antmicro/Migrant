@@ -171,7 +171,7 @@ namespace Antmicro.Migrant
 
         /// <summary>
         /// Reads the object using reflection.
-        /// 
+        ///
         /// REMARK: this method is not thread-safe
         /// </summary>
         /// <param name="objectReader">Object reader</param>
