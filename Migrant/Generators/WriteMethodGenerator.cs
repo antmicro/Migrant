@@ -299,16 +299,16 @@ namespace Antmicro.Migrant.Generators
 
             var getEnumeratorMethod = enumerableType.GetMethod("GetEnumerator");
             context.Generator.PushVariableOntoStack(valueLocal);
-            context.Generator.Emit(OpCodes.Call, getEnumeratorMethod);
+            context.Generator.Emit(OpCodes.Callvirt, getEnumeratorMethod);
             context.Generator.StoreLocalValueFromStack(iteratorLocal);
 
             context.Generator.MarkLabel(loopBegin);
             context.Generator.PushLocalValueOntoStack(iteratorLocal);
-            context.Generator.Call<IEnumerator>(x => x.MoveNext());
+            context.Generator.Callvirt<IEnumerator>(x => x.MoveNext());
             context.Generator.Emit(OpCodes.Brfalse, finish);
 
             context.Generator.PushLocalValueOntoStack(iteratorLocal);
-            context.Generator.Emit(OpCodes.Call, enumeratorType.GetProperty("Current").GetGetMethod());
+            context.Generator.Emit(OpCodes.Callvirt, enumeratorType.GetProperty("Current").GetGetMethod());
             context.Generator.StoreLocalValueFromStack(currentElementLocal);
 
             GenerateWriteField(context, elementVariable, token.FormalElementType);
