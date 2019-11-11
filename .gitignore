@@ -11,6 +11,7 @@ obj
 #ide
 *.pidb
 *.userprefs
+.vs
 
 #packages
 packages

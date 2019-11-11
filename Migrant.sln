@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2035
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Migrant", "Migrant\Migrant.csproj", "{5F87C357-09FB-4F53-BE37-41FE5BD88957}"
 EndProject
 Global
@@ -16,6 +18,12 @@ Global
 		{5F87C357-09FB-4F53-BE37-41FE5BD88957}.DebugFormat|Any CPU.Build.0 = DebugFormat|Any CPU
 		{5F87C357-09FB-4F53-BE37-41FE5BD88957}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F87C357-09FB-4F53-BE37-41FE5BD88957}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E35BCC8E-D806-47B1-AEC9-BE2FA761EB92}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		Policies = $0

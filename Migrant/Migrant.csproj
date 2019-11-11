@@ -1,132 +1,43 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="Build">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{5F87C357-09FB-4F53-BE37-41FE5BD88957}</ProjectGuid>
-    <OutputType>Library</OutputType>
     <RootNamespace>Antmicro.Migrant</RootNamespace>
     <AssemblyName>Migrant</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>False</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>False</ConsolePause>
+    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
+    <Description>Fast and flexible serialization framework usable on undecorated classes.</Description>
+    <Copyright>Copyright by Antmicro 2012 - 2016</Copyright>
+    <Company>Antmicro</Company>
+    <AssemblyVersion>0.14</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>none</DebugType>
-    <Optimize>True</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>False</ConsolePause>
     <DocumentationFile>bin\Release\Migrant.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'DebugFormat|AnyCPU' ">
-    <Optimize>false</Optimize>
     <OutputPath>bin\DebugFormat</OutputPath>
-    <WarningLevel>4</WarningLevel>
     <DebugSymbols>true</DebugSymbols>
     <DefineConstants>DEBUG_FORMAT; DEBUG</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
+    <PackageReference Include="System.Dynamic.Runtime" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+    <PackageReference Include="System.Reflection.Emit.Lightweight" Version="4.3.0" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
+    <DefineConstants>NETSTANDARD2_0</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45'">
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="ConstructorAttribute.cs" />
-    <Compile Include="Consts.cs" />
-    <Compile Include="Helpers.cs" />
-    <Compile Include="ISpeciallySerializable.cs" />
-    <Compile Include="ObjectIdentifier.cs" />
-    <Compile Include="ObjectReader.cs" />
-    <Compile Include="ObjectWriter.cs" />
-    <Compile Include="PrimitiveReader.cs" />
-    <Compile Include="PrimitiveWriter.cs" />
-    <Compile Include="Serializer.cs" />
-    <Compile Include="TransientAttribute.cs" />
-    <Compile Include="Utilities\AutoResizingList.cs" />
-    <Compile Include="Hooks\PreSerializationAttribute.cs" />
-    <Compile Include="SerializationType.cs" />
-    <Compile Include="Customization\Settings.cs" />
-    <Compile Include="Customization\Method.cs" />
-    <Compile Include="Generators\WriteMethodGenerator.cs" />
-    <Compile Include="Hooks\LatePostDeserializationAttribute.cs" />
-    <Compile Include="Hooks\LatePostSerializationAttribute.cs" />
-    <Compile Include="Hooks\PostSerializationAttribute.cs" />
-    <Compile Include="Hooks\PostDeserializationAttribute.cs" />
-    <Compile Include="Generators\ReadMethodGenerator.cs" />
-    <Compile Include="VersionTolerance\FieldInfoOrEntryToOmit.cs" />
-    <Compile Include="VersionTolerance\StampHelpers.cs" />
-    <Compile Include="Generators\GeneratorHelper.cs" />
-    <Compile Include="Customization\VersionToleranceLevel.cs" />
-    <Compile Include="CollectionMetaToken.cs" />
-    <Compile Include="BultinSurrogates\SurrogateForISerializable.cs" />
-    <Compile Include="DeserializationResult.cs" />
-    <Compile Include="VersionTolerance\TypeDescriptor.cs" />
-    <Compile Include="VersionTolerance\FieldDescriptor.cs" />
-    <Compile Include="ObjectIdentifierContext.cs" />
-    <Compile Include="Customization\ReferencePreservation.cs" />
-    <Compile Include="Utilities\PeekableStream.cs" />
-    <Compile Include="BultinSurrogates\SurrogateForIXmlSerializable.cs" />
-    <Compile Include="VersionTolerance\AssemblyDescriptor.cs" />
-    <Compile Include="VersionTolerance\VersionToleranceException.cs" />
-    <Compile Include="VersionTolerance\ModuleDescriptor.cs" />
-    <Compile Include="Utilities\IdentifiedElementsList.cs" />
-    <Compile Include="Utilities\IIdentifiedElement.cs" />
-    <Compile Include="VersionTolerance\MethodDescriptor.cs" />
-    <Compile Include="TypeOrGenericTypeArgument.cs" />
-    <Compile Include="Utilities\IdentifiedElementsDictionary.cs" />
-    <Compile Include="Utilities\SwapList.cs" />
-    <Compile Include="VersionTolerance\ArrayDescriptor.cs" />
-    <Compile Include="VersionTolerance\TypeSimpleDescriptor.cs" />
-    <Compile Include="VersionTolerance\TypeFullDescriptor.cs" />
-    <Compile Include="Utilities\TypeProvider.cs" />
-    <Compile Include="Utilities\OneToManyMap.cs" />
-    <Compile Include="BultinSurrogates\SurrogateForReadOnlyCollection.cs" />
-    <Compile Include="Utilities\OneToOneMap.cs" />
-    <Compile Include="Generators\CreateObjectGenerator.cs" />
-    <Compile Include="Generators\TouchInlinedObjectGenerator.cs" />
-    <Compile Include="Generators\ReaderGenerationContext.cs" />
-    <Compile Include="Generators\CompletedGenerator.cs" />
-    <Compile Include="Utilities\DynamicMethodProvider.cs" />
-    <Compile Include="Generators\DynamicMethodGenerator.cs" />
-    <Compile Include="Generators\WriterGenerationContext.cs" />
-    <Compile Include="Generators\GenerationContextBase.cs" />
-    <Compile Include="Generators\SurrogateObjectIfNeededMethodGenerator.cs" />
-    <Compile Include="Generators\HandleNewReferenceMethodGenerator.cs" />
-    <Compile Include="Generators\WriteReferenceMethodGenerator.cs" />
-    <Compile Include="Utilities\Variable.cs" />
-    <Compile Include="Generators\CallPostSerializationHooksMethodGenerator.cs" />
-    <Compile Include="Generators\DynamicWriteMethodGenerator.cs" />
-    <Compile Include="Generators\DynamicReadMethodGenerator.cs" />
-    <Compile Include="Generators\CloneContentMethodGenerator.cs" />
-    <Compile Include="BultinSurrogates\SurrogateForDictionary.cs" />
-    <Compile Include="BultinSurrogates\ISurrogateRestorer.cs" />
-    <Compile Include="BultinSurrogates\SurrogateForHashSet.cs" />
-    <Compile Include="BultinSurrogates\SurrogateForHashtable.cs" />
-    <Compile Include="Generators\CreateGenericSurrogateMethodGenerator.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <Folder Include="Utilities\" />
-    <Folder Include="Hooks\" />
-    <Folder Include="Customization\" />
-    <Folder Include="Generators\" />
-    <Folder Include="VersionTolerance\" />
-    <Folder Include="BultinSurrogates\" />
-  </ItemGroup>
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45'">
+    <DefineConstants>NET45</DefineConstants>
+  </PropertyGroup>
   <ProjectExtensions>
     <MonoDevelop>
       <Properties>
