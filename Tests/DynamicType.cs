@@ -177,16 +177,15 @@ namespace Antmicro.Migrant.Tests
         {            
             var pathBase = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dllName = string.Format("{0}-{1}-{2}.dll", AssemblyName.Name, "xxx", counter);
-            var assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
                 new AssemblyName(string.Format("{0}-{1}-{2}", AssemblyName.Name, "xxx", counter)) { Version = version }, 
-                AssemblyBuilderAccess.RunAndSave, pathBase);
+                AssemblyBuilderAccess.Run);
             var builtType = CreateType(assemblyBuilder, dllName);
             if(builtType == null)
             {
                 throw new InvalidOperationException("Could not create type.");
             }
             
-            assemblyBuilder.Save(dllName);
             var result = Activator.CreateInstance(builtType);
             foreach(var field in fields.Where(x => x.Value.DynamicType != null))
             {

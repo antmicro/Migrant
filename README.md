@@ -1,8 +1,27 @@
-# Migrant 0.14
+# Migrantoid
 
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/3674/badge.svg)](https://scan.coverity.com/projects/3674)
+This is the *Migrantoid* project (a fork of (Antmicro's Mirgant)[https://github.com/antmicro/Migrant], managed by Konrad Kruczyński, a fast and flexible serialization framework usable for undecorated classes, written in C\#. 
 
-This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
+## Migrantoid vs Migrant.
+
+### Why fork?
+
+A few reasons:
+- Original Migrant project does not seem to be actively managed/developed, issues are not taken care of, there are no new NuGet releases.
+- Original Migrant project does not target .NET Standard/.NET Core/.NET 5.
+- Since I have my own vision of the project, I'd like to be able to decide by myself.
+
+Will it succeed, time will tell.
+
+### Why rename?
+
+The most important reason is that the fork will probably take a different design decisions as the time passes so it might cover different use cases. Therefore I'd like not to confuse users of the library. It is also important to have a different key on NuGet.
+
+### What is the status?
+
+As of 2020-01-01, the project has been renamed, targets .NET Standard 2.0 and version numbering is reset. Only Migrant and Tests project are available, performance testing will be done in a different way. There is also one solution file from now on. 
+
+## Old README (from the original project)
 
 ## Table of Contents
 

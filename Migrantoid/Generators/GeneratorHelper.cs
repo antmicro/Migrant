@@ -313,44 +313,6 @@ namespace Antmicro.Migrant.Generators
                 Console.WriteLine("{0}: {1}", m, v);
             });
         }
-
-        [Conditional("DEBUG")]
-        public static void DumpToLibrary<T>(GenerationContextBase context, Action<GenerationContextBase> generateCodeAction, string postfix = null)
-        {
-            var invokeMethod = typeof(T).GetMethod("Invoke");
-            var returnType = invokeMethod.ReturnType;
-            var argumentTypes = invokeMethod.GetParameters().Select(x => x.ParameterType).ToArray();
-
-            if(postfix != null)
-            {
-                foreach(var c in new[] { '`', '<', '>', ',', '[', ']' })
-                {
-                    postfix = postfix.Replace(c, '_');
-                }
-            }
-
-            var name = string.Format("{0}_{1}", counter++, postfix);
-            var aname = new AssemblyName(name);
-            var assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(aname, AssemblyBuilderAccess.Save);
-            var customAttribute = new CustomAttributeBuilder(
-                typeof(DebuggableAttribute).GetConstructor(new[] { typeof(DebuggableAttribute.DebuggingModes) }),
-                new object[] { DebuggableAttribute.DebuggingModes.DisableOptimizations | DebuggableAttribute.DebuggingModes.Default }
-            );
-            assembly.SetCustomAttribute(customAttribute);
-
-            var module = assembly.DefineDynamicModule(aname.Name, aname.Name + ".dll", true);
-            var type = module.DefineType(typeof(T).Name);
-            var method = type.DefineMethod(invokeMethod.Name, MethodAttributes.Public | MethodAttributes.Static, returnType, argumentTypes);
-
-            var generator = method.GetILGenerator();
-            generateCodeAction(context.WithGenerator(generator));
-            generator.Emit(OpCodes.Ret);
-
-            type.CreateType();
-            assembly.Save(aname.Name + ".dll");
-        }
-
-        private static int counter;
     }
 }
 
