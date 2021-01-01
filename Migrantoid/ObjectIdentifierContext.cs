@@ -28,7 +28,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     /// <summary>
     /// A context of object identifier, i.e. all identified objects (weakly referenced) with their identifiers. 

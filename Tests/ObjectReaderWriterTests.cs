@@ -28,7 +28,7 @@ using System;
 using NUnit.Framework;
 using System.IO;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
 	[TestFixture]
 	public class ObjectReaderWriterTests

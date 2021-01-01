@@ -25,7 +25,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant.VersionTolerance
+namespace Migrantoid.VersionTolerance
 {
     internal class ArrayDescriptor
     {

@@ -27,9 +27,9 @@
 using System.Runtime.Serialization;
 using System;
 using System.Reflection;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Utilities;
 
-namespace Antmicro.Migrant.BultinSurrogates
+namespace Migrantoid.BultinSurrogates
 {
     internal sealed class SurrogateForISerializable
     {

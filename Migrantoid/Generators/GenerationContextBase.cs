@@ -25,7 +25,7 @@
 using System;
 using System.Reflection.Emit;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal abstract class GenerationContextBase
     {

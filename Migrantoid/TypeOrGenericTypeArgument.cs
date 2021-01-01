@@ -24,7 +24,7 @@
 // *******************************************************************
 using System;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     internal struct TypeOrGenericTypeArgument
     {

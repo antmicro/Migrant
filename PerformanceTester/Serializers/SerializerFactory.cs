@@ -27,7 +27,7 @@
 */
 using System;
 
-namespace Antmicro.Migrant.PerformanceTester.Serializers
+namespace Migrantoid.PerformanceTester.Serializers
 {
 	public static class SerializerFactory
 	{

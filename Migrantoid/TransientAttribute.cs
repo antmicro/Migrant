@@ -26,7 +26,7 @@
 */
 using System;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     /// <summary>
     /// When used on a class, it prevents the serialization of all fields which have the type of

@@ -34,7 +34,7 @@ using System.Linq.Expressions;
 using System.Collections.ObjectModel;
 using System.Collections.Concurrent;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     internal static class Helpers
     {

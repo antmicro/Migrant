@@ -26,7 +26,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal abstract class DynamicMethodGenerator<T> where T : class
     {

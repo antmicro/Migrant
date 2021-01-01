@@ -25,10 +25,10 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
-using Antmicro.Migrant.Customization;
+using Migrantoid.Customization;
 using System.IO;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     public abstract class BaseTestWithSettings
     {

@@ -27,10 +27,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Antmicro.Migrant.Hooks;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Hooks;
+using Migrantoid.Utilities;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal class CompletedGenerator : DynamicReadMethodGenerator<CompleteMethodDelegate>
     {

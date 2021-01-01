@@ -26,7 +26,7 @@
 */
 using System;
 
-namespace Antmicro.Migrant.Hooks
+namespace Migrantoid.Hooks
 {
     /// <summary>
     /// Method decorated with this attribute will be invoked after whole

@@ -29,13 +29,13 @@ using System;
 using NUnit.Framework;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
-using Antmicro.Migrant.Tests;
+using Migrantoid.Tests;
 using System.Xml.Linq;
 using System.Xml.Serialization;
 using System.Xml.Schema;
 using System.Xml;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     [TestFixture(false, false, true)]
     [TestFixture(true, false, true)]

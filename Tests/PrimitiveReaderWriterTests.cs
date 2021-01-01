@@ -29,7 +29,7 @@ using System.IO;
 using System;
 using System.Linq;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     [TestFixture(true)]
     [TestFixture(false)]

@@ -23,11 +23,11 @@
 //
 // *******************************************************************
 using System;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Utilities;
 using System.Reflection;
 using System.Linq;
 
-namespace Antmicro.Migrant.VersionTolerance
+namespace Migrantoid.VersionTolerance
 {
     internal class MethodDescriptor : IIdentifiedElement
     {

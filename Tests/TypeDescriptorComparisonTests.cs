@@ -25,10 +25,10 @@
 using System;
 using NUnit.Framework;
 using System.Linq;
-using Antmicro.Migrant.Customization;
-using Antmicro.Migrant.VersionTolerance;
+using Migrantoid.Customization;
+using Migrantoid.VersionTolerance;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     [TestFixture]
     public class TypeDescriptorComparisonTests

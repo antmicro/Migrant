@@ -29,7 +29,7 @@ using System;
 using System.IO;
 using System.Text;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     /// <summary>
     /// Provides the mechanism for writing primitive values into a stream.

@@ -25,7 +25,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant.BultinSurrogates
+namespace Migrantoid.BultinSurrogates
 {
     internal class SurrogateForHashtable
     {

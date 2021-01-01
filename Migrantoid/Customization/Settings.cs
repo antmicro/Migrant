@@ -28,7 +28,7 @@
 using System;
 
 
-namespace Antmicro.Migrant.Customization
+namespace Migrantoid.Customization
 {
     /// <summary>
     /// Contains serialization settings.

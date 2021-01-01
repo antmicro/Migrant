@@ -25,7 +25,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant.Utilities
+namespace Migrantoid.Utilities
 {
     /// <summary>
     /// Key/value pair list in which more generic types are always inserted after their

@@ -25,9 +25,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Utilities;
 
-namespace Antmicro.Migrant.VersionTolerance
+namespace Migrantoid.VersionTolerance
 {
     internal class TypeSimpleDescriptor : TypeDescriptor
     {

@@ -22,7 +22,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 // *******************************************************************
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     /// <summary>
     /// Enumeration describing possible desarialization operation results.

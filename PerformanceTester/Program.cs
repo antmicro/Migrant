@@ -26,11 +26,11 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 using System;
-using Antmicro.Migrant.PerformanceTester.Tests;
+using Migrantoid.PerformanceTester.Tests;
 using CommandLine;
 using System.IO;
 
-namespace Antmicro.Migrant.PerformanceTester
+namespace Migrantoid.PerformanceTester
 {
     class MainClass
     {

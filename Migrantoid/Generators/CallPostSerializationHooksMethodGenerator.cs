@@ -27,9 +27,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Antmicro.Migrant.Hooks;
+using Migrantoid.Hooks;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal class CallPostSerializationHooksMethodGenerator : DynamicWriteMethodGenerator<CallPostSerializationHooksMethodDelegate>
     {

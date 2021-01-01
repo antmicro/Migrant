@@ -24,10 +24,10 @@
 // *******************************************************************
 using System;
 using System.Collections.Generic;
-using Antmicro.Migrant.Customization;
+using Migrantoid.Customization;
 using System.Linq;
 
-namespace Antmicro.Migrant.VersionTolerance
+namespace Migrantoid.VersionTolerance
 {
     internal class TypeFullDescriptor : TypeDescriptor
     {

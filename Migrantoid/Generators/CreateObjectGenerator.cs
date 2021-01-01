@@ -27,7 +27,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Serialization;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal class CreateObjectGenerator : DynamicMethodGenerator<CreateObjectMethodDelegate>
     {

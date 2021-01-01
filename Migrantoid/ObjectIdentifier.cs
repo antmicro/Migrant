@@ -28,7 +28,7 @@ using System;
 using System.Runtime.Serialization;
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     /// <summary>
     /// Gives consecutive, unique identifiers for presented objects during its lifetime.

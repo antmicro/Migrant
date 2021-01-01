@@ -29,17 +29,17 @@ using System.Runtime.CompilerServices;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Antmicro.Migrant.Customization;
-using Antmicro.Migrant.Utilities;
-using Antmicro.Migrant.BultinSurrogates;
-using Antmicro.Migrant.VersionTolerance;
+using Migrantoid.Customization;
+using Migrantoid.Utilities;
+using Migrantoid.BultinSurrogates;
+using Migrantoid.VersionTolerance;
 using System.Collections.ObjectModel;
-using Antmicro.Migrant.Generators;
+using Migrantoid.Generators;
 using System.Collections;
 
 [assembly: InternalsVisibleTo("Tests")]
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     /// <summary>
     /// Provides the mechanism for binary serialization and deserialization of objects.

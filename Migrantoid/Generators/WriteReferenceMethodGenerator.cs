@@ -24,9 +24,9 @@
 // *******************************************************************
 using System;
 using System.Reflection.Emit;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Utilities;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal class WriteReferenceMethodGenerator : DynamicWriteMethodGenerator<WriteReferenceMethodDelegate>
     {

@@ -25,10 +25,10 @@
 using System;
 using System.Reflection;
 using System.Linq;
-using Antmicro.Migrant.Customization;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Customization;
+using Migrantoid.Utilities;
 
-namespace Antmicro.Migrant.VersionTolerance
+namespace Migrantoid.VersionTolerance
 {
     internal class AssemblyDescriptor : IIdentifiedElement
     {

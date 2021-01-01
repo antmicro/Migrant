@@ -27,9 +27,9 @@
 // *******************************************************************
 using System.IO;
 using System.Xml.Serialization;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Utilities;
 
-namespace Antmicro.Migrant.BultinSurrogates
+namespace Migrantoid.BultinSurrogates
 {
     internal sealed class SurrogateForIXmlSerializable
     {

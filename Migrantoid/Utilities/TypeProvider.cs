@@ -25,7 +25,7 @@
 using System;
 using System.Collections.Concurrent;
 
-namespace Antmicro.Migrant.Utilities
+namespace Migrantoid.Utilities
 {
     internal static class TypeProvider
     {

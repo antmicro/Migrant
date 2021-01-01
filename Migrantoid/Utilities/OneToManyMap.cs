@@ -25,7 +25,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant.Utilities
+namespace Migrantoid.Utilities
 {
     internal class OneToManyMap<TKey, TVal>
     {

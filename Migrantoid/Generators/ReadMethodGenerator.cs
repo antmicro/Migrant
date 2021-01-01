@@ -29,11 +29,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Utilities;
 using System.Collections;
-using Antmicro.Migrant.VersionTolerance;
+using Migrantoid.VersionTolerance;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal sealed class ReadMethodGenerator : DynamicMethodGenerator<ReadMethodDelegate>
     {

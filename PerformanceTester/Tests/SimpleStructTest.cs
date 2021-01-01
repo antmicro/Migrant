@@ -27,7 +27,7 @@
 */
 using System;
 
-namespace Antmicro.Migrant.PerformanceTester.Tests
+namespace Migrantoid.PerformanceTester.Tests
 {
     public class SimpleStructTest : ITest<SimpleStructTest.SimpleStruct[]>
     {

@@ -27,12 +27,12 @@
 // *******************************************************************
 using System;
 using NUnit.Framework;
-using Antmicro.Migrant.Customization;
+using Migrantoid.Customization;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     [TestFixture(false, false)]
     [TestFixture(true, false)]

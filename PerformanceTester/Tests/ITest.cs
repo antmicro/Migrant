@@ -24,7 +24,7 @@
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-namespace Antmicro.Migrant.PerformanceTester.Tests
+namespace Migrantoid.PerformanceTester.Tests
 {
     public interface ITest<out T>
     {

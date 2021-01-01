@@ -26,7 +26,7 @@
 */
 using System;
 
-namespace Antmicro.Migrant.Customization
+namespace Migrantoid.Customization
 {
     /// <summary>
     /// Level of the version tolerance, that is how much layout of the deserialized type can differ

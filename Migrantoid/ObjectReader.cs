@@ -31,13 +31,13 @@ using System.Runtime.Serialization;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
-using Antmicro.Migrant.Hooks;
-using Antmicro.Migrant.Utilities;
-using Antmicro.Migrant.Generators;
-using Antmicro.Migrant.VersionTolerance;
-using Antmicro.Migrant.Customization;
+using Migrantoid.Hooks;
+using Migrantoid.Utilities;
+using Migrantoid.Generators;
+using Migrantoid.VersionTolerance;
+using Migrantoid.Customization;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     internal class ObjectReader
     {

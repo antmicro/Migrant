@@ -29,7 +29,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     [Serializable]
     public class DynamicType

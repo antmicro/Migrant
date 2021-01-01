@@ -24,7 +24,7 @@
 // *******************************************************************
 using System;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     public class RemotingDriver
     {

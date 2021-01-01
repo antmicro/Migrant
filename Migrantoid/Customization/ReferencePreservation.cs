@@ -24,7 +24,7 @@
 // *******************************************************************
 using System;
 
-namespace Antmicro.Migrant.Customization
+namespace Migrantoid.Customization
 {
     /// <summary>
     /// Used with open stream serialization and tells serializer how to deal with references

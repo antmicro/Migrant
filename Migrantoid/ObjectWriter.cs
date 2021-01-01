@@ -30,16 +30,16 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
-using Antmicro.Migrant.Hooks;
-using Antmicro.Migrant.Generators;
+using Migrantoid.Hooks;
+using Migrantoid.Generators;
 using System.Threading;
-using Antmicro.Migrant.VersionTolerance;
-using Antmicro.Migrant.Utilities;
-using Antmicro.Migrant.Customization;
+using Migrantoid.VersionTolerance;
+using Migrantoid.Utilities;
+using Migrantoid.Customization;
 using System.Text;
 using System.Reflection;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     internal class ObjectWriter
     {

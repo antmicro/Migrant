@@ -26,7 +26,7 @@ using System;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal class CreateGenericSurrogateMethodGenerator : DynamicMethodGenerator<Serializer.CreateGenericSurrogateDelegate>
     {

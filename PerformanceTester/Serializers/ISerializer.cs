@@ -27,7 +27,7 @@
 */
 using System.IO;
 
-namespace Antmicro.Migrant.PerformanceTester.Serializers
+namespace Migrantoid.PerformanceTester.Serializers
 {
 	public interface ISerializer
 	{

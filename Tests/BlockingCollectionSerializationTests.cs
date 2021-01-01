@@ -26,7 +26,7 @@ using System;
 using NUnit.Framework;
 using System.Collections.Concurrent;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     [TestFixture(false, false, false, false, true)]
     [TestFixture(true,  false, false, false, true)]

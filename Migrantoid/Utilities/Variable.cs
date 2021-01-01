@@ -24,9 +24,9 @@
 // *******************************************************************
 using System;
 using System.Reflection.Emit;
-using Antmicro.Migrant.Generators;
+using Migrantoid.Generators;
 
-namespace Antmicro.Migrant.Utilities
+namespace Migrantoid.Utilities
 {
     internal class Variable
     {

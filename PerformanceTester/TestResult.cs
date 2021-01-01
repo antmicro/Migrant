@@ -24,7 +24,7 @@
 // *******************************************************************
 using System;
 
-namespace Antmicro.Migrant.PerformanceTester
+namespace Migrantoid.PerformanceTester
 {
     public struct TestResult
     {

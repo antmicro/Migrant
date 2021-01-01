@@ -25,9 +25,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Utilities;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal class HandleNewReferenceMethodGenerator : DynamicWriteMethodGenerator<HandleNewReferenceMethodDelegate>
     {

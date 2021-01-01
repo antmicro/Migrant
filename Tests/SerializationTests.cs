@@ -33,9 +33,9 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.IO;
 using System.Collections.ObjectModel;
-using Antmicro.Migrant.Hooks;
+using Migrantoid.Hooks;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     [TestFixture(false, false, false, false, true)]
     [TestFixture(true, false, false, false, true)]

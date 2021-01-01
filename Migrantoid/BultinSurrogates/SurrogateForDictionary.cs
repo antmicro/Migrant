@@ -24,7 +24,7 @@
 // ********************************************************************
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant.BultinSurrogates
+namespace Migrantoid.BultinSurrogates
 {
     internal class SurrogateForDictionary<TKey, TVal> : ISurrogateRestorer
     {

@@ -24,11 +24,11 @@
 // *******************************************************************
 using System;
 using System.Reflection;
-using Antmicro.Migrant.Customization;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Customization;
+using Migrantoid.Utilities;
 using System.Diagnostics;
 
-namespace Antmicro.Migrant.VersionTolerance
+namespace Migrantoid.VersionTolerance
 {
     [DebuggerDisplay("Name = {Name}, GUID = {GUID}")]
     internal class ModuleDescriptor : IIdentifiedElement

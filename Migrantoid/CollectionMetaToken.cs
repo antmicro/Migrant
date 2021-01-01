@@ -31,7 +31,7 @@ using System.Reflection;
 using System.Linq;
 using System.Collections;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     internal class CollectionMetaToken
     {

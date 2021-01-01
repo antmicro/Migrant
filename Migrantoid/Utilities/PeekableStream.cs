@@ -25,7 +25,7 @@
 using System;
 using System.IO;
 
-namespace Antmicro.Migrant.Utilities
+namespace Migrantoid.Utilities
 {
     internal class PeekableStream : Stream
     {

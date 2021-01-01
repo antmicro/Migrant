@@ -27,7 +27,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Antmicro.Migrant.BultinSurrogates
+namespace Migrantoid.BultinSurrogates
 {
     internal class SurrogateForReadOnlyCollection<T> : ISurrogateRestorer
     {

@@ -25,7 +25,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Antmicro.Migrant.VersionTolerance
+namespace Migrantoid.VersionTolerance
 {
     /// <summary>
     /// Class representing exception thrown when version tolerance verification mechanism detects disallowed changes in type structures.

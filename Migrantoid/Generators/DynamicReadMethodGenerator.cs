@@ -26,7 +26,7 @@ using System;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace Antmicro.Migrant.Generators
+namespace Migrantoid.Generators
 {
     internal abstract class DynamicReadMethodGenerator<T> : DynamicMethodGenerator<T> where T : class
     {

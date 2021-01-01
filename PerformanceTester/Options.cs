@@ -25,7 +25,7 @@
 using System;
 using CommandLine;
 
-namespace Antmicro.Migrant.PerformanceTester
+namespace Migrantoid.PerformanceTester
 {
     public sealed class Options
     {

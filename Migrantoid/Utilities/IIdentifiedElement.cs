@@ -24,7 +24,7 @@
 // *******************************************************************
 using System;
 
-namespace Antmicro.Migrant.Utilities
+namespace Migrantoid.Utilities
 {
     internal interface IIdentifiedElement
     {

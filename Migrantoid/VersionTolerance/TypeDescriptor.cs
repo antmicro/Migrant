@@ -24,12 +24,12 @@
 // *******************************************************************
 using System;
 using System.Collections.Generic;
-using Antmicro.Migrant.VersionTolerance;
+using Migrantoid.VersionTolerance;
 using System.Collections.Concurrent;
-using Antmicro.Migrant.Utilities;
+using Migrantoid.Utilities;
 using System.Diagnostics;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     [DebuggerDisplay("{GenericFullName}")]
     internal abstract class TypeDescriptor : IIdentifiedElement

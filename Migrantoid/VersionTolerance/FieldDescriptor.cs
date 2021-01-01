@@ -25,10 +25,10 @@
 using System;
 using System.Reflection;
 using System.Collections.Generic;
-using Antmicro.Migrant.Customization;
-using Antmicro.Migrant.VersionTolerance;
+using Migrantoid.Customization;
+using Migrantoid.VersionTolerance;
 
-namespace Antmicro.Migrant
+namespace Migrantoid
 {
     internal class FieldDescriptor
     {

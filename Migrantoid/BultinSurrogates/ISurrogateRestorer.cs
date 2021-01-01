@@ -23,7 +23,7 @@
 //
 // *******************************************************************
 
-namespace Antmicro.Migrant.BultinSurrogates
+namespace Migrantoid.BultinSurrogates
 {
     internal interface ISurrogateRestorer
     {

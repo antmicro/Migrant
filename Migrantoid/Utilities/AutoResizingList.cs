@@ -28,7 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 
-namespace Antmicro.Migrant.Utilities
+namespace Migrantoid.Utilities
 {
     internal sealed class AutoResizingList<T> : IList<T>
     {

@@ -24,7 +24,7 @@
 // *******************************************************************
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant.Utilities
+namespace Migrantoid.Utilities
 {
     internal class IdentifiedElementsDictionary<T> where T : IIdentifiedElement
     {

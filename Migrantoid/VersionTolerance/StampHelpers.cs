@@ -29,7 +29,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 
-namespace Antmicro.Migrant.VersionTolerance
+namespace Migrantoid.VersionTolerance
 {
     internal static class StampHelpers
     {

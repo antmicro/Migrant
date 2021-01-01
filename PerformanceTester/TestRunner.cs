@@ -29,12 +29,12 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Diagnostics;
-using Antmicro.Migrant.PerformanceTester.Tests;
-using Antmicro.Migrant.PerformanceTester.Serializers;
-using Antmicro.Migrant;
+using Migrantoid.PerformanceTester.Tests;
+using Migrantoid.PerformanceTester.Serializers;
+using Migrantoid;
 using System.Collections.Generic;
 
-namespace Antmicro.Migrant.PerformanceTester
+namespace Migrantoid.PerformanceTester
 {
     public class TestRunner
     {

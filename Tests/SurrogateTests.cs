@@ -28,11 +28,11 @@
 using System;
 using NUnit.Framework;
 using System.IO;
-using Antmicro.Migrant;
+using Migrantoid;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Antmicro.Migrant.Tests
+namespace Migrantoid.Tests
 {
     [TestFixture(false, false, true)]
     [TestFixture(true, false, true)]
