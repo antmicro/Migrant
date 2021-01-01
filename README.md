@@ -19,7 +19,7 @@ The most important reason is that the fork will probably take a different design
 
 ### What is the status?
 
-As of 2020-01-01, the project has been renamed, targets .NET Standard 2.0 and version numbering is reset. Only Migrant and Tests project are available, performance testing will be done in a different way. There is also one solution file from now on. 
+As of 2021-01-01, the project has been renamed, targets .NET Standard 2.0 and version numbering is reset. Only Migrant and Tests project are available, performance testing will be done in a different way. There is also one solution file from now on. 
 
 ## Old README (from the original project)
 
