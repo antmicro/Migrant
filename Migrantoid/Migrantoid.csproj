@@ -6,11 +6,12 @@
     <AssemblyVersion>1.0</AssemblyVersion>
     <Owners>Konrad Kruczyński</Owners>
     <PackageReleaseNotes>First release of Migrantoid.</PackageReleaseNotes>
-    <Summary>Pure managed fast object tree serializer that works on undecorated classes.</Summary>
-    <PackageTags>Serialization</PackageTags>
+    <PackageTags>Serialization Migrant</PackageTags>
     <Title>Migrantoid</Title>
     <PackageId>Migrantoid</PackageId>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Copyright>Each file lists its own copyrights.</Copyright>
+    <Description>Pure managed fast object tree serializer that works on undecorated classes. A fork of the Migrant project.</Description>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../LICENSE" Pack="true" PackagePath="" />
