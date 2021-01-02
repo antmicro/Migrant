@@ -1,10 +1,12 @@
 /*
   Copyright (c) 2012-2016 Ant Micro <www.antmicro.com>
+  Copyright (c) 2020, Konrad Kruczyński
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
    * Mateusz Holenko (mholenko@antmicro.com)
+   * Konrad Kruczyński (konrad.kruczynski@gmail.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -36,6 +38,7 @@ using Migrantoid.VersionTolerance;
 using System.Collections.ObjectModel;
 using Migrantoid.Generators;
 using System.Collections;
+using System.Text.RegularExpressions;
 
 [assembly: InternalsVisibleTo("Tests")]
 
@@ -92,6 +95,9 @@ namespace Migrantoid
 
             ForObject(typeof(HashSet<>)).SetSurrogateGenericType(typeof(SurrogateForHashSet<>));
             ForSurrogate(typeof(SurrogateForHashSet<>)).SetObject(x => ((ISurrogateRestorer)x).Restore());
+
+            ForObject(typeof(Regex)).SetSurrogate(x => new SurrogateForRegex((Regex)x));
+            ForSurrogate(typeof(SurrogateForRegex)).SetObject(x => ((ISurrogateRestorer)x).Restore());
         }
 
         /// <summary>
