@@ -1,6 +1,6 @@
 # Migrantoid
 
-This is the *Migrantoid* project (a fork of [Antmicro's Migrant](https://github.com/antmicro/Migrant), managed by Konrad Kruczyński, a fast and flexible serialization framework usable for undecorated classes, written in C\#. 
+This is the *Migrantoid* project (a fork of [Antmicro's Migrant](https://github.com/antmicro/Migrant)), managed by Konrad Kruczyński, a fast and flexible serialization framework usable for undecorated classes, written in C\#. 
 
 ## Migrantoid vs Migrant.
 
