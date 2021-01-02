@@ -5,7 +5,7 @@
     <Version>1.0.1</Version>
     <AssemblyVersion>1.0</AssemblyVersion>
     <Owners>Konrad Kruczyński</Owners>
-    <PackageReleaseNotes>First release of Migrantoid.</PackageReleaseNotes>
+    <PackageReleaseNotes>Fixed Regex serialization. For the complete CHANGLOG see https://github.com/konrad-kruczynski/Migrantoid/blob/master/CHANGELOG.md</PackageReleaseNotes>
     <PackageTags>Serialization Migrant</PackageTags>
     <Title>Migrantoid</Title>
     <PackageId>Migrantoid</PackageId>
