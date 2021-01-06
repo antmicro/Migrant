@@ -1,6 +1,6 @@
 /*
   Copyright (c) 2012 - 2016 Antmicro <www.antmicro.com>
-  Copyright (c) 2020, Konrad Kruczyński
+  Copyright (c) 2020 - 2021, Konrad Kruczyński
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -43,17 +43,24 @@ namespace Migrantoid
 {
     internal class ObjectReader
     {
-        public ObjectReader(Stream stream, Serializer.ReadMethods readMethods, SwapList objectsForSurrogates = null, Action<object> postDeserializationCallback = null,
-                            bool treatCollectionAsUserObject = false,
-                            VersionToleranceLevel versionToleranceLevel = 0, bool useBuffering = true, bool disableStamping = false,
-                            ReferencePreservation referencePreservation = ReferencePreservation.Preserve,
-                            bool forceStampVerification = false)
+        public ObjectReader(Stream stream,
+                            Serializer.ReadMethods readMethods,
+                            SwapList objectsForSurrogates,
+                            IDictionary<Type, Recipe> recipes,
+                            Action<object> postDeserializationCallback,
+                            bool treatCollectionAsUserObject,
+                            VersionToleranceLevel versionToleranceLevel,
+                            bool useBuffering,
+                            bool disableStamping,
+                            ReferencePreservation referencePreservation,
+                            bool forceStampVerification)
         {
             this.readMethods = readMethods;
             this.postDeserializationCallback = postDeserializationCallback;
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             this.referencePreservation = referencePreservation;
-            this.objectsForSurrogates = objectsForSurrogates ?? new SwapList();
+            this.objectsForSurrogates = objectsForSurrogates;
+            this.recipes = recipes;
 
             VersionToleranceLevel = versionToleranceLevel;
             types = new List<TypeDescriptor>();
@@ -351,14 +358,19 @@ namespace Migrantoid
             if(refId >= deserializedObjects.Count)
             {
                 var type = ReadType();
-                var isSurrogated = reader.ReadBoolean();
-                if(isSurrogated)
+                var canBeSurrogated = !recipes.ContainsKey(type.UnderlyingType); // Recipes are never surrogated
+
+                if (canBeSurrogated)
                 {
-                    var objectTypeAfterDesurrogation = ReadType();
-                    // using formatter service here is enough, as the whole content of an object will be cloned later
-                    deserializedObjects[refId] = FormatterServices.GetUninitializedObject(objectTypeAfterDesurrogation.UnderlyingType);
-                    var surrogate = readMethods.createObjectMethodsProvider.GetOrCreate(type.UnderlyingType)();
-                    surrogatesWhileReading.Add(refId, surrogate);
+                    var isSurrogated = reader.ReadBoolean();
+                    if (isSurrogated)
+                    {
+                        var objectTypeAfterDesurrogation = ReadType();
+                        // using formatter service here is enough, as the whole content of an object will be cloned later
+                        deserializedObjects[refId] = FormatterServices.GetUninitializedObject(objectTypeAfterDesurrogation.UnderlyingType);
+                        var surrogate = readMethods.createObjectMethodsProvider.GetOrCreate(type.UnderlyingType)();
+                        surrogatesWhileReading.Add(refId, surrogate);
+                    }
                 }
 
                 readMethods.touchInlinedObjectMethodsProvider.GetOrCreate(type.UnderlyingType)(this, refId);
@@ -377,6 +389,12 @@ namespace Migrantoid
                     objectsWrittenInlineCount++;
                 }
             }
+        }
+
+        internal void ReadRecipe(int objectId, Recipe recipe)
+        {
+            SetObjectByReferenceId(objectId, recipe.Deserializer(PrimitiveReader));
+            objectsWrittenInlineCount++;
         }
 
         private object ReadField(Type formalType)
@@ -689,14 +707,17 @@ namespace Migrantoid
             {
                 return CreationWay.Null;
             }
+
             if(!treatCollectionAsUserObject && CollectionMetaToken.IsCollection(actualType))
             {
                 return CreationWay.DefaultCtor;
             }
+
             if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
             {
                 return CreationWay.DefaultCtor;
             }
+
             return CreationWay.Uninitialized;
         }
 
@@ -717,6 +738,7 @@ namespace Migrantoid
         internal readonly OneToOneMap<int, object> surrogatesWhileReading;
         internal readonly Serializer.ReadMethods readMethods;
         internal int objectsWrittenInlineCount;
+        internal IDictionary<Type, Recipe> recipes;
 
         private readonly Func<TypeDescriptor> readTypeMethod;
         private List<TypeDescriptor> types;

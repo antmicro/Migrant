@@ -1,6 +1,11 @@
 ﻿// *******************************************************************
 //
 //  Copyright (c) 2012-2014, Antmicro Ltd <antmicro.com>
+//  Copyright (c) 2021, Konrad Kruczyński
+//
+//  Authors:
+//   * Mateusz Holenko(mholenko@antmicro.com)
+//   * Konrad Kruczyński (konrad.kruczynski@gmail.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -78,6 +83,12 @@ namespace Migrantoid.VersionTolerance
 
         public void ReadStructureStampIfNeeded(ObjectReader reader, VersionToleranceLevel versionToleranceLevel, bool forceStampVerification = false)
         {
+            if(reader.recipes.ContainsKey(UnderlyingType))
+            {
+                // We do not need full stamp for recipe types.
+                return;
+            }
+
             if(StampHelpers.IsStampNeeded(this, reader.TreatCollectionAsUserObject))
             {
                 ReadStructureStamp(reader, versionToleranceLevel, forceStampVerification);
@@ -86,7 +97,13 @@ namespace Migrantoid.VersionTolerance
 
         public void WriteStructureStampIfNeeded(ObjectWriter writer)
         {
-            if(StampHelpers.IsStampNeeded(this, writer.TreatCollectionAsUserObject))
+            if (writer.recipes.ContainsKey(UnderlyingType))
+            {
+                // We do not need full stamp for recipe types.
+                return;
+            }
+
+            if (StampHelpers.IsStampNeeded(this, writer.TreatCollectionAsUserObject))
             {
                 WriteStructureStamp(writer);
             }

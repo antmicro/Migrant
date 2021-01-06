@@ -1,10 +1,12 @@
 /*
   Copyright (c) 2012 - 2016 Antmicro <www.antmicro.com>
+  Copyright (c) 2021, Konrad Kruczyński
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Piotr Zierhoffer (pzierhoffer@antmicro.com)
    * Mateusz Holenko (mholenko@antmicro.com)
+   * Konrad Kruczyński (konrad.kruczynski@gmail.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -31,7 +33,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
 using Migrantoid.Hooks;
-using Migrantoid.Generators;
 using System.Threading;
 using Migrantoid.VersionTolerance;
 using Migrantoid.Utilities;
@@ -43,10 +44,18 @@ namespace Migrantoid
 {
     internal class ObjectWriter
     {
-        public ObjectWriter(Stream stream, Serializer.WriteMethods writeMethods, Action<object> preSerializationCallback = null,
-                            Action<object> postSerializationCallback = null, SwapList surrogatesForObjects = null, SwapList objectsForSurrogates = null,
-                            bool treatCollectionAsUserObject = false, bool useBuffering = true, bool disableStamping = false,
-                            ReferencePreservation referencePreservation = ReferencePreservation.Preserve)
+        public ObjectWriter(
+            Stream stream,
+            Serializer.WriteMethods writeMethods,
+            Action<object> preSerializationCallback,
+            Action<object> postSerializationCallback,
+            SwapList surrogatesForObjects,
+            SwapList objectsForSurrogates,
+            IDictionary<Type, Recipe> recipes,
+            bool treatCollectionAsUserObject,
+            bool useBuffering,
+            bool disableStamping,
+            ReferencePreservation referencePreservation)
         {
             this.treatCollectionAsUserObject = treatCollectionAsUserObject;
             this.objectsForSurrogates = objectsForSurrogates;
@@ -54,7 +63,8 @@ namespace Migrantoid
             this.preSerializationCallback = preSerializationCallback;
             this.postSerializationCallback = postSerializationCallback;
             this.writeMethods = writeMethods;
-            this.surrogatesForObjects = surrogatesForObjects ?? new SwapList();
+            this.surrogatesForObjects = surrogatesForObjects;
+            this.recipes = recipes;
 
             parentObjects = new Dictionary<object, object>();
             postSerializationHooks = new List<Action>();
@@ -163,7 +173,7 @@ namespace Migrantoid
             bool isNew;
             var refId = identifier.GetId(o, out isNew);
             writer.Write(refId);
-            if(isNew)
+            if (isNew)
             {
                 var method = writeMethods.surrogateObjectIfNeededMethodsProvider.GetOrCreate(o.GetType());
                 if(method != null)
@@ -218,11 +228,13 @@ namespace Migrantoid
                 WriteArrayMetadata((Array)o);
                 return false;
             }
+
             if(type == typeof(string))
             {
                 InvokeCallbacksAndExecute(o, s => writer.Write((string)s));
                 return true;
             }
+
             return WriteSpecialObject(o, false);
         }
 
@@ -262,6 +274,12 @@ namespace Migrantoid
 
                 throw new InvalidOperationException("Pointer or ThreadLocal or SpinLock encountered during serialization. The classes path that lead to it was: " + path);
             }
+        }
+
+        internal void WriteRecipe(Recipe recipe, object objectToWrite, int objectId)
+        {
+            recipe.Serializer(objectToWrite, PrimitiveWriter);
+            objectsWrittenInline.Add(objectId);
         }
 
         private static bool IsTypeIllegal(Type type)
@@ -595,6 +613,7 @@ namespace Migrantoid
                     ow.writer.Write((string)obj);
                 };
             }
+
             if(typeof(ISpeciallySerializable).IsAssignableFrom(actualType))
             {
                 return (ow, obj) =>
@@ -604,6 +623,7 @@ namespace Migrantoid
                     ow.writer.Write(ow.writer.Position - startingPosition);
                 };
             }
+
             if(actualType == typeof(byte[]))
             {
                 return (ow, objToWrite) =>
@@ -612,6 +632,7 @@ namespace Migrantoid
                     ow.writer.Write(array);
                 };
             }
+
             return null;
         }
 
@@ -664,6 +685,7 @@ namespace Migrantoid
         internal readonly SwapList surrogatesForObjects;
         internal readonly SwapList objectsForSurrogates;
         internal readonly HashSet<int> objectsWrittenInline;
+        internal readonly IDictionary<Type, Recipe> recipes;
 
         private IdentifiedElementsDictionary<TypeDescriptor> types;
         private ObjectIdentifierContext identifierContext;

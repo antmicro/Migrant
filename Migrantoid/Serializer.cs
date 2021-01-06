@@ -70,6 +70,7 @@ namespace Migrantoid
 
             objectsForSurrogates = new SwapList();
             surrogatesForObjects = new SwapList();
+            recipes = new Dictionary<Type, Recipe>();
 
             if(settings.SupportForIXmlSerializable)
             {
@@ -89,8 +90,15 @@ namespace Migrantoid
             ForObject(typeof(HashSet<>)).SetSurrogateGenericType(typeof(SurrogateForHashSet<>));
             ForSurrogate(typeof(SurrogateForHashSet<>)).SetObject(x => ((ISurrogateRestorer)x).Restore());
 
-            ForObject(typeof(Regex)).SetSurrogate(x => new SurrogateForRegex((Regex)x));
-            ForSurrogate(typeof(SurrogateForRegex)).SetObject(x => ((ISurrogateRestorer)x).Restore());
+            AddRecipeFor(
+                (regex, writer) =>
+                    {
+                        writer.Write(regex.ToString());
+                        writer.Write((long)regex.Options);
+                        writer.Write(regex.MatchTimeout);
+                    },
+                    reader => new Regex(reader.ReadString(), (RegexOptions)reader.ReadInt64(), reader.ReadTimeSpan())
+            );
         }
 
         /// <summary>
@@ -279,6 +287,20 @@ namespace Migrantoid
         }
 
         /// <summary>
+        /// Adds a recipe which is a pair of methods telling how (de)serialize an object of the given
+        /// class using <see cref="PrimitiveReader"/> and <see cref="PrimitiveWriter"/>.
+        /// </summary>
+        /// <typeparam name="T">The type to add the recipe for.</typeparam>
+        /// <param name="serializer">Serialization method, telling how to write the object of the class
+        /// to the stream.</param>
+        /// <param name="deserializer">Deserialization method, telling how to recreate the object from
+        /// the stream.</param>
+        public void AddRecipeFor<T>(Action<T, PrimitiveWriter> serializer, Func<PrimitiveReader, T> deserializer)
+        {
+            recipes.Add(typeof(T), Recipe.Create(serializer, deserializer));
+        }
+
+        /// <summary>
         /// Is invoked before serialization, once for every unique, serialized object. Provides this
         /// object in its single parameter.
         /// </summary>
@@ -375,6 +397,11 @@ namespace Migrantoid
 
                 writeMethods.handleNewReferenceMethodsProvider = new DynamicMethodProvider<HandleNewReferenceMethodDelegate>(t =>
                 {
+                    if (recipes.TryGetValue(t, out var recipe))
+                    {
+                        return (objectWriter, objectToWrite, objectId) => objectWriter.WriteRecipe(recipe, objectToWrite, objectId);
+                    }
+
                     var generator = new HandleNewReferenceMethodGenerator(t, objectsForSurrogates, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject, OnPreSerialization != null, OnPostSerialization != null);
                     return generator.Generate();
                 });
@@ -403,11 +430,11 @@ namespace Migrantoid
             }
 
             return new ObjectWriter(stream, writeMethods, OnPreSerialization, OnPostSerialization,
-                             surrogatesForObjects, objectsForSurrogates, settings.TreatCollectionAsUserObject,
+                             surrogatesForObjects, objectsForSurrogates, recipes, settings.TreatCollectionAsUserObject,
                              settings.UseBuffering, settings.DisableTypeStamping, settings.ReferencePreservation);
         }
 
-        internal static WriteMethods GetReflectionBasedWriteMethods()
+        internal WriteMethods GetReflectionBasedWriteMethods()
         {
             WriteMethods writeMethods;
             writeMethods.writeMethodsProvider = new DynamicMethodProvider<WriteMethodDelegate>(t =>
@@ -418,6 +445,11 @@ namespace Migrantoid
 
             writeMethods.handleNewReferenceMethodsProvider = new DynamicMethodProvider<HandleNewReferenceMethodDelegate>(t =>
             {
+                if (recipes.TryGetValue(t, out var recipe))
+                {
+                    return (objectWriter, objectToWrite, objectId) => objectWriter.WriteRecipe(recipe, objectToWrite, objectId);
+                }
+
                 return (ow, o, refId) => ow.HandleNewReference(o, refId);
             });
 
@@ -505,6 +537,11 @@ namespace Migrantoid
 
                 readMethods.touchInlinedObjectMethodsProvider = new DynamicMethodProvider<TouchInlinedObjectMethodDelegate>(t =>
                 {
+                    if(recipes.TryGetValue(t, out var recipe))
+                    {                         
+                        return (or, objectId) => or.ReadRecipe(objectId, recipe);
+                    }
+
                     var generator = new TouchInlinedObjectGenerator(t, settings.DisableTypeStamping, settings.TreatCollectionAsUserObject);
                     return generator.Generate();
                 });
@@ -536,12 +573,12 @@ namespace Migrantoid
                 readMethods = GetReflectionBasedReadMethods(settings.TreatCollectionAsUserObject);
             }
 
-            return new ObjectReader(stream, readMethods, objectsForSurrogates, OnPostDeserialization,
+            return new ObjectReader(stream, readMethods, objectsForSurrogates, recipes, OnPostDeserialization,
                 settings.TreatCollectionAsUserObject, settings.VersionTolerance, settings.UseBuffering,
                 settings.DisableTypeStamping, settings.ReferencePreservation, settings.ForceStampVerification);
         }
 
-        internal static ReadMethods GetReflectionBasedReadMethods(bool treatCollectionAsUserObject)
+        internal ReadMethods GetReflectionBasedReadMethods(bool treatCollectionAsUserObject)
         {
             ReadMethods readMethods = new ReadMethods();
             readMethods.readMethodsProvider = new DynamicMethodProvider<ReadMethodDelegate>(t =>
@@ -551,6 +588,10 @@ namespace Migrantoid
 
             readMethods.touchInlinedObjectMethodsProvider = new DynamicMethodProvider<TouchInlinedObjectMethodDelegate>(t =>
             {
+                if(recipes.TryGetValue(t, out var recipe))
+                {
+                    return (or, refId) => or.ReadRecipe(refId, recipe);
+                }
                 return (or, refId) => or.TryTouchInlinedObjectUsingReflection(t, refId);
             });
 
@@ -570,7 +611,7 @@ namespace Migrantoid
         {
             var finalType = t.MakeGenericType(obj.GetType().GetGenericArguments());
             return Activator.CreateInstance(finalType, obj);
-        }
+        }        
 
         private Exception lastException;
         private bool serializationDone;
@@ -580,7 +621,8 @@ namespace Migrantoid
         private readonly Settings settings;
         internal readonly SwapList surrogatesForObjects;
         private readonly SwapList objectsForSurrogates;
-        private const byte VersionNumber = 9;
+        private readonly Dictionary<Type, Recipe> recipes;
+        private const byte VersionNumber = 10;
         private const byte Magic1 = 0x32;
         private const byte Magic2 = 0x66;
         private const byte Magic3 = 0x34;

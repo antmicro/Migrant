@@ -1,11 +1,9 @@
 ﻿// *******************************************************************
 //
-//  Copyright (c) 2020 - 2021 Konrad Kruczyński
 //  Copyright (c) 2013, Antmicro Ltd
 //  
 //  Author:
 //   Konrad Kruczyński (kkruczynski@antmicro.com)
-//   Konrad Kruczyński (konrad.kruczynski@gmail.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -29,10 +27,6 @@
 // *******************************************************************
 using System;
 using NUnit.Framework;
-using System.Runtime.Serialization;
-using System.Text.RegularExpressions;
-using Migrantoid.Tests;
-using System.Xml.Linq;
 using System.Xml.Serialization;
 using System.Xml.Schema;
 using System.Xml;
@@ -53,33 +47,7 @@ namespace Migrantoid.Tests
             : base(useGeneratedSerializer, useGeneratedDeserializer, false, true, useTypeStamping, true)
         {
 
-        }
-
-        [Test]
-        public void ShouldSerializeRegex()
-        {
-            var regex = new Regex("[0-9]");
-            var copy = SerializerClone(regex);
-            Assert.AreEqual(regex.ToString(), copy.ToString());
-        }
-
-        [Test]
-        public void ShouldSerializeCompiledRegex()
-        {
-            var regex = new Regex(@"\d+", RegexOptions.Compiled);
-            var copy = SerializerClone(regex);
-            Assert.AreEqual(regex.ToString(), copy.ToString());
-            Assert.AreEqual(regex.Options, copy.Options);
-        }
-
-        [Test]
-        public void ShouldSerializeRegexWithGivenMatchTimeout()
-        {
-            var regex = new Regex(@"\d+", default(RegexOptions), TimeSpan.FromMinutes(1));
-            var copy = SerializerClone(regex);
-            Assert.AreEqual(regex.ToString(), copy.ToString());
-            Assert.AreEqual(regex.MatchTimeout, copy.MatchTimeout);
-        }
+        }        
 
         [Test]
         public void ShouldSerializeCustomIXmlSerializable()
