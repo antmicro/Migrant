@@ -37,41 +37,25 @@ using Migrantoid.Hooks;
 
 namespace Migrantoid.Tests
 {
-    [TestFixture(false, false, false, false, true)]
-    [TestFixture(true, false, false, false, true)]
-    [TestFixture(false, true, false, false, true)]
-    [TestFixture(true, true, false, false, true)]
-    [TestFixture(false, false, true, false, true)]
-    [TestFixture(true, false, true, false, true)]
-    [TestFixture(false, true, true, false, true)]
-    [TestFixture(true, true, true, false, true)]
-    [TestFixture(false, false, false, true, true)]
-    [TestFixture(true, false, false, true, true)]
-    [TestFixture(false, true, false, true, true)]
-    [TestFixture(true, true, false, true, true)]
-    [TestFixture(false, false, true, true, true)]
-    [TestFixture(true, false, true, true, true)]
-    [TestFixture(false, true, true, true, true)]
-    [TestFixture(true, true, true, true, true)]
-    [TestFixture(false, false, false, false, false)]
-    [TestFixture(true, false, false, false, false)]
-    [TestFixture(false, true, false, false, false)]
-    [TestFixture(true, true, false, false, false)]
-    [TestFixture(false, false, true, false, false)]
-    [TestFixture(true, false, true, false, false)]
-    [TestFixture(false, true, true, false, false)]
-    [TestFixture(true, true, true, false, false)]
-    [TestFixture(false, false, false, true, false)]
-    [TestFixture(true, false, false, true, false)]
-    [TestFixture(false, true, false, true, false)]
-    [TestFixture(true, true, false, true, false)]
-    [TestFixture(false, false, true, true, false)]
-    [TestFixture(true, false, true, true, false)]
-    [TestFixture(false, true, true, true, false)]
-    [TestFixture(true, true, true, true, false)]
+    [TestFixture(false, false, false, false)]
+    [TestFixture(true, false, false, false)]
+    [TestFixture(false, true, false, false)]
+    [TestFixture(true, true, false, false)]
+    [TestFixture(false, false, true, false)]
+    [TestFixture(true, false, true, false)]
+    [TestFixture(false, true, true, false)]
+    [TestFixture(true, true, true, false)]
+    [TestFixture(false, false, false, true)]
+    [TestFixture(true, false, false, true)]
+    [TestFixture(false, true, false, true)]
+    [TestFixture(true, true, false, true)]
+    [TestFixture(false, false, true, true)]
+    [TestFixture(true, false, true, true)]
+    [TestFixture(false, true, true, true)]
+    [TestFixture(true, true, true, true)]
     public class SerializationTests : BaseTestWithSettings
     {
-        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, supportForISerializable, false, useTypeStamping, true)
+        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, false, useTypeStamping, true)
         {
             useGeneratedSerialization = useGeneratedSerializer;
         }

@@ -1,9 +1,11 @@
 /*
   Copyright (c) 2013 Ant Micro <www.antmicro.com>
+  Copyright (c) 2021, Konrad Kruczyński
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
    * Mateusz Holenko (mholenko@antmicro.com)
+   * Konrad Kruczyński (konrad.kruczynski@gmail.com)
 
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
@@ -32,13 +34,12 @@ namespace Migrantoid.Tests
 {
     public abstract class BaseTestWithSettings
     {
-        protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable,
+        protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects,
             bool supportForIXmlSerializable, bool useTypeStamping, bool forceStampVerification)
         {
             this.useGeneratedSerializer = useGeneratedSerializer;
             this.useGeneratedDeserializer = useGeneratedDeserializer;
             this.treatCollectionsAsUserObjects = treatCollectionsAsUserObjects;
-            this.supportForISerializable = supportForISerializable;
             this.supportForIXmlSerializable = supportForIXmlSerializable;
             this.useTypeStamping = useTypeStamping;
             this.forceStampVerification = forceStampVerification;
@@ -49,7 +50,6 @@ namespace Migrantoid.Tests
             return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
                 useGeneratedDeserializer ? Method.Generated : Method.Reflection,    
                 level,
-                supportForISerializable,
                 supportForIXmlSerializable,
                 treatCollectionsAsUserObjects,
                 disableTypeStamping: !useTypeStamping,
@@ -76,7 +76,6 @@ namespace Migrantoid.Tests
 
         private readonly bool useGeneratedDeserializer;
         private readonly bool treatCollectionsAsUserObjects;
-        private readonly bool supportForISerializable;
         private readonly bool supportForIXmlSerializable;
         private readonly bool useTypeStamping;
         private readonly bool forceStampVerification;

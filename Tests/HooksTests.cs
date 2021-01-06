@@ -44,7 +44,7 @@ namespace Migrantoid.Tests
     [TestFixture(true, true, false)]
     public class HooksTests : BaseTestWithSettings
     {
-        public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false, useTypeStamping, true)
+        public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, useTypeStamping, true)
         {
         }
 
