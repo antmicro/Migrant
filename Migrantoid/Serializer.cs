@@ -1,6 +1,6 @@
 /*
   Copyright (c) 2012-2016 Ant Micro <www.antmicro.com>
-  Copyright (c) 2020, Konrad Kruczyński
+  Copyright (c) 2020 - 2021, Konrad Kruczyński
 
   Authors:
    * Konrad Kruczynski (kkruczynski@antmicro.com)
@@ -70,13 +70,6 @@ namespace Migrantoid
 
             objectsForSurrogates = new SwapList();
             surrogatesForObjects = new SwapList();
-
-            if(settings.SupportForISerializable)
-            {
-                ForObject<System.Runtime.Serialization.ISerializable>().SetSurrogate(x => new SurrogateForISerializable(x));
-                ForSurrogate<SurrogateForISerializable>().SetObject(x => x.Restore());
-                ForObject<Delegate>().SetSurrogate<Func<Delegate, object>>(null); //because Delegate implements ISerializable but we support it directly.
-            }
 
             if(settings.SupportForIXmlSerializable)
             {

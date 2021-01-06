@@ -1,9 +1,11 @@
 ﻿// *******************************************************************
 //
 //  Copyright (c) 2011-2014, Antmicro Ltd <antmicro.com>
+//  Copyright (c) 2021, Konrad Kruczyński
 //
 //  Authors:
 //   * Konrad Kruczynski (kkruczynski@antmicro.com)
+//   * Konrad Kruczyński (konrad.kruczynski@gmail.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -29,7 +31,6 @@ using System;
 using NUnit.Framework;
 using Migrantoid.Customization;
 using System.IO;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Migrantoid.Tests
@@ -42,8 +43,11 @@ namespace Migrantoid.Tests
     {
         public OpenStreamSerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer)
         {
-            settings = new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,
-                useGeneratedDeserializer ? Method.Generated : Method.Reflection);
+            settingsFactory = referencePreservation => new Settings(
+                useGeneratedSerializer ? Method.Generated : Method.Reflection,
+                useGeneratedDeserializer ? Method.Generated : Method.Reflection,
+                referencePreservation: referencePreservation,
+                useBuffering: false);
         }
 
         [Test]
@@ -51,7 +55,7 @@ namespace Migrantoid.Tests
             [Values(ReferencePreservation.DoNotPreserve, ReferencePreservation.Preserve, ReferencePreservation.UseWeakReference)]
             ReferencePreservation referencePreservation)
         {
-            var localSettings = settings.With(referencePreservation: referencePreservation);
+            var localSettings = settingsFactory(referencePreservation);
 
             var someObject = Tuple.Create(0, 1);
             var otherObject = Tuple.Create(1, 2);
@@ -85,7 +89,7 @@ namespace Migrantoid.Tests
             [Values(ReferencePreservation.Preserve, ReferencePreservation.UseWeakReference)]
             ReferencePreservation referencePreservation)
         {
-            var localSettings = settings.With(referencePreservation: referencePreservation);
+            var localSettings = settingsFactory(referencePreservation);
 
             var someObject = Tuple.Create(0, 1);
             var otherObject = Tuple.Create(1, 2);
@@ -114,9 +118,9 @@ namespace Migrantoid.Tests
         }
 
         [Test]
-        public void ShouldntPreserveReferences()
+        public void ShouldNotPreserveReferences()
         {
-            var localSettings = settings.With(referencePreservation: ReferencePreservation.DoNotPreserve);
+            var localSettings = settingsFactory(ReferencePreservation.DoNotPreserve);
 
             var someObject = new object();
 
@@ -139,7 +143,7 @@ namespace Migrantoid.Tests
         [Test]
         public void ShouldDeserializeMany()
         {
-            var serializer = new Serializer(settings.With(useBuffering: false));
+            var serializer = new Serializer(settingsFactory(ReferencePreservation.Preserve));
             var stream = new MemoryStream();
 
             var tuples = Enumerable.Range(1, 10).Select(x => Tuple.Create(x, x + 0.5)).ToList();
@@ -160,7 +164,7 @@ namespace Migrantoid.Tests
             }
         }
 
-        private readonly Settings settings;
+        private readonly Func<ReferencePreservation, Settings> settingsFactory;
     }
 }
 

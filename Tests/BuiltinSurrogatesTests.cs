@@ -1,6 +1,6 @@
 ﻿// *******************************************************************
 //
-//  Copyright (c) 2020 Konrad Kruczyński
+//  Copyright (c) 2020 - 2021 Konrad Kruczyński
 //  Copyright (c) 2013, Antmicro Ltd
 //  
 //  Author:
@@ -82,15 +82,6 @@ namespace Migrantoid.Tests
         }
 
         [Test]
-        public void ShouldSerializeSimpleCustomISerializable()
-        {
-            const long value = 666L;
-            var customSerializable = new CustomISerializable(value);
-            var copy = SerializerClone(customSerializable);
-            Assert.AreEqual(customSerializable.ValueAsLong, copy.ValueAsLong);
-        }
-
-        [Test]
         public void ShouldSerializeCustomIXmlSerializable()
         {
             var xml = new CustomIXmlSerializable { SomeString = "Xavier", SomeInteger = 666 };
@@ -98,36 +89,6 @@ namespace Migrantoid.Tests
             Assert.AreEqual(xml, copy);
         }
     }
-
-    [Serializable]
-    public sealed class CustomISerializable : ISerializable
-    {
-        public CustomISerializable(long value)
-        {
-            fakeIntPtr = new IntPtr(value);
-        }
-
-        private CustomISerializable(SerializationInfo info, StreamingContext context)
-        {
-            fakeIntPtr = new IntPtr(info.GetInt64("ValueOfThePointer"));
-        }
-
-        public long ValueAsLong
-        {
-            get
-            {
-                return fakeIntPtr.ToInt64();
-            }
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("ValueOfThePointer", fakeIntPtr.ToInt64());
-        }
-            
-        private readonly IntPtr fakeIntPtr;
-    }
-
 
     public sealed class CustomIXmlSerializable : IXmlSerializable
     {
