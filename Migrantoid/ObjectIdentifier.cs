@@ -43,7 +43,7 @@ namespace Migrantoid
     public class ObjectIdentifier
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectIdentifier"/> class.
+        /// Initializes a new instance of the <see cref="ObjectIdentifier"/> class.
         /// </summary>
         public ObjectIdentifier()
         {
@@ -52,7 +52,7 @@ namespace Migrantoid
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.ObjectIdentifier"/> class, reusing given context.
+        /// Initializes a new instance of the <see cref="ObjectIdentifier"/> class, reusing given context.
         /// </summary>
         /// <param name="context">Context to reuse.</param>
         public ObjectIdentifier(ObjectIdentifierContext context)
@@ -143,14 +143,14 @@ namespace Migrantoid
         }
 
         /// <summary>
-        /// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method,
+        /// For an ID which was previously returned by the <see cref="ObjectIdentifier.GetId(object, out bool)" /> method,
         /// returns an object for which this ID was generated.
         /// </summary>
         /// <returns>
         /// The object for which given ID was returned.
         /// </returns>
         /// <param name='id'>
-        /// The unique ID, previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method.
+        /// The unique ID, previously returned by the <see cref="ObjectIdentifier.GetId(object, out bool)" /> method.
         /// </param>
         public object GetObject(int id)
         {
@@ -162,11 +162,11 @@ namespace Migrantoid
         }
 
         /// <summary>
-        /// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method,
+        /// For an ID which was previously returned by the <see cref="ObjectIdentifier.GetId(object, out bool)" /> method,
         /// returns an object for which this ID was generated.
         /// </summary>
         /// <param name='id'>
-        /// The unique ID, previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method.
+        /// The unique ID, previously returned by the <see cref="ObjectIdentifier.GetId(object, out bool)" /> method.
         /// </param>
         public object this[int id]
         {

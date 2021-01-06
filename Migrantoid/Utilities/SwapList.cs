@@ -34,7 +34,7 @@ namespace Migrantoid.Utilities
     public sealed class SwapList
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.Utilities.SwapList"/> class.
+        /// Initializes a new instance of the <see cref="SwapList"/> class.
         /// </summary>
         public SwapList()
         {

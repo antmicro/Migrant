@@ -34,14 +34,14 @@ namespace Migrantoid.VersionTolerance
     public class VersionToleranceException : Exception
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.VersionTolerance.VersionToleranceException"/> class.
+        /// Initializes a new instance of the <see cref="VersionToleranceException"/> class.
         /// </summary>
         public VersionToleranceException()
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.VersionTolerance.VersionToleranceException"/> class.
+        /// Initializes a new instance of the <see cref="VersionToleranceException"/> class.
         /// </summary>
         /// <param name="message">Message.</param>
         public VersionToleranceException(string message) : base(message)
@@ -49,7 +49,7 @@ namespace Migrantoid.VersionTolerance
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.VersionTolerance.VersionToleranceException"/> class.
+        /// Initializes a new instance of the <see cref="VersionToleranceException"/> class.
         /// </summary>
         /// <param name="info">Info.</param>
         /// <param name="context">Context.</param>
@@ -58,7 +58,7 @@ namespace Migrantoid.VersionTolerance
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.VersionTolerance.VersionToleranceException"/> class.
+        /// Initializes a new instance of the <see cref="VersionToleranceException"/> class.
         /// </summary>
         /// <param name="message">Message.</param>
         /// <param name="innerException">Inner exception.</param>

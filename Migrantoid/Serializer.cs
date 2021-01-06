@@ -54,7 +54,7 @@ namespace Migrantoid
     public class Serializer
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.Serializer"/> class.
+        /// Initializes a new instance of the <see cref="Serializer"/> class.
         /// </summary>
         /// <param name='settings'>
         /// Serializer's settings, can be null or not given, in that case default settings are

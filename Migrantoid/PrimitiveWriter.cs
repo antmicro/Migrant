@@ -35,17 +35,17 @@ namespace Migrantoid
     /// Provides the mechanism for writing primitive values into a stream.
     /// </summary>
     /// <remarks>
-    /// Can be used as a replacement for the <see cref="System.IO.BinaryWriter" /> . Provides
+    /// Can be used as a replacement for the <see cref="BinaryWriter" /> . Provides
     /// more compact output and reads no more data from the stream than requested. Although
     /// the underlying format is not specified at this point, it is guaranteed to be consistent with
-    /// <see cref="Antmicro.Migrant.PrimitiveReader" />. Writer has to be disposed after used,
+    /// <see cref="PrimitiveReader" />. Writer has to be disposed after used,
     /// otherwise stream position corruption and data loss can occur. Writer does not possess the
     /// stream and does not close it after dispose.
     /// </remarks>
     public sealed class PrimitiveWriter : IDisposable
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Antmicro.Migrant.PrimitiveWriter" /> class.
+        /// Initializes a new instance of the <see cref="PrimitiveWriter" /> class.
         /// </summary>
         /// <param name='stream'>
         /// The underlying stream which will be used to write data. Has to be writeable.
@@ -331,15 +331,15 @@ namespace Migrantoid
 
         /// <summary>
         /// Flushes the buffer and pads the stream with sufficient amount of data to be compatible 
-        /// with the <see cref="Antmicro.Migrant.PrimitiveReader" />. It is not necessary to call this method
+        /// with the <see cref="PrimitiveReader" />. It is not necessary to call this method
         /// when buffering is not used.
         /// </summary>
         /// <remarks>
-        /// Call <see cref="Dispose"/> when you are finished using the <see cref="Antmicro.Migrant.PrimitiveWriter"/>. The
-        /// <see cref="Dispose"/> method leaves the <see cref="Antmicro.Migrant.PrimitiveWriter"/> in an unusable state. After
+        /// Call <see cref="Dispose"/> when you are finished using the <see cref="PrimitiveWriter"/>. The
+        /// <see cref="Dispose"/> method leaves the <see cref="PrimitiveWriter"/> in an unusable state. After
         /// calling <see cref="Dispose"/>, you must release all references to the
-        /// <see cref="Antmicro.Migrant.PrimitiveWriter"/> so the garbage collector can reclaim the memory that the
-        /// <see cref="Antmicro.Migrant.PrimitiveWriter"/> was occupying.
+        /// <see cref="PrimitiveWriter"/> so the garbage collector can reclaim the memory that the
+        /// <see cref="PrimitiveWriter"/> was occupying.
         /// </remarks>
         public void Dispose()
         {
