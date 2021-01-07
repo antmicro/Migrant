@@ -1,20 +1,8 @@
-# Migrant 0.14
+Copyright (c) 2012-2020 Antmicro (https://www.antmicro.com)
 
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/3674/badge.svg)](https://scan.coverity.com/projects/3674)
+# Migrant
 
 This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
-
-## Table of Contents
-
-1.  Introduction
-1.  Directory organization
-1.  Usage
-1.  Features
-1.  Download
-1.  Compilation
-1.  More information
-1.  Licence
-1.  Authors
 
 ## Introduction
 
@@ -327,28 +315,7 @@ Please adhere to our coding style rules. For MonoDevelop, they are included in t
 
 In case of any doubts, just take a look to see how we have done it.
 
-## More information
-
-Additional information will soon be available on our [company's website](http://www.antmicro.com/OpenSource).
-
-We are available on [github](https://www.github.com/antmicro) and [twitter](http://twitter.com/antmicro).
-
-If you have any questions, suggestions or requests regarding the Migrant library, please do not hesitate to contact us via email: <migrant@antmicro.com>.
-
 ## Licence
 
-Migrant is released on an MIT licence, which can be found in the LICENCE file in this directory.
+Migrant is created by Antmicro and released on an MIT licence, which can be found in the LICENCE file in this directory.
 
-## Authors
-
-Migrant was created at [Antmicro Ltd](http://www.antmicro.com) by:
-
-* Konrad Kruczyński (<kkruczynski@antmicro.com>)
-* Mateusz Hołenko (<mholenko@antmicro.com>)
-* Piotr Zierhoffer (<pzierhoffer@antmicro.com>)
-* Michael Gielda (<mgielda@antmicro.com>)
-
-Other contributors, in order of first contribution:
-
-* Jeffrey Pierson (<jeffrey.pierson@gmail.com>)
-* Roger Johansson (<rogeralsing@gmail.com>)
