@@ -1,8 +1,6 @@
-Copyright (c) 2012-2020 Antmicro (https://www.antmicro.com)
-
 # Migrant
 
-This is the *Migrant* project by [Antmicro](http://antmicro.com), a fast and flexible serialization framework usable for undecorated classes, written in C\#.
+Copyright (c) 2012-2021 [Antmicro](https://www.antmicro.com)
 
 ## Introduction
 
