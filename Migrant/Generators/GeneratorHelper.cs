@@ -293,7 +293,14 @@ namespace Antmicro.Migrant.Generators
                 Console.WriteLine("{0}: {1}", m, v);
             });
         }
-
+#if NET
+        [Obsolete("AppDomain.DefineDynamicAssembly is not available in .NET Standard 2.0 and above")]
+        [Conditional("DEBUG")]
+        public static void DumpToLibrary<T>(GenerationContextBase context, Action<GenerationContextBase> generateCodeAction, string postfix = null)
+        {
+            throw new NotImplementedException();
+        }
+#else
         [Conditional("DEBUG")]
         public static void DumpToLibrary<T>(GenerationContextBase context, Action<GenerationContextBase> generateCodeAction, string postfix = null)
         {
@@ -331,6 +338,7 @@ namespace Antmicro.Migrant.Generators
         }
 
         private static int counter;
+#endif
     }
 }
 
