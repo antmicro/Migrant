@@ -326,6 +326,18 @@ namespace Antmicro.Migrant
             Pad();
         }
 
+        public void Flush()
+        {
+            if(!buffered)
+            {
+                return;
+            }           
+            stream.Write(buffer, 0, currentBufferPosition);
+            currentPosition += currentBufferPosition;
+            currentBufferPosition = 0;
+        }
+
+
         private void InnerWriteInteger(ulong value, int sizeInBytes)
         {
             byte valueToWrite;
@@ -433,17 +445,6 @@ namespace Antmicro.Migrant
             }
             // we need to flush the buffer
             Flush();
-        }
-
-        private void Flush()
-        {
-            if(!buffered)
-            {
-                return;
-            }           
-            stream.Write(buffer, 0, currentBufferPosition);
-            currentPosition += currentBufferPosition;
-            currentBufferPosition = 0;
         }
 
         private void Pad()
