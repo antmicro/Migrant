@@ -240,12 +240,12 @@ namespace Antmicro.Migrant
             }
             catch(VersionToleranceException ex)
             {
-                lastException = ex;
+                LastException = ex;
                 return DeserializationResult.TypeStructureChanged;
             }
             catch(Exception ex)
             {
-                lastException = ex;
+                LastException = ex;
                 return DeserializationResult.StreamCorrupted;
             }
             finally
@@ -452,7 +452,7 @@ namespace Antmicro.Migrant
                 throw new InvalidOperationException("Type stamping configuration does not match.");
             case DeserializationResult.StreamCorrupted:
             case DeserializationResult.TypeStructureChanged:
-                throw lastException;
+                throw LastException;
             default:
                 throw new ArgumentOutOfRangeException();
             }
@@ -549,7 +549,11 @@ namespace Antmicro.Migrant
             return Activator.CreateInstance(finalType, obj);
         }
 
-        private Exception lastException;
+        /// <summary>
+        /// Returns the last serializer exception.
+        /// </summary>
+        public Exception LastException { get; private set; }
+
         private bool serializationDone;
         private bool deserializationDone;
         private ObjectWriter writer;
