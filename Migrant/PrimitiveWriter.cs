@@ -326,6 +326,9 @@ namespace Antmicro.Migrant
             Pad();
         }
 
+        /// <summary>
+        /// Flushes the buffer
+        /// </summary>
         public void Flush()
         {
             if(!buffered)
