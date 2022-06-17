@@ -2,6 +2,8 @@
 
 Copyright (c) 2012-2021 [Antmicro](https://www.antmicro.com)
 
+[![View on Antmicro Open Source Portal](https://img.shields.io/badge/View%20on-Antmicro%20Open%20Source%20Portal-332d37?style=flat-square)](https://opensource.antmicro.com/projects/Migrant) 
+
 ## Introduction
 
 Migrant is a serialization framework for .NET and Mono projects. Its aim is to provide an easy way to serialize complex graphs of objects, with minimal programming effort.
