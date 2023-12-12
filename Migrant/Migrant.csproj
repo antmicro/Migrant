@@ -117,6 +117,7 @@
     <Compile Include="BultinSurrogates\SurrogateForHashSet.cs" />
     <Compile Include="BultinSurrogates\SurrogateForHashtable.cs" />
     <Compile Include="Generators\CreateGenericSurrogateMethodGenerator.cs" />
+    <Compile Include="BultinSurrogates\SurrogateForSortedList.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2023 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -68,6 +68,9 @@ namespace Antmicro.Migrant
 
             ForObject(typeof(HashSet<>)).SetSurrogateGenericType(typeof(SurrogateForHashSet<>));
             ForSurrogate(typeof(SurrogateForHashSet<>)).SetObject(x => ((ISurrogateRestorer)x).Restore());
+
+            ForObject(typeof(SortedList<,>)).SetSurrogateGenericType(typeof(SurrogateForSortedList<,>));
+            ForSurrogate(typeof(SurrogateForSortedList<,>)).SetObject(x => ((ISurrogateRestorer)x).Restore());
         }
 
         /// <summary>

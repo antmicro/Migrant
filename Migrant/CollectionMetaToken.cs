@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2023 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -83,7 +83,8 @@ namespace Antmicro.Migrant
                 typeof(Queue<>),
                 typeof(Stack<>),
                 typeof(BlockingCollection<>),
-                typeof(Hashtable)
+                typeof(Hashtable),
+                typeof(SortedList<,>),
             };
             SpeciallySerializedCollections = new HashSet<Type>(speciallySerializedTypes);
             SpeciallySerializedCollections.TrimExcess();
