@@ -557,6 +557,8 @@ namespace Antmicro.Migrant
         /// </summary>
         public Exception LastException { get; private set; }
 
+        public Settings Settings => settings;
+
         private bool serializationDone;
         private bool deserializationDone;
         private ObjectWriter writer;
