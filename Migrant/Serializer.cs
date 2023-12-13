@@ -557,6 +557,9 @@ namespace Antmicro.Migrant
         /// </summary>
         public Exception LastException { get; private set; }
 
+        /// <summary>
+        /// Returns the current serializer settings.
+        /// </summary>
         public Settings Settings => settings;
 
         private bool serializationDone;

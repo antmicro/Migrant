@@ -10,7 +10,7 @@ using System.Runtime.Serialization;
 namespace Antmicro.Migrant
 {
     /// <summary>
-    /// The exception thrown when an attempt is made to serialize a non-serializable type, such as a pointer, ThreadLocal<> or SpinLock.
+    /// The exception thrown when an attempt is made to serialize a non-serializable type, such as a pointer, ThreadLocal or SpinLock.
     /// </summary>
     [Serializable]
     public class NonSerializableTypeException : InvalidOperationException
