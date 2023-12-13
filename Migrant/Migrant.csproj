@@ -118,6 +118,7 @@
     <Compile Include="BultinSurrogates\SurrogateForHashtable.cs" />
     <Compile Include="Generators\CreateGenericSurrogateMethodGenerator.cs" />
     <Compile Include="BultinSurrogates\SurrogateForSortedList.cs" />
+    <Compile Include="NonSerializableTypeException.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
