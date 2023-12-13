@@ -214,7 +214,9 @@ namespace Antmicro.Migrant
         {
             if(IsTypeIllegal(type))
             {
-                throw new InvalidOperationException("Pointer or ThreadLocal or SpinLock encountered during serialization. In order to obtain detailed information including classes path that lead here, please use generated version of serializer.");
+                throw new InvalidOperationException("Pointer or ThreadLocal or SpinLock encountered during serialization. "
+                    + "In order to obtain detailed information including the class path that led here, please use the "
+                    + "reflection-based version of the serializer.");
             }
         }
 
@@ -239,7 +241,8 @@ namespace Antmicro.Migrant
                 path.Insert(0, " => ");
                 path.Insert(0, current.GetType().Name);
 
-                throw new InvalidOperationException("Pointer or ThreadLocal or SpinLock encountered during serialization. The classes path that lead to it was: " + path);
+                throw new InvalidOperationException("Pointer or ThreadLocal or SpinLock encountered during serialization. "
+                    + "The class path that led to it was: " + path);
             }
         }
 
