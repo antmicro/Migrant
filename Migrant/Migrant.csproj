@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Antmicro.Migrant</RootNamespace>
     <AssemblyName>Migrant</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
