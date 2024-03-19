@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2024 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -29,6 +29,7 @@ namespace Antmicro.Migrant
         {
             objectToId = new Dictionary<object, int>();
             idToObject = new List<object>();
+            surrogateToObject = new Dictionary<object, object>();
         }
 
         /// <summary>
@@ -142,6 +143,35 @@ namespace Antmicro.Migrant
         }
 
         /// <summary>
+        /// Adds an object to the collection that keeps track of all the surrogated objects.
+        /// </summary>
+        /// <param name="surrogate">
+        /// An instance of a surrogate for object o."
+        /// </param>
+        /// <param name="o">
+        /// A reference to the original object that will be surrogated during serialization.
+        /// </param>
+        public void AddSurrogatedObject(object surrogate, object o)
+        {
+            surrogateToObject[surrogate] = o;
+        }
+
+        /// <summary>
+        /// Returns an object added previously by the <see cref="Antmicro.Migrant.ObjectIdentifier.AddSurrogatedObject(object, object)" /> method.
+        /// </summary>
+        /// <param name="surrogate">
+        /// An instance of a surrogate for object o."
+        /// </param>
+        /// <param name="o">
+        /// A reference to the original object that will be surrogated during serialization.
+        /// </param>
+        /// <returns></returns>
+        public bool TryGetSurrogatedObject(object surrogate, out object o)
+        {
+            return surrogateToObject.TryGetValue(surrogate, out o);
+        }
+
+        /// <summary>
         /// For an ID which was previously returned by the <see cref="Antmicro.Migrant.ObjectIdentifier.GetId(object, out bool)" /> method,
         /// returns an object for which this ID was generated.
         /// </summary>
@@ -179,6 +209,7 @@ namespace Antmicro.Migrant
 
         private readonly Dictionary<object, int> objectToId;
         private readonly List<object> idToObject;
+        private readonly Dictionary<object, object> surrogateToObject;
     }
 }
 

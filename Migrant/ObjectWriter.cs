@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2024 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -35,7 +35,7 @@ namespace Antmicro.Migrant
             this.writeMethods = writeMethods;
             this.surrogatesForObjects = surrogatesForObjects ?? new SwapList();
 
-            parentObjects = new Dictionary<object, object>();
+            parentObjects = new Dictionary<object, HashSet<object>>();
             postSerializationHooks = new List<Action>();
             types = new IdentifiedElementsDictionary<TypeDescriptor>(this);
             Methods = new IdentifiedElementsDictionary<MethodDescriptor>(this);
@@ -162,11 +162,13 @@ namespace Antmicro.Migrant
             var surrogateId = surrogatesForObjects.FindMatchingIndex(o.GetType());
             if(surrogateId != -1)
             {
-                o = surrogatesForObjects.GetByIndex(surrogateId).DynamicInvoke(new[] { o });
+                var surrogate = surrogatesForObjects.GetByIndex(surrogateId).DynamicInvoke(new[] { o });
                 // special case - surrogation!
                 // setting identifier for new object does not remove original one from the mapping
                 // thanks to that behaviour surrogation preserves identity
-                identifier.SetIdentifierForObject(o, refId);
+                identifier.SetIdentifierForObject(surrogate, refId);
+                identifier.AddSurrogatedObject(surrogate, o);
+                o = surrogate;
             }
 
             return o;
@@ -220,29 +222,17 @@ namespace Antmicro.Migrant
             }
         }
 
-        internal static void CheckLegality(object obj, Dictionary<object, object> parents)
+        internal static void CheckLegality(object obj, Dictionary<object, HashSet<object>> parents)
         {
             if(obj == null)
             {
                 return;
             }
             var type = obj.GetType();
-            // containing type is a hint in case of
+            
             if(IsTypeIllegal(type))
             {
-                var path = new StringBuilder();
-                var current = obj;
-                while(parents.ContainsKey(current))
-                {
-                    path.Insert(0, " => ");
-                    path.Insert(0, current.GetType().Name);
-                    current = parents[current];
-                }
-                path.Insert(0, " => ");
-                path.Insert(0, current.GetType().Name);
-
-                throw new NonSerializableTypeException("Pointer or ThreadLocal or SpinLock encountered during serialization. "
-                    + "The class path that led to it was: " + path);
+                throw new NonSerializableTypeException("Pointer or ThreadLocal or SpinLock encountered during serialization.", obj, parents);
             }
         }
 
@@ -400,14 +390,17 @@ namespace Antmicro.Migrant
         {
             // fields in the alphabetical order
             var fields = StampHelpers.GetFieldsInSerializationOrder(type);
+
+            if(!identifier.TryGetSurrogatedObject(o, out var parent))
+            {
+                parent = o;
+            }
+
             foreach(var field in fields)
             {
                 var formalType = field.FieldType;
                 var value = field.GetValue(o);
-                if(value != null)
-                {
-                    parentObjects[value] = o;
-                }
+                AddParent(value, parent);
 
                 if(Helpers.IsTypeWritableDirectly(formalType))
                 {
@@ -439,6 +432,7 @@ namespace Antmicro.Migrant
                 writer.Write(invocationList.Length);
                 foreach(var del in invocationList)
                 {
+                    AddParent(del.Target, o);
                     WriteField(typeof(object), del.Target);
                     Methods.TouchAndWriteId(new MethodDescriptor(del.Method));
                 }
@@ -474,6 +468,7 @@ namespace Antmicro.Migrant
             writer.Write(count);
             foreach(var element in collection)
             {
+                AddParent(element, collection);
                 WriteField(elementFormalType, element);
             }
         }
@@ -501,8 +496,12 @@ namespace Antmicro.Migrant
             {
                 if(currentDimension == array.Rank - 1)
                 {
+                    var element = array.GetValue(position);
+
+                    AddParent(element, array);
+                    
                     // the final row
-                    WriteField(elementFormalType, array.GetValue(position));
+                    WriteField(elementFormalType, element);
                 }
                 else
                 {
@@ -566,6 +565,18 @@ namespace Antmicro.Migrant
 
             // so we guess it is struct
             WriteObjectsFields(value, formalType);
+        }
+
+        private void AddParent(object child, object parent)
+        {
+            if(child != null)
+            {
+                if(!parentObjects.ContainsKey(child))
+                {
+                    parentObjects[child] = new HashSet<object>();
+                }
+                parentObjects[child].Add(parent);
+            }
         }
 
         internal static WriteMethodDelegate LinkSpecialWrite(Type actualType)
@@ -652,7 +663,7 @@ namespace Antmicro.Migrant
         private readonly Func<Type, int> touchTypeMethod;
         private readonly bool treatCollectionAsUserObject;
         private readonly ReferencePreservation referencePreservation;
-        private readonly Dictionary<object, object> parentObjects;
+        private readonly Dictionary<object, HashSet<object>> parentObjects;
         private readonly Serializer.WriteMethods writeMethods;
     }
 
