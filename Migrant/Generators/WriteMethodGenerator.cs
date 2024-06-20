@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2024 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -393,7 +393,7 @@ namespace Antmicro.Migrant.Generators
                 context.Generator.Emit(OpCodes.Brtrue_S, hasValueLabel);
                 context.Generator.PushIntegerOntoStack(0);
                 context.Generator.Call<PrimitiveWriter>(x => x.Write(false));
-                context.Generator.Emit(OpCodes.Br_S, finishLabel);
+                context.Generator.Emit(OpCodes.Br, finishLabel);
 
                 context.Generator.MarkLabel(hasValueLabel);
                 context.Generator.PushIntegerOntoStack(1);
