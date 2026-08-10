@@ -1,15 +1,12 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
 
 using System;
 using NUnit.Framework;
-using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
-using Antmicro.Migrant.Tests;
-using System.Xml.Linq;
 using System.Xml.Serialization;
 using System.Xml.Schema;
 using System.Xml;
@@ -27,7 +24,7 @@ namespace Antmicro.Migrant.Tests
     public class BuiltinSurrogatesTests : BaseTestWithSettings
     {
         public BuiltinSurrogatesTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping)
-            : base(useGeneratedSerializer, useGeneratedDeserializer, false, true, true, useTypeStamping, true)
+            : base(useGeneratedSerializer, useGeneratedDeserializer, false, true, useTypeStamping, true)
         {
 
         }
@@ -41,15 +38,6 @@ namespace Antmicro.Migrant.Tests
         }
 
         [Test]
-        public void ShouldSerializeSimpleCustomISerializable()
-        {
-            const long value = 666L;
-            var customSerializable = new CustomISerializable(value);
-            var copy = SerializerClone(customSerializable);
-            Assert.AreEqual(customSerializable.ValueAsLong, copy.ValueAsLong);
-        }
-
-        [Test]
         public void ShouldSerializeCustomIXmlSerializable()
         {
             var xml = new CustomIXmlSerializable { SomeString = "Xavier", SomeInteger = 666 };
@@ -57,36 +45,6 @@ namespace Antmicro.Migrant.Tests
             Assert.AreEqual(xml, copy);
         }
     }
-
-    [Serializable]
-    public sealed class CustomISerializable : ISerializable
-    {
-        public CustomISerializable(long value)
-        {
-            fakeIntPtr = new IntPtr(value);
-        }
-
-        private CustomISerializable(SerializationInfo info, StreamingContext context)
-        {
-            fakeIntPtr = new IntPtr(info.GetInt64("ValueOfThePointer"));
-        }
-
-        public long ValueAsLong
-        {
-            get
-            {
-                return fakeIntPtr.ToInt64();
-            }
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("ValueOfThePointer", fakeIntPtr.ToInt64());
-        }
-            
-        private readonly IntPtr fakeIntPtr;
-    }
-
 
     public sealed class CustomIXmlSerializable : IXmlSerializable
     {
@@ -145,4 +103,3 @@ namespace Antmicro.Migrant.Tests
         private IntPtr fakeIntPtr;
     }
 }
-

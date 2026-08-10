@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -12,13 +12,12 @@ namespace Antmicro.Migrant.Tests
 {
     public abstract class BaseTestWithSettings
     {
-        protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable,
+        protected BaseTestWithSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects,
             bool supportForIXmlSerializable, bool useTypeStamping, bool forceStampVerification)
         {
             this.useGeneratedSerializer = useGeneratedSerializer;
             this.useGeneratedDeserializer = useGeneratedDeserializer;
             this.treatCollectionsAsUserObjects = treatCollectionsAsUserObjects;
-            this.supportForISerializable = supportForISerializable;
             this.supportForIXmlSerializable = supportForIXmlSerializable;
             this.useTypeStamping = useTypeStamping;
             this.forceStampVerification = forceStampVerification;
@@ -29,7 +28,6 @@ namespace Antmicro.Migrant.Tests
             return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,					
                 useGeneratedDeserializer ? Method.Generated : Method.Reflection,    
                 level,
-                supportForISerializable,
                 supportForIXmlSerializable,
                 treatCollectionsAsUserObjects,
                 disableTypeStamping: !useTypeStamping,
@@ -56,7 +54,6 @@ namespace Antmicro.Migrant.Tests
 
         private readonly bool useGeneratedDeserializer;
         private readonly bool treatCollectionsAsUserObjects;
-        private readonly bool supportForISerializable;
         private readonly bool supportForIXmlSerializable;
         private readonly bool useTypeStamping;
         private readonly bool forceStampVerification;

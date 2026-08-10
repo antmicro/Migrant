@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -9,7 +9,6 @@ using NUnit.Framework;
 using System.IO;
 using System;
 using System.Threading;
-using System.Collections.Generic;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -24,7 +23,7 @@ namespace Antmicro.Migrant.Tests
     [TestFixture(true, true, false)]
     public class HooksTests : BaseTestWithSettings
     {
-        public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, false, useTypeStamping, true)
+        public HooksTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, false, false, useTypeStamping, true)
         {
         }
 

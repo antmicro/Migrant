@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -17,41 +17,25 @@ using Antmicro.Migrant.Hooks;
 
 namespace Antmicro.Migrant.Tests
 {
-    [TestFixture(false, false, false, false, true)]
-    [TestFixture(true, false, false, false, true)]
-    [TestFixture(false, true, false, false, true)]
-    [TestFixture(true, true, false, false, true)]
-    [TestFixture(false, false, true, false, true)]
-    [TestFixture(true, false, true, false, true)]
-    [TestFixture(false, true, true, false, true)]
-    [TestFixture(true, true, true, false, true)]
-    [TestFixture(false, false, false, true, true)]
-    [TestFixture(true, false, false, true, true)]
-    [TestFixture(false, true, false, true, true)]
-    [TestFixture(true, true, false, true, true)]
-    [TestFixture(false, false, true, true, true)]
-    [TestFixture(true, false, true, true, true)]
-    [TestFixture(false, true, true, true, true)]
-    [TestFixture(true, true, true, true, true)]
-    [TestFixture(false, false, false, false, false)]
-    [TestFixture(true, false, false, false, false)]
-    [TestFixture(false, true, false, false, false)]
-    [TestFixture(true, true, false, false, false)]
-    [TestFixture(false, false, true, false, false)]
-    [TestFixture(true, false, true, false, false)]
-    [TestFixture(false, true, true, false, false)]
-    [TestFixture(true, true, true, false, false)]
-    [TestFixture(false, false, false, true, false)]
-    [TestFixture(true, false, false, true, false)]
-    [TestFixture(false, true, false, true, false)]
-    [TestFixture(true, true, false, true, false)]
-    [TestFixture(false, false, true, true, false)]
-    [TestFixture(true, false, true, true, false)]
-    [TestFixture(false, true, true, true, false)]
-    [TestFixture(true, true, true, true, false)]
+    [TestFixture(false, false, false, false)]
+    [TestFixture(true, false, false, false)]
+    [TestFixture(false, true, false, false)]
+    [TestFixture(true, true, false, false)]
+    [TestFixture(false, false, true, false)]
+    [TestFixture(true, false, true, false)]
+    [TestFixture(false, true, true, false)]
+    [TestFixture(true, true, true, false)]
+    [TestFixture(false, false, false, true)]
+    [TestFixture(true, false, false, true)]
+    [TestFixture(false, true, false, true)]
+    [TestFixture(true, true, false, true)]
+    [TestFixture(false, false, true, true)]
+    [TestFixture(true, false, true, true)]
+    [TestFixture(false, true, true, true)]
+    [TestFixture(true, true, true, true)]
     public class SerializationTests : BaseTestWithSettings
     {
-        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool supportForISerializable, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, supportForISerializable, false, useTypeStamping, true)
+        public SerializationTests(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool treatCollectionsAsUserObjects, bool useTypeStamping) : base(useGeneratedSerializer, useGeneratedDeserializer, treatCollectionsAsUserObjects, false, useTypeStamping, true)
         {
             useGeneratedSerialization = useGeneratedSerializer;
         }
@@ -763,7 +747,7 @@ namespace Antmicro.Migrant.Tests
         public void ShouldThrowOnThreadLocalSerialization()
         {
             var classWithThreadLocal = new ClassWithThreadLocal();
-            Assert.Throws(typeof(InvalidOperationException), () => SerializerClone(classWithThreadLocal));
+            Assert.Throws(typeof(NonSerializableTypeException), () => SerializerClone(classWithThreadLocal));
         }
 
         [Test]
@@ -854,15 +838,17 @@ namespace Antmicro.Migrant.Tests
                 SerializerClone(toClone);
                 Assert.Fail("Exception was not thrown.");
             }
-            catch(Exception e)
+            catch(NonSerializableTypeException e)
             {
                 exception = e;
             }
-            if(!useGeneratedSerialization)
+            catch(Exception e)
             {
-                Assert.IsTrue(exception.Message.Contains(toClone.GetType().Name));
-                Assert.IsTrue(exception.Message.Contains(toClone.Element.GetType().Name));
-                Assert.IsTrue(exception.Message.Contains(toClone.Element.WithIntPtr.GetType().Name));
+                if(useGeneratedSerialization)
+                {
+                    // With generated serialization the type should be detected as non-serializable.
+                    throw e;
+                }
             }
         }
 

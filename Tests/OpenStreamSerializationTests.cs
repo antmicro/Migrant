@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -8,7 +8,6 @@ using System;
 using NUnit.Framework;
 using Antmicro.Migrant.Customization;
 using System.IO;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Antmicro.Migrant.Tests
@@ -46,7 +45,7 @@ namespace Antmicro.Migrant.Tests
 
             stream.Seek(0, SeekOrigin.Begin);
 
-            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream))
+            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream, out _))
             {
                 var objs = new object[3];
                 for(var i = 0; i < objs.Length; i++)
@@ -80,7 +79,7 @@ namespace Antmicro.Migrant.Tests
 
             stream.Seek(0, SeekOrigin.Begin);
 
-            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream))
+            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream, out _))
             {
                 var objs = new object[3];
                 for(var i = 0; i < objs.Length; i++)
@@ -109,7 +108,7 @@ namespace Antmicro.Migrant.Tests
 
             stream.Seek(0, SeekOrigin.Begin);
 
-            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream))
+            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream, out _))
             {
                 Assert.AreNotSame(osDeserializer.Deserialize<object>(), osDeserializer.Deserialize<object>());
             }
@@ -132,7 +131,7 @@ namespace Antmicro.Migrant.Tests
 
             stream.Seek(0, SeekOrigin.Begin);
 
-            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream))
+            using(var osDeserializer = serializer.ObtainOpenStreamDeserializer(stream, out _))
             {
                 var deserializedTuples = osDeserializer.DeserializeMany<Tuple<int, double>>();
                 CollectionAssert.AreEqual(tuples.ToList(), deserializedTuples.ToList());
@@ -142,4 +141,3 @@ namespace Antmicro.Migrant.Tests
         private readonly Settings settings;
     }
 }
-
