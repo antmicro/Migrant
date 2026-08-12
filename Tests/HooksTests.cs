@@ -4,11 +4,12 @@
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
 
-using Antmicro.Migrant.Hooks;
 using NUnit.Framework;
 using System.IO;
 using System;
 using System.Threading;
+
+using Antmicro.Migrant.Hooks;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -37,42 +38,42 @@ namespace Antmicro.Migrant.Tests
                 array[i] = new ClassWithTheReference(i);
             }
 
-            array[0].refOne = array[1];
-            array[0].refTwo = array[2];
-            array[1].refOne = array[3];
-            array[1].refTwo = array[4];
-            array[2].refOne = array[1];
-            array[2].refTwo = array[5];
+            array[0].RefOne = array[1];
+            array[0].RefTwo = array[2];
+            array[1].RefOne = array[3];
+            array[1].RefTwo = array[4];
+            array[2].RefOne = array[1];
+            array[2].RefTwo = array[5];
 
             var copy = SerializerClone(array);
 
-            Assert.AreEqual(1, copy[5].value);
-            Assert.AreEqual(2, copy[4].value);
-            Assert.AreEqual(3, copy[3].value);
-            Assert.AreEqual(4, copy[2].value);
-            Assert.AreEqual(5, copy[1].value);
-            Assert.AreEqual(6, copy[0].value);
+            Assert.AreEqual(1, copy[5].Value);
+            Assert.AreEqual(2, copy[4].Value);
+            Assert.AreEqual(3, copy[3].Value);
+            Assert.AreEqual(4, copy[2].Value);
+            Assert.AreEqual(5, copy[1].Value);
+            Assert.AreEqual(6, copy[0].Value);
         }
 
         private class ClassWithTheReference
         {
             public ClassWithTheReference(int id)
             {
-                this.id = id;
+                this.Id = id;
             }
 
             // we don't use array/list here to avoid additional objects
-            public ClassWithTheReference refOne;
-            public ClassWithTheReference refTwo;
+            public ClassWithTheReference RefOne;
+            public ClassWithTheReference RefTwo;
 
-            public int value;
+            public int Value;
 
-            public int id;
+            public int Id;
 
             [PostDeserialization]
             private void PostDeserializationMethod()
             {
-                value = ++counter;
+                Value = ++counter;
             }
 
             public static void Reset()
@@ -549,7 +550,7 @@ namespace Antmicro.Migrant.Tests
     {
         public PrePostSerializationMock()
         {
-            sendingException = new ClassSendingExcetpionDuringSerialization();
+            SendingException = new ClassSendingExcetpionDuringSerialization();
         }
 
         public bool PreExecuted { get; private set; }
@@ -569,7 +570,7 @@ namespace Antmicro.Migrant.Tests
         }
 
         #pragma warning disable 0414
-        private ClassSendingExcetpionDuringSerialization sendingException;
+        private readonly ClassSendingExcetpionDuringSerialization SendingException;
         #pragma warning restore 0414
     }
 
@@ -577,7 +578,7 @@ namespace Antmicro.Migrant.Tests
     {
         public LatePrePostSerializationMock()
         {
-            sendingException = new ClassSendingExcetpionDuringSerialization();
+            SendingException = new ClassSendingExcetpionDuringSerialization();
         }
 
         public bool PreExecuted { get; private set; }
@@ -597,7 +598,7 @@ namespace Antmicro.Migrant.Tests
         }
 
         #pragma warning disable 0414
-        private ClassSendingExcetpionDuringSerialization sendingException;
+        private readonly ClassSendingExcetpionDuringSerialization SendingException;
         #pragma warning restore 0414
     }
 
@@ -700,4 +701,3 @@ namespace Antmicro.Migrant.Tests
         }
     }
 }
-

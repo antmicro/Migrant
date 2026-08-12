@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -15,9 +15,9 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldGenerateUniqueId()
         {
-            const int ObjectsNo = 100000;
+            const int objectsNo = 100000;
             var identifier = new ObjectIdentifier();
-            var objects = new object[ObjectsNo];
+            var objects = new object[objectsNo];
             for(var i = 0; i < objects.Length; i++)
             {
                 objects[i] = new object();
@@ -32,4 +32,3 @@ namespace Antmicro.Migrant.Tests
         }
     }
 }
-

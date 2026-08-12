@@ -7,9 +7,9 @@
 using System;
 using NUnit.Framework;
 using System.Linq;
+
 using Antmicro.Migrant.Customization;
 using Antmicro.Migrant.VersionTolerance;
-
 using Antmicro.Migrant.Tests.Shared;
 
 namespace Antmicro.Migrant.Tests
@@ -20,7 +20,7 @@ namespace Antmicro.Migrant.Tests
         [SetUp]
         public void SetUp()
         {
-            DynamicType.prefix = null;
+            DynamicType.Prefix = null;
         }
 
         [Test]

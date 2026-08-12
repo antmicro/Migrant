@@ -626,12 +626,12 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldOmitTransientField()
         {
-            var trans = new ClassWithTransientField() { a = 147, b = 256, c = 850 };
+            var trans = new ClassWithTransientField() { A = 147, B = 256, C = 850 };
             var scd = SerializerClone(trans);
 
-            Assert.AreEqual(trans.a, scd.a);
-            Assert.AreEqual(default(int), scd.b);
-            Assert.AreEqual(trans.c, scd.c);
+            Assert.AreEqual(trans.A, scd.A);
+            Assert.AreEqual(default(int), scd.B);
+            Assert.AreEqual(trans.C, scd.C);
         }
 
         [Test]
@@ -844,12 +844,12 @@ namespace Antmicro.Migrant.Tests
             {
                 exception = e;
             }
-            catch(Exception e)
+            catch(Exception)
             {
                 if(useGeneratedSerialization)
                 {
                     // With generated serialization the type should be detected as non-serializable.
-                    throw e;
+                    throw;
                 }
             }
         }
@@ -881,19 +881,19 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldSerializeNullableEnum()
         {
-            var src = new ClassWithNullableEnum() { e = SimpleEnum.Two };
+            var src = new ClassWithNullableEnum() { E = SimpleEnum.Two };
             var dst = SerializerClone(src);
 
-            Assert.AreEqual(SimpleEnum.Two, dst.e);
+            Assert.AreEqual(SimpleEnum.Two, dst.E);
         }
 
         [Test]
         public void ShouldSerializeGenericClassWithLatePostDeserializationHook()
         {
-            var src = new GenericClassWithLatePostDeserializationHook { x = 150 };
+            var src = new GenericClassWithLatePostDeserializationHook { X = 150 };
             var dst = SerializerClone(src);
 
-            Assert.AreEqual(147, dst.x);
+            Assert.AreEqual(147, dst.X);
         }
 
         [Test]
@@ -1014,7 +1014,7 @@ namespace Antmicro.Migrant.Tests
                 stream.Seek(0, SeekOrigin.Begin);
                 var copy = serializer.Deserialize<GenericClassWithNestedGenericArgument<string>>(stream);
                 Assert.IsNotNull(copy);
-                Assert.AreEqual("test", copy.field[0].field);
+                Assert.AreEqual("test", copy.Field[0].Field);
             }
         }
 
@@ -1025,8 +1025,8 @@ namespace Antmicro.Migrant.Tests
             var current = obj;
             for(int i = 0; i < 45000; i++)
             {
-                current.reference = new ClassWithReferenceToTheObjectOfTheSameType();
-                current = current.reference;
+                current.Reference = new ClassWithReferenceToTheObjectOfTheSameType();
+                current = current.Reference;
             }
 
             var serializer = new Serializer(GetSettings());
@@ -1042,10 +1042,10 @@ namespace Antmicro.Migrant.Tests
             Assert.IsNotNull(copy);
             var depth = 0;
             current = copy;
-            while(current.reference != null)
+            while(current.Reference != null)
             {
                 depth++;
-                current = current.reference;
+                current = current.Reference;
             }
 
              Assert.AreEqual(45000, depth);
@@ -1057,10 +1057,10 @@ namespace Antmicro.Migrant.Tests
             var serializer = new Serializer(GetSettings());
 
             var obj = new ClassWithTheListOfInterfaces();
-            obj.list = new List<IInterface>();
+            obj.List = new List<IInterface>();
             for(int i = 0; i < 100; i++)
             {
-                obj.list.Add(i % 2 == 0 ? (IInterface)new ImplementingInterfaceOne() : (IInterface)new ImplementingInterfaceTwo());
+                obj.List.Add(i % 2 == 0 ? (IInterface)new ImplementingInterfaceOne() : (IInterface)new ImplementingInterfaceTwo());
             }
             using(var stream = new MemoryStream())
             {
@@ -1068,7 +1068,7 @@ namespace Antmicro.Migrant.Tests
                 stream.Seek(0, SeekOrigin.Begin);
                 var copy = serializer.Deserialize<ClassWithTheListOfInterfaces>(stream);
                 Assert.IsNotNull(copy);
-                Assert.AreEqual(100, copy.list.Count);
+                Assert.AreEqual(100, copy.List.Count);
             }
         }
 
@@ -1079,9 +1079,9 @@ namespace Antmicro.Migrant.Tests
             var copy = SerializerClone(machine);
 
             Assert.IsNotNull(copy);
-            for(var i = 0; i < copy.objectWithItems.items.Length; i++)
+            for(var i = 0; i < copy.ObjectWithItems.Items.Length; i++)
             {
-                Assert.IsFalse(copy.objectWithItems.items [i].ActionIsNull, string.Format("Array element: {0}", i));
+                Assert.IsFalse(copy.ObjectWithItems.Items [i].ActionIsNull, string.Format("Array element: {0}", i));
             }
         }
 
@@ -1114,15 +1114,15 @@ namespace Antmicro.Migrant.Tests
         {
             public CustomObject(object field)
             {
-                this.field = field;
+                this.Field = field;
             }
 
             public override int GetHashCode()
             {
-                return field.GetHashCode();
+                return Field.GetHashCode();
             }
 
-            private object field;
+            private readonly object Field;
         }
 
         private class BoxingClass
@@ -1131,12 +1131,12 @@ namespace Antmicro.Migrant.Tests
             // to detect a problem;
             // as fileds are ordered alphabetically, please be
             // carefull while renaming them
-            public ClassWithAction objectWithAction;
-            public ClassWithItems objectWithItems;
+            public ClassWithAction ObjectWithAction;
+            public ClassWithItems ObjectWithItems;
 
             public BoxingClass()
             {
-                objectWithItems = new ClassWithItems(this);
+                ObjectWithItems = new ClassWithItems(this);
             }
         }
 
@@ -1144,25 +1144,25 @@ namespace Antmicro.Migrant.Tests
         {
             public ClassWithItems(BoxingClass mach)
             {
-                items = new ClassWithAction[2];
-                for(var i = 0; i < items.Length; i++)
+                Items = new ClassWithAction[2];
+                for(var i = 0; i < Items.Length; i++)
                 {
-                    items[i] = new ClassWithAction(mach);
+                    Items[i] = new ClassWithAction(mach);
                     // passing 'i' variable to the method is crucial here
-                    items[i].Action += () => Method(i);
+                    Items[i].Action += () => Method(i);
                 }
             }
 
-            private void Method(int i) { }
+            private void Method(int _) { }
 
-            public ClassWithAction[] items;
+            public ClassWithAction[] Items;
         }
 
         private class ClassWithAction
         {
             public ClassWithAction(BoxingClass box)
             {
-                box.objectWithAction = this;
+                box.ObjectWithAction = this;
             }
 
             public event Action Action;
@@ -1175,7 +1175,7 @@ namespace Antmicro.Migrant.Tests
 
         public class ClassWithTheListOfInterfaces
         {
-            public List<IInterface> list;
+            public List<IInterface> List;
         }
 
         public interface IInterface
@@ -1195,23 +1195,23 @@ namespace Antmicro.Migrant.Tests
 
         public class ClassWithReferenceToTheObjectOfTheSameType
         {
-            public ClassWithReferenceToTheObjectOfTheSameType reference;
+            public ClassWithReferenceToTheObjectOfTheSameType Reference;
         }
 
         public class GenericClassWithNestedGenericArgument<T>
         {
             public GenericClassWithNestedGenericArgument(T t)
             {
-                field = new [] { new GenericClass<T>() } ;
-                field[0].field = t;
+                Field = new [] { new GenericClass<T>() } ;
+                Field[0].Field = t;
             }
 
-            public GenericClass<T>[] field;
+            public GenericClass<T>[] Field;
         }
 
         public class GenericClass<T>
         {
-            public T field;
+            public T Field;
         }
 
         public class GenericClassWithGenericDelegate<T>
@@ -1236,7 +1236,7 @@ namespace Antmicro.Migrant.Tests
         public class GenericClassWithTransient<T>
         {
             [Transient]
-            public T x;
+            public T X;
         }
 
         public class GenericClassWithLatePostDeserializationHook : GenericClassWithTransient<int>
@@ -1244,16 +1244,16 @@ namespace Antmicro.Migrant.Tests
             [LatePostDeserialization]
             public void LatePostDeserialization()
             {
-                if(x == 0)
+                if(X == 0)
                 {
-                    x = 147;
+                    X = 147;
                 }
             }
         }
 
         public class ClassWithNullableEnum
         {
-            public SimpleEnum? e { get; set; }
+            public SimpleEnum? E { get; set; }
         }
 
         public class SimpleClass
@@ -1521,13 +1521,13 @@ namespace Antmicro.Migrant.Tests
             {
                 get
                 {
-                    return resetEvent != null;
+                    return ResetEvent != null;
                 }
             }
 
             #pragma warning disable 649
             [Constructor(false)]
-            private ManualResetEvent resetEvent;
+            private readonly ManualResetEvent ResetEvent;
             #pragma warning restore 649
         }
 
@@ -1537,7 +1537,7 @@ namespace Antmicro.Migrant.Tests
             {
                 get
                 {
-                    return s.field == 5;
+                    return s.Field == 5;
                 }
             }
 
@@ -1551,12 +1551,10 @@ namespace Antmicro.Migrant.Tests
         {
             public NestedStruct(bool condition)
             {
-                field = (condition ? 5 : 0);
+                Field = (condition ? 5 : 0);
             }
 
-            #pragma warning disable 649
-            public int field;
-            #pragma warning restore 649
+            public int Field;
         }
 
         private class WithConstructorAttribute
@@ -1565,14 +1563,14 @@ namespace Antmicro.Migrant.Tests
             {
                 get
                 {
-                    return resetEvent != null;
+                    return ResetEvent != null;
                 }
             }
 
-            #pragma warning disable 649
+#pragma warning disable CS0649
             [Constructor(false)]
-            private ManualResetEvent resetEvent;
-            #pragma warning restore 649
+            private readonly ManualResetEvent ResetEvent;
+#pragma warning restore CS0649
         }
 
         [Transient]
@@ -1588,11 +1586,10 @@ namespace Antmicro.Migrant.Tests
 
         private class ClassWithTransientField
         {
-            public int a;
+            public int A;
             [Transient]
-            public int
-                b;
-            public int c;
+            public int B;
+            public int C;
         }
 
         private class ClassWithEvent

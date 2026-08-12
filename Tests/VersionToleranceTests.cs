@@ -8,12 +8,12 @@
 
 using System;
 using NUnit.Framework;
-using Antmicro.Migrant.Customization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
+using Antmicro.Migrant.Customization;
 using Antmicro.Migrant.Tests.Shared;
 
 namespace Antmicro.Migrant.Tests

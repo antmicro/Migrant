@@ -106,7 +106,7 @@ namespace Antmicro.Migrant.Tests
             var pseudocopy = PseudoClone(a, serializer =>
             {
                 serializer.ForObject<int>().SetSurrogate(x => new IntSurrogate(x));
-                serializer.ForSurrogate<IntSurrogate>().SetObject(x => (object)(x.cwi.field));
+                serializer.ForSurrogate<IntSurrogate>().SetObject(x => (object)(x.Cwi.Field));
             });
             var b = pseudocopy as object;
             Assert.AreEqual(299, b);
@@ -114,17 +114,17 @@ namespace Antmicro.Migrant.Tests
 
         private class ClassWithInteger
         {
-            public int field;
+            public int Field;
         }
 
         private class IntSurrogate
         {
             public IntSurrogate(int value)
             {
-                cwi = new ClassWithInteger { field = value + 100 };
+                Cwi = new ClassWithInteger { Field = value + 100 };
             }
 
-            public ClassWithInteger cwi;
+            public ClassWithInteger Cwi;
         }
 
         [Test]
@@ -319,13 +319,13 @@ namespace Antmicro.Migrant.Tests
                 serializer.ForSurrogate(typeof(object)).SetObject(x =>
                 {
                     var j = new SurrogateMockJ();
-                    j.field = j;
+                    j.Field = j;
                     return j;
                 });
             });
 
             Assert.IsInstanceOf<SurrogateMockJ>(pseudocopy);
-            Assert.AreEqual(pseudocopy, ((SurrogateMockJ)pseudocopy).field);
+            Assert.AreEqual(pseudocopy, ((SurrogateMockJ)pseudocopy).Field);
         }
 
         [Test]
@@ -361,7 +361,7 @@ namespace Antmicro.Migrant.Tests
 
         private class SurrogatingClass<T>
         {
-            public SurrogatingClass(ClassToBeSurrogated<T> x)
+            public SurrogatingClass(ClassToBeSurrogated<T> _)
             {
             }
         }
@@ -431,7 +431,6 @@ namespace Antmicro.Migrant.Tests
 
     public class SurrogateMockJ
     {
-        public SurrogateMockJ field;
+        public SurrogateMockJ Field;
     }
 }
-
