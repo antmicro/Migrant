@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2024 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -40,6 +40,7 @@ namespace Antmicro.Migrant
         {
             objectToId = new Dictionary<object, int>();
             idToObject = context.GetObjects();
+            surrogateToObject = new Dictionary<object, object>();
             for(var i = 0; i < idToObject.Count; i++)
             {
                 var objectToAdd = idToObject[i];
@@ -212,4 +213,3 @@ namespace Antmicro.Migrant
         private readonly Dictionary<object, object> surrogateToObject;
     }
 }
-
