@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Shared\**" />
+    <Compile Remove="SecondModule\**" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NUnit" Version="3.13.1" />
@@ -17,5 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Migrant\Migrant.csproj" />
     <ProjectReference Include="Shared\Shared.csproj" />
+    <ProjectReference Include="SecondModule\SecondModule.csproj" />
   </ItemGroup>
 </Project>

@@ -13,7 +13,9 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.IO;
 using System.Collections.ObjectModel;
+
 using Antmicro.Migrant.Hooks;
+using Antmicro.Migrant.Tests.SecondModule;
 
 namespace Antmicro.Migrant.Tests
 {

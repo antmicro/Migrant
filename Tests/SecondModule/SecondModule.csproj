@@ -1,0 +1,9 @@
+<Project DefaultTargets="Build" Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net6.0</TargetFrameworks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Antmicro.Migrant.Tests.SecondModule</RootNamespace>
+    <AssemblyName>SecondModule</AssemblyName>
+  </PropertyGroup>
+</Project>
