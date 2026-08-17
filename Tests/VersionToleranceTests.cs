@@ -4,6 +4,8 @@
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
 
+#if NET9_0_OR_GREATER
+
 using System;
 using NUnit.Framework;
 using Antmicro.Migrant.Customization;
@@ -222,3 +224,4 @@ namespace Antmicro.Migrant.Tests
     }
 }
 
+#endif

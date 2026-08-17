@@ -1,8 +1,10 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
+
+#if NET9_0_OR_GREATER
 
 using System;
 using NUnit.Framework;
@@ -194,7 +196,8 @@ namespace Antmicro.Migrant.Tests
 
             Assert.AreEqual(1, testsOnDomain2.GetValueOnAppDomain("a.c"));
         }
-            
+
     }
 }
 
+#endif
