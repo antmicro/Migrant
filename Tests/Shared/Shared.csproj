@@ -1,0 +1,12 @@
+<Project DefaultTargets="Build" Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net6.0</TargetFrameworks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Antmicro.Migrant.Tests.Shared</RootNamespace>
+    <AssemblyName>Shared</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Migrant\Migrant.csproj" />
+  </ItemGroup>
+</Project>

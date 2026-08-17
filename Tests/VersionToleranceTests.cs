@@ -14,6 +14,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+using Antmicro.Migrant.Tests.Shared;
+
 namespace Antmicro.Migrant.Tests
 {
     [TestFixture(false, false)]
@@ -169,7 +171,7 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldNotStampTypeTwice()
         {
-            var serializer = new Serializer(settings.GetSettings());
+            var serializer = new Serializer(InnerDriver.CreateSettings(settings.GetSettings()));
             var memoryStream = new MemoryStream();
             var o = new ClassWithGenerics();
             serializer.Serialize(o, memoryStream);
@@ -182,7 +184,7 @@ namespace Antmicro.Migrant.Tests
         [Test]
         public void ShouldNotStampGenericTypeTwice()
         {
-            var serializer = new Serializer(settings.GetSettings());
+            var serializer = new Serializer(InnerDriver.CreateSettings(settings.GetSettings()));
             var memoryStream = new MemoryStream();
             var o = new ClassWithGenerics();
             serializer.Serialize(o, memoryStream);

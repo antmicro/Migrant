@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012-2021 Antmicro
+// Copyright (c) 2012-2026 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in the LICENSE file.
@@ -9,6 +9,8 @@ using NUnit.Framework;
 using System.Linq;
 using Antmicro.Migrant.Customization;
 using Antmicro.Migrant.VersionTolerance;
+
+using Antmicro.Migrant.Tests.Shared;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -204,4 +206,3 @@ namespace Antmicro.Migrant.Tests
         }
     }
 }
-

@@ -7,8 +7,11 @@
 using System;
 using System.IO;
 using System.Reflection;
-using Antmicro.Migrant.VersionTolerance;
 using System.Linq;
+using System.Runtime.Loader;
+
+using Antmicro.Migrant.Customization;
+using Antmicro.Migrant.Tests.Shared;
 
 namespace Antmicro.Migrant.Tests
 {
@@ -16,7 +19,7 @@ namespace Antmicro.Migrant.Tests
     {
         public TwoDomainsDriver(bool useGeneratedSerializer, bool useGeneratedDeserializer)
         {
-            settings = new DriverSettings(useGeneratedSerializer, useGeneratedDeserializer, true);
+            settings = new IInnerDriver.DriverSettings(useGeneratedSerializer, useGeneratedDeserializer, true);
 
             // this is just a little hack that allows us to debug TwoDomainTests on one domain
             // when `PrepareDomains` method is not called; when `PrepareDomains` is called
@@ -37,11 +40,17 @@ namespace Antmicro.Migrant.Tests
                 }
             }
 
-            domain1 = AppDomain.CreateDomain("domain1", null, Path.Combine(pathBase, "domain1"), string.Empty, false);
-            domain2 = AppDomain.CreateDomain("domain2", null, Path.Combine(pathBase, "domain2"), string.Empty, false);
+            domain1 = new DomainLoadContext("domain1", Path.Combine(pathBase, "domain1"));
+            domain2 = new DomainLoadContext("domain2", Path.Combine(pathBase, "domain2"));
 
-            testsOnDomain1 = (InnerDriver)domain1.CreateInstanceAndUnwrap(typeof(InnerDriver).Assembly.FullName, typeof(InnerDriver).FullName);
-            testsOnDomain2 = (InnerDriver)domain2.CreateInstanceAndUnwrap(typeof(InnerDriver).Assembly.FullName, typeof(InnerDriver).FullName);
+            var asm1 = domain1.LoadFromAssemblyPath(Path.Combine(pathBase, "domain1", "Tests.dll"));
+            var asm2 = domain2.LoadFromAssemblyPath(Path.Combine(pathBase, "domain2", "Tests.dll"));
+
+            var type1 = asm1.GetType(typeof(InnerDriver).FullName);
+            var type2 = asm2.GetType(typeof(InnerDriver).FullName);
+
+            testsOnDomain1 = (IInnerDriver)Activator.CreateInstance(type1);
+            testsOnDomain2 = (IInnerDriver)Activator.CreateInstance(type2);
 
             testsOnDomain1.Settings = settings;
             testsOnDomain2.Settings = settings;
@@ -51,8 +60,8 @@ namespace Antmicro.Migrant.Tests
         {
             testsOnDomain1 = null;
             testsOnDomain2 = null;
-            AppDomain.Unload(domain1);
-            AppDomain.Unload(domain2);
+            domain1.Unload();
+            domain2.Unload();
             domain1 = null;
             domain2 = null;
 
@@ -61,65 +70,45 @@ namespace Antmicro.Migrant.Tests
             Directory.Delete(Path.Combine(pathBase, "domain1"), true);
             Directory.Delete(Path.Combine(pathBase, "domain2"), true);
         }
-        
+
         public bool SerializeAndDeserializeOnTwoAppDomains(DynamicType domainOneType, DynamicType domainTwoType, VersionToleranceLevel vtl, bool allowGuidChange = true)
         {
             testsOnDomain1.CreateInstanceOnAppDomain(domainOneType);
             testsOnDomain2.CreateInstanceOnAppDomain(domainTwoType);
 
             var bytes = testsOnDomain1.SerializeOnAppDomain();
-            try 
+            try
             {
-                testsOnDomain2.DeserializeOnAppDomain(bytes, settings.GetSettings(allowGuidChange ? vtl | VersionToleranceLevel.AllowGuidChange : vtl));
+                testsOnDomain2.DeserializeOnAppDomain(bytes, settings.GetSettings((ulong)(allowGuidChange ? vtl | VersionToleranceLevel.AllowGuidChange : vtl)));
                 return true;
-            } 
-            catch (VersionToleranceException)
+            }
+            catch (Exception e)
             {
-                return false;
+                // The exception will come from different domain, thus we will not have access to its type.
+                // To check if it is a VersionTolerance exception we can compare FullNames which are equal across domains.
+                if (e.GetType().FullName == typeof(VersionTolerance.VersionToleranceException).FullName)
+                {
+                    return false;
+                }
+
+                throw;
             }
         }
 
-        protected DriverSettings settings;
+        protected IInnerDriver.DriverSettings settings;
 
-        protected InnerDriver testsOnDomain1;
-        protected InnerDriver testsOnDomain2;
-        
-        private AppDomain domain1;
-        private AppDomain domain2;
+        protected IInnerDriver testsOnDomain1;
+        protected IInnerDriver testsOnDomain2;
+
+        private AssemblyLoadContext domain1;
+        private AssemblyLoadContext domain2;
     }
 
-    public class DriverSettings : MarshalByRefObject
-    {
-        public DriverSettings(bool useGeneratedSerializer, bool useGeneratedDeserializer, bool useStamping)
-        {
-            this.useGeneratedDeserializer = useGeneratedDeserializer;
-            this.useGeneratedSerializer = useGeneratedSerializer;
-            this.useStamping = useStamping;
-        }
-
-        public Settings GetSettings(VersionToleranceLevel level = 0)
-        {
-            return new Settings(useGeneratedSerializer ? Method.Generated : Method.Reflection,
-                                useGeneratedDeserializer ? Method.Generated : Method.Reflection,
-                                level,
-                                disableTypeStamping: !useStamping);
-        }
-
-        public Settings GetSettingsAllowingGuidChange(VersionToleranceLevel level = 0)
-        {
-            return GetSettings(level | VersionToleranceLevel.AllowGuidChange);
-        }
-
-        private bool useGeneratedSerializer;
-        private bool useGeneratedDeserializer;
-        private bool useStamping;
-    }
-    
-    public class InnerDriver : MarshalByRefObject
+    public class InnerDriver : IInnerDriver
     {
         public InnerDriver()
         {
-            DynamicType.prefix = AppDomain.CurrentDomain.FriendlyName;
+            DynamicType.Prefix = AppDomain.CurrentDomain.FriendlyName;
         }
 
         public void CreateInstanceOnAppDomain(DynamicType type, Version version = null)
@@ -127,10 +116,10 @@ namespace Antmicro.Migrant.Tests
             obj = type.Instantiate(version);
         }
 
-        public void DeserializeOnAppDomain(byte[] data, Settings settings)
+        public void DeserializeOnAppDomain(byte[] data, IInnerDriver.SettingsGenerator settingsGen)
         {
             var stream = new MemoryStream(data);
-            var deserializer = new Serializer(settings);
+            var deserializer = new Serializer(CreateSettings(settingsGen));
             obj = deserializer.Deserialize<object>(stream);
         }
 
@@ -166,7 +155,18 @@ namespace Antmicro.Migrant.Tests
 
         public object GetValueOnAppDomain(string className, string fieldName)
         {
-            var field = FindClass(className).GetField(fieldName);
+            var type = FindClass(className);
+            if (type == null)
+            {
+                throw new InvalidOperationException($"Could not find class '{className}'.");
+            }
+
+            var field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Could not find field '{fieldName}' in a class '{className}'");
+            }
+
             return field.GetValue(obj);
         }
 
@@ -187,11 +187,11 @@ namespace Antmicro.Migrant.Tests
         public byte[] SerializeOnAppDomain()
         {
             var stream = new MemoryStream();
-            var serializer = new Serializer(Settings.GetSettings());
+            var serializer = new Serializer(CreateSettings(Settings.GetSettings()));
             serializer.Serialize(obj, stream);
             return stream.ToArray();
         }
-            
+
         private Type FindClass(string className)
         {
             var currentClass = obj.GetType();
@@ -207,10 +207,18 @@ namespace Antmicro.Migrant.Tests
             return currentClass;
         }
 
+        public static Settings CreateSettings(IInnerDriver.SettingsGenerator settingsGenerator)
+        {
+            return new Settings(
+                settingsGenerator.UseGeneratedSerializer ? Method.Generated : Method.Reflection,
+                settingsGenerator.UseGeneratedDeserializer ? Method.Generated : Method.Reflection,
+                (VersionToleranceLevel)settingsGenerator.Level,
+                disableTypeStamping: !settingsGenerator.UseStamping);
+        }
+
         public string Location { get; set; }
-        public DriverSettings Settings { get; set; }
+        public IInnerDriver.DriverSettings Settings { get; set; }
 
         protected object obj;
     }
 }
-
