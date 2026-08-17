@@ -1,0 +1,47 @@
+image: debian:trixie
+
+# Triggered for main pushes, schedules etc. and on MR creation or modification
+.only_main_and_all_mrs: &only_main_and_all_mrs
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == "master"
+      - $CI_PIPELINE_SOURCE == "merge_request"
+      - $CI_PIPELINE_SOURCE == "trigger"
+
+.install-dependencies: &install_dependencies |-
+    apt-get -qqy update > /dev/null
+    apt-get -qqy install git wget > /dev/null
+    wget https://packages.microsoft.com/config/debian/13/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+    dpkg -i packages-microsoft-prod.deb
+    rm packages-microsoft-prod.deb
+    apt-get -qqy update > /dev/null
+
+# Due to multiple dotnet versions being used in this CI, install-dotnet cannot
+# be placed in before_get_sources because version variable will be exapnded
+# only after hash calculation which results in hash collions and therefore
+# overlay mixups between different dotnet jobs.
+.install-dotnet: &install-dotnet |-
+    apt-get -qqy install dotnet-sdk-$CI_PARALLEL_NAME > /dev/null
+
+.dotnet-sdk-versions: &dotnet_sdk_versions
+  - "8.0"
+  - "9.0"
+  - "10.0"
+
+
+.test-migrant:
+  stage: test
+  <<: *only_main_and_all_mrs
+  before_get_sources:
+    - *install_dependencies
+  before_script:
+    - *install-dotnet
+  script:
+    - export DOTNET_CLI_TELEMETRY_OPTOUT=1
+    - TARGET_FRAMEWORK=net$CI_PARALLEL_NAME
+    - dotnet test -p:TargetFrameworks=$TARGET_FRAMEWORK -f $TARGET_FRAMEWORK Tests
+
+
+test-migrant:
+  extends: .test-migrant
+  parallel: *dotnet_sdk_versions
