@@ -538,7 +538,7 @@ namespace Antmicro.Migrant
 
             // Read actual metadata
             var buffer = new byte[metadataLength];
-            stream.Read(buffer, 0, metadataLength);
+            stream.ReadExactly(buffer);
 
             // Read checksum and verify if metadata is correct
             // If it's incorrect, we could be deserializing a stream in the old format or the metadata is simply corrupted
@@ -994,4 +994,3 @@ namespace Antmicro.Migrant
         }
     }
 }
-
