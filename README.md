@@ -1,12 +1,12 @@
 # Migrant
 
-Copyright (c) 2012-2022 [Antmicro](https://www.antmicro.com)
+Copyright (c) 2012-2026 [Antmicro](https://www.antmicro.com)
 
-[![View on Antmicro Open Source Portal](https://img.shields.io/badge/View%20on-Antmicro%20Open%20Source%20Portal-332d37?style=flat-square)](https://opensource.antmicro.com/projects/Migrant) 
+[![View on Antmicro Open Source Portal](https://img.shields.io/badge/View%20on-Antmicro%20Open%20Source%20Portal-332d37?style=flat-square)](https://opensource.antmicro.com/projects/Migrant)
 
 ## Introduction
 
-Migrant is a serialization framework for .NET and Mono projects. Its aim is to provide an easy way to serialize complex graphs of objects, with minimal programming effort.
+Migrant is a serialization framework for .NET projects. Its aim is to provide an easy way to serialize complex graphs of objects, with minimal programming effort.
 
 ## Directory organization
 
@@ -162,32 +162,10 @@ Described mechanisms works for the following collections:
 There is, however, an option to disable this feature and treat collections as
 normal user objects. To do this a flag ``treatCollectionAsUserObject`` in the ``Settings`` object must be set to ``true``.
 
-### `ISerializable` support
-
-By default Migrant does not use special serialization means for classes or
-structs that implement `ISerializable`. If you have already prepared your code
-for e.g. `BinaryFormatter`, then you can turn on `ISerializable` support in
-`Settings`. Note that this is suboptimal compared to normal Migrant's approach
-and is only thought as a compatibility layer which may be useful for the
-plug-in serialization framework substitution. Also note that it will also
-affect framework classes, resulting in a suboptimal performance. For example:
-
-  `Dictionary`, one million elements.
-  Without ISerializable support: 0.30s,  13.25MB
-  With ISeriazilable support:    6.94s, 13.25MB
-
-  `Dictionary`, 10000 instances with one element each.
-  Without ISerializable support: 44.79ms, 184.01KB
-  With ISeriazilable support:    0.91s,   6.36MB
-
-To sum it up, such a support is meant to be phased out during time in your
-project.
-
 ### `IXmlSerializable` support
 
-As with `ISerializable` Migrant can also utilize implementation of
-`IXmlSerializable`. In that case data is written to memory stream using
-`XmlSerializer` and then taken as a binary blob (along with type name).
+Migrant can also utilize implementation of `IXmlSerializable`.
+In that case data is written to memory stream using `XmlSerializer` and then taken as a binary blob (along with type name).
 
 ### (De)serializing the `Type` type
 
@@ -301,21 +279,16 @@ To download a precompiled version of Migrant, use [NuGet Package Manager](http:/
 
 To compile the project, open the solution file in your IDE and hit compile. You may, alternatively, compile the library from the command line:
 
-> msbuild Migrant.sln
-
-or, under Mono:
-
-> xbuild Migrant.sln
+> `dotnet build Migrant.sln`
 
 ## Coding style
 
 If you intend to help us developing Migrant, you're most welcome!
 
-Please adhere to our coding style rules. For MonoDevelop, they are included in the .sln files. For Visual Studio we provide a .vssettings file you can import to your IDE.
+Please adhere to our coding style rules. For Visual Studio we provide a .vssettings file you can import to your IDE.
 
 In case of any doubts, just take a look to see how we have done it.
 
 ## Licence
 
 Migrant is created by Antmicro and released on an MIT licence, which can be found in the LICENCE file in this directory.
-
